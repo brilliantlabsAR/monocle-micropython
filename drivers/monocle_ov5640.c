@@ -1,7 +1,6 @@
 /*
- * Copyright (c) 2020 Brilliant Labs Limited
- * This software is owned by Brilliant Labs Limited.
- * It is proprietary, and can be disclosed only after written authorization.
+ * Copyright (c) 2022 Brilliant Labs Limited
+ * Licensed under the MIT License
  */
 
 /**
