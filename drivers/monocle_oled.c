@@ -4,7 +4,8 @@
  */
 
 /**
- * @file
+ * Sony Microdisplay driver.
+ * @file monocle_oled.c
  * @author Shreyas Hemachandra
  * @author Nathan Ashelman
  * @bug oled_config_burst() is not working correctly.

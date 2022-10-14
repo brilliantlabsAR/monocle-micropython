@@ -1,0 +1,37 @@
+OUTPUT_DIRECTORY       = source/driver
+
+# Deactivate doxygens own treeview (as it doesn't look right)
+GENERATE_TREEVIEW      = NO
+
+# Menu data is crucial for doxysphinx TOC generation
+DISABLE_INDEX          = NO
+
+GENERATE_HTML          = YES
+
+# This allows you to use rst blocks inside doxygen comments with @rst and @endrst
+ALIASES                = "rst=\verbatim embed:rst:leading-asterisk" \
+                         endrst=\endverbatim
+
+# Doxysphinx can't handle subdirs right now.
+CREATE_SUBDIRS         = NO
+
+# Xml output isn't needed for doxysphinx
+GENERATE_XML           = NO
+
+# deactivate search engine (as sphinx has it's own search)
+SEARCHENGINE           = NO
+
+# generate a tag file
+GENERATE_TAGFILE       = source/driver/html/tagfile.xml
+
+# generates nicer svg images
+DOT_IMAGE_FORMAT       = svg
+
+# generate transparent images
+DOT_TRANSPARENT        = YES
+
+# to be able to scroll and zoom into big images
+INTERACTIVE_SVG        = YES
+
+# With it, the doxygen docs fit far better with any sphinx theme.
+HTML_EXTRA_STYLESHEET = doxygen-awesome.css

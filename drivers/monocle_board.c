@@ -3,6 +3,12 @@
  * Licensed under the MIT License
  */
 
+/**
+ * General board setups.
+ * @file monocle_board.c
+ * @author Nathan Ashelman
+ */
+
 #include "monocle_board.h"
 #include "nrfx_systick.h"
 #include <stdint.h>

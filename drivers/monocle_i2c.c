@@ -4,7 +4,8 @@
  */
 
 /**
- * @file
+ * Wrapper library over Nordic NRFX I2C drivers.
+ * @file monocle_i2c.c
  * @author Nathan Ashelman
  * @author Shreyas Hemachandra
  * @bug i2c_scan_bus() doesn't work (but is not used, so not urgent)

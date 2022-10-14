@@ -4,9 +4,10 @@
  */
 
 /**
- * @file
+ * @file monocle_battery.c
  * @author Nathan Ashelman
  * @author Josuah Demangeon
+ * @todo Not enabled yet.
  * @bug A timer might need to be configured to periodically trigger the sampling.
  */
 

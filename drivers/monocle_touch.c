@@ -4,8 +4,8 @@
  */
 
 /**
- * Function implementation for touch interface.
- * @file
+ * User interface for capacitove touch sensors.
+ * @file monocle_touch.c
  * @author Nathan Ashelman
  * @author Shreyas Hemachandra
  */

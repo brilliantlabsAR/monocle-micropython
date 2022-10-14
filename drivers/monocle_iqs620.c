@@ -4,6 +4,7 @@
  */
 
 /**
+ * IQS620 touch controller driver.
  * @file monocle_iqs620.c
  * @author Nathan Ashelman
  * @author Shreyas Hemachandra

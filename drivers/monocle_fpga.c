@@ -4,10 +4,10 @@
  */
 
 /**
- * Function implementation for interface to FPGA.
+ * Interface with the FPGA.
  * @file
- * @author Nathan Ashelman
  * @author Shreyas Hemachandra
+ * @author Nathan Ashelman
  */
 
 #include "monocle_fpga.h"

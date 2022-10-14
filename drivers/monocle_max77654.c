@@ -1,11 +1,11 @@
 /*
- * Copyright (2022), Brilliant Labs Limited (Hong Kong)
+ * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
 
 /**
- * Code for MAX77654 PMIC interface. MCU hardware dependent (I2C & logging).
- * @file
+ * MAX77654 PMIC driver.
+ * @file monocle_max77654.c
  * @author Nathan Ashelman
  */
 

@@ -4,8 +4,8 @@
  */
 
 /**
- * Code for dual SPI interface. MCU hardware dependent.
- * @file
+ * Wrapper library over Nordic SPI NRFX drivers.
+ * @file monocle_spi.c
  * @author Nathan Ashelman
  * @author Shreyas Hemachandra
  */
