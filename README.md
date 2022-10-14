@@ -53,16 +53,15 @@ The devkit can be flashed through the SWD debugger interface with a dongle such 
 The connection to the Monocle board is as follow:
 
 ```
-                  ┌─────────────────── GND     -> to programmer dongle
-┌─────────────────│───────────────┐
-│ () ┌────────────│──────────┐ () │
+┌─────────────────────────────────┐
+│ () ┌───────────────────────┐ () │
 │    │  o o o o o o o o o o  │    │
-│    │  o o o o o o o o o o  │    │
-│    └────────│─│  ───│──────┘    │
-│             │ │     └─────────────── RESET   -> to programmer dongle
-│        ┌────│ │ ───────┐        │
-│        │    │ └───────────────────── SWCLK   -> to programmer dongle
-│        │    └─────────────────────── SWDIO   -> to programmer dongle
+│    │  o o o o o │ o o o o  │    │
+│    └────────│─│ │───│──────┘    │
+│             │ │ │   └─────────────── RESET
+│        ┌────│ │ └─────────────────── GND    st-link
+│        │    │ └───────────────────── SWCLK
+│        │    └─────────────────────── SWDIO
 │        │               │        │
 │        │               │        │
 │        │               │        │
@@ -72,7 +71,8 @@ The connection to the Monocle board is as follow:
 │                                 │
 │             ┌──  ──┐            │
 │             └──────┘            │
-:                                 :
+│                 └─────────────────── SEGGER J-Link
+│                                 │
 :                                 :
 ```
 
