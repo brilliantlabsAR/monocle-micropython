@@ -160,7 +160,7 @@ flash_openocd_jlink:
 	-f interface/jlink.cfg -c "transport select swd" -f target/nrf52.cfg \
 	-c "init; nrf52_recover; program build/firmware.hex verify; exit"
 
-flash_nrfjprog:
+flash_nrfjprog_jlink:
 	$(NRFJPROG) --sectorerase --verify --family nrf52 --program build/firmware.hex
 
 build/application.elf: $(OBJ)

@@ -45,7 +45,7 @@ brew install arm-none-eabi-gcc arm-none-eabi-binutils arm-none-eabi-newlib
 
 Flashing to the Monocle
 -----------------------
-The devkit can be flashed through the SWD debugger interface with a dongle such as [STlinkV2][1] or [J-Link][2].
+The devkit can be flashed through the SWD debugger interface with a dongle such as [st-link/v2][1] or [J-Link][2].
 
 [1]: https://www.adafruit.com/product/2548
 [2]: https://www.adafruit.com/product/3571
@@ -81,8 +81,21 @@ Then, the flash command can be issued.
 
 Flashing is done as for any ARM microcontroller
 
-* With [OpenOCD][3] (supporting both st-link/v2 or J-Link)
+* With [OpenOCD][3] (supporting both st-link/v2/v3 or J-Link)
 * WIth [nrfjprog][4] (supporting J-Link only)
 
 [3]: https://openocd.org/
 [4]: https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools/download
+
+Once everything is connected:
+
+```
+# If using OpenOCD with an st-link/v2/v3:
+make flash_openocd_stlink
+
+# If using OpenOCD with a J-Link:
+make flash_openocd_jlink
+
+# If using nrfjprog with a J-Link:
+make flash_nrfjprog_jlink
+```
