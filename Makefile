@@ -137,7 +137,6 @@ SRC += nrfx/drivers/src/nrfx_spi.c
 SRC += nrfx/drivers/src/nrfx_spim.c
 SRC += nrfx/drivers/src/nrfx_timer.c
 SRC += nrfx/drivers/src/nrfx_twi.c
-SRC += nrfx/drivers/src/nrfx_uart.c
 SRC += nrfx/drivers/src/prs/nrfx_prs.c
 SRC += nrfx/helpers/nrfx_flag32_allocator.c
 SRC += nrfx/mdk/system_nrf52.c

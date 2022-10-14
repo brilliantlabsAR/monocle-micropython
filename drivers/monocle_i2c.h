@@ -21,6 +21,7 @@ void i2c_uninit(void);
 bool i2c_write(uint8_t addr, uint8_t *buf, uint8_t sz);
 bool i2c_write_no_stop(uint8_t addr, uint8_t *buf, uint8_t sz);
 bool i2c_read(uint8_t addr, uint8_t *readBuffer, uint8_t sz);
+void i2c_scan(void);
 /** @} */
 
 #endif

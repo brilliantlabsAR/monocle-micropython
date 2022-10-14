@@ -128,6 +128,7 @@ int main(void)
 
     // REPL mode can change, or it can request a soft reset
     for (int stop = false; !stop;) {
+        i2c_scan();
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL)
             stop = pyexec_raw_repl();
         else

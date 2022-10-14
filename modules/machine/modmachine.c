@@ -36,7 +36,6 @@
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
 #include "pin.h"
-#include "uart.h"
 #include "timer.h"
 #if MICROPY_PY_MACHINE_RTCOUNTER
 #include "rtcounter.h"

@@ -31,7 +31,6 @@
 #include "py/mperrno.h"
 #include "py/runtime.h"
 #include "py/stream.h"
-#include "uart.h"
 #include "nrfx_errors.h"
 #include "nrfx_config.h"
 #include "monocle_ble.h"
@@ -277,5 +276,3 @@ const char *nrfx_error_code_lookup(uint32_t err_code) {
 
     return nrfx_error_unknown;
 }
-
-MP_REGISTER_ROOT_POINTER(struct _machine_hard_uart_obj_t *board_stdio_uart);

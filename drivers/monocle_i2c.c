@@ -101,17 +101,18 @@ bool i2c_read(uint8_t addr, uint8_t *buf, uint8_t sz)
  * @bug this generates a lot of false positives, and didn't detect @55.
  * @return True if all expected addresses were found.
  */
-bool i2c_scan_bus(void)
+void i2c_scan(void)
 {
     uint8_t addr;
     uint8_t sample_data;
     bool detected_device = false;
 
     for (addr = 1; addr <= 127; addr++) {
-        if (i2c_read(addr, &sample_data, sizeof(sample_data)) == NRF_SUCCESS) {
+        if (i2c_read(addr, &sample_data, sizeof(sample_data))) {
             detected_device = true;
             LOG_DEBUG("I2C device detected at address 0x%x.", addr);
         }
     }
-    return detected_device;
+    if (! detected_device)
+        LOG_DEBUG("No I2C device detected");
 }
