@@ -163,11 +163,6 @@ flash_openocd_jlink:
 flash_nrfjprog:
 	$(NRFJPROG) --sectorerase --verify --family nrf52 --program build/firmware.hex
 
-$(SRC):
-	git submodule init nrfx
-	git submodule init micropython
-	git -C micropython submodule update
-
 build/application.elf: $(OBJ)
 	$(ECHO) "LINK $@"
 	$(Q)$(CC) $(LDFLAGS) -o $@ $(OBJ) $(LDFLAGS_MOD) $(LIBS)
