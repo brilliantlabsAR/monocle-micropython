@@ -114,7 +114,7 @@ make gdb_openocd_stlink
 make gdb_openocd_jlink
 
 # If using nrfjprog with a J-Link:
-make gdb_nrfjprog_jlink
+make gdb_segger_jlink
 ```
 
 Then in another terminal, start GDB:
@@ -123,7 +123,33 @@ Then in another terminal, start GDB:
 make gdb
 ```
 
-
 Connecting to the monocle
 -------------------------
+A `serial_console.py` script is provided for connecting over bluetooth.
+You can invoke it with `python3 serial_console.py` or:
 
+```
+make shell
+```
+
+If the connection does not happen, you may need to enable Bluetooth on your system.
+
+For instance, on Linux, you need to start the `bluetoothd` service.
+You can then scan the existing devices with `bluetoothctl` or `sudo hcitool lescan`.
+
+On a phone, you may use a RFCOMM serial console to connect to the shell.
+
+* Android: [Serial Bluetooth Terminal][1]
+* iOS: [Bluetooth Terminal][2]
+
+[1]: https://play.google.com/store/apps/details?id=de.kai_morich.serial_bluetooth_terminal
+[2]: https://apps.apple.com/us/app/bluetooth-terminal/id1058693037
+
+You would need to setup macros or switch to hex mode to enter the various CTRL keys:
+`CTRL-A` is `01`, `CTRL-B` is `02`, `CTRL-D` is `04` in hex mode.
+
+Troubleshooting
+---------------
+The community chat is present at [MONOCLE/#support][3] on Discord.
+
+[3]: https://discord.com/channels/963222352534048818/976634834879385621
