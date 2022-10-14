@@ -152,25 +152,17 @@ void ble_flush_tx(void)
     hvx_params.p_len = (uint16_t *)&out_len;
     hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
 
-// TODO Is there a cleaner way to retry sending data?
-hvx_try_again: {}
+    uint32_t err;
+    do {
+        // Send the data
+        err = sd_ble_gatts_hvx(ble_handles.connection, &hvx_params);
 
-    // Send the data
-    uint32_t err = sd_ble_gatts_hvx(ble_handles.connection, &hvx_params);
+    // Retry if resources are unavailable.
+    } while (err == NRF_ERROR_RESOURCES);
 
     // Ignore errors if not connected
     if (err == NRF_ERROR_INVALID_STATE || err == BLE_ERROR_INVALID_CONN_HANDLE)
         return;
-
-    // If there is an overflow
-    if (err == NRF_ERROR_RESOURCES)
-    {
-        // Try to send again after 100us
-        NRFX_DELAY_US(100);
-
-        // Retry sending data
-        goto hvx_try_again;
-    }
 
     // Catch other errors
     NRFX_ASSERT(!err);

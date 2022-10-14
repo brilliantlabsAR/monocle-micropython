@@ -39,7 +39,8 @@
 #define VALUE(x) VALUE_TO_STR(x)
 
 #define NRFX_LOG_ERROR_STRING_GET(error_code) nrfx_error_code_lookup(error_code)
-#define LOG_PRINTF(fmt, ...) mp_printf(MP_PYTHON_PRINTER, "%s: " fmt "\n", VALUE(NRFX_LOG_MODULE), ## __VA_ARGS__)
+#define LOG_PRINTF(fmt, ...) \
+    mp_printf(MP_PYTHON_PRINTER, "%s: " fmt "\n", VALUE(NRFX_LOG_MODULE), ## __VA_ARGS__)
 
 #define NRFX_LOG_DEBUG   LOG_PRINTF
 #define NRFX_LOG_ERROR   LOG_PRINTF
