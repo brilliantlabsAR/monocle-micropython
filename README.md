@@ -3,7 +3,7 @@
 This is a port of MicroPython for running in the Nordic nRF51832 chip inside the Monocle.
 
 It also cointains drivers for controlling the rest of the circuit,
-some of which are directly accessible from python for driving the monocle.
+some of which are directly accessible from python for driving the Monocle.
 
 To drive the Monocle, a Bluetooth serial service (RFCOMM) is broadcasted.
 
@@ -123,33 +123,41 @@ Then in another terminal, start GDB:
 make gdb
 ```
 
-Connecting to the monocle
+Connecting to the Monocle
 -------------------------
-A `serial_console.py` script is provided for connecting over bluetooth.
+A [MicroPython](https://micropython.org/) REPL is running on the Monocle.
+You can connect to it over the Bluetooth RFCOMM service.
+
+### From a computer
+
+A `serial_console.py` script is provided for connecting over Bluetooth.
 You can invoke it with `python3 serial_console.py` or:
 
 ```
 make shell
 ```
 
-If the connection does not happen, you may need to enable Bluetooth on your system.
+This should give you access to a MicroPython REPL running on the Monocle.
 
+If the connection does not happen, you may need to enable Bluetooth on your system.
 For instance, on Linux, you need to start the `bluetoothd` service.
 You can then scan the existing devices with `bluetoothctl` or `sudo hcitool lescan`.
 
-On a phone, you may use a RFCOMM serial console to connect to the shell.
+### From a phone
 
-* Android: [Serial Bluetooth Terminal][1]
-* iOS: [Bluetooth Terminal][2]
+You may use a RFCOMM serial console to connect to the shell.
 
-[1]: https://play.google.com/store/apps/details?id=de.kai_morich.serial_bluetooth_terminal
-[2]: https://apps.apple.com/us/app/bluetooth-terminal/id1058693037
+* Android: [Serial Bluetooth Terminal][5]
+* iOS: [Bluetooth Terminal][6]
+
+[5]: https://play.google.com/store/apps/details?id=de.kai_morich.serial_bluetooth_terminal
+[6]: https://apps.apple.com/us/app/bluetooth-terminal/id1058693037
 
 You would need to setup macros or switch to hex mode to enter the various CTRL keys:
 `CTRL-A` is `01`, `CTRL-B` is `02`, `CTRL-D` is `04` in hex mode.
 
 Troubleshooting
 ---------------
-The community chat is present at [MONOCLE/#support][3] on Discord.
+The community chat is present at [MONOCLE/#support][7] on Discord.
 
-[3]: https://discord.com/channels/963222352534048818/976634834879385621
+[7]: https://discord.com/channels/963222352534048818/976634834879385621
