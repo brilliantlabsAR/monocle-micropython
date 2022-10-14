@@ -87,7 +87,7 @@ void nlr_jump_fail(void *val)
  */
 static void hardware_init(void)
 {
-    // Initialise the GPIO and other general functions of the board.
+    // GPIO calls for setting the SPI chip-select pins and enable signals.
     board_init();
 
     // Initialise the GPIO driver used by both the Pin and FPGA modules
@@ -98,6 +98,9 @@ static void hardware_init(void)
 
     // I2C-controlled PMIC, also controlling the red/green LEDs over I2C
     max77654_init();
+
+    // I2C calls to setup power rails of the MAX77654.
+    board_aux_power_on();
 }
 
 /**
@@ -128,11 +131,11 @@ int main(void)
 
     // REPL mode can change, or it can request a soft reset
     for (int stop = false; !stop;) {
-        i2c_scan();
-        if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL)
+        if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-        else
+        } else {
             stop = pyexec_friendly_repl();
+        }
     }
 
     // Garbage collection ready to exit

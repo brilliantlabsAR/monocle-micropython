@@ -39,13 +39,13 @@ typedef enum MAX77654_charge_fault {
 } max77654_fault;
 
 void max77654_init(void);
-void max77654_rail_1v8sw_on(bool on);
-void max77654_rail_2v7_on(bool on);
-void max77654_rail_1v2_on(bool on);
-void max77654_rail_10v_on(bool on);
-void max77654_rail_vled_on(bool on);
-void max77654_led_red_on(bool on);
-void max77654_led_green_on(bool on);
+void max77654_rail_1v8sw(bool on);
+void max77654_rail_2v7(bool on);
+void max77654_rail_1v2(bool on);
+void max77654_rail_10v(bool on);
+void max77654_rail_vled(bool on);
+void max77654_led_red(bool on);
+void max77654_led_green(bool on);
 max77654_status max77654_charging_status(void);
 max77654_fault max77654_faults_status(void);
 void max77654_set_charge_current(uint16_t current);

@@ -480,7 +480,7 @@ void max77654_write(uint8_t reg, uint8_t data)
 
     if (!i2c_write(MAX77654_ADDR, write_buffer, 2))
         NRFX_ASSERT(!"I2C write failed");
-    LOG("MAX77654 Write 0x%x to register 0x%x", data, reg);
+    LOG("MAX77654 Write 0x%02X to register 0x%02X", data, reg);
 }
 
 /**
@@ -495,7 +495,7 @@ void max77654_read(uint8_t reg, uint8_t *value)
         NRFX_ASSERT(!"I2C write failed");
     if (!i2c_read(MAX77654_ADDR, value, 1))
         NRFX_ASSERT(!"I2C read failed");
-    LOG("MAX77654 Read register 0x%x = 0x%x", reg, *value);
+    LOG("MAX77654 Read register 0x%02X = 0x%02X", reg, *value);
 }
 
 /**
@@ -511,7 +511,7 @@ uint8_t max77654_read_cid(void)
     max77654_read(MAX77654_CID_REG, &reg);
     bit4 = (reg & MAX77654_CID4) >> 3;
     cid = bit4 | (reg & MAX77654_CID_MASK);
-    LOG("MAX77654 CID = 0x%x.", cid);
+    LOG("MAX77654 CID = 0x%02X.", cid);
     return cid;
 }
 
@@ -561,11 +561,11 @@ static void update_register_bits(uint8_t reg, uint8_t newbits, uint8_t bits_to_u
     uint8_t reg_val = 0;
 
     max77654_read(reg, &reg_val);
-    LOG("MAX77654 update_register_bits() original register value read: 0x%x.", reg_val);
-    LOG("MAX77654 update_register_bits() bits to write: 0x%x, shifted <<%d.", newbits, shift);
+    LOG("MAX77654 update_register_bits() original register value read: 0x%02X.", reg_val);
+    LOG("MAX77654 update_register_bits() bits to write: 0x%02X, shifted <<%d.", newbits, shift);
     reg_val = (reg_val & ~bits_to_update) | (newbits << shift);
     max77654_write(reg, reg_val);
-    LOG("MAX77654 update_register_bits() wrote: 0x%x to register 0x%x.", reg_val, reg);
+    LOG("MAX77654 update_register_bits() wrote: 0x%02X to register 0x%02X.", reg_val, reg);
 }
 
 /**
@@ -583,7 +583,7 @@ static void get_register_bits(uint8_t reg, uint8_t *gotbits, uint8_t bits_to_get
 
     max77654_read(reg, &reg_val);
     *gotbits = (reg_val & bits_to_get) >> shift;
-    LOG("MAX77654 get_register_bits() got 0x%x.", *gotbits);
+    LOG("MAX77654 get_register_bits() got 0x%02X.", *gotbits);
 }
 
 /**
@@ -765,7 +765,7 @@ void max77654_init(void)
  * @param on True for power on.
  * @return True if I2C succeeds.
  */
-void max77654_rail_1v8sw_on(bool on)
+void max77654_rail_1v8sw(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
     NRFX_ASSERT(max77654_initialized);
@@ -778,7 +778,7 @@ void max77654_rail_1v8sw_on(bool on)
  * @param on True for power on.
  * @return True if I2C succeeds.
  */
-void max77654_rail_2v7_on(bool on)
+void max77654_rail_2v7(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
     NRFX_ASSERT(max77654_initialized);
@@ -792,7 +792,7 @@ void max77654_rail_2v7_on(bool on)
  * @param on True for power on.
  * @return True if I2C succeeds.
  */
-void max77654_rail_1v2_on(bool on)
+void max77654_rail_1v2(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
     NRFX_ASSERT(max77654_initialized);
@@ -806,7 +806,7 @@ void max77654_rail_1v2_on(bool on)
  * @param on True for power on.
  * @return True if I2C succeeds.
  */
-void max77654_rail_10v_on(bool on)
+void max77654_rail_10v(bool on)
 {
     // push-pull high for on, push-pull low for off
     uint8_t en = on ? MAX77654_DO : 0;
@@ -818,7 +818,7 @@ void max77654_rail_10v_on(bool on)
  * Enable the power rail used to power the LEDs.
  * @return True if I2C succeeds.
  */
-void max77654_rail_vled_on(bool on)
+void max77654_rail_vled(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
     NRFX_ASSERT(max77654_initialized);
@@ -836,7 +836,7 @@ void max77654_rail_vled_on(bool on)
  * @param on Desired state of the led.
  * @return True if I2C succeeds.
  */
-void max77654_led_red_on(bool on)
+void max77654_led_red(bool on)
 {
     NRFX_ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_GPIO0_REG, on ? LED_ON : LED_OFF);
@@ -847,7 +847,7 @@ void max77654_led_red_on(bool on)
  * @param on Desired state of the led.
  * @return True if I2C succeeds.
  */
-void max77654_led_green_on(bool on)
+void max77654_led_green(bool on)
 {
     NRFX_ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_GPIO1_REG, on ? LED_ON : LED_OFF);

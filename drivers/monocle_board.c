@@ -26,30 +26,36 @@ void board_aux_power_on(void)
     // power-on timing requirements
 
     // FPGA requires VCC(1.2V) before VCCX(2.7V) or VCCO(1.8V).
-    max77654_rail_1v2_on(true);
+    max77654_rail_1v2(true);
 
     // Camera requires 1.8V before 2.7V.
-    max77654_rail_1v8sw_on(true);
+    max77654_rail_1v8sw(true);
 
     // 1.8V ramp rate is slower than 2.7V; without this, 1.8V reaches
     // target voltage 0.2s _after_ 2.7V
-    nrfx_systick_delay_ms(1);
-    max77654_rail_2v7_on(true);
+    // TODO: debug NRFX_DELAY_MS
+    //NRFX_DELAY_MS(1);
+    max77654_rail_2v7(true);
 
     // Rise time measured as 1.2ms; give FPGA time to boot, while MODE1
     // is still held low.
-    nrfx_systick_delay_ms(2);
+    // TODO: debug NRFX_DELAY_MS
+    //NRFX_DELAY_MS(2);
 
-    max77654_rail_10v_on(true);
+    // Used by the camera module.
+    max77654_rail_10v(true);
+
+    // Enable the LEDs power
+    max77654_rail_vled(true);
 }
 
 void board_aux_power_off(void)
 {
-    max77654_rail_vled_on(false);
-    max77654_rail_10v_on(false);
-    max77654_rail_2v7_on(false);
-    max77654_rail_1v8sw_on(false);
-    max77654_rail_1v2_on(false);
+    max77654_rail_vled(false);
+    max77654_rail_10v(false);
+    max77654_rail_2v7(false);
+    max77654_rail_1v8sw(false);
+    max77654_rail_1v2(false);
 }
 
 /**

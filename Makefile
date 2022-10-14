@@ -162,6 +162,8 @@ flash_openocd_jlink:
 flash_nrfjprog_jlink:
 	$(NRFJPROG) --sectorerase --verify --family nrf52 --program build/firmware.hex
 
+gdb_nrf_:
+
 build/application.elf: $(OBJ)
 	$(ECHO) "LINK $@"
 	$(Q)$(CC) $(LDFLAGS) -o $@ $(OBJ) $(LDFLAGS_MOD) $(LIBS)
