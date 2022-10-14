@@ -13,7 +13,14 @@ SOFTDEVICE_VERSION = 6.1.1
 SOFTDEVICE_HEX = softdevice/$(SD)_nrf52_$(SOFTDEVICE_VERSION)_softdevice.hex
 HEXMERGE = hexmerge.py
 OPENOCD = openocd
+OPENOCD_FLASH = -c "init; nrf52_recover; program build/firmware.hex verify; exit"
+OPENOCD_GDB = -c "init; gdb_port 3334"
+OPENOCD_STLINK = -f interface/stlink-dap.cfg -f target/nrf52.cfg
+OPENOCD_JLINK = -f interface/jlink.cfg -c "transport select swd" -f target/nrf52.cfg
 NRFJPROG = nrfjprog
+JLINKGDBSERVERCL = JLinkGDBServerCLExe
+GDB = gdb-multiarch
+PYTHON = python3
 
 CFLAGS += $(DEF) $(INC) $(CFLAGS_EXTRA) $(CFLAGS_MOD) $(CFLAGS_MCU_m4)
 CFLAGS += -mthumb
@@ -60,7 +67,7 @@ INC += -Isoftdevice/include/nrf52
 DEF += -DNRF52832_XXAA
 DEF += -DNRF52832
 DEF += -DCONFIG_GPIO_AS_PINRESET
-DEF += -DNRF5_HAL_H='<nrf52832_hal.h>'
+DEF += -DNRF5_HAL_H="<nrf52832_hal.h>"
 DEF += -DSOFTDEVICE_PRESENT
 DEF += -DBLUETOOTH_SD=140
 DEF += -DBLUETOOTH_SD_DEBUG=1
@@ -150,19 +157,32 @@ OBJ += $(addprefix build/, $(SRC_MOD:.c=.o))
 all: build/firmware.hex
 
 flash_openocd_stlink:
-	$(OPENOCD) \
-	-f interface/stlink-dap.cfg -f target/nrf52.cfg \
-	-c "init; nrf52_recover; program firmware.hex verify; exit"
+	$(OPENOCD) $(OPENOCD_STLINK) $(OPENOCD_FLASH)
 
 flash_openocd_jlink:
-	$(OPENOCD) \
-	-f interface/jlink.cfg -c "transport select swd" -f target/nrf52.cfg \
-	-c "init; nrf52_recover; program build/firmware.hex verify; exit"
+	$(OPENOCD) $(OPENOCD_JLINK) $(OPENOCD_FLASH)
 
 flash_nrfjprog_jlink:
 	$(NRFJPROG) --sectorerase --verify --family nrf52 --program build/firmware.hex
 
-gdb_nrf_:
+gdb_openocd_stlink:
+	$(OPENOCD) $(OPENOCD_STLINK) -c "gdb_port 2331"
+
+gdb_openocd_jlink:
+	$(OPENOCD) $(OPENOCD_JLINK) -c "gdb_port 2331"
+
+gdb_segger_jlink:
+	$(JLINKGDBSERVERCL) -device nrf52832_XXAA -if SWD
+
+gdb:
+	$(GDB) -ex "target extended-remote :2331" build/application.elf
+
+shell:
+	@echo "You should soon get a Python shell over Bluetooth"
+	@echo "  CTRL-B then Enter to switch to the friendly REPL"
+	@echo "  CTRL-A to switch to the raw REPL"
+	@echo "  CTRL-\\ to exit"
+	$(PYTHON) serial_console.py
 
 build/application.elf: $(OBJ)
 	$(ECHO) "LINK $@"

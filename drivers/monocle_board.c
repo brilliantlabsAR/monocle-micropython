@@ -45,7 +45,7 @@ void board_aux_power_on(void)
     // Used by the camera module.
     max77654_rail_10v(true);
 
-    // Enable the LEDs power
+    // Used by the red and green LEDs.
     max77654_rail_vled(true);
 }
 

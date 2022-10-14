@@ -30,20 +30,13 @@
 #include "py/obj.h"
 #include "led.h"
 #include "nrf.h" // TODO: figure out where to put this import
-#include "pin.h"
-
-#if MICROPY_HW_HAS_LED
-#define PYB_LED_MODULE { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&board_led_type) },
-#else
-#define PYB_LED_MODULE
-#endif
 
 STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_board) },
     #if MICROPY_REPL_INFO
     { MP_ROM_QSTR(MP_QSTR_repl_info), MP_ROM_PTR(&pyb_set_repl_info_obj) },
     #endif
-    PYB_LED_MODULE
+    { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&board_led_type) }
 };
 
 

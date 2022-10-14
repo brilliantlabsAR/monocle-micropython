@@ -31,16 +31,16 @@ Some more dependencies might need to be installed, such as a cross compiler tool
 
 ```sh
 # On Ubuntu/Debian-based systems (including Windows WSL):
-sudo apt install gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi
+sudo apt install gcc-arm-none-eabi binutils-arm-none-eabi libnewlib-arm-none-eabi gdb-multiarch
 
 # On Fedora-based systems:
-sudo yum install arm-none-eabi-gcc arm-none-eabi-binutils arm-none-eabi-newlib
+sudo yum install arm-none-eabi-gcc arm-none-eabi-binutils arm-none-eabi-newlib gdb-multiarch
 
 # On Arch-based systems:
-sudo pacman -Syu arm-none-eabi-gcc arm-none-eabi-binutils arm-none-eabi-newlib
+sudo pacman -Syu arm-none-eabi-gcc arm-none-eabi-binutils arm-none-eabi-newlib gdb-multiarch
 
 # On MacOS:
-brew install arm-none-eabi-gcc arm-none-eabi-binutils arm-none-eabi-newlib
+brew install arm-none-eabi-gcc arm-none-eabi-binutils arm-none-eabi-newlib gdb-multiarch
 ```
 
 Flashing to the Monocle
@@ -53,7 +53,6 @@ The devkit can be flashed through the SWD debugger interface with a dongle such 
 The connection to the Monocle board is as follow:
 
 ```
-
                   ┌─────────────────── GND     -> to programmer dongle
 ┌─────────────────│───────────────┐
 │ () ┌────────────│──────────┐ () │
@@ -99,3 +98,32 @@ make flash_openocd_jlink
 # If using nrfjprog with a J-Link:
 make flash_nrfjprog_jlink
 ```
+
+
+Debugging the firmware with GDB
+-------------------------------
+You will need `gdb-multiarch` installed on your system.
+
+Then, with the SWD debugger connected as it already is when flashing:
+
+```
+# If using OpenOCD with an st-link/v2/v3:
+make gdb_openocd_stlink
+
+# If using OpenOCD with a J-Link:
+make gdb_openocd_jlink
+
+# If using nrfjprog with a J-Link:
+make gdb_nrfjprog_jlink
+```
+
+Then in another terminal, start GDB:
+
+```
+make gdb
+```
+
+
+Connecting to the monocle
+-------------------------
+
