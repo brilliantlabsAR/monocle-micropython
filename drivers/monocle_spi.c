@@ -15,7 +15,7 @@
 #include "nrfx_log.h"
 #include "nrfx_spim.h"
 
-#define LOG_DEBUG(...) NRFX_LOG_DEBUG(__VA_ARGS__)
+#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 #define CHECK(err) check(__func__, err)
 
 /**
@@ -24,7 +24,7 @@
 static inline bool check(char const *func, nrfx_err_t err)
 {
     if (err != NRFX_SUCCESS)
-        NRFX_LOG_ERROR("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
+        LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
     return err == NRFX_SUCCESS;
 }
 
@@ -232,7 +232,7 @@ bool spi_exercise_register(uint8_t addr)
         }
     }
     if (success) { // count down
-        //LOG_DEBUG("SPI test: register (0x%x) count up passed.", addr);
+        //LOG("SPI test: register (0x%x) count up passed.", addr);
         while (success && (write_value > 0x00)) { // count up
             spi_write_byte(addr, write_value);
             read_value = spi_read_byte(addr);
@@ -245,7 +245,7 @@ bool spi_exercise_register(uint8_t addr)
         }
     }
     if (success) {
-        //LOG_DEBUG("SPI test: register (0x%x) count down passed.", addr);
+        //LOG("SPI test: register (0x%x) count down passed.", addr);
     }
 
     // attempt to restore original value, but this might fail if !success

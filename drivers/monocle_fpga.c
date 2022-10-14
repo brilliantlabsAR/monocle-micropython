@@ -18,7 +18,7 @@
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
-#define LOG_DEBUG(...) //NRFX_LOG_DEBUG(__VA_ARGS__)
+#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 
 /**
  * Write a byte to the FPGA over SPI using a bridge protocol.
@@ -34,7 +34,7 @@ void fpga_write_byte(uint8_t addr, uint8_t data)
     spi_set_cs_pin(SPIM_SS1_PIN);
 
     spi_write_byte(addr, data);
-    LOG_DEBUG("fpga_write_byte(addr=0x%x, data=0x%x).", addr, data);
+    LOG("fpga_write_byte(addr=0x%x, data=0x%x).", addr, data);
 }
 
 /**
@@ -53,7 +53,7 @@ uint8_t fpga_read_byte(uint8_t addr)
     spi_set_cs_pin(SPIM_SS1_PIN);
 
     ReadData = spi_read_byte(addr);
-    LOG_DEBUG("fpga_read_byte(addr=0x%x) returned 0x%x.", addr, ReadData);    
+    LOG("fpga_read_byte(addr=0x%x) returned 0x%x.", addr, ReadData);    
     return ReadData;
 }
 
@@ -259,7 +259,7 @@ bool fpga_camera_on(void)
     nrfx_systick_delay_ms(4*(1000/OV5640_FPS) + 1); // delay 4 frames to discard AWB adjustments (needed if camera was just powered up)
     fpga_write_byte(FPGA_CAMERA_CONTROL, (FPGA_EN_XCLK | FPGA_EN_CAM)); // enable camera interface (& keep XCLK enabled!)
     success = (fpga_read_byte(FPGA_CAMERA_CONTROL) == (FPGA_EN_XCLK | FPGA_EN_CAM));
-    LOG_DEBUG("fpga_camera_on() waited 4 frames, sent FPGA_EN_XCLK, FPGA_EN_CAM");
+    LOG("fpga_camera_on() waited 4 frames, sent FPGA_EN_XCLK, FPGA_EN_CAM");
     return success;
 }
 
@@ -274,7 +274,7 @@ bool fpga_camera_off(void)
     fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK); // turn off camera interface (but keep XCLK enabled!)
     nrfx_systick_delay_ms(1*(1000/OV5640_FPS) + 1); // allow last frame to finish entering video buffer to avoid split screen
     success = (fpga_read_byte(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
-    LOG_DEBUG("fpga_camera_off() sent FPGA_EN_XCLK, waited 1 frame");
+    LOG("fpga_camera_off() sent FPGA_EN_XCLK, waited 1 frame");
     return success;
 }
 
@@ -399,7 +399,7 @@ void fpga_replay_rate(uint8_t repeat)
         return;
     }
     fpga_write_byte(FPGA_REPLAY_RATE_CONTROL, repeat);
-    //LOG_DEBUG("FPGA replay rate set to %d", repeat);
+    //LOG("FPGA replay rate set to %d", repeat);
 }
 
 bool fpga_capture_done(void)
@@ -481,10 +481,10 @@ void fpga_set_luma(bool turn_on)
     if ((luma_on && turn_on) || (!luma_on && !turn_on)) return; // already correctly set, nothing to do
     if (turn_on) {
         reg = reg | FPGA_EN_LUMA_COR;
-        LOG_DEBUG("FPGA turn luma correction on.");
+        LOG("FPGA turn luma correction on.");
     } else {
         reg = reg & ~FPGA_EN_LUMA_COR;
-        LOG_DEBUG("FPGA turn luma correction off.");
+        LOG("FPGA turn luma correction off.");
     }
     fpga_write_byte(FPGA_CAMERA_CONTROL, reg);
 }
@@ -499,19 +499,19 @@ void fpga_set_display(uint8_t mode)
     switch(mode) {
         case 0:
             fpga_disp_off();
-            LOG_DEBUG("FPGA display mode = off.");
+            LOG("FPGA display mode = off.");
             break;
         case 1:
             fpga_disp_live();
-            LOG_DEBUG("FPGA display mode = video.");
+            LOG("FPGA display mode = video.");
             break;
         case 2:
             fpga_disp_busy();
-            LOG_DEBUG("FPGA display mode = busy.");
+            LOG("FPGA display mode = busy.");
             break;
         case 3:
             fpga_disp_bars();
-            LOG_DEBUG("FPGA display mode = color bars.");
+            LOG("FPGA display mode = color bars.");
             break;
         default:
             NRFX_LOG_ERROR("FPGA display mode invalid.");
@@ -527,7 +527,7 @@ void fpga_get_version(uint8_t *major, uint8_t *minor)
 {
     *major = fpga_read_byte(FPGA_VERSION_MAJOR);
     *minor = fpga_read_byte(FPGA_VERSION_MINOR);
-    LOG_DEBUG("fpga_get_version(): %d.%d", *major, *minor);
+    LOG("fpga_get_version(): %d.%d", *major, *minor);
 }
 
 /**

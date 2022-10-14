@@ -17,7 +17,7 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
-#define LOG_DEBUG(...) NRFX_LOG_DEBUG(__VA_ARGS__)
+#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 #define CHECK(err) check(__func__, err)
 
 /** TWI operation ended, may have been successful, may have been NACK. */
@@ -34,9 +34,15 @@ static const nrfx_twi_t m_twi = NRFX_TWI_INSTANCE(TWI_INSTANCE_ID);
  */
 static inline bool check(char const *func, nrfx_err_t err)
 {
-    if (err != NRFX_SUCCESS)
-        NRFX_LOG_ERROR("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
-    return err == NRFX_SUCCESS;
+    switch (err) {
+        case NRFX_SUCCESS:
+            return true;
+        case NRFX_ERROR_DRV_TWI_ERR_ANACK:
+            return false;
+        default:
+            LOG("%s", func, NRFX_LOG_ERROR_STRING_GET(err));
+            return false;
+    }
 }
 
 /**
@@ -110,9 +116,9 @@ void i2c_scan(void)
     for (addr = 1; addr <= 127; addr++) {
         if (i2c_read(addr, &sample_data, sizeof(sample_data))) {
             detected_device = true;
-            LOG_DEBUG("I2C device detected at address 0x%x.", addr);
+            LOG("I2C device found: addr=0x%02X", addr);
         }
     }
     if (! detected_device)
-        LOG_DEBUG("No I2C device detected");
+        LOG("No I2C device found");
 }

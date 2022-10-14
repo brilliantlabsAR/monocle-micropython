@@ -20,13 +20,11 @@
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
-// private functions
-
 #define oled_write_byte(addr, data) spi_write_byte(addr, data)
 #define oled_write_burst(addr, data, length) spi_write_burst(addr, data, length)
 #define oled_read_byte(addr) spi_read_byte(addr)
 
-// public functions
+#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 
 /** Table summarizing all configuration to send to the devbice used by oled_config_burst() */
 // TODO: Where are these values coming from? Nothing on the Datasheet.
@@ -248,7 +246,7 @@ bool oled_verify_config_full(void)
     oled_config_data = spi_read_burst(0x00, oled_config_reg_length);
     spi_checksum = fpga_calc_checksum(oled_config_data, oled_config_reg_length); // 0xB559 (byte-by-byte) or 0x7559 (burst)
                                                                                  // 2021-05-21: getting 0xbc59 (byte-by-byte & burst)
-    NRFX_LOG_INFO("OLED config checksum = 0x%x.", spi_checksum);
+    LOG("OLED config checksum = 0x%x.", spi_checksum);
     return (spi_checksum == 0xB559);
 }
 

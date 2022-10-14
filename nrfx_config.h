@@ -31,17 +31,8 @@
 #include "py/mpconfig.h"
 #include "nrf.h"
 
-// Port specific defines
-#ifndef NRFX_LOG_ENABLED
-#define NRFX_LOG_ENABLED 0
-#endif
-
+#define NRFX_LOG_ENABLED 1
 #define NRFX_LOG_UART_DISABLED 1
-
-
-// NRFX configurations
-
-//#define GPIO_COUNT 1
 
 #define NRFX_GPIOTE_ENABLED 1
 #define NRFX_GPIOTE_CONFIG_NUM_OF_LOW_POWER_EVENTS 1

@@ -133,7 +133,7 @@
 #define IQS620_RESET_TIMEOUT_MS                 50
 #define IQS620_RESET_RETRY_MS                   20
 
-#define LOG_DEBUG(...) NRFX_LOG_DEBUG(__VA_ARGS__)
+#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 #define CHECK(err) check(__func__, err)
 
 /**
@@ -142,7 +142,7 @@
 static inline bool check(char const *func, nrfx_err_t err)
 {
     if (err != NRFX_SUCCESS)
-        NRFX_LOG_ERROR("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
+        LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
     return err == NRFX_SUCCESS;
 }
 
@@ -158,7 +158,7 @@ static bool iqs620_wreg(iqs620_t *sensor, uint8_t reg, uint8_t data)
     uint8_t buf[2] = { reg, data };
     assert(sensor != NULL);
 
-    LOG_DEBUG("IQS620 write 0x%x to register 0x%x.", data, reg);
+    LOG("IQS620 write 0x%x to register 0x%x.", data, reg);
     return i2c_write(sensor->addr, buf, sizeof(buf));
 }
 
@@ -294,7 +294,7 @@ static void iqs620_prox_touch_1(iqs620_t *sensor, iqs620_button_t button, tp_t o
             // event C (touch)
             // update button_status: set button bit
             sensor->button_status = sensor->button_status | (1 << button);
-            LOG_DEBUG("touch: button_status = 0x%x.", sensor->button_status);
+            LOG("touch: button_status = 0x%x.", sensor->button_status);
 
             (*sensor->callback)(sensor, button, IQS620_BUTTON_DOWN);
         }
@@ -310,7 +310,7 @@ static void iqs620_prox_touch_1(iqs620_t *sensor, iqs620_button_t button, tp_t o
                 // event E (release)
                 // update button_status: clear button bit
                 sensor->button_status = sensor->button_status & ~(1 << button);
-                LOG_DEBUG("release: button_status = 0x%x.", sensor->button_status);
+                LOG("release: button_status = 0x%x.", sensor->button_status);
 
                 (*sensor->callback)(sensor, button, IQS620_BUTTON_UP);
             }
@@ -327,7 +327,7 @@ static void iqs620_prox_touch_1(iqs620_t *sensor, iqs620_button_t button, tp_t o
                 // event A (release)
                 // update button_status: clear button bit
                 sensor->button_status = sensor->button_status & ~(1 << button);
-                LOG_DEBUG("release: button_status = 0x%x.", sensor->button_status);
+                LOG("release: button_status = 0x%x.", sensor->button_status);
 
                 (*sensor->callback)(sensor, button, IQS620_BUTTON_UP);
             }
@@ -389,18 +389,18 @@ static void iqs620_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t acti
         ok = iqs620_rregs(sensor, IQS620_GLOBAL_EVENTS, &events, sizeof(events));
         if (!ok) NRFX_LOG_ERROR("IQS620 communication error!");
 
-        LOG_DEBUG("IQS620 global events: %02x", events);
+        LOG("IQS620 global events: %02x", events);
 
         if (events & IQS620_GLOBAL_EVENTS_PROX)
         {
             // prox/touch event detected
-            LOG_DEBUG("IQS620 prox event detected!");
+            LOG("IQS620 prox event detected!");
 
             // read prox/touch UI status
             uint8_t proxflags = 0;
             ok = iqs620_rregs(sensor, IQS620_PROX_FUSION_FLAGS, &proxflags, sizeof(proxflags));
             if (!ok) NRFX_LOG_ERROR("IQS620 communication error!");
-            LOG_DEBUG("IQS620 prox/touch flags: %02X", proxflags);
+            LOG("IQS620 prox/touch flags: %02X", proxflags);
 
             // process prox/touch events
             iqs620_prox_touch(sensor, proxflags);
@@ -410,14 +410,14 @@ static void iqs620_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t acti
             uint8_t sysflags = 0;
             ok = iqs620_rregs(sensor, IQS620_SYS_FLAGS, &sysflags, sizeof(sysflags));
             if (!ok) NRFX_LOG_ERROR("IQS620 communication error!");
-            LOG_DEBUG("IQS620 system flags: %02x", sysflags);
+            LOG("IQS620 system flags: %02x", sysflags);
 
             if (sysflags & IQS620_SYS_FLAGS_RESET_HAPPENED) {
                 // sensor reset detected, reconfigure the sensor
-                LOG_DEBUG("IQS620 reset detected!");
+                LOG("IQS620 reset detected!");
                 if (!iqs620_configure(sensor))
                     NRFX_LOG_ERROR("IQS620 configuration failed!");
-                LOG_DEBUG("IQS620 reconfigured");
+                LOG("IQS620 reconfigured");
             }
         }
     }
@@ -490,7 +490,7 @@ bool iqs620_reset(iqs620_t *sensor)
 
     for (int retry = 0; !ok && (retry < 5); retry++)
     {
-        LOG_DEBUG("IQS620 resetting sensor");
+        LOG("IQS620 resetting sensor");
 
         // initiate soft reset
         ok = iqs620_wreg(sensor, IQS620_SYS_SETTINGS, (1 << 7));
@@ -581,7 +581,7 @@ bool iqs620_get_button_status(iqs620_t *sensor, uint16_t *status)
 {
     assert(sensor != NULL);
     *status = sensor->button_status;
-    LOG_DEBUG("IQS620 button status = 0x%x.", *status);
+    LOG("IQS620 button status = 0x%x.", *status);
     return true;
 }
 
@@ -599,7 +599,7 @@ bool iqs620_get_ch_count(iqs620_t *sensor, uint8_t channel, uint16_t *ch_data)
     bool ok = iqs620_rregs(sensor, channel*2 + IQS620_CHANNEL_COUNT_0_LO, data, sizeof(data));
 
     *ch_data = ok ? ((data[1] << 8) | data[0]) : 0;
-    LOG_DEBUG("IQS620 Channel: %d count: %d", channel, *ch_data);
+    LOG("IQS620 Channel: %d count: %d", channel, *ch_data);
 
     return (ok);
 }

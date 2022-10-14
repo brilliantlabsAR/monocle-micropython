@@ -462,13 +462,7 @@ static const unsigned int cv_tbl[] = {
 /** Flag that PMIC has been successfully initialized. */
 static bool max77654_initialized = false;
 
-// internal functions
-
-#if 1
-#define LOG_DEBUG(...) NRFX_LOG_DEBUG(__VA_ARGS__)
-#else
-#define LOG_DEBUG(...)
-#endif
+#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 
 /**
  * Configure a register value over I2C.
@@ -486,7 +480,7 @@ void max77654_write(uint8_t reg, uint8_t data)
 
     if (!i2c_write(MAX77654_ADDR, write_buffer, 2))
         NRFX_ASSERT(!"I2C write failed");
-    LOG_DEBUG("MAX77654 Write 0x%x to register 0x%x", data, reg);
+    LOG("MAX77654 Write 0x%x to register 0x%x", data, reg);
 }
 
 /**
@@ -501,7 +495,7 @@ void max77654_read(uint8_t reg, uint8_t *value)
         NRFX_ASSERT(!"I2C write failed");
     if (!i2c_read(MAX77654_ADDR, value, 1))
         NRFX_ASSERT(!"I2C read failed");
-    LOG_DEBUG("MAX77654 Read register 0x%x = 0x%x", reg, *value);
+    LOG("MAX77654 Read register 0x%x = 0x%x", reg, *value);
 }
 
 /**
@@ -517,7 +511,7 @@ uint8_t max77654_read_cid(void)
     max77654_read(MAX77654_CID_REG, &reg);
     bit4 = (reg & MAX77654_CID4) >> 3;
     cid = bit4 | (reg & MAX77654_CID_MASK);
-    LOG_DEBUG("MAX77654 CID = 0x%x.", cid);
+    LOG("MAX77654 CID = 0x%x.", cid);
     return cid;
 }
 
@@ -567,11 +561,11 @@ static void update_register_bits(uint8_t reg, uint8_t newbits, uint8_t bits_to_u
     uint8_t reg_val = 0;
 
     max77654_read(reg, &reg_val);
-    LOG_DEBUG("MAX77654 update_register_bits() original register value read: 0x%x.", reg_val);
-    LOG_DEBUG("MAX77654 update_register_bits() bits to write: 0x%x, shifted <<%d.", newbits, shift);
+    LOG("MAX77654 update_register_bits() original register value read: 0x%x.", reg_val);
+    LOG("MAX77654 update_register_bits() bits to write: 0x%x, shifted <<%d.", newbits, shift);
     reg_val = (reg_val & ~bits_to_update) | (newbits << shift);
     max77654_write(reg, reg_val);
-    LOG_DEBUG("MAX77654 update_register_bits() wrote: 0x%x to register 0x%x.", reg_val, reg);
+    LOG("MAX77654 update_register_bits() wrote: 0x%x to register 0x%x.", reg_val, reg);
 }
 
 /**
@@ -589,10 +583,8 @@ static void get_register_bits(uint8_t reg, uint8_t *gotbits, uint8_t bits_to_get
 
     max77654_read(reg, &reg_val);
     *gotbits = (reg_val & bits_to_get) >> shift;
-    LOG_DEBUG("MAX77654 get_register_bits() got 0x%x.", *gotbits);
+    LOG("MAX77654 get_register_bits() got 0x%x.", *gotbits);
 }
-
-// public functions
 
 /**
  * Initialize the MAX77654 chip.
@@ -870,7 +862,7 @@ max77654_status max77654_charging_status(void)
     uint8_t val;
 
     get_register_bits(MAX77654_STAT_CHG_B_REG, &val, MAX77654_CHG_DTLS, MAX77654_CHG_DTLS_SHIFT);
-    LOG_DEBUG("MAX77654 Status = 0x%02X.", val);
+    LOG("MAX77654 Status = 0x%02X.", val);
 
     switch (val) {
         case MAX77654_CHG_DTLS_OFF:
@@ -896,7 +888,7 @@ max77654_fault max77654_faults_status(void)
     uint8_t val;
 
     get_register_bits(MAX77654_STAT_CHG_B_REG, &val, MAX77654_CHG_DTLS, MAX77654_CHG_DTLS_SHIFT);
-    LOG_DEBUG("MAX77654 Fault = 0x%02X.", val);
+    LOG("MAX77654 Fault = 0x%02X.", val);
 
     switch (val) {
         case MAX77654_CHG_DTLS_FAULT_PRE_Q:
@@ -930,7 +922,7 @@ void max77654_set_charge_current(uint16_t current)
 
     charge_bits = cc_to_hw(current*10);
     update_register_bits(MAX77654_CNFG_CHG_E_REG, charge_bits, MAX77654_CHG_CC, MAX77654_CHG_CC_SHIFT);
-    LOG_DEBUG("MAX77654 Charge Current set to %d mA.", cc_tbl[charge_bits]/10);
+    LOG("MAX77654 Charge Current set to %d mA.", cc_tbl[charge_bits]/10);
 }
 
 /**
@@ -951,7 +943,7 @@ void max77654_set_charge_voltage(uint16_t millivolts)
         millivolts = 4600;
     charge_bits = ((millivolts-3600)/25) & MAX77654_CHG_CV_MASK;
     update_register_bits(MAX77654_CNFG_CHG_G_REG, charge_bits, MAX77654_CHG_CV, MAX77654_CHG_CV_SHIFT);
-    LOG_DEBUG("MAX77654 Charge Voltage set to %d mV.", millivolts);
+    LOG("MAX77654 Charge Voltage set to %d mV.", millivolts);
 }
 
 /**
@@ -977,7 +969,7 @@ void max77654_set_current_limit(uint16_t current)
     }
     NRFX_ASSERT(charge_bits == (charge_bits & MAX77654_ICHGIN_LIM_MASK));
     update_register_bits(MAX77654_CNFG_CHG_B_REG, charge_bits, MAX77654_ICHGIN_LIM, MAX77654_ICHGIN_LIM_SHIFT);
-    LOG_DEBUG("MAX77654 Input Current Limit set to %d mA.", (charge_bits*95)+95);
+    LOG("MAX77654 Input Current Limit set to %d mA.", (charge_bits*95)+95);
 }
 
 /**

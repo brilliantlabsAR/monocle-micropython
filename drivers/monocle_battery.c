@@ -18,7 +18,7 @@
 #include "nrfx_saadc.h"
 #include "nrfx_log.h"
 
-#define LOG_DEBUG(...) NRFX_LOG_DEBUG(__VA_ARGS__)
+#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 #define CHECK(err) check(__func__, err)
 
 /*
@@ -98,7 +98,7 @@ static struct table_1d battery_table = {
 static inline void check(char const *func, nrfx_err_t err)
 {
     if (err != NRFX_SUCCESS)
-        NRFX_LOG_ERROR("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
+        LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
 }
 
 /**
@@ -189,16 +189,16 @@ static void saadc_callback(nrfx_saadc_evt_t const *p_event)
             break;
         case NRFX_SAADC_EVT_DONE:
             for (int i = 0; i < SAMPLES_IN_BUFFER; i++) {
-                NRFX_LOG_DEBUG("%d", p_event->data.done.p_buffer[i]);
+                LOG("%d", p_event->data.done.p_buffer[i]);
                 average_level += p_event->data.done.p_buffer[i];
             }
             // This truncates, doesn't round up:
             average_level = average_level / (nrf_saadc_value_t)SAMPLES_IN_BUFFER;
             battery_voltage = battery_saadc_to_voltage(average_level);
             battery_percent = round(battery_voltage_to_percent(battery_voltage));
-            LOG_DEBUG("Batt average (ADC raw): %d", average_level);
-            LOG_DEBUG("Batt average (voltage): %f", (double)battery_voltage);
-            LOG_DEBUG("Batt percent: %d%%", battery_percent);
+            LOG("Batt average (ADC raw): %d", average_level);
+            LOG("Batt average (voltage): %f", (double)battery_voltage);
+            LOG("Batt percent: %d%%", battery_percent);
             break;
         default:
             break;

@@ -73,7 +73,7 @@
 #define TOUCH_PRESS_INTERVAL   APP_TIMER_TICKS(500)   /**< Timeout for button press (ticks) = 0.5 second */
 #define TOUCH_LONG_INTERVAL    APP_TIMER_TICKS(9500)  /**< Timeout for long button press (ticks) = 9.5 seconds + PRESS_INTERVAL = 10 sec */
 
-#define LOG_DEBUG(...) NRFX_LOG_DEBUG(__VA_ARGS__)
+#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 #define CHECK(err) check(__func__, err)
 
 typedef enum {
@@ -110,7 +110,7 @@ static uint16_t release_status = 0;
 static inline bool check(char const *func, nrfx_err_t err)
 {
     if (err != NRFX_SUCCESS)
-        NRFX_LOG_ERROR("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
+        LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
     return err == NRFX_SUCCESS;
 }
 
@@ -140,28 +140,28 @@ static void generate_gesture(touch_gesture_t gesture)
     switch(gesture)
     {
     case TOUCH_GESTURE_TAP:
-        LOG_DEBUG("Touch gesture Tap.");
+        LOG("Touch gesture Tap.");
         break;
     case TOUCH_GESTURE_DOUBLETAP:
-        LOG_DEBUG("Touch gesture DoubleTap.");
+        LOG("Touch gesture DoubleTap.");
         break;
     case TOUCH_GESTURE_PRESS:
-        LOG_DEBUG("Touch gesture Press.");
+        LOG("Touch gesture Press.");
         break;
     case TOUCH_GESTURE_LONGPRESS:
-        LOG_DEBUG("Touch gesture LongPress.");
+        LOG("Touch gesture LongPress.");
         break;
     case TOUCH_GESTURE_PRESSBOTH:
-        LOG_DEBUG("Touch gesture PressBoth.");
+        LOG("Touch gesture PressBoth.");
         break;
     case TOUCH_GESTURE_LONGBOTH:
-        LOG_DEBUG("Touch gesture LongBoth.");
+        LOG("Touch gesture LongBoth.");
         break;
     case TOUCH_GESTURE_SLIDELR:
-        LOG_DEBUG("Touch gesture SlideLR.");
+        LOG("Touch gesture SlideLR.");
         break;
     case TOUCH_GESTURE_SLIDERL:
-        LOG_DEBUG("Touch gesture SlideRL.");
+        LOG("Touch gesture SlideRL.");
         break;
     }
 
@@ -252,7 +252,7 @@ bool touch_print_ch_counts(void)
 static void delay_timeout_handler(void * p_context)
 {
     (void)p_context;
-    LOG_DEBUG("Touch timeout.");
+    LOG("Touch timeout.");
     // process state machine change, from timer (so true)
     touch_event_handler(true);
 }
@@ -266,7 +266,7 @@ static void delay_timeout_handler(void * p_context)
 static void touch_pin_handler(void *iqs620, iqs620_button_t button, iqs620_event_t event)
 {
     assert(iqs620 != NULL);
-    LOG_DEBUG("Touch pin handler: IQS620 %s %s", button_names[button], event_names[event]);
+    LOG("Touch pin handler: IQS620 %s %s", button_names[button], event_names[event]);
     // ignore IQS620_BUTTON_PROX event
     if (event == IQS620_BUTTON_DOWN || event == IQS620_BUTTON_UP) {
         // process state machine change, from button push/release (not timer, so false)
@@ -317,21 +317,21 @@ static void touch_event_handler(bool istimer)
         if (istimer)
         {
             // stay in IDLE
-            NRFX_LOG_ERROR("Touch IDLE: Timer was not stopped!");
+            LOG("Touch IDLE: Timer was not stopped!");
         } else {
             // record first button touched
             touch_store_button_status(&first_push_status);
             // check whether one button pushed, or two
             if(first_push_status == 0) { // no buttons pushed, so an unexpected release event
-                NRFX_LOG_ERROR("Touch IDLE: release event, but expected push");
+                LOG("Touch IDLE: release event, but expected push");
                 return;
             } else if (bit_count(first_push_status) == 2) { // two buttons pushed simultaneously
                 touch_state = TOUCH_BOTH_PRESSED;
-                LOG_DEBUG("Touch IDLE->BOTH_PRESSED");
+                LOG("Touch IDLE->BOTH_PRESSED");
                 touch_timer_restart(TOUCH_LONG_INTERVAL);
             } else { // one button pushed
                 touch_state = TOUCH_TRIGGERED;
-                LOG_DEBUG("Touch IDLE->TRIGGERED");
+                LOG("Touch IDLE->TRIGGERED");
                 touch_timer_start(TOUCH_PRESS_INTERVAL);
             }
         }
@@ -339,17 +339,17 @@ static void touch_event_handler(bool istimer)
     case TOUCH_TRIGGERED:
         if (istimer) {
             touch_state = TOUCH_PRESSED;
-            LOG_DEBUG("Touch TRIGGERED->PRESSED");
+            LOG("Touch TRIGGERED->PRESSED");
             touch_timer_restart(TOUCH_LONG_INTERVAL);
         } else {
             touch_store_button_status(&second_push_status);
             if(second_push_status) { // non-zero -> another push
                 touch_state = TOUCH_BOTH_PRESSED;
-                LOG_DEBUG("Touch TRIGGERED->BOTH_PRESSED");
+                LOG("Touch TRIGGERED->BOTH_PRESSED");
                 touch_timer_restart(TOUCH_LONG_INTERVAL);
             } else { // all zeros -> release
                 touch_state = TOUCH_TAPPED;
-                LOG_DEBUG("Touch TRIGGERED->TAPPED");
+                LOG("Touch TRIGGERED->TAPPED");
                 touch_timer_restart(TOUCH_TAP_INTERVAL);
             }
         }
@@ -357,7 +357,7 @@ static void touch_event_handler(bool istimer)
     case TOUCH_TAPPED:
         if (istimer) {
             touch_state = TOUCH_IDLE;
-            LOG_DEBUG("Touch TAPPED->IDLE");
+            LOG("Touch TAPPED->IDLE");
             // timer already stopped
             generate_gesture(TOUCH_GESTURE_TAP);
         } else {
@@ -366,20 +366,20 @@ static void touch_event_handler(bool istimer)
             touch_store_button_status(&second_push_status);
             if(second_push_status != first_push_status) { // pushed different button
                 touch_state = TOUCH_SLID;
-                LOG_DEBUG("Touch TAPPED->SLID");
+                LOG("Touch TAPPED->SLID");
             } else { // pushed same button
                 touch_state = TOUCH_TAPPED2;
-                LOG_DEBUG("Touch TAPPED->TAPPED2");
+                LOG("Touch TAPPED->TAPPED2");
             }
         }
         break;
     case TOUCH_TAPPED2:
         if (istimer) {
             // stay in TAPPED2
-            NRFX_LOG_ERROR("Touch TAPPED2: should not be a timer here!");
+            LOG("Touch TAPPED2: should not be a timer here!");
         } else {
             touch_state = TOUCH_IDLE;
-            LOG_DEBUG("Touch TAPPED2->IDLE");
+            LOG("Touch TAPPED2->IDLE");
             touch_timer_stop();
             generate_gesture(TOUCH_GESTURE_DOUBLETAP);
         }
@@ -387,18 +387,18 @@ static void touch_event_handler(bool istimer)
     case TOUCH_PRESSED:
         if (istimer) {
             touch_state = TOUCH_LONG;
-            LOG_DEBUG("Touch PRESSED->LONG");
+            LOG("Touch PRESSED->LONG");
             // timer already stopped
             // no timer in LONG; wait indefinitely for release
         } else {
             touch_store_button_status(&second_push_status);
             if(second_push_status) { // non-zero -> another push
                 touch_state = TOUCH_BOTH_PRESSED;
-                LOG_DEBUG("Touch PRESSED->BOTH_PRESSED");
+                LOG("Touch PRESSED->BOTH_PRESSED");
                 touch_timer_restart(TOUCH_LONG_INTERVAL);
             } else { // all zeros -> release
                 touch_state = TOUCH_IDLE;
-                LOG_DEBUG("Touch PRESSED->IDLE");
+                LOG("Touch PRESSED->IDLE");
                 touch_timer_stop();
                 // no timer in IDLE
                 generate_gesture(TOUCH_GESTURE_PRESS);
@@ -408,10 +408,10 @@ static void touch_event_handler(bool istimer)
     case TOUCH_LONG:
         if (istimer) {
             // stay in LONG;
-            NRFX_LOG_ERROR("Touch LONG: should not be a timer here!");
+            LOG("Touch LONG: should not be a timer here!");
         } else {
             touch_state = TOUCH_IDLE;
-            LOG_DEBUG("Touch LONG->IDLE");
+            LOG("Touch LONG->IDLE");
             touch_timer_stop();
             generate_gesture(TOUCH_GESTURE_LONGPRESS);
         }
@@ -419,10 +419,10 @@ static void touch_event_handler(bool istimer)
     case TOUCH_SLID:
         if (istimer) {
             // stay in SLID;
-            NRFX_LOG_ERROR("Touch SLID: should not be a timer here!");
+            LOG("Touch SLID: should not be a timer here!");
         } else { // must be a release
             touch_state = TOUCH_IDLE;
-            LOG_DEBUG("Touch SLID->IDLE");
+            LOG("Touch SLID->IDLE");
 
             if(first_push_status < second_push_status) {
                 generate_gesture(TOUCH_GESTURE_SLIDELR);
@@ -434,7 +434,7 @@ static void touch_event_handler(bool istimer)
     case TOUCH_BOTH_PRESSED:
         if (istimer) {
             touch_state = TOUCH_BOTH_LONG;
-            LOG_DEBUG("Touch BOTH_PRESSED->BOTH_LONG");
+            LOG("Touch BOTH_PRESSED->BOTH_LONG");
             // timer already stopped
             // no timer in BOTH_LONG; wait indefinitely for release
         } else {
@@ -444,26 +444,26 @@ static void touch_event_handler(bool istimer)
             touch_store_button_status(&release_status);
             if(release_status == 0) { // both buttons released
                 touch_state = TOUCH_IDLE;
-                LOG_DEBUG("Touch BOTH_PRESSED->IDLE");
+                LOG("Touch BOTH_PRESSED->IDLE");
                 generate_gesture(TOUCH_GESTURE_PRESSBOTH);
             } else { // one button released
-                LOG_DEBUG("Touch BOTH_PRESSED: one button released");
+                LOG("Touch BOTH_PRESSED: one button released");
             }
         }
         break;
     case TOUCH_BOTH_LONG:
         if (istimer) {
             // stay in BOTH_LONG;
-            NRFX_LOG_ERROR("Touch BOTH_LONG: should not be a timer here!");
+            LOG("Touch BOTH_LONG: should not be a timer here!");
         } else {
             // check whether both are released, or just one
             touch_store_button_status(&release_status);
             if(release_status == 0) { // both buttons released
                 touch_state = TOUCH_IDLE;
-                LOG_DEBUG("Touch BOTH_LONG->IDLE");
+                LOG("Touch BOTH_LONG->IDLE");
                 generate_gesture(TOUCH_GESTURE_LONGBOTH);
             } else { // one button released
-                LOG_DEBUG("Touch BOTH_LONG: one button released");
+                LOG("Touch BOTH_LONG: one button released");
             }
         }
         break;
