@@ -1,4 +1,14 @@
-OUTPUT_DIRECTORY       = source/driver
+# Name for the DoxySphinx section of the Sphinx doc
+PROJECT_NAME           = Drivers low-level C API
+
+# Lengthier description for this section
+PROJECT_BRIEF          = Useful for writing new Python libraries or low-level firmware in C
+
+# Driver code from this repository
+INPUT                  = ../drivers
+
+# Output within the Sphinx source directory for DoxySphinx integration.
+OUTPUT_DIRECTORY       = source/drivers
 
 # Deactivate doxygens own treeview (as it doesn't look right)
 GENERATE_TREEVIEW      = NO
@@ -6,7 +16,9 @@ GENERATE_TREEVIEW      = NO
 # Menu data is crucial for doxysphinx TOC generation
 DISABLE_INDEX          = NO
 
+# HTML output only for DoxySphinx.
 GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
 
 # This allows you to use rst blocks inside doxygen comments with @rst and @endrst
 ALIASES                = "rst=\verbatim embed:rst:leading-asterisk" \
@@ -22,7 +34,7 @@ GENERATE_XML           = NO
 SEARCHENGINE           = NO
 
 # generate a tag file
-GENERATE_TAGFILE       = source/driver/html/tagfile.xml
+GENERATE_TAGFILE       = source/drivers/html/tagfile.xml
 
 # generates nicer svg images
 DOT_IMAGE_FORMAT       = svg
@@ -34,4 +46,28 @@ DOT_TRANSPARENT        = YES
 INTERACTIVE_SVG        = YES
 
 # With it, the doxygen docs fit far better with any sphinx theme.
-HTML_EXTRA_STYLESHEET = doxygen-awesome.css
+HTML_EXTRA_STYLESHEET = doxygen-awesome-css/doxygen-awesome.css
+
+# Empty header and footer
+HTML_FOOTER           = empty.html
+
+# Looks better with shorter path names.
+FULL_PATH_NAMES        = NO
+
+# Less verbose syntax: first sentence is @brief.
+JAVADOC_AUTOBRIEF      = YES
+
+# This is not C++ code.
+OPTIMIZE_OUTPUT_FOR_C  = YES
+
+# Only include headers and C source files.
+FILE_PATTERNS          = *.c *.h
+
+# Include the full file implementation as well.
+SOURCE_BROWSER         = YES
+
+# Extract everything by default.
+EXTRACT_ALL            = YES
+
+# Dive down subdirectories if needed.
+RECURSIVE              = YES

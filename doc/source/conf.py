@@ -1,32 +1,29 @@
 # Configuration file for the Sphinx documentation builder.
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# Project information
-
-project = 'Monocle'
-copyright = '2022, BrilliantLabs Inc.'
-author = 'BrilliantLabs Inc.'
-release = 'v0.0'
-
-# General configuration
+project = "Monocle"
+copyright = "2022, BrilliantLabs Inc."
+author = "BrilliantLabs Inc."
+release = "v0.0"
 
 extensions = [
-  "sphinxcontrib.doxylink",
+    "sphinx.ext.duration",
+    "sphinx.ext.doctest",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
+    "sphinxcontrib.doxylink",
 ]
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 exclude_patterns = []
 
-# HTML output
-
-html_theme = 'alabaster'
-html_static_path = ['_static']
-
-# DoxySphinx
+html_theme = "sphinx_rtd_theme"
+html_static_path = ["_static"]
 
 doxylink = {
-    "driver": (
-        "source/driver/html/tagfile.xml",
-        "source/driver/html",
+    "drivers": (
+        "source/drivers/html/tagfile.xml",
+        "source/drivers/html",
     ),
 }

@@ -1,3 +1,5 @@
 /html
 /build
-/source/driver/html
+/source/drivers/html
+/doxygen-awesome-css
+/.sass-cache
