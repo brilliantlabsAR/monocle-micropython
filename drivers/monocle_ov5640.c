@@ -8,7 +8,6 @@
  * @file monocle_ov5640.c
  * @author Shreyas Hemachandra
  * @author Nathan Ashelman
- * @bug oled_config_burst() is not working correctly.
  */
 
 #include <stdbool.h>
