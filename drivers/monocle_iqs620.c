@@ -18,6 +18,9 @@
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
+#define LOG(...) NRFX_LOG_WARNING(__VA_ARGS__)
+#define CHECK(err) check(__func__, err)
+
 // registers
 
 #define IQS620_ID                               0x00
@@ -133,9 +136,6 @@
 
 #define IQS620_RESET_TIMEOUT_MS                 50
 #define IQS620_RESET_RETRY_MS                   20
-
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
-#define CHECK(err) check(__func__, err)
 
 /**
  * Workaround the fact taht nordic returns an ENUM instead of a simple integer.

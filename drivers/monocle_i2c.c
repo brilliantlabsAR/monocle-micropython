@@ -17,7 +17,7 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
+#define LOG(...) NRFX_LOG_WARNING(__VA_ARGS__)
 #define CHECK(err) check(__func__, err)
 
 /** TWI operation ended, may have been successful, may have been NACK. */

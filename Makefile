@@ -142,6 +142,7 @@ SRC += nrfx/drivers/src/nrfx_rtc.c
 SRC += nrfx/drivers/src/nrfx_saadc.c
 SRC += nrfx/drivers/src/nrfx_spi.c
 SRC += nrfx/drivers/src/nrfx_spim.c
+SRC += nrfx/drivers/src/nrfx_systick.c
 SRC += nrfx/drivers/src/nrfx_timer.c
 SRC += nrfx/drivers/src/nrfx_twi.c
 SRC += nrfx/drivers/src/prs/nrfx_prs.c
@@ -175,7 +176,10 @@ gdb_segger_jlink:
 	$(JLINKGDBSERVERCL) -device nrf52832_XXAA -if SWD
 
 gdb:
-	$(GDB) -ex "target extended-remote :2331" build/application.elf
+	$(GDB) \
+	    -ex "target extended-remote :2331" \
+	    -ex "monitor reset halt" \
+	    -ex "continue" build/application.elf
 
 shell:
 	@echo "You should soon get a Python shell over Bluetooth"

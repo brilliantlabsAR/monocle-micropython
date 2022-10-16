@@ -31,6 +31,9 @@
 #include "py/mpconfig.h"
 #include "nrf.h"
 
+// For every module, it might be necessary to set the IRQ priority to
+// 7 so that the Nordic Uart Service (NUS) gets a higher priority.
+
 #define NRFX_LOG_ENABLED 1
 #define NRFX_LOG_UART_DISABLED 1
 
@@ -68,6 +71,8 @@
 #define NRFX_TIMER3_ENABLED 1
 #define NRFX_TIMER4_ENABLED 1
 
+#define NRFX_SYSTICK_ENABLED 1
+#define NRFX_SYSTICK_DEFAULT_CONFIG_IRQ_PRIORITY 7
 
 #define NRFX_PWM_ENABLED MICROPY_PY_MACHINE_HW_PWM
 #define NRFX_PWM0_ENABLED 1

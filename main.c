@@ -25,13 +25,15 @@
  */
 
 #include "modmachine.h"
-#include "monocle_ble.h"
-#include "monocle_i2c.h"
-#include "monocle_spi.h"
 #include "monocle_battery.h"
-#include "monocle_max77654.h"
+#include "monocle_ble.h"
 #include "monocle_board.h"
+#include "monocle_ecx335af.h"
+#include "monocle_i2c.h"
+#include "monocle_max77654.h"
+#include "monocle_spi.h"
 #include "nrf_sdm.h"
+#include "nrfx_systick.h"
 #include "nrfx_gpiote.h"
 #include "py/compile.h"
 #include "py/gc.h"
@@ -87,11 +89,14 @@ void nlr_jump_fail(void *val)
  */
 static void hardware_init(void)
 {
-    // GPIO calls for setting the SPI chip-select pins and enable signals.
-    board_init();
+    // Initialise the NRFX SysTick timer driver for delay_ms implementations.
+    nrfx_systick_init();
 
     // Initialise the GPIO driver used by both the Pin and FPGA modules
     nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
+
+    // GPIO calls for setting the chip-select pins and chip-enable signals.
+    board_init();
 
     // Custom wrapper around I2C used by the other drivers.
     i2c_init();
@@ -101,6 +106,9 @@ static void hardware_init(void)
 
     // I2C calls to setup power rails of the MAX77654.
     board_aux_power_on();
+
+    // Custom wrapper around SPI used by the other drivers.
+    spi_init();
 }
 
 /**
@@ -133,6 +141,14 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
+
+            // Configure the microdisplay over SPI.
+            ecx335af_config();
+            if (ecx335af_verify())
+                max77654_led_green(true);
+            else
+                max77654_led_red(true);
+
         } else {
             stop = pyexec_friendly_repl();
         }

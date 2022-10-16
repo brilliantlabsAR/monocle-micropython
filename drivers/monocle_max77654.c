@@ -12,8 +12,9 @@
 #include "monocle_max77654.h"
 #include "monocle_i2c.h"
 #include "monocle_config.h"
-
 #include "nrfx_log.h"
+
+#define LOG(...) NRFX_LOG_WARNING(__VA_ARGS__)
 
 /** Allowable charge current in mA; to protect battery, disallow any higher setting (even if configurable). */
 #define MAX77654_CHG_CC_MAX             140  
@@ -461,8 +462,6 @@ static const unsigned int cv_tbl[] = {
 
 /** Flag that PMIC has been successfully initialized. */
 static bool max77654_initialized = false;
-
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 
 /**
  * Configure a register value over I2C.

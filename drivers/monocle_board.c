@@ -39,16 +39,14 @@ void board_aux_power_on(void)
 
     // 1.8V ramp rate is slower than 2.7V; without this, 1.8V reaches
     // target voltage 0.2s _after_ 2.7V
-    // TODO: debug NRFX_DELAY_MS
-    //NRFX_DELAY_MS(1);
+    nrfx_systick_delay_ms(1);
     max77654_rail_2v7(true);
 
     // Rise time measured as 1.2ms; give FPGA time to boot, while MODE1
     // is still held low.
-    // TODO: debug NRFX_DELAY_MS
-    //NRFX_DELAY_MS(2);
+    nrfx_systick_delay_ms(2);
 
-    // Used by the camera module.
+    // Used by the camera and display.
     max77654_rail_10v(true);
 
     // Used by the red and green LEDs.
@@ -84,10 +82,10 @@ void board_init(void)
     nrf_gpio_pin_write(IO_DISP_XCLR, 0);
     nrf_gpio_cfg_output(IO_DISP_XCLR);
 
-    // spi_fpga_CS = MODE1, for now set LOW for AUTO BOOT
+    // SPI_FPGA_CS = MODE1, for now set LOW for AUTO BOOT
     // from FPGA internal flash
-    nrf_gpio_pin_clear(SPIM0_SS1_PIN);
-    nrf_gpio_cfg_output(SPIM0_SS1_PIN);
+    nrf_gpio_pin_clear(SPIM0_FPGA_CS_PIN);
+    nrf_gpio_cfg_output(SPIM0_FPGA_CS_PIN);
 }
 
 void board_uninit(void)
@@ -96,5 +94,6 @@ void board_uninit(void)
     nrf_gpio_cfg_default(IO_N_CAM_RESET);
     nrf_gpio_cfg_default(IO_CAM_PWDN);
     nrf_gpio_cfg_default(IO_DISP_XCLR);
-    nrf_gpio_cfg_default(SPIM0_SS1_PIN);
+    nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);
+    nrf_gpio_cfg_default(SPIM0_FPGA_CS_PIN);
 }

@@ -73,7 +73,7 @@
 #define TOUCH_PRESS_INTERVAL   APP_TIMER_TICKS(500)   /**< Timeout for button press (ticks) = 0.5 second */
 #define TOUCH_LONG_INTERVAL    APP_TIMER_TICKS(9500)  /**< Timeout for long button press (ticks) = 9.5 seconds + PRESS_INTERVAL = 10 sec */
 
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
+#define LOG(...) NRFX_LOG_WARNING(__VA_ARGS__)
 #define CHECK(err) check(__func__, err)
 
 typedef enum {

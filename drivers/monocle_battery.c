@@ -12,14 +12,12 @@
  */
 
 #include <math.h>
-
 #include "monocle_battery.h"
 #include "monocle_config.h"
-
 #include "nrfx_saadc.h"
 #include "nrfx_log.h"
 
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
+#define LOG(...) NRFX_LOG_WARNING(__VA_ARGS__)
 #define CHECK(err) check(__func__, err)
 
 /*

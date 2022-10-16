@@ -28,14 +28,12 @@ static inline bool check(char const *func, nrfx_err_t err)
     return err == NRFX_SUCCESS;
 }
 
-// internal
-
 static const nrfx_spim_t m_spi = NRFX_SPIM_INSTANCE(SPI_INSTANCE);  /**< SPI instance. */
 static uint8_t m_spi_cs_pin; // keep track of current CS pin
 static volatile bool m_spi_xfer_done = true;  /**< Flag used to indicate that SPI instance completed the transfer. */
 
-static uint8_t       m_tx_buf[SPI_MAX_BURST_LENGTH + 1];  /**< TX buffer. */
-static uint8_t       m_rx_buf[SPI_MAX_BURST_LENGTH + 1];  /**< RX buffer. */
+static uint8_t m_tx_buf[SPI_MAX_BURST_LENGTH + 1];  /**< TX buffer. */
+static uint8_t m_rx_buf[SPI_MAX_BURST_LENGTH + 1];  /**< RX buffer. */
 
 /**
  * SPI event handler
@@ -46,8 +44,6 @@ void spim_event_handler(nrfx_spim_evt_t const * p_event, void *p_context)
     nrf_gpio_pin_set(m_spi_cs_pin);
     m_spi_xfer_done = true;
 }
-
-// externally visible functions
 
 /**
  * Configure the SPI peripheral.
@@ -61,11 +57,11 @@ void spi_init(void)
     CHECK(nrfx_spim_init(&m_spi, &spi_config, spim_event_handler, NULL));
 
     // configure CS pins (for active low)
-    nrf_gpio_pin_set(SPIM0_SS0_PIN); //spi_disp_CS
-    nrf_gpio_cfg_output(SPIM0_SS0_PIN);
-    nrf_gpio_pin_set(SPIM0_SS1_PIN); // spi_fpga_CS = MODE1, now set HIGH for use as SPI_CS
-    nrf_gpio_cfg_output(SPIM0_SS1_PIN);
-    m_spi_cs_pin = SPIM0_SS0_PIN; //default to this
+    nrf_gpio_pin_set(SPIM0_DISP_CS_PIN);
+    nrf_gpio_cfg_output(SPIM0_DISP_CS_PIN);
+    nrf_gpio_pin_set(SPIM0_FPGA_CS_PIN);
+    nrf_gpio_cfg_output(SPIM0_FPGA_CS_PIN);
+    m_spi_cs_pin = SPIM0_DISP_CS_PIN; // default to this
     // initialze xfer state (needed for init/uninit cycles)
     m_spi_xfer_done = true;
 }
@@ -76,8 +72,8 @@ void spi_init(void)
 void spi_uninit(void)
 {
     // return pins to default state (input, hi-z)
-    nrf_gpio_cfg_default(SPIM0_SS1_PIN);
-    nrf_gpio_cfg_default(SPIM0_SS0_PIN);
+    nrf_gpio_cfg_default(SPIM0_FPGA_CS_PIN);
+    nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);
     // uninitialize the SPIM driver instance
     nrfx_spim_uninit(&m_spi);
 
@@ -95,7 +91,7 @@ void spi_uninit(void)
  */
 void spi_set_cs_pin(uint8_t cs_pin)
 {
-    assert((cs_pin == SPIM0_SS0_PIN) || (cs_pin == SPIM0_SS1_PIN));
+    assert(cs_pin == SPIM0_DISP_CS_PIN || cs_pin == SPIM0_FPGA_CS_PIN);
     m_spi_cs_pin = cs_pin;
 }
 
@@ -113,11 +109,11 @@ void spi_write_burst(uint8_t addr, const uint8_t *data, uint16_t length)
     m_tx_buf[0]=addr;
     memcpy(&m_tx_buf[1], data, length + 1);
 
-    //wait for any pending SPI operation to complete
-    while (!m_spi_xfer_done)
-    {
+    // wait for any pending SPI operation to complete
+    while (!m_spi_xfer_done) {
         __WFE();
     }
+
     // Reset rx buffer and transfer done flag
     memset(m_rx_buf, 0, length + 1);
     m_spi_xfer_done = false;
@@ -125,12 +121,13 @@ void spi_write_burst(uint8_t addr, const uint8_t *data, uint16_t length)
     // set the current CS pin low (will be set high by event handler)
     nrf_gpio_pin_clear(m_spi_cs_pin);
 
-    //CS must remain asserted for both bytes (verified with scope)
+    // CS must remain asserted for both bytes (verified with scope)
     CHECK(nrfx_spim_xfer(&m_spi, &xfer_desc, 0));
 
     // Wait until SPI Master completes transfer data
-    while (!m_spi_xfer_done)
+    while (!m_spi_xfer_done) {
         __WFE();
+    }
 }
 
 /**
@@ -138,9 +135,9 @@ void spi_write_burst(uint8_t addr, const uint8_t *data, uint16_t length)
  * @param addr Address sent before the byte.
  * @param data Byte to send after the address.
  */
-void spi_write_byte(uint8_t addr, uint8_t data)
+void spi_write_byte(uint8_t addr, uint8_t byte)
 {
-    spi_write_burst(addr, &data, 1);
+    spi_write_burst(addr, &byte, 1);
 }
 
 /**
@@ -203,6 +200,8 @@ uint8_t spi_read_byte(uint8_t addr)
 
     // address contents should have been sent on MISO pin during second byte; read from Rx buffer
     byte = m_rx_buf[1];
+
+    LOG("SPI: read addr=%02X byte=%02X", addr, byte);
 
     return byte;
 }

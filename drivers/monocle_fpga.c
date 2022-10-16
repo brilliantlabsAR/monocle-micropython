@@ -10,11 +10,11 @@
  * @author Nathan Ashelman
  */
 
+#include <assert.h>
 #include "monocle_fpga.h"
 #include "monocle_ov5640.h" // for OV5640_FPS
 #include "monocle_spi.h"
 #include "monocle_pins.h"
-
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
@@ -131,7 +131,8 @@ uint8_t *fpga_read_burst(uint16_t length)
 uint32_t fpga_get_capture_size(void)
 {
     // verify that captured frame(s) is/are available
-    if(!fpga_capture_done()) return 0;
+    if (!fpga_capture_done())
+        return 0;
 
     uint8_t size_0 = fpga_read_byte(FPGA_CAPTURE_SIZE_0);
     uint8_t size_1 = fpga_read_byte(FPGA_CAPTURE_SIZE_1);
@@ -170,44 +171,37 @@ bool fpga_is_buffer_read_done(void)
 // testing functions
 bool fpga_test_reset(void)
 {
-    bool success = false;
-
     // currently this register does nothing, can be used for test
     fpga_write_byte(FPGA_MEMORY_CONTROL, 0xBB);
-    success = (0xBB == fpga_read_byte(FPGA_MEMORY_CONTROL));
-    if (!success) return (success);
-
-    fpga_write_byte(FPGA_CAMERA_CONTROL, 0x01); // this will turn on XCLK
-    success = (0x01 == fpga_read_byte(FPGA_CAMERA_CONTROL));
-    if (!success) return (success);
-
+    if (0xBB != fpga_read_byte(FPGA_MEMORY_CONTROL))
+        return (false);
+    // this will turn on XCLK
+    fpga_write_byte(FPGA_CAMERA_CONTROL, 0x01);
+    if (0x01 != fpga_read_byte(FPGA_CAMERA_CONTROL))
+        return (false);
     fpga_soft_reset();
     // check registers all have default values
-    success = (FPGA_SYSTEM_CONTROL_DEFAULT == fpga_read_byte(FPGA_SYSTEM_CONTROL));
-    if (!success) return (success);
-    success = (FPGA_DISPLAY_CONTROL_DEFAULT == fpga_read_byte(FPGA_DISPLAY_CONTROL));
-    if (!success) return (success);
-    success = (FPGA_MEMORY_CONTROL_DEFAULT == fpga_read_byte(FPGA_MEMORY_CONTROL));
-    if (!success) return (success);
-    success = (FPGA_CAMERA_CONTROL_DEFAULT == fpga_read_byte(FPGA_CAMERA_CONTROL));
-    if (!success) return (success);
+    if (fpga_read_byte(FPGA_SYSTEM_CONTROL) != FPGA_SYSTEM_CONTROL_DEFAULT)
+        return (false);
+    if (fpga_read_byte(FPGA_DISPLAY_CONTROL) != FPGA_DISPLAY_CONTROL_DEFAULT)
+        return (false);
+    if (fpga_read_byte(FPGA_MEMORY_CONTROL) != FPGA_MEMORY_CONTROL_DEFAULT)
+        return (false);
+    if (fpga_read_byte(FPGA_CAMERA_CONTROL) != FPGA_CAMERA_CONTROL_DEFAULT)
+        return (false);
     // moved this to memory self-test, since bit FPGA_MEM_INIT_DONE will not be set if memory initialization fails
-    //success = (FPGA_SYSTEM_STATUS_DEFAULT == fpga_read_byte(FPGA_SYSTEM_STATUS));
-
-    return(success);
+    //if (FPGA_SYSTEM_STATUS_DEFAULT != fpga_read_byte(FPGA_SYSTEM_STATUS))
+    //    return (false);
+    return (true);
 }
 
 bool fpga_ram_check(void)
 {
-    bool success = false;
     //first check that memory initialization succeeded
     // NOTE as of 2021-10-28, FPGA IP only supports one memory chip, so on MK11 only uses U10
-    success = (FPGA_SYSTEM_STATUS_DEFAULT == fpga_read_byte(FPGA_SYSTEM_STATUS));
-    if (!success) return (success);
-
     // run memory self-test
     // TODO: requires FPGA code support
-    return(success);
+    return (fpga_read_byte(FPGA_SYSTEM_STATUS) == FPGA_SYSTEM_STATUS_DEFAULT);
 }
 
 bool fpga_spi_exercise_register(uint8_t addr)
@@ -219,7 +213,7 @@ bool fpga_spi_exercise_register(uint8_t addr)
     spi_set_cs_pin(SPIM_SS1_PIN);
 
     // run SPI exercise, return TRUE if successful
-    return(spi_exercise_register(addr));
+    return (spi_exercise_register(addr));
 }
 
 // externally visible functions
@@ -228,24 +222,33 @@ bool fpga_spi_exercise_register(uint8_t addr)
 
 void fpga_soft_reset(void)
 {
-    fpga_write_byte(FPGA_SYSTEM_CONTROL, 0x01); // reset FPGA
-    nrfx_systick_delay_ms(185); // TODO: not sure if we need this, but just in case...
-    fpga_write_byte(FPGA_SYSTEM_CONTROL, 0x00); // clear the reset (needed for some FPGA projects, like OLED unit test)
+    // reset FPGA
+    fpga_write_byte(FPGA_SYSTEM_CONTROL, 0x01);
+
+    // TODO: not sure if we need this, but just in case...
+    nrfx_systick_delay_ms(185);
+
+    // clear the reset (needed for some FPGA projects, like OLED unit test)
+    fpga_write_byte(FPGA_SYSTEM_CONTROL, 0x00);
+
     // from testing, 2ms seems to be the minimum delay needed for all registers to return to expected values
     // reason is unclear
-    //nrfx_systick_delay_ms(5); // use 5ms for extra safety margin (used to work earlier)
+    // use 5ms for extra safety margin (used to work earlier)
+    //nrfx_systick_delay_ms(5);
+
     // NOTE: from 2021-02-19, 5ms is no longer enough
-    nrfx_systick_delay_ms(185); // TODO: why? Seems to require 170ms delay now
+    // TODO: why? Seems to require 170ms delay now
+    nrfx_systick_delay_ms(185);
 }
 
 bool fpga_xclk_on(void)
 {
-    bool success = false;
-
     fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK);
-    nrfx_systick_delay_ms(300); // TODO: is this still needed?
-    success = (fpga_read_byte(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
-    return success;
+
+    // TODO: is this still needed?
+    nrfx_systick_delay_ms(300);
+
+    return (fpga_read_byte(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
 }
 
 /**
@@ -254,13 +257,14 @@ bool fpga_xclk_on(void)
  */
 bool fpga_camera_on(void)
 {
-    bool success = false;
+    // delay 4 frames to discard AWB adjustments (needed if camera was just powered up)
+    nrfx_systick_delay_ms(4*(1000/OV5640_FPS) + 1);
 
-    nrfx_systick_delay_ms(4*(1000/OV5640_FPS) + 1); // delay 4 frames to discard AWB adjustments (needed if camera was just powered up)
-    fpga_write_byte(FPGA_CAMERA_CONTROL, (FPGA_EN_XCLK | FPGA_EN_CAM)); // enable camera interface (& keep XCLK enabled!)
-    success = (fpga_read_byte(FPGA_CAMERA_CONTROL) == (FPGA_EN_XCLK | FPGA_EN_CAM));
+    // enable camera interface (& keep XCLK enabled!)
+    fpga_write_byte(FPGA_CAMERA_CONTROL, (FPGA_EN_XCLK | FPGA_EN_CAM));
+
     LOG("fpga_camera_on() waited 4 frames, sent FPGA_EN_XCLK, FPGA_EN_CAM");
-    return success;
+    return (fpga_read_byte(FPGA_CAMERA_CONTROL) == (FPGA_EN_XCLK | FPGA_EN_CAM));
 }
 
 /**
@@ -269,13 +273,14 @@ bool fpga_camera_on(void)
  */
 bool fpga_camera_off(void)
 {
-    bool success = false;
+    // turn off camera interface (but keep XCLK enabled!)
+    fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK);
 
-    fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK); // turn off camera interface (but keep XCLK enabled!)
-    nrfx_systick_delay_ms(1*(1000/OV5640_FPS) + 1); // allow last frame to finish entering video buffer to avoid split screen
-    success = (fpga_read_byte(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
+    // allow last frame to finish entering video buffer to avoid split screen
+    nrfx_systick_delay_ms(1*(1000/OV5640_FPS) + 1);
+
     LOG("fpga_camera_off() sent FPGA_EN_XCLK, waited 1 frame");
-    return success;
+    return (fpga_read_byte(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
 }
 
 /**
@@ -284,11 +289,8 @@ bool fpga_camera_off(void)
  */
 bool fpga_mic_on(void)
 {
-    bool success = false;
-
     fpga_write_byte(FPGA_MIC_CONTROL, FPGA_EN_MIC);
-    success = (fpga_read_byte(FPGA_MIC_CONTROL) == FPGA_EN_MIC);
-    return success;
+    return (fpga_read_byte(FPGA_MIC_CONTROL) == FPGA_EN_MIC);
 }
 
 /**
@@ -297,11 +299,8 @@ bool fpga_mic_on(void)
  */
 bool fpga_mic_off(void)
 {
-    bool success = false;
-
     fpga_write_byte(FPGA_MIC_CONTROL, 0x00);
-    success = (fpga_read_byte(FPGA_MIC_CONTROL) == 0x00);
-    return success;
+    return (fpga_read_byte(FPGA_MIC_CONTROL) == 0x00);
 }
 
 /**
@@ -382,10 +381,17 @@ void fpga_video_capture(void)
 void fpga_prep_read_audio(void)
 {
 #ifdef MIC_ON
-    fpga_write_byte(FPGA_CAPTURE_CONTROL, 0x00); //ensure CLR_CHECKSUM gets a rising edge
-    fpga_write_byte(FPGA_CAPTURE_CONTROL, FPGA_CLR_CHKSM); // clear checksum (left from video transfer)
-    fpga_write_byte(FPGA_CAPTURE_CONTROL, FPGA_RD_AUDIO);  // this also sets CLR_CHKSM back to 0
-    //fpga_write_byte(FPGA_CAPTURE_CONTROL, (FPGA_CAPT_EN | FPGA_CAPT_VIDEO | FPGA_CAPT_AUDIO)); // this also sets CLR_CHKSM back to 0
+    // ensure CLR_CHECKSUM gets a rising edge
+    fpga_write_byte(FPGA_CAPTURE_CONTROL, 0x00);
+
+    // clear checksum (left from video transfer)
+    fpga_write_byte(FPGA_CAPTURE_CONTROL, FPGA_CLR_CHKSM);
+
+    // this also sets CLR_CHKSM back to 0
+    fpga_write_byte(FPGA_CAPTURE_CONTROL, FPGA_RD_AUDIO);
+
+    // this also sets CLR_CHKSM back to 0
+    //fpga_write_byte(FPGA_CAPTURE_CONTROL, (FPGA_CAPT_EN | FPGA_CAPT_VIDEO | FPGA_CAPT_AUDIO));
 #else
     // do nothing
 #endif
@@ -393,7 +399,8 @@ void fpga_prep_read_audio(void)
 
 void fpga_replay_rate(uint8_t repeat)
 {
-    if ((repeat == 0) || (repeat > FPGA_REP_RATE_MASK)) // cannot be zero, max 5 bits
+    // cannot be zero, max 5 bits
+    if ((repeat == 0) || (repeat > FPGA_REP_RATE_MASK))
     {
         NRFX_LOG_ERROR("fpga_replay_rate(), invalid input parameter %d", repeat);
         return;
@@ -412,16 +419,17 @@ bool fpga_capture_done(void)
 // Precondition: length must be a multiple of 2 (bytes)
 uint16_t fpga_calc_checksum(uint8_t *bytearray, uint32_t length)
 {
-    if((bytearray == NULL) || (length == 0)) return 0;
-    if((length % 2) != 0) return 0;
 
     uint32_t checksum = 0;
-    uint32_t loop = 0;
-    for(loop=0; loop<length; loop=loop+2)
+
+    assert(bytearray != NULL);
+    assert(length == 0);
+    assert((length % 2) == 0);
+    for (uint32_t i = 0; i < length; i = i + 2)
     {
-        checksum = fpga_checksum_add(checksum, ((bytearray[loop+1]<<8) + bytearray[loop]));
+        checksum = fpga_checksum_add(checksum, ((bytearray[i + 1] << 8) + bytearray[i]));
     }
-    return (uint16_t) checksum;
+    return ((uint16_t)checksum);
 }
 
 uint16_t fpga_checksum_add(uint16_t checksum1, uint16_t checksum2)
@@ -429,16 +437,21 @@ uint16_t fpga_checksum_add(uint16_t checksum1, uint16_t checksum2)
     uint32_t checksum = 0;
     uint32_t carry = 0;
 
+    // add carry (which if it exists must be 1) back in
     checksum = checksum1 + checksum2;
-    if(checksum > 0x0000FFFF) // add carry (which if it exists must be 1) back in
+
+    if (checksum > 0x0000FFFF)
     {
         carry = checksum & 0xFFFF0000;
         carry = carry >> 16;
-        assert(carry == 1); // this should always be true, if so we can simplify the above
+
+        // this should always be true, if so we can simplify the above
+        assert(carry == 1);
+
         checksum = (checksum & 0x0000FFFF) + carry;
         assert(checksum <= 0x0000FFFF);
     }
-    return (uint16_t) checksum; //NOTE this line was missing until 2021-04-15!
+    return ((uint16_t)checksum);
 }
 
 // valid input zoom levels: 1, 2, 4, 8
@@ -451,7 +464,7 @@ void fpga_set_zoom(uint8_t level)
     {
         case 1:
             zoom_bits = 0 << FPGA_ZOOM_SHIFT;
-            fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK | FPGA_EN_CAM | zoom_bits); // FPGA_EN_ZOOM = 0
+            fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK | FPGA_EN_CAM | zoom_bits);
             break;
         case 2:
         case 4:
@@ -476,9 +489,16 @@ void fpga_set_luma(bool turn_on)
 
     // get current zoom & luma status
     reg = fpga_read_byte(FPGA_CAMERA_CONTROL);
-    if (!(reg & FPGA_EN_ZOOM)) return; // only valid when zoom is active
+
+    // only valid when zoom is active
+    if (!(reg & FPGA_EN_ZOOM))
+        return;
+
+    // already correctly set, nothing to do
     luma_on = (reg & FPGA_EN_LUMA_COR);
-    if ((luma_on && turn_on) || (!luma_on && !turn_on)) return; // already correctly set, nothing to do
+    if ((luma_on && turn_on) || (!luma_on && !turn_on))
+        return;
+
     if (turn_on) {
         reg = reg | FPGA_EN_LUMA_COR;
         LOG("FPGA turn luma correction on.");
