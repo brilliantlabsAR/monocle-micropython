@@ -24,25 +24,23 @@
  * THE SOFTWARE.
  */
 
-#include "modmachine.h"
 #include "monocle_battery.h"
 #include "monocle_ble.h"
 #include "monocle_board.h"
 #include "monocle_ecx335af.h"
+#include "monocle_fpga.h"
 #include "monocle_i2c.h"
 #include "monocle_max77654.h"
 #include "monocle_spi.h"
 #include "nrf_sdm.h"
-#include "nrfx_systick.h"
 #include "nrfx_gpiote.h"
+#include "nrfx_systick.h"
 #include "py/compile.h"
 #include "py/gc.h"
 #include "py/mperrno.h"
 #include "py/repl.h"
 #include "py/runtime.h"
-#include "py/runtime.h"
 #include "py/stackctrl.h"
-#include "py/stream.h"
 #include "shared/readline/readline.h"
 #include "shared/runtime/pyexec.h"
 
@@ -141,14 +139,6 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-
-            // Configure the microdisplay over SPI.
-            ecx335af_config();
-            if (ecx335af_verify())
-                max77654_led_green(true);
-            else
-                max77654_led_red(true);
-
         } else {
             stop = pyexec_friendly_repl();
         }

@@ -11,19 +11,18 @@
 
 #ifndef FPGA_H
 #define FPGA_H
-
-#include <stdint.h>
-#include <stdbool.h>
-
-#define FPGA_LOG_INFO_ON
-//#define FPGA_LOG_DEBUG_ON
-
 /**
  * Driver for configuring the FPGA registers over SPI and bulk data transfer.
  * @defgroup fpga
  * @ingroup driver_chip
  * @{
  */
+
+#include <stdint.h>
+#include <stdbool.h>
+
+#define FPGA_LOG_INFO_ON
+//#define FPGA_LOG_DEBUG_ON
 
 // FPGA version compatibility
 // TODO: a more elegant solution? Possible to remove now?
@@ -70,9 +69,14 @@
 #define FPGA_VERSION_MINOR        0x1E ///< RO FPGA build minor version number
 #define FPGA_VERSION_MAJOR        0x1F ///< RO FPGA build major version number
 
-#define FPGA_REGISTER_EXISTS(reg)  ( (reg>=FPGA_SYSTEM_CONTROL) && (reg<=FPGA_VERSION_MAJOR) )
-#define FPGA_REGISTER_IS_WRITABLE(reg)  ( ( (reg>=FPGA_SYSTEM_CONTROL) && (reg<=FPGA_CAPTURE_CONTROL) \
-            && (reg!=FPGA_SYSTEM_STATUS) && (reg!=FPGA_BURST_RD_DATA) ) || (reg==FPGA_REPLAY_RATE_CONTROL) || (reg==FPGA_MIC_CONTROL) )
+#define FPGA_REGISTER_EXISTS(reg)  \
+    ((reg) >= FPGA_SYSTEM_CONTROL && (reg) <= FPGA_VERSION_MAJOR)
+
+#define FPGA_REGISTER_IS_WRITABLE(reg) ( \
+    ((reg) >= FPGA_SYSTEM_CONTROL && (reg) <= FPGA_CAPTURE_CONTROL \
+     && (reg) != FPGA_SYSTEM_STATUS && (reg) != FPGA_BURST_RD_DATA) \
+    || (reg) == FPGA_REPLAY_RATE_CONTROL || (reg) == FPGA_MIC_CONTROL \
+)
 
 #ifndef BIT
 #define BIT(n) (0x01<<n)
@@ -93,13 +97,13 @@
 #define FPGA_DISP_BUSY            BIT(1) ///< display busy indicator (grey screen)
 #define FPGA_DISP_CAM             BIT(0) ///< display on, video from camera/buffer
 #define FPGA_DISP_OFF             0x00   // display off (video sync & data signals off; TODO: PLL off)
-#define FPGA_DISPLAY_CONTROL_DEFAULT      0x01 ///< default value on reboot/reset
+#define FPGA_DISPLAY_CONTROL_DEFAULT 0x01 ///< default value on reboot/reset
 
 /* Memory Control Register (0x02) */
-#define FPGA_MEMORY_CONTROL_DEFAULT       0x02 ///< default value on reboot/reset
+#define FPGA_MEMORY_CONTROL_DEFAULT 0x02 ///< default value on reboot/reset
 
 /* LED Control Register (0x03) */
-#define FPGA_LED_CONTROL_DEFAULT          0x00 ///< default value on reboot/reset
+#define FPGA_LED_CONTROL_DEFAULT  0x00 ///< default value on reboot/reset
 
 /* Camera Control Register (0x04) */
 // Reserved                       bits 7:6
@@ -208,6 +212,6 @@ void fpga_set_display(uint8_t mode);
 // TODO: future implementation (refer to monocal_mrb branch)
 void fpga_get_version(uint8_t *major, uint8_t *minor);
 void fpga_discard_buffer(void);
-/** @} */
 
-#endif // FPGA_H
+/** @} */
+#endif

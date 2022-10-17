@@ -42,8 +42,8 @@
 #define LOG_PRINTF(fmt, ...) \
     mp_printf(MP_PYTHON_PRINTER, "%s: " fmt "\n", VALUE(NRFX_LOG_MODULE), ## __VA_ARGS__)
 
-#define NRFX_LOG_DEBUG   //LOG_PRINTF
-#define NRFX_LOG_INFO    //LOG_PRINTF
+#define NRFX_LOG_DEBUG   LOG_PRINTF
+#define NRFX_LOG_INFO    LOG_PRINTF
 #define NRFX_LOG_WARNING LOG_PRINTF
 #define NRFX_LOG_ERROR   LOG_PRINTF
 

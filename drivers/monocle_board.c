@@ -81,11 +81,6 @@ void board_init(void)
     // Set to 0V on boot (datasheet p.11)
     nrf_gpio_pin_write(IO_DISP_XCLR, 0);
     nrf_gpio_cfg_output(IO_DISP_XCLR);
-
-    // SPI_FPGA_CS = MODE1, for now set LOW for AUTO BOOT
-    // from FPGA internal flash
-    nrf_gpio_pin_clear(SPIM0_FPGA_CS_PIN);
-    nrf_gpio_cfg_output(SPIM0_FPGA_CS_PIN);
 }
 
 void board_uninit(void)

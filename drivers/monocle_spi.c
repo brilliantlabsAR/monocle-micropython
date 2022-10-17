@@ -61,7 +61,14 @@ void spi_init(void)
     nrf_gpio_cfg_output(SPIM0_DISP_CS_PIN);
     nrf_gpio_pin_set(SPIM0_FPGA_CS_PIN);
     nrf_gpio_cfg_output(SPIM0_FPGA_CS_PIN);
-    m_spi_cs_pin = SPIM0_DISP_CS_PIN; // default to this
+
+    // for now, pull high to disable external flash chip
+    nrf_gpio_pin_set(SPIM0_FLASH_CS_PIN);
+    nrf_gpio_cfg_output(SPIM0_FLASH_CS_PIN);
+
+    // default CS pin to this
+    m_spi_cs_pin = SPIM0_DISP_CS_PIN;
+
     // initialze xfer state (needed for init/uninit cycles)
     m_spi_xfer_done = true;
 }
@@ -71,6 +78,7 @@ void spi_init(void)
  */
 void spi_uninit(void)
 {
+    nrf_gpio_cfg_default(SPIM0_FLASH_CS_PIN);
     // return pins to default state (input, hi-z)
     nrf_gpio_cfg_default(SPIM0_FPGA_CS_PIN);
     nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);

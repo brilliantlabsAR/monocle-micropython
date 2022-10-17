@@ -1,0 +1,7 @@
+#ifndef MICROPY_MACHINE_FPGA_H
+#define MICROPY_MACHINE_FPGA_H
+
+MP_DECLARE_CONST_FUN_OBJ_KW(machine_fpga_read_byte_obj);
+MP_DECLARE_CONST_FUN_OBJ_KW(machine_fpga_write_byte_obj);
+
+#endif

@@ -14,7 +14,7 @@
 #include "monocle_fpga.h"
 #include "monocle_ov5640.h" // for OV5640_FPS
 #include "monocle_spi.h"
-#include "monocle_pins.h"
+#include "monocle_config.h"
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
@@ -30,9 +30,8 @@ void fpga_write_byte(uint8_t addr, uint8_t data)
     // check that it is a valid register to write to
     assert(FPGA_REGISTER_IS_WRITABLE(addr));
 
-    // select FPGA on SPI bus
-    spi_set_cs_pin(SPIM_SS1_PIN);
-
+    // select FPGA on SPI bus and write to it.
+    spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
     spi_write_byte(addr, data);
     LOG("fpga_write_byte(addr=0x%x, data=0x%x).", addr, data);
 }
@@ -50,7 +49,7 @@ uint8_t fpga_read_byte(uint8_t addr)
     uint8_t ReadData;
 
     // select FPGA on SPI bus
-    spi_set_cs_pin(SPIM_SS1_PIN);
+    spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
 
     ReadData = spi_read_byte(addr);
     LOG("fpga_read_byte(addr=0x%x) returned 0x%x.", addr, ReadData);    
@@ -72,8 +71,7 @@ void fpga_write_burst(const uint8_t *data, uint16_t length)
     fpga_write_byte(FPGA_WR_BURST_SIZE_HI, length_hi);
 
     // select FPGA on SPI bus
-    spi_set_cs_pin(SPIM_SS1_PIN);
-
+    spi_set_cs_pin(SPIM0_FPGA_CS_PIN); 
     spi_write_burst(FPGA_BURST_WR_DATA, data, length);
 }
 
@@ -101,7 +99,7 @@ uint8_t *fpga_read_burst_ref(uint8_t *data, uint16_t length)
         fpga_write_byte(FPGA_RD_BURST_SIZE_HI, length_hi);
 
         // select FPGA on SPI bus
-        spi_set_cs_pin(SPIM_SS1_PIN);
+        spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
 
         spiRxBuff = spi_read_burst(FPGA_BURST_RD_DATA, spiXferLength);
         memcpy((data+offset), spiRxBuff, spiXferLength);
@@ -123,7 +121,7 @@ uint8_t *fpga_read_burst(uint16_t length)
     fpga_write_byte(FPGA_RD_BURST_SIZE_HI, length_hi);
 
     // select FPGA on SPI bus
-    spi_set_cs_pin(SPIM_SS1_PIN);
+    spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
 
     return spi_read_burst(FPGA_BURST_RD_DATA, length);
 }
@@ -210,7 +208,7 @@ bool fpga_spi_exercise_register(uint8_t addr)
     assert(FPGA_REGISTER_EXISTS(addr));
 
     // select FPGA on SPI bus
-    spi_set_cs_pin(SPIM_SS1_PIN);
+    spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
 
     // run SPI exercise, return TRUE if successful
     return (spi_exercise_register(addr));
@@ -219,6 +217,15 @@ bool fpga_spi_exercise_register(uint8_t addr)
 // externally visible functions
 
 // TODO: init function, to configure fpga_int_N pin
+
+void fpga_init(void)
+{
+    // SPI_FPGA_CS = MODE1, set low for AUTO_BOOT from FPGA internal flash
+    nrf_gpio_pin_clear(SPIM0_FPGA_CS_PIN);
+    nrf_gpio_cfg_output(SPIM0_FPGA_CS_PIN);
+
+    fpga_soft_reset();
+}
 
 void fpga_soft_reset(void)
 {
