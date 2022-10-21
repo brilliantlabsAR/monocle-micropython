@@ -9,6 +9,7 @@
 #include "nrf_gpio.h"
 
 // Pin mapping
+
 #define IO_N_CAM_RESET              20      // P0.00
 #define IO_CAM_PWDN                 29      // P0.01
 #define IO_DISP_XCLR                15      // P0.15
@@ -23,18 +24,26 @@
 #define SPIM0_FPGA_CS_PIN           8       // P0.08 SPI Slave Select pin for the FPGA.
 #define FPGA_INT_PIN                5       // P0.05 FPGA Interrupt pin, to hold low in init.
 #define SPIM0_FLASH_CS_PIN          4       // P0.04 SPI Slave Select pin for the flash.
-#define TWI_SCL_PIN                 17      // P0.17 I2C clock GPIO pin.
-#define TWI_SDA_PIN                 13      // P0.13 I2C data GPIO pin.
+#define I2C0_SCL_PIN                17      // P0.17 I2C clock GPIO pin.
+#define I2C0_SDA_PIN                13      // P0.13 I2C data GPIO pin.
+#define I2C1_SCL_PIN                18      // P0.18 I2C clock GPIO pin.
+#define I2C1_SDA_PIN                16      // P0.16 I2C data GPIO pin.
 #define PMIC_IRQ_PIN                14      // P0.14
 #define RESET_L_PIN                 21      // P0.21
 
-// SPI
-#define SPI_INSTANCE                0
-
 // I2C
-#define TWI_INSTANCE_ID             1
-#define OV5640_ADDR                 0X3C
+
+#define IQS620_I2C                  I2C0
 #define IQS620_ADDR                 0x44
+
+#define MAX77654_I2C                I2C0
 #define MAX77654_ADDR               0x48
+
+#define OV5640_I2C                  I2C1
+#define OV5640_ADDR                 0x3C
+
+// SPI
+
+#define SPI_INSTANCE                2
 
 #endif

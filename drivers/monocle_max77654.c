@@ -477,7 +477,7 @@ void max77654_write(uint8_t reg, uint8_t data)
     write_buffer[0] = reg;
     write_buffer[1] = data;
 
-    if (!i2c_write(MAX77654_ADDR, write_buffer, 2))
+    if (!i2c_write(MAX77654_I2C, MAX77654_ADDR, write_buffer, 2))
         NRFX_ASSERT(!"I2C write failed");
     LOG("MAX77654 Write 0x%02X to register 0x%02X", data, reg);
 }
@@ -490,9 +490,9 @@ void max77654_write(uint8_t reg, uint8_t data)
  */
 void max77654_read(uint8_t reg, uint8_t *value)
 {
-    if (!i2c_write(MAX77654_ADDR, &reg, 1))
+    if (!i2c_write(MAX77654_I2C, MAX77654_ADDR, &reg, 1))
         NRFX_ASSERT(!"I2C write failed");
-    if (!i2c_read(MAX77654_ADDR, value, 1))
+    if (!i2c_read(MAX77654_I2C, MAX77654_ADDR, value, 1))
         NRFX_ASSERT(!"I2C read failed");
     LOG("MAX77654 Read register 0x%02X = 0x%02X", reg, *value);
 }

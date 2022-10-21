@@ -15,7 +15,6 @@
 #include "monocle_i2c.h"
 #include "nrf_gpio.h"
 #include "nrfx_log.h"
-#include "nrfx_twi.h"
 
 #define LOG(...) NRFX_LOG_WARNING(__VA_ARGS__)
 #define CHECK(err) check(__func__, err)
@@ -26,8 +25,9 @@ static volatile bool m_xfer_done = false;
 /** NACK returned, operation was unsuccessful. */
 static volatile bool m_xfer_nack = false;
 
-/** TWI instance. */
-static const nrfx_twi_t m_twi = NRFX_TWI_INSTANCE(TWI_INSTANCE_ID);
+/** TWI instances. */
+const nrfx_twi_t i2c0 = NRFX_TWI_INSTANCE(0);
+const nrfx_twi_t i2c1 = NRFX_TWI_INSTANCE(1);
 
 /**
  * Workaround the fact taht nordic returns an ENUM instead of a simple integer.
@@ -46,33 +46,39 @@ static inline bool check(char const *func, nrfx_err_t err)
 }
 
 /**
- * Configure the I2C bus.
+ * Configure the hardware I2C instance as well as software-based I2C instance.
  */
 // TODO: validate that 400kH speed works & increase to that
 void i2c_init(void)
 {
-    const nrfx_twi_config_t twi_main_config = {
-       .scl                = TWI_SCL_PIN,
-       .sda                = TWI_SDA_PIN,
-       .frequency          = NRF_TWI_FREQ_100K,
-       .interrupt_priority = NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY,
-    };
+    nrfx_twi_config_t config = {0};
 
-    CHECK(nrfx_twi_init(&m_twi, &twi_main_config, NULL, NULL));
-    nrfx_twi_enable(&m_twi);
+    config.scl                = I2C0_SCL_PIN;
+    config.sda                = I2C0_SDA_PIN;
+    config.frequency          = NRF_TWI_FREQ_100K;
+    config.interrupt_priority = NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY;
+    CHECK(nrfx_twi_init(I2C0, &config, NULL, NULL));
+    nrfx_twi_enable(I2C0);
+
+    config.scl                = I2C1_SCL_PIN;
+    config.sda                = I2C1_SDA_PIN;
+    config.frequency          = NRF_TWI_FREQ_100K;
+    config.interrupt_priority = NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY;
+    CHECK(nrfx_twi_init(I2C1, &config, NULL, NULL));
+    nrfx_twi_enable(I2C1);
 }
 
 /**
- * Write a buffer over I2C.
+ * Write a buffer over I2C (hardware-based instance).
  * @param addr The address at which write the data.
  * @param buf The buffer to write.
  * @param sz The length of that bufer.
  * @return True if no I2C errors were reported.
  */
-bool i2c_write(uint8_t addr, uint8_t *buf, uint8_t sz)
+bool i2c_write(nrfx_twi_t const *bus, uint8_t addr, uint8_t *buf, uint8_t sz)
 {
     nrfx_twi_xfer_desc_t xfer = NRFX_TWI_XFER_DESC_TX(addr, buf, sz);
-    return CHECK(nrfx_twi_xfer(&m_twi, &xfer, 0));
+    return CHECK(nrfx_twi_xfer(bus, &xfer, 0));
 }
 
 /**
@@ -83,10 +89,10 @@ bool i2c_write(uint8_t addr, uint8_t *buf, uint8_t sz)
  * @param sz The length of that bufer.
  * @return True if no I2C errors were reported.
  */
-bool i2c_write_no_stop(uint8_t addr, uint8_t *buf, uint8_t sz)
+bool i2c_write_no_stop(nrfx_twi_t const *bus, uint8_t addr, uint8_t *buf, uint8_t sz)
 {
     nrfx_twi_xfer_desc_t xfer = NRFX_TWI_XFER_DESC_TX(addr, buf, sz);
-    return CHECK(nrfx_twi_xfer(&m_twi, &xfer, NRFX_TWI_FLAG_TX_NO_STOP));
+    return CHECK(nrfx_twi_xfer(bus, &xfer, NRFX_TWI_FLAG_TX_NO_STOP));
 }
 
 /**
@@ -96,10 +102,10 @@ bool i2c_write_no_stop(uint8_t addr, uint8_t *buf, uint8_t sz)
  * @param sz The length of that bufer.
  * @return True if no I2C errors were reported.
  */
-bool i2c_read(uint8_t addr, uint8_t *buf, uint8_t sz)
+bool i2c_read(nrfx_twi_t const *bus, uint8_t addr, uint8_t *buf, uint8_t sz)
 {
     nrfx_twi_xfer_desc_t xfer = NRFX_TWI_XFER_DESC_RX(addr, buf, sz);;
-    return CHECK(nrfx_twi_xfer(&m_twi, &xfer, 0));
+    return CHECK(nrfx_twi_xfer(bus, &xfer, 0));
 }
 
 /**
@@ -107,14 +113,14 @@ bool i2c_read(uint8_t addr, uint8_t *buf, uint8_t sz)
  * @bug this generates a lot of false positives, and didn't detect @55.
  * @return True if all expected addresses were found.
  */
-void i2c_scan(void)
+void i2c_scan(nrfx_twi_t const *bus)
 {
     uint8_t addr;
     uint8_t sample_data;
     bool detected_device = false;
 
     for (addr = 1; addr <= 127; addr++) {
-        if (i2c_read(addr, &sample_data, sizeof(sample_data))) {
+        if (i2c_read(bus, addr, &sample_data, sizeof(sample_data))) {
             detected_device = true;
             LOG("I2C device found: addr=0x%02X", addr);
         }

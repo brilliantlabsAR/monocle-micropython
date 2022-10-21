@@ -18,15 +18,22 @@
 #include "monocle_board.h"
 #include "monocle_config.h"
 #include "nrfx_systick.h"
+#include "nrfx_log.h"
+
+#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 
 /**
  * Init the camera.
- * @return True if initialisation succeeded.
+ * Trigger initialisation of the chip, controlling its reset and power pins.
+ * @return True on success.
  */
-bool ov5640_init(void)
+void ov5640_init(void)
 {
-    ov5640_ll_init();
-    return true;
+    // no need to initialize pins, currently done in board initialization...
+    ov5640_ll_power(true);
+    ov5640_ll_rst(0);
+
+    LOG("OV5640: OV5640_CHIPIDH=0x%02X\n", ov5640_rd_reg(OV5640_CHIPIDH));
 }
 
 /**
@@ -62,25 +69,24 @@ bool ov5640_pwr_on(void)
     // 5) >= 1ms later, RESET high (come out of reset)
     // 6) >=20ms later, can begin using SCCB to access ov5640 registers
 
-    // step (1) --though already done in ov5640_ll_init(), keep in case of re-try
-    ov5640_ll_pwdn(1);
+    // step (1) --though already done in ov5640_init(), keep in case of re-try
+    ov5640_ll_power(true);
     ov5640_ll_rst(0);
     ov5640_ll_delay_ms(5);
     // step (2): 1.8V is already on
-    // step (3), enable 2.8V
-    ov5640_ll_2v8en(1);  // in MK9B, MK10, MK11, already on; does nothing
+    // step (3), 2.8V is already on
     // step (4)
     ov5640_ll_delay_ms(8);
-    ov5640_ll_pwdn(0);
+    ov5640_ll_power(false);
     // step (5)
     ov5640_ll_delay_ms(2);
     ov5640_ll_rst(1);
     // step (6)
     ov5640_ll_delay_ms(20);
     
-    reg=ov5640_rd_reg(OV5640_CHIPIDH);
+    reg = ov5640_rd_reg(OV5640_CHIPIDH);
     reg <<= 8;
-    reg|=ov5640_rd_reg(OV5640_CHIPIDL);
+    reg |= ov5640_rd_reg(OV5640_CHIPIDL);
     if (reg != OV5640_ID)
         return false; // unexpected chip ID, init failed
     ov5640_wr_reg(0x3103,0X11);    //system clock from pad, bit[1]
@@ -95,7 +101,7 @@ bool ov5640_pwr_on(void)
  */
 void ov5640_pwr_sleep(void)
 {
-    ov5640_ll_pwdn(1);
+    ov5640_ll_power(true);
 }
 
 /**
@@ -103,7 +109,7 @@ void ov5640_pwr_sleep(void)
  */
 void ov5640_pwr_wake(void)
 {
-    ov5640_ll_pwdn(0);
+    ov5640_ll_power(false);
 }
 
 /**
@@ -446,16 +452,6 @@ uint16_t __bswap_16(uint16_t in)
 } 
 
 /**
- * Sleep for some milliseconds.
- * @param milliseconds Sleep time.
- */
-// TODO: replace these 4 functions with defines in .h
-void ov5640_ll_delay_ms(uint32_t milliseconds)
-{
-    nrfx_systick_delay_ms(milliseconds);
-}
-
-/**
  * Set the chip on or off by changing its reset pin.
  * @param n True for on.
  */
@@ -472,34 +468,13 @@ void ov5640_ll_rst(uint8_t n)
  * Control the power state on/off of the chip.
  * @param n True for on.
  */
-void ov5640_ll_pwdn(uint8_t n)
+void ov5640_ll_power(bool on)
 {
-    if (0 == n) {
-        board_pin_off(IO_CAM_PWDN);
-    } else {
+    if (on) {
         board_pin_on(IO_CAM_PWDN);
+    } else {
+        board_pin_off(IO_CAM_PWDN);
     }
-}
-
-/*
- * Do nothing: 2.8V cannot be controlled independently in MK9B & later.
- * @param n Unused.
- */
-void ov5640_ll_2V8EN(uint8_t n)
-{
-    return;
-}
-
-/**
- * Trigger initialisation of the chip, controlling its reset and power pins.
- * @return True on success.
- */
-uint8_t ov5640_ll_init(void)
-{
-    // no need to initialize pins, currently done in board initialization...
-    ov5640_ll_pwdn(1);
-    ov5640_ll_rst(0);
-    return 0;
 }
 
 /**
@@ -516,7 +491,7 @@ uint8_t ov5640_wr_reg(uint16_t reg, uint8_t data)
     memcpy(buf, &swaped, 2);
     memcpy(buf+2, &data, 1);
 
-    if (i2c_write(I2C_SLAVE_ADDR, buf, 3))
+    if (i2c_write(OV5640_I2C, I2C_SLAVE_ADDR, buf, 3))
         return TRANSFER_CMPLT;
 
     return TRANSFER_ERROR;
@@ -534,9 +509,9 @@ uint8_t ov5640_rd_reg(uint16_t reg)
     uint16_t swaped = __bswap_16(reg);
 
     memcpy(w_buf, &swaped, 2);
-    if (!i2c_write(I2C_SLAVE_ADDR, w_buf, 2))
+    if (!i2c_write(OV5640_I2C, I2C_SLAVE_ADDR, w_buf, 2))
         return 0;
-    if (!i2c_read(I2C_SLAVE_ADDR, &ret_val, 1))
+    if (!i2c_read(OV5640_I2C, I2C_SLAVE_ADDR, &ret_val, 1))
         return 0;
     return ret_val;
 }
