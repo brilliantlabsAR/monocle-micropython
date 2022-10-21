@@ -159,6 +159,9 @@
 #define FPGA_EN_MIC               BIT(0) ///< enable mic
 #define FPGA_MIC_CONTROL_DEFAULT          0x00 ///< default value on reboot/reset
 
+void fpga_init_step_1(void);
+void fpga_init_step_2(void);
+
 // TODO: these should eventually be hidden, after we are done debugging (& move #defines above to .c file)
 void fpga_write_byte(uint8_t addr, uint8_t data);
 uint8_t fpga_read_byte(uint8_t addr);

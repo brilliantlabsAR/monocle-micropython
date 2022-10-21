@@ -25,6 +25,7 @@
  */
 
 #include "monocle_battery.h"
+#include "monocle_config.h"
 #include "monocle_ble.h"
 #include "monocle_board.h"
 #include "monocle_ecx335af.h"
@@ -99,14 +100,30 @@ static void hardware_init(void)
     // Custom wrapper around I2C used by the other drivers.
     i2c_init();
 
+    // Custom wrapper around SPI used by the other drivers.
+    spi_init();
+
     // I2C-controlled PMIC, also controlling the red/green LEDs over I2C
     max77654_init();
+
+    // Help the FPGA booting up as soon as it gets powered on.
+    fpga_init_step_1();
 
     // I2C calls to setup power rails of the MAX77654.
     board_aux_power_on();
 
-    // Custom wrapper around SPI used by the other drivers.
-    spi_init();
+    // FPGA setup, providing the clock for the display and screen.
+    fpga_init_step_2();
+
+    // Enable the XCLK signal used by the Camera module.
+    fpga_xclk_on();
+
+    // Test the FPGA operation.
+    fpga_write_byte(FPGA_MEMORY_CONTROL, 0xBB);
+    if (fpga_read_byte(FPGA_MEMORY_CONTROL) == 0x00)
+        max77654_led_red(true);
+    else
+        max77654_led_green(true);
 }
 
 /**
@@ -155,10 +172,6 @@ int main(void)
 
     // Reset chip
     NVIC_SystemReset();
-}
-
-void _start(void) {
-    main();
 }
 
 void MP_WEAK __assert_func(const char *file, int line, const char *func, const char *expr) {

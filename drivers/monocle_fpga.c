@@ -214,17 +214,37 @@ bool fpga_spi_exercise_register(uint8_t addr)
     return (spi_exercise_register(addr));
 }
 
-// externally visible functions
-
-// TODO: init function, to configure fpga_int_N pin
-
-void fpga_init(void)
+/**
+ * Preparations for GPIO pins before to power-on the FPGA.
+ */
+void fpga_init_step_1(void)
 {
+    // Set the SPIM0_FPGA_CS_PIN() to low-impedance mode to let the FPGA
+    // make use of it.
+    nrf_gpio_cfg_default(SPIM0_FPGA_CS_PIN);
+
+    // Make sure the interrupt pin is not pulled low which could prevent
+    // the FPGA from starting.
+    nrf_gpio_cfg_default(FPGA_INT_PIN);
+}
+
+/**
+ * Initial configuration of the registers of the FPGA.
+ */
+void fpga_init_step_2(void)
+{
+    // Give the FPGA some time to boot.
+    nrfx_systick_delay_ms(1000);
+
     // SPI_FPGA_CS = MODE1, set low for AUTO_BOOT from FPGA internal flash
     nrf_gpio_pin_clear(SPIM0_FPGA_CS_PIN);
     nrf_gpio_cfg_output(SPIM0_FPGA_CS_PIN);
 
+    // Set all registers to a known state.
     fpga_soft_reset();
+
+    // Give the FPGA some further time.
+    nrfx_systick_delay_ms(500);
 }
 
 void fpga_soft_reset(void)
@@ -241,7 +261,7 @@ void fpga_soft_reset(void)
     // from testing, 2ms seems to be the minimum delay needed for all registers to return to expected values
     // reason is unclear
     // use 5ms for extra safety margin (used to work earlier)
-    //nrfx_systick_delay_ms(5);
+    nrfx_systick_delay_ms(5);
 
     // NOTE: from 2021-02-19, 5ms is no longer enough
     // TODO: why? Seems to require 170ms delay now

@@ -35,7 +35,7 @@ extern uint32_t _ebss;
 
 typedef void (*func)(void);
 
-extern void  _start(void) __attribute__((noreturn));
+extern void  main(void) __attribute__((noreturn));
 extern void SystemInit(void);
 
 void Default_Handler(void) {
@@ -57,7 +57,7 @@ void Reset_Handler(void) {
     }
 
     SystemInit();
-    _start();
+    main();
 }
 
 void NMI_Handler                 (void) __attribute__ ((weak, alias("Default_Handler")));

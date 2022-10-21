@@ -56,11 +56,9 @@ void spi_init(void)
     spi_config.bit_order      = NRF_SPIM_BIT_ORDER_LSB_FIRST;
     CHECK(nrfx_spim_init(&m_spi, &spi_config, spim_event_handler, NULL));
 
-    // configure CS pins (for active low)
+    // configure CS pin for the Display (for active low)
     nrf_gpio_pin_set(SPIM0_DISP_CS_PIN);
     nrf_gpio_cfg_output(SPIM0_DISP_CS_PIN);
-    nrf_gpio_pin_set(SPIM0_FPGA_CS_PIN);
-    nrf_gpio_cfg_output(SPIM0_FPGA_CS_PIN);
 
     // for now, pull high to disable external flash chip
     nrf_gpio_pin_set(SPIM0_FLASH_CS_PIN);
@@ -80,7 +78,6 @@ void spi_uninit(void)
 {
     nrf_gpio_cfg_default(SPIM0_FLASH_CS_PIN);
     // return pins to default state (input, hi-z)
-    nrf_gpio_cfg_default(SPIM0_FPGA_CS_PIN);
     nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);
     // uninitialize the SPIM driver instance
     nrfx_spim_uninit(&m_spi);
@@ -99,7 +96,6 @@ void spi_uninit(void)
  */
 void spi_set_cs_pin(uint8_t cs_pin)
 {
-    assert(cs_pin == SPIM0_DISP_CS_PIN || cs_pin == SPIM0_FPGA_CS_PIN);
     m_spi_cs_pin = cs_pin;
 }
 

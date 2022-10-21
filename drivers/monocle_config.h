@@ -21,6 +21,7 @@
 #define SPIM0_MISO_PIN              10      // P0.10 SPI Master In Slave Out pin.
 #define SPIM0_DISP_CS_PIN           6       // P0.06 SPI Slave Select pin for the display.
 #define SPIM0_FPGA_CS_PIN           8       // P0.08 SPI Slave Select pin for the FPGA.
+#define FPGA_INT_PIN                5       // P0.05 FPGA Interrupt pin, to hold low in init.
 #define SPIM0_FLASH_CS_PIN          4       // P0.04 SPI Slave Select pin for the flash.
 #define TWI_SCL_PIN                 17      // P0.17 I2C clock GPIO pin.
 #define TWI_SDA_PIN                 13      // P0.13 I2C data GPIO pin.
