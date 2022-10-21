@@ -8,6 +8,7 @@ include micropython/py/mkenv.mk
 include micropython/extmod/extmod.mk
 include micropython/py/py.mk
 
+NRF = 52832
 SD = s140
 SOFTDEVICE_VERSION = 6.1.1
 SOFTDEVICE_HEX = softdevice/$(SD)_nrf52_$(SOFTDEVICE_VERSION)_softdevice.hex
@@ -42,7 +43,7 @@ CFLAGS += -g -Os
 LDFLAGS = $(CFLAGS)
 LDFLAGS += -Wl,--gc-sections
 LDFLAGS += -Xlinker -Map=$(@:.elf=.map)
-LDFLAGS += -mthumb -mabi=aapcs -Tnrf52832.ld
+LDFLAGS += -mthumb -mabi=aapcs -Tnrf$(NRF).ld
 
 LIBS += -lgcc -lm
 
@@ -64,10 +65,10 @@ INC += -Inrfx/mdk
 INC += -Isoftdevice/include
 INC += -Isoftdevice/include/nrf52
 
-DEF += -DNRF52832_XXAA
-DEF += -DNRF52832
+DEF += -DNRF$(NRF)_XXAA
+DEF += -DNRF$(NRF)
 DEF += -DCONFIG_GPIO_AS_PINRESET
-DEF += -DNRF5_HAL_H="<nrf52832_hal.h>"
+DEF += -DNRF5_HAL_H="<nrf$(NRF)_hal.h>"
 DEF += -DSOFTDEVICE_PRESENT
 DEF += -DBLUETOOTH_SD=140
 DEF += -DBLUETOOTH_SD_DEBUG=1
@@ -78,7 +79,7 @@ DEF += -DMICROPY_MODULE_FROZEN_STR
 SRC += help.c
 SRC += main.c
 SRC += mphalport.c
-SRC += nrf52832.c
+SRC += nrf$(NRF).c
 
 SRC += drivers/monocle_battery.c
 SRC += drivers/monocle_ble.c
@@ -174,7 +175,7 @@ gdb_openocd_jlink:
 	$(OPENOCD) $(OPENOCD_JLINK) -c "gdb_port 2331"
 
 gdb_segger_jlink:
-	$(JLINKGDBSERVERCL) -device nrf52832_XXAA -if SWD
+	$(JLINKGDBSERVERCL) -device nrf$(NRF)_XXAA -if SWD
 
 gdb:
 	$(GDB) \

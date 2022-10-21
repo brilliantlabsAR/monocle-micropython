@@ -12,7 +12,8 @@
  */
 
 #include "monocle_iqs620.h"
-#include "monocle_i2c.h" // for existing I2C interface
+#include "monocle_i2c.h"
+#include "monocle_config.h"
 
 #include "nrfx_gpiote.h"
 #include "nrfx_systick.h"
@@ -160,7 +161,7 @@ static bool iqs620_wreg(iqs620_t *sensor, uint8_t reg, uint8_t data)
     assert(sensor != NULL);
 
     LOG("IQS620 write 0x%x to register 0x%x.", data, reg);
-    return i2c_write(&i2c0, sensor->addr, buf, sizeof(buf));
+    return i2c_write(IQS620_I2C, sensor->addr, buf, sizeof(buf));
 }
 
 /**
@@ -178,12 +179,12 @@ static bool iqs620_rregs(iqs620_t *sensor, uint8_t reg, uint8_t *data, unsigned 
     // I2C write for the register address (without stop)
     //ret_code_t r = nrfx_twi_tx(&sensor->twi_drv, sensor->addr, &reg, sizeof(reg), true);
     //if (r != NRF_SUCCESS) return false;
-    if (!i2c_write_no_stop(&i2c0, sensor->addr, &reg, sizeof(reg))) return false;
+    if (!i2c_write_no_stop(IQS620_I2C, sensor->addr, &reg, sizeof(reg))) return false;
 
     // I2C read for the data
     //r = nrfx_twi_rx(&sensor->twi_drv, sensor->addr, data, count);
     //return (r == NRF_SUCCESS);
-    return i2c_read(&i2c0, sensor->addr, data, count);
+    return i2c_read(IQS620_I2C, sensor->addr, data, count);
 }
 
 /**

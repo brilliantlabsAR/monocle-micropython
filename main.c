@@ -118,9 +118,6 @@ static void hardware_init(void)
 
     // Enable the XCLK signal used by the Camera module.
     fpga_xclk_on();
-
-    // Initialise the Camera: power it on and reset its state.
-    ov5640_init();
 }
 
 /**
@@ -153,9 +150,7 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-            ov5640_pwr_on();
-            ov5640_init();
-            i2c_scan(&i2c1);
+            i2c_scan(OV5640_I2C);
         } else {
             stop = pyexec_friendly_repl();
         }

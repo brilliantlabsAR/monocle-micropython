@@ -33,13 +33,13 @@
 
 // I2C
 
-#define IQS620_I2C                  I2C0
+#define IQS620_I2C                  i2c0
 #define IQS620_ADDR                 0x44
 
-#define MAX77654_I2C                I2C0
+#define MAX77654_I2C                i2c0
 #define MAX77654_ADDR               0x48
 
-#define OV5640_I2C                  I2C1
+#define OV5640_I2C                  i2c1
 #define OV5640_ADDR                 0x3C
 
 // SPI
