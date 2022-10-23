@@ -101,24 +101,30 @@ static void hardware_init(void)
     // Custom wrapper around I2C used by the other drivers.
     i2c_init();
 
-    // Custom wrapper around SPI used by the other drivers.
-    spi_init();
-
     // I2C-controlled PMIC, also controlling the red/green LEDs over I2C
     max77654_init();
 
     // Initialise the FPGA: prepare pins before it gets powered on.
-    fpga_init_step_1();
+    fpga_prepare();
 
     // I2C calls to setup power rails of the MAX77654.
     board_aux_power_on();
 
+    // Custom wrapper around SPI used by the other drivers.
+    spi_init();
+
     // Initialise the FPGA: providing the clock for the display and screen.
-    fpga_init_step_2();
+    fpga_init();
 
     // Enable the XCLK signal used by the Camera module.
     fpga_xclk_on();
+
+    // Initialise the Display: gpio pins startup sequence then I2C.
+    //ov5640_pwr_on();
 }
+
+#include "nrfx_log.h"
+#define LOG NRFX_LOG_ERROR
 
 /**
  * Main application called from Reset_Handler().
@@ -150,7 +156,10 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
+            ov5640_pwr_on();
             i2c_scan(OV5640_I2C);
+            fpga_write_byte(FPGA_MEMORY_CONTROL, 0x55);
+            LOG("FPGA_MEMORY_CONTROL=0x%02X", fpga_read_byte(FPGA_MEMORY_CONTROL));
         } else {
             stop = pyexec_friendly_repl();
         }

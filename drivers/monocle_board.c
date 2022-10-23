@@ -42,11 +42,10 @@ void board_aux_power_on(void)
     nrfx_systick_delay_ms(1);
     max77654_rail_2v7(true);
 
-    // Rise time measured as 1.2ms; give FPGA time to boot, while MODE1
-    // is still held low.
+    // Rise time measured as 1.2ms; give FPGA time to boot, while MODE1 is still held low.
     nrfx_systick_delay_ms(2);
 
-    // Used by the camera and display.
+    // Used by the display.
     max77654_rail_10v(true);
 
     // Used by the red and green LEDs.
@@ -70,25 +69,17 @@ void board_aux_power_off(void)
  */
 void board_init(void)
 {
-    // Set to 0V = hold camera in reset.
-    nrf_gpio_pin_write(IO_N_CAM_RESET, 0);
-    nrf_gpio_cfg_output(IO_N_CAM_RESET);
-
-    // Set to 0V = not asserted.
-    nrf_gpio_pin_write(IO_CAM_PWDN, 0);
-    nrf_gpio_cfg_output(IO_CAM_PWDN);
-
     // Set to 0V on boot (datasheet p.11)
-    nrf_gpio_pin_write(IO_DISP_XCLR, 0);
-    nrf_gpio_cfg_output(IO_DISP_XCLR);
+    nrf_gpio_pin_write(ECX335AF_XCLR_PIN, 0);
+    nrf_gpio_cfg_output(ECX335AF_XCLR_PIN);
 }
 
 void board_uninit(void)
 {
     // return all pins configured by board_init() to default (input/hi-Z)
-    nrf_gpio_cfg_default(IO_N_CAM_RESET);
-    nrf_gpio_cfg_default(IO_CAM_PWDN);
-    nrf_gpio_cfg_default(IO_DISP_XCLR);
+    nrf_gpio_cfg_default(OV5640_NRESETB_PIN);
+    nrf_gpio_cfg_default(OV5640_PWDN_PIN);
+    nrf_gpio_cfg_default(ECX335AF_XCLR_PIN);
     nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);
     nrf_gpio_cfg_default(SPIM0_FPGA_CS_PIN);
 }

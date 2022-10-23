@@ -18,22 +18,22 @@
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
+#define LOG NRFX_LOG_WARNING
 
 /**
  * Write a byte to the FPGA over SPI using a bridge protocol.
  * @param addr The address of the FPGA to write to.
- * @param data The data to write on that address.
+ * @param byte The byte to write on that address.
  */
-void fpga_write_byte(uint8_t addr, uint8_t data)
+void fpga_write_byte(uint8_t addr, uint8_t byte)
 {
     // check that it is a valid register to write to
     assert(FPGA_REGISTER_IS_WRITABLE(addr));
 
     // select FPGA on SPI bus and write to it.
     spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
-    spi_write_byte(addr, data);
-    LOG("fpga_write_byte(addr=0x%x, data=0x%x).", addr, data);
+    spi_write_byte(addr, byte);
+    LOG("fpga_write_byte(addr=0x%x, byte=0x%x).", addr, byte);
 }
 
 /**
@@ -43,116 +43,98 @@ void fpga_write_byte(uint8_t addr, uint8_t data)
  */
 uint8_t fpga_read_byte(uint8_t addr)
 {
+    uint8_t byte;
+
     // check that it is a valid register
     assert(FPGA_REGISTER_EXISTS(addr));
-
-    uint8_t ReadData;
 
     // select FPGA on SPI bus
     spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
 
-    ReadData = spi_read_byte(addr);
-    LOG("fpga_read_byte(addr=0x%x) returned 0x%x.", addr, ReadData);    
-    return ReadData;
+    byte = spi_read_byte(addr);
+    LOG("fpga_read_byte(addr=0x%x) returned 0x%x.", addr, byte);    
+    return byte;
 }
 
 /**
- * Write a multi-byte burst of data to the FPGA over SPI.
+ * Write a multi-byte burst of byte to the FPGA over SPI.
  * The address is implicit.
- * @param data The buffer containing the data.
- * @param length The size of that buffer.
+ * @param buf The buffer containing the data.
+ * @param len The size of that buffer.
  */
-void fpga_write_burst(const uint8_t *data, uint16_t length)
+void fpga_write_burst(const uint8_t *buf, uint16_t len)
 {
     // prepare FPGA to receive the byte stream
-    uint8_t length_lo = length & 0x00FF;
-    uint8_t length_hi = (length & 0xFF00) >> 8;
-    fpga_write_byte(FPGA_WR_BURST_SIZE_LO, length_lo);
-    fpga_write_byte(FPGA_WR_BURST_SIZE_HI, length_hi);
+    fpga_write_byte(FPGA_WR_BURST_SIZE_LO, (len & 0x00FF) >> 0);
+    fpga_write_byte(FPGA_WR_BURST_SIZE_HI, (len & 0xFF00) >> 8);
 
     // select FPGA on SPI bus
     spi_set_cs_pin(SPIM0_FPGA_CS_PIN); 
-    spi_write_burst(FPGA_BURST_WR_DATA, data, length);
+    spi_write_burst(FPGA_BURST_WR_DATA, buf, len);
 }
 
 /**
  * Read a burst of data from the FPGA.
  * The address is implicit.
  * @param data The buffer that will be written to.
- * @param length The number of bytes to read onto that buffer.
+ * @param len The number of bytes to read onto that buffer.
  */
-uint8_t *fpga_read_burst_ref(uint8_t *data, uint16_t length)
+void fpga_read_burst_ref(uint8_t *data_buf, uint16_t data_len)
 {
-    uint16_t offset = 0;
-    uint8_t spiXferLength;
-    uint8_t length_lo;
-    uint8_t length_hi;
-    uint8_t *spiRxBuff;
-
-    do {
-        spiXferLength = MIN(SPI_MAX_BURST_LENGTH, length);
+     do {
+        size_t chunk_len = MIN(SPI_MAX_BURST_LENGTH, data_len);
+        uint8_t *chunk_buf;
 
         // prepare FPGA for burst read
-        length_lo = spiXferLength & 0x00FF;
-        length_hi = (spiXferLength & 0xFF00) >> 8;
-        fpga_write_byte(FPGA_RD_BURST_SIZE_LO, length_lo);
-        fpga_write_byte(FPGA_RD_BURST_SIZE_HI, length_hi);
+        fpga_write_byte(FPGA_RD_BURST_SIZE_LO, (chunk_len & 0x00FF) >> 0);
+        fpga_write_byte(FPGA_RD_BURST_SIZE_HI, (chunk_len & 0xFF00) >> 8);
 
         // select FPGA on SPI bus
         spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
 
-        spiRxBuff = spi_read_burst(FPGA_BURST_RD_DATA, spiXferLength);
-        memcpy((data+offset), spiRxBuff, spiXferLength);
+        chunk_buf = spi_read_burst(FPGA_BURST_RD_DATA, data_len);
+        memcpy(data_buf, chunk_buf, chunk_len);
 
-        offset += spiXferLength;
-        length -= spiXferLength;
+        data_buf += chunk_len;
+        data_len -= chunk_len;
 
-    } while (length);
-
-    return data;
+    } while (data_len > 0);
 }
 
-uint8_t *fpga_read_burst(uint16_t length)
+uint8_t *fpga_read_burst(uint16_t len)
 {
     // prepare FPGA for burst read
-    uint8_t length_lo = length & 0x00FF;
-    uint8_t length_hi = (length & 0xFF00) >> 8;
-    fpga_write_byte(FPGA_RD_BURST_SIZE_LO, length_lo);
-    fpga_write_byte(FPGA_RD_BURST_SIZE_HI, length_hi);
+    fpga_write_byte(FPGA_RD_BURST_SIZE_LO, (len & 0x00FF) >> 0);
+    fpga_write_byte(FPGA_RD_BURST_SIZE_HI, (len & 0xFF00) >> 8);
 
     // select FPGA on SPI bus
     spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
 
-    return spi_read_burst(FPGA_BURST_RD_DATA, length);
+    return spi_read_burst(FPGA_BURST_RD_DATA, len);
 }
 
 uint32_t fpga_get_capture_size(void)
 {
-    // verify that captured frame(s) is/are available
-    if (!fpga_capture_done())
-        return 0;
+    assert(fpga_capture_done());
 
-    uint8_t size_0 = fpga_read_byte(FPGA_CAPTURE_SIZE_0);
-    uint8_t size_1 = fpga_read_byte(FPGA_CAPTURE_SIZE_1);
-    uint8_t size_2 = fpga_read_byte(FPGA_CAPTURE_SIZE_2);
-    uint8_t size_3 = fpga_read_byte(FPGA_CAPTURE_SIZE_3);
-    return (size_3<<24) + (size_2<<16) + (size_1<<8) + size_0;
+    return (fpga_read_byte(FPGA_CAPTURE_SIZE_0) << 24
+          | fpga_read_byte(FPGA_CAPTURE_SIZE_1) << 16
+          | fpga_read_byte(FPGA_CAPTURE_SIZE_2) << 8
+          | fpga_read_byte(FPGA_CAPTURE_SIZE_3) << 0);
 }
 
 uint32_t fpga_get_bytes_read(void)
 {
-    uint8_t size_0 = fpga_read_byte(FPGA_CAPT_BYTE_COUNT_0);
-    uint8_t size_1 = fpga_read_byte(FPGA_CAPT_BYTE_COUNT_1);
-    uint8_t size_2 = fpga_read_byte(FPGA_CAPT_BYTE_COUNT_2);
-    uint8_t size_3 = fpga_read_byte(FPGA_CAPT_BYTE_COUNT_3);
-    return (size_3<<24) + (size_2<<16) + (size_1<<8) + size_0;
+    return (fpga_read_byte(FPGA_CAPT_BYTE_COUNT_0) << 24
+          | fpga_read_byte(FPGA_CAPT_BYTE_COUNT_1) << 16
+          | fpga_read_byte(FPGA_CAPT_BYTE_COUNT_2) << 8
+          | fpga_read_byte(FPGA_CAPT_BYTE_COUNT_3) << 0);
 }
 
 uint16_t fpga_get_checksum(void)
 {
-    uint8_t check_0 = fpga_read_byte(FPGA_CAPT_FRM_CHECKSUM_0);
-    uint8_t check_1 = fpga_read_byte(FPGA_CAPT_FRM_CHECKSUM_1);
-    return ((check_1<<8) + check_0);
+    return (fpga_read_byte(FPGA_CAPT_FRM_CHECKSUM_0) << 8
+          | fpga_read_byte(FPGA_CAPT_FRM_CHECKSUM_1) << 0);
 }
 
 bool fpga_is_buffer_at_start(void)
@@ -162,7 +144,8 @@ bool fpga_is_buffer_at_start(void)
 
 bool fpga_is_buffer_read_done(void)
 {
-    return (fpga_read_byte(FPGA_CAPTURE_STATUS) & (FPGA_VIDEO_CAPT_DONE | FPGA_AUDIO_CAPT_DONE | FPGA_FRAME_CAPT_DONE));
+    return (fpga_read_byte(FPGA_CAPTURE_STATUS)
+            & (FPGA_VIDEO_CAPT_DONE | FPGA_AUDIO_CAPT_DONE | FPGA_FRAME_CAPT_DONE));
     //return (fpga_read_byte(FPGA_CAPTURE_STATUS) & (FPGA_AUDIO_CAPT_DONE));
 }
 
@@ -177,7 +160,9 @@ bool fpga_test_reset(void)
     fpga_write_byte(FPGA_CAMERA_CONTROL, 0x01);
     if (0x01 != fpga_read_byte(FPGA_CAMERA_CONTROL))
         return (false);
+
     fpga_soft_reset();
+
     // check registers all have default values
     if (fpga_read_byte(FPGA_SYSTEM_CONTROL) != FPGA_SYSTEM_CONTROL_DEFAULT)
         return (false);
@@ -217,28 +202,28 @@ bool fpga_spi_exercise_register(uint8_t addr)
 /**
  * Preparations for GPIO pins before to power-on the FPGA.
  */
-void fpga_init_step_1(void)
+void fpga_prepare(void)
 {
-    // Set the SPIM0_FPGA_CS_PIN() to low-impedance mode to let the FPGA
-    // make use of it.
-    nrf_gpio_cfg_default(SPIM0_FPGA_CS_PIN);
-
     // Make sure the interrupt pin is not pulled low which could prevent
-    // the FPGA from starting.
-    nrf_gpio_cfg_default(FPGA_INT_PIN);
+    // the FPGA from starting and cause damage to the flash.
+    //
+    // There is a weak pull-up on this line, and it can be used as
+    // GPIO output for the FPGA, input for the MCU.
+    nrf_gpio_pin_set(FPGA_RECONFIG_N_PIN);
+    nrf_gpio_cfg_output(FPGA_RECONFIG_N_PIN);
+
+    // MODE1 set low for AUTOBOOT from FPGA internal flash
+    nrf_gpio_pin_clear(FPGA_MODE1_PIN);
+    nrf_gpio_cfg_output(FPGA_MODE1_PIN);
 }
 
 /**
  * Initial configuration of the registers of the FPGA.
  */
-void fpga_init_step_2(void)
+void fpga_init(void)
 {
     // Give the FPGA some time to boot.
     nrfx_systick_delay_ms(1000);
-
-    // SPI_FPGA_CS = MODE1, set low for AUTO_BOOT from FPGA internal flash
-    nrf_gpio_pin_clear(SPIM0_FPGA_CS_PIN);
-    nrf_gpio_cfg_output(SPIM0_FPGA_CS_PIN);
 
     // Set all registers to a known state.
     fpga_soft_reset();
@@ -358,15 +343,11 @@ void fpga_disp_bars(void)
 /**
  * Enable the red-blue shift chrominance correction.
  */
-void fpga_disp_RB_shift(bool enable)
+void fpga_disp_rb_shift(bool on)
 {
-    uint8_t display_reg = 0;
-    display_reg = fpga_read_byte(FPGA_DISPLAY_CONTROL);
-    if (enable) {
-        fpga_write_byte(FPGA_DISPLAY_CONTROL, display_reg | FPGA_EN_RB_SHIFT);
-    } else {
-        fpga_write_byte(FPGA_DISPLAY_CONTROL, display_reg & ~FPGA_EN_RB_SHIFT);
-    }
+    uint8_t reg = fpga_read_byte(FPGA_DISPLAY_CONTROL);
+    reg = on ? (reg | FPGA_EN_RB_SHIFT) : (reg & ~FPGA_EN_RB_SHIFT);
+    fpga_write_byte(FPGA_DISPLAY_CONTROL, reg);
 }
 #endif
 
@@ -438,24 +419,22 @@ void fpga_replay_rate(uint8_t repeat)
 
 bool fpga_capture_done(void)
 {
-    return(fpga_read_byte(FPGA_CAPTURE_STATUS) & FPGA_CAPT_RD_VLD);
+    return (fpga_read_byte(FPGA_CAPTURE_STATUS) & FPGA_CAPT_RD_VLD);
 }
 
 // Simple checksum calculation; matching the algorithm used on FPGA
 // Sums a byte stream as 16-bit words (with first byte being least significant), adding carry back in, to return 16-bit result
-// Precondition: length must be a multiple of 2 (bytes)
-uint16_t fpga_calc_checksum(uint8_t *bytearray, uint32_t length)
+// Precondition: len must be a multiple of 2 (bytes)
+uint16_t fpga_calc_checksum(uint8_t *bytearray, uint32_t len)
 {
 
     uint32_t checksum = 0;
 
     assert(bytearray != NULL);
-    assert(length == 0);
-    assert((length % 2) == 0);
-    for (uint32_t i = 0; i < length; i = i + 2)
-    {
+    assert(len == 0);
+    assert((len % 2) == 0);
+    for (uint32_t i = 0; i < len; i = i + 2)
         checksum = fpga_checksum_add(checksum, ((bytearray[i + 1] << 8) + bytearray[i]));
-    }
     return ((uint16_t)checksum);
 }
 

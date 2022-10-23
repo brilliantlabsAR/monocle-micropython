@@ -17,20 +17,10 @@
  * @{
  */
 
-// ov5640_init(): initialize three GPIO control pins. The following functions turn them on/off:
-// ov5640_ll_PWDN(n): turn on/off the PWDN pin to ov5640 (connector pin 13 in MK6, MK8)
-// ov5640_ll_RST(n): turn on/off the RESET pin to ov5640 (connector pin 14 in MK6, MK8)
-// ov5640_ll_2V8EN(n): turn on/off the 2.8V power supply to OV5640
-// ov5640_WR_Reg(): I2C write to OV5640
-// ov5640_RD_Reg(): I2C read from OV5640
-
 #define OV5640_CHIPIDH          0X300A ///< OV5640 Chip ID Register address, high byte
 #define OV5640_CHIPIDL          0X300B ///< OV5640 Chip ID Register address, low byte
 #define OV5640_ID               0X5640 ///< OV5640 Chip ID, expected value
 #define OV5640_FPS              15     ///< frames per second, as implemented in camera configuration
-
-// pause CPU execution for given # of milliseconds
-#define ov5640_ll_delay_ms(ms) nrfx_systick_delay_ms(ms)
 
 #define TRANSFER_CMPLT 0x00u
 #define TRANSFER_ERROR 0x01u
@@ -71,20 +61,11 @@ void ov5640_brightness(uint8_t bright);
 void ov5640_contrast(uint8_t contrast);
 void ov5640_sharpness(uint8_t sharp);
 void ov5640_special_effects(uint8_t eft);
-void ov5640_flash_ctrl(uint8_t sw);
-
-void ov5640_mirror(uint8_t on);
-void ov5640_flip(uint8_t on);
+void ov5640_flash_ctrl(bool on);
+void ov5640_mirror(bool on);
+void ov5640_flip(bool on);
 
 bool ov5640_outsize_set(uint16_t offx, uint16_t offy, uint16_t width, uint16_t height);
 bool ov5640_focus_init(void);
-
-void ov5640_ll_rst(uint8_t n);
-void ov5640_ll_power(bool on);
-void ov5640_ll_2v8en(uint8_t n);
-
-void ov5640_ll_delay_ms(uint32_t ms);
-uint8_t ov5640_wr_reg(uint16_t reg, uint8_t data);
-uint8_t ov5640_rd_reg(uint16_t reg);
 
 #endif

@@ -36,7 +36,7 @@ void ecx335af_config(void)
     nrfx_systick_delay_ms(1);
 
     // set XCLR to high (1.8V to take it) to change to power-saving mode
-    board_pin_on(IO_DISP_XCLR);
+    board_pin_on(ECX335AF_XCLR_PIN);
 
     // select OLED on SPI bus
     spi_set_cs_pin(SPIM0_DISP_CS_PIN);

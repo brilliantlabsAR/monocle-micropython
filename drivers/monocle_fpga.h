@@ -159,20 +159,20 @@
 #define FPGA_EN_MIC               BIT(0) ///< enable mic
 #define FPGA_MIC_CONTROL_DEFAULT          0x00 ///< default value on reboot/reset
 
-void fpga_init_step_1(void);
-void fpga_init_step_2(void);
+void fpga_prepare(void);
+void fpga_init(void);
 
 // TODO: these should eventually be hidden, after we are done debugging (& move #defines above to .c file)
-void fpga_write_byte(uint8_t addr, uint8_t data);
+void fpga_write_byte(uint8_t addr, uint8_t byte);
 uint8_t fpga_read_byte(uint8_t addr);
 // TODO: should be hidden after writing a higher-level burst read function
-void fpga_write_burst(const uint8_t *data, uint16_t length);
-uint8_t *fpga_read_burst(uint16_t length);
-uint8_t *fpga_read_burst_ref (uint8_t *data, uint16_t length);
+void fpga_write_burst(const uint8_t *buf, uint16_t len);
+uint8_t *fpga_read_burst(uint16_t len);
+void fpga_read_burst_ref (uint8_t *buf, uint16_t len);
 uint32_t fpga_get_capture_size(void);
 uint32_t fpga_get_bytes_read(void);
 uint16_t fpga_get_checksum(void);
-uint16_t fpga_calc_checksum(uint8_t *bytearray, uint32_t length);
+uint16_t fpga_calc_checksum(uint8_t *bytearray, uint32_t len);
 uint16_t fpga_checksum_add(uint16_t checksum1, uint16_t checksum2);
 bool fpga_is_buffer_at_start(void);
 bool fpga_is_buffer_read_done(void);
