@@ -10,23 +10,21 @@
  */
 
 #include "monocle_board.h"
-#include "nrfx_systick.h"
-#include <stdint.h>
-#include <stdbool.h>
+#include "monocle_battery.h"
+#include "monocle_ble.h"
+#include "monocle_ecx335af.h"
+#include "monocle_fpga.h"
+#include "monocle_i2c.h"
+#include "monocle_iqs620.h"
 #include "monocle_max77654.h"
-#include "monocle_config.h"
+#include "monocle_ov5640.h"
+#include "monocle_spi.h"
+#include "monocle_touch.h"
+#include "nrfx_systick.h"
+#include "nrfx_gpiote.h"
+#include <stdbool.h>
 
-void board_pin_off(uint8_t pin)
-{
-    nrf_gpio_pin_write(pin, 0);
-}
-
-void board_pin_on(uint8_t pin)
-{
-    nrf_gpio_pin_write(pin, 1);
-}
-
-void board_aux_power_on(void)
+void board_power_rails_on(void)
 {
     // Advised not to pause the debugger in this function to preserve
     // power-on timing requirements
@@ -52,7 +50,7 @@ void board_aux_power_on(void)
     max77654_rail_vled(true);
 }
 
-void board_aux_power_off(void)
+void board_power_rails_off(void)
 {
     max77654_rail_vled(false);
     max77654_rail_10v(false);
@@ -62,24 +60,52 @@ void board_aux_power_off(void)
 }
 
 /**
- * Initializ the BSP handling for the board.
- * Configure output pins and set to initial state.
- * @param init_flags Flags specify what to initialize (LEDs/buttons).
- *  See @ref BSP_BOARD_INIT_FLAGS.
+ * Initialises the hardware drivers and IO.
  */
 void board_init(void)
 {
-    // Set to 0V on boot (datasheet p.11)
-    nrf_gpio_pin_write(ECX335AF_XCLR_PIN, 0);
-    nrf_gpio_cfg_output(ECX335AF_XCLR_PIN);
+    // Initialise SysTick ARM timer driver for nrfx_systick_delay_ms().
+    nrfx_systick_init();
+
+    // Initialise the GPIO driver used below.
+    nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
+
+    // Custom wrapper around I2C used by the other drivers.
+    i2c_init();
+
+    // I2C-controlled PMIC, also controlling the red/green LEDs over I2C
+    max77654_init();
+
+    // I2C calls to make sure all power rails are turned off.
+    board_power_rails_on();
+
+    // Initialise GPIO before the chips are powered on.
+    ecx335af_prepare();
+    fpga_prepare();
+    ov5640_prepare();
+
+    // I2C calls to setup power rails of the MAX77654.
+    board_power_rails_on();
+
+    // Custom wrapper around SPI used by the other drivers.
+    spi_init();
+
+    // Initialise the FPGA: providing the clock for the display and screen.
+    fpga_init();
+
+    // Enable the XCLK signal used by the Camera module.
+    fpga_xclk_on();
+
+    // Initialise the Display: gpio pins startup sequence then I2C.
+    ov5640_pwr_on();
 }
 
-void board_uninit(void)
+void board_deinit(void)
 {
-    // return all pins configured by board_init() to default (input/hi-Z)
-    nrf_gpio_cfg_default(OV5640_NRESETB_PIN);
-    nrf_gpio_cfg_default(OV5640_PWDN_PIN);
-    nrf_gpio_cfg_default(ECX335AF_XCLR_PIN);
-    nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);
-    nrf_gpio_cfg_default(SPIM0_FPGA_CS_PIN);
+    // Call deinit() hook of each driver.
+    ecx335af_deinit();
+    fpga_deinit();
+    ov5640_deinit();
+
+    // Turn the power rails off before turning off.
 }

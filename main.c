@@ -84,45 +84,6 @@ void nlr_jump_fail(void *val)
     for (;;);
 }
 
-/**
- * Initialises the hardware level drivers and IO.
- */
-static void hardware_init(void)
-{
-    // Initialise the NRFX SysTick timer driver for delay_ms implementations.
-    nrfx_systick_init();
-
-    // Initialise the GPIO driver used by both the Pin and FPGA modules
-    nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
-
-    // GPIO calls for setting the chip-select pins and chip-enable signals.
-    board_init();
-
-    // Custom wrapper around I2C used by the other drivers.
-    i2c_init();
-
-    // I2C-controlled PMIC, also controlling the red/green LEDs over I2C
-    max77654_init();
-
-    // Initialise the FPGA: prepare pins before it gets powered on.
-    fpga_prepare();
-
-    // I2C calls to setup power rails of the MAX77654.
-    board_aux_power_on();
-
-    // Custom wrapper around SPI used by the other drivers.
-    spi_init();
-
-    // Initialise the FPGA: providing the clock for the display and screen.
-    fpga_init();
-
-    // Enable the XCLK signal used by the Camera module.
-    fpga_xclk_on();
-
-    // Initialise the Display: gpio pins startup sequence then I2C.
-    //ov5640_pwr_on();
-}
-
 #include "nrfx_log.h"
 #define LOG NRFX_LOG_ERROR
 
@@ -131,11 +92,11 @@ static void hardware_init(void)
  */
 int main(void)
 {
-    // Initialise BLE
+    // Initialise BLE, also used for logging
     ble_init();
 
     // Configure the hardware and IO pins
-    hardware_init();
+    board_init();
 
     // Initialise the stack pointer for the main thread
     mp_stack_set_top(&_stack_top);
@@ -156,14 +117,16 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-            ov5640_pwr_on();
-            i2c_scan(OV5640_I2C);
-            fpga_write_byte(FPGA_MEMORY_CONTROL, 0x55);
+            uint8_t u8;
+            fpga_get_version(&u8, &u8);
             LOG("FPGA_MEMORY_CONTROL=0x%02X", fpga_read_byte(FPGA_MEMORY_CONTROL));
         } else {
             stop = pyexec_friendly_repl();
         }
     }
+
+    // Deinitialize the board and power things off early
+    board_deinit();
 
     // Garbage collection ready to exit
     gc_sweep_all(); // TODO optimize away GC if space needed later

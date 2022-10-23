@@ -46,7 +46,9 @@
 
 // Functions return true on success, false on failure
 
+void ov5640_prepare(void);
 void ov5640_init(void);
+void ov5640_deinit(void);
 bool ov5640_pwr_on(void);
 void ov5640_pwr_sleep(void);
 void ov5640_pwr_wake(void);

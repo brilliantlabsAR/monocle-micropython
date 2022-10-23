@@ -3,18 +3,14 @@
  * Licensed under the MIT License
  */
 
-/**
- * Function prototypes for interface to FPGA.
- * @file
- * @author Nathan Ashelman for Brilliant Labs Limited (Hong Kong)
- */
-
 #ifndef FPGA_H
 #define FPGA_H
 /**
  * Driver for configuring the FPGA registers over SPI and bulk data transfer.
  * @defgroup fpga
  * @ingroup driver_chip
+ * @author Shreyas Hemachandra
+ * @author Nathan Ashelman
  * @{
  */
 
@@ -161,6 +157,7 @@
 
 void fpga_prepare(void);
 void fpga_init(void);
+void fpga_deinit(void);
 
 // TODO: these should eventually be hidden, after we are done debugging (& move #defines above to .c file)
 void fpga_write_byte(uint8_t addr, uint8_t byte);

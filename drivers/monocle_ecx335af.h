@@ -24,7 +24,9 @@ typedef enum {
     ECX335AF_BRIGHT  = 4,    // 4000 cd/m2
 } ecx335af_luminance_t;
 
-void ecx335af_config(void);
+void ecx335af_prepare(void);
+void ecx335af_init(void);
+void ecx335af_deinit(void);
 bool ecx335af_verify(void);
 void ecx335af_set_luminance(ecx335af_luminance_t level);
 void ecx335af_sleep(void);

@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include "monocle_ov5640.h"
 
 // TODO: Rename tables from RGB to YUV; perhaps with a complier switch between them

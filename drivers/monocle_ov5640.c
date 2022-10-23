@@ -110,13 +110,20 @@ void ov5640_prepare(void)
 /**
  * Init the camera.
  * Trigger initialisation of the chip, controlling its reset and power pins.
- * @return True on success.
  */
 void ov5640_init(void)
 {
     ov5640_pin_pwdn(true);
     ov5640_pin_nresetb(false);
     LOG("OV5640: OV5640_CHIPIDH = 0x%02X\n", ov5640_read_reg(OV5640_CHIPIDH));
+}
+/**
+ * Revert the configuration of the camera module.
+ */
+void ov5640_deinit(void)
+{
+    nrf_gpio_cfg_default(OV5640_NRESETB_PIN);
+    nrf_gpio_cfg_default(OV5640_PWDN_PIN);
 }
 
 /**

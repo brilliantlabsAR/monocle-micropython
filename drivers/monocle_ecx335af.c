@@ -10,16 +10,17 @@
  * @author Nathan Ashelman
  */
 
+#include "monocle_ecx335af.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
-#include "monocle_ecx335af.h"
-#include "monocle_fpga.h" // for fpga_checksum()
-#include "monocle_spi.h"
 #include "monocle_board.h"
 #include "monocle_config.h"
-#include "nrfx_systick.h"
+#include "monocle_fpga.h"
+#include "monocle_spi.h"
+#include "nrf_gpio.h"
 #include "nrfx_log.h"
+#include "nrfx_systick.h"
 
 #define ecx335af_write_byte(addr, data) spi_write_byte(addr, data)
 #define ecx335af_read_byte(addr) spi_read_byte(addr)
@@ -27,16 +28,26 @@
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 
 /**
+ * Prepare GPIO pins before the chip receives power.
+ */
+void ecx335af_prepare(void)
+{
+    // Set to 0V on boot (datasheet p.11)
+    nrf_gpio_pin_write(ECX335AF_XCLR_PIN, 0);
+    nrf_gpio_cfg_output(ECX335AF_XCLR_PIN);
+}
+
+/**
  * Configure each value of the screen over SPI.
  */
-void ecx335af_config(void)
+void ecx335af_init(void)
 {
     // power-on sequence, see Datasheet section 9
     // 1ms after 1.8V on, device has finished initializing
     nrfx_systick_delay_ms(1);
 
     // set XCLR to high (1.8V to take it) to change to power-saving mode
-    board_pin_on(ECX335AF_XCLR_PIN);
+    nrf_gpio_pin_set(ECX335AF_XCLR_PIN);
 
     // select OLED on SPI bus
     spi_set_cs_pin(SPIM0_DISP_CS_PIN);
@@ -180,6 +191,12 @@ void ecx335af_config(void)
     ecx335af_write_byte(0x00, 0x9F); // exit power saving mode, YUV
 
     nrfx_systick_delay_ms(1);
+}
+
+void ecx335af_deinit(void)
+{
+    nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);
+    nrf_gpio_cfg_default(ECX335AF_XCLR_PIN);
 }
 
 /**

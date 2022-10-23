@@ -3,16 +3,9 @@
  * Licensed under the MIT License
  */
 
-/**
- * Interface with the FPGA.
- * @file
- * @author Shreyas Hemachandra
- * @author Nathan Ashelman
- */
-
 #include <assert.h>
 #include "monocle_fpga.h"
-#include "monocle_ov5640.h" // for OV5640_FPS
+#include "monocle_ov5640.h"
 #include "monocle_spi.h"
 #include "monocle_config.h"
 #include "nrfx_systick.h"
@@ -97,7 +90,6 @@ void fpga_read_burst_ref(uint8_t *data_buf, uint16_t data_len)
 
         data_buf += chunk_len;
         data_len -= chunk_len;
-
     } while (data_len > 0);
 }
 
@@ -116,7 +108,6 @@ uint8_t *fpga_read_burst(uint16_t len)
 uint32_t fpga_get_capture_size(void)
 {
     assert(fpga_capture_done());
-
     return (fpga_read_byte(FPGA_CAPTURE_SIZE_0) << 24
           | fpga_read_byte(FPGA_CAPTURE_SIZE_1) << 16
           | fpga_read_byte(FPGA_CAPTURE_SIZE_2) << 8
@@ -230,6 +221,12 @@ void fpga_init(void)
 
     // Give the FPGA some further time.
     nrfx_systick_delay_ms(500);
+}
+
+void fpga_deinit(void)
+{
+    nrf_gpio_cfg_default(FPGA_MODE1_PIN);
+    nrf_gpio_cfg_default(FPGA_RECONFIG_N_PIN);
 }
 
 void fpga_soft_reset(void)
@@ -408,11 +405,9 @@ void fpga_prep_read_audio(void)
 void fpga_replay_rate(uint8_t repeat)
 {
     // cannot be zero, max 5 bits
-    if ((repeat == 0) || (repeat > FPGA_REP_RATE_MASK))
-    {
-        NRFX_LOG_ERROR("fpga_replay_rate(), invalid input parameter %d", repeat);
-        return;
-    }
+    assert(repeat > 0);
+    assert(repeat <= FPGA_REP_RATE_MASK);
+
     fpga_write_byte(FPGA_REPLAY_RATE_CONTROL, repeat);
     //LOG("FPGA replay rate set to %d", repeat);
 }
@@ -479,7 +474,7 @@ void fpga_set_zoom(uint8_t level)
             fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK | FPGA_EN_CAM | zoom_bits | FPGA_EN_ZOOM | FPGA_EN_LUMA_COR);
             break;
         default:
-            NRFX_LOG_ERROR("FPGA Zoom invalid zoom level.");
+            assert(!"FPGA Zoom invalid zoom level.");
     }
 }
 
@@ -540,7 +535,7 @@ void fpga_set_display(uint8_t mode)
             LOG("FPGA display mode = color bars.");
             break;
         default:
-            NRFX_LOG_ERROR("FPGA display mode invalid.");
+            assert(!"FPGA display mode invalid.");
     }
 }
 
@@ -553,7 +548,7 @@ void fpga_get_version(uint8_t *major, uint8_t *minor)
 {
     *major = fpga_read_byte(FPGA_VERSION_MAJOR);
     *minor = fpga_read_byte(FPGA_VERSION_MINOR);
-    LOG("fpga_get_version(): %d.%d", *major, *minor);
+    LOG("%d.%d", *major, *minor);
 }
 
 /**

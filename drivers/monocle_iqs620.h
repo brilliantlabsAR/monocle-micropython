@@ -32,14 +32,13 @@ typedef enum {
     IQS620_BUTTON_DOWN,
 } iqs620_event_t;
 
-typedef void (*iqs620_callback_t)(void *iqs620, iqs620_button_t button, iqs620_event_t event);
+typedef void (*iqs620_callback_t)(iqs620_button_t button, iqs620_event_t event);
 
 typedef struct {
     //nrfx_twi_t       twi_drv;
     //pin_t               scl_pin;
     //pin_t               sda_pin;
     pin_t               rdy_pin;
-    uint8_t             addr;
     iqs620_callback_t   callback;
     uint8_t             prox_threshold;         ///< set to 0 to use default (22)
     uint8_t             touch_threshold;        ///< set to 0 to use default (37)
@@ -48,11 +47,11 @@ typedef struct {
     uint16_t            button_status;          ///< internal data, added to mimic cy8cmbr3 interfece
 } iqs620_t;
 
-bool iqs620_init(iqs620_t *sensor);
-bool iqs620_reset(iqs620_t *sensor);
-bool iqs620_id(iqs620_t *sensor, uint32_t *id);
-bool iqs620_get_button_status(iqs620_t *sensor, uint16_t *status); // added to mimic cy8cmbr3 interfece
-bool iqs620_get_ch_count(iqs620_t *sensor, uint8_t channel, uint16_t *ch_data);
+void iqs620_init(void);
+void iqs620_reset(void);
+uint32_t iqs620_get_id(void);
+uint16_t iqs620_get_button_status(void); // added to mimic cy8cmbr3 interfece
+uint16_t iqs620_get_ch_count(uint8_t channel);
 
 /** @} */
 #endif
