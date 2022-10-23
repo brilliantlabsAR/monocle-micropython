@@ -147,11 +147,10 @@ static iqs620_t iqs620;
 /**
  * Workaround the fact taht nordic returns an ENUM instead of a simple integer.
  */
-static inline bool check(char const *func, nrfx_err_t err)
+static inline void check(char const *func, nrfx_err_t err)
 {
     if (err != NRFX_SUCCESS)
         LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
-    return err == NRFX_SUCCESS;
 }
 
 /**
@@ -168,7 +167,6 @@ static void iqs620_write_reg(uint8_t addr, uint8_t data)
 
     ok = i2c_write(IQS620_I2C, IQS620_ADDR, buf, sizeof(buf));
     assert(ok);
-    LOG("addr=0x%02X data=0x%02X ok=%d", addr, data, ok);
 }
 
 /**
@@ -178,6 +176,7 @@ static void iqs620_write_reg(uint8_t addr, uint8_t data)
  * @param buf Destination buffer.
  * @param len Size of this buffer, number of bytes to read.
  * @return True if I2C succeeds.
+ * @bug NRFX library returns ERR_ANACK, but still getting data in: bug in NRFX?
  */
 static void iqs620_read_reg(uint8_t addr, uint8_t *buf, unsigned len)
 {
@@ -185,14 +184,13 @@ static void iqs620_read_reg(uint8_t addr, uint8_t *buf, unsigned len)
 
     // I2C write for the register address (without stop)
     ok = i2c_write_no_stop(IQS620_I2C, IQS620_ADDR, &addr, 1);
-    assert(ok);
-    LOG("addr=0x%02X ok=%d", addr, ok);
+    //assert(ok);
 
-    // I2C read for the data
+    // I2C read the data after the write.
     ok = i2c_read(IQS620_I2C, IQS620_ADDR, buf, len);
-    assert(ok);
-    LOG("buf[0]=0x%02X len=%d ok=%d", buf[0], len, ok);
+    //assert(ok);
 
+    (void)ok; // TODO: debug NRFX driver
 }
 
 /**
@@ -446,7 +444,7 @@ uint32_t iqs620_get_id(void)
     uint8_t data[3];
 
     iqs620_read_reg(IQS620_ID, data, sizeof(data));
-    return data[0] << 16 | data[1] << 8 | data[2] << 0;
+    return (data[0] << 16) | (data[1] << 8) | (data[2] << 0);
 }
 
 /**
@@ -462,6 +460,7 @@ void iqs620_reset(void)
     iqs620_write_reg(IQS620_SYS_SETTINGS, 1 << 7);
 
     // check that we could read the ID
+    LOG("id=0x%06X", iqs620_get_id()); // debug
     //assert(iqs620_get_id() == IQS620_ID_VALUE);
 
     // enable the RDY event after the reset

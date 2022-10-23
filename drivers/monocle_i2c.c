@@ -39,7 +39,7 @@ static inline bool check(char const *func, nrfx_err_t err)
         case NRFX_ERROR_DRV_TWI_ERR_ANACK:
             return false;
         default:
-            LOG("%s", func, NRFX_LOG_ERROR_STRING_GET(err));
+            LOG("%s, %s", func, NRFX_LOG_ERROR_STRING_GET(err));
             return false;
     }
 }

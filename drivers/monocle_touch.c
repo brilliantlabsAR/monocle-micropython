@@ -107,11 +107,10 @@ static uint16_t release_status = 0;
 /**
  * Workaround the fact taht nordic returns an ENUM instead of a simple integer.
  */
-static inline bool check(char const *func, nrfx_err_t err)
+static inline void check(char const *func, nrfx_err_t err)
 {
     if (err != NRFX_SUCCESS)
         LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
-    return err == NRFX_SUCCESS;
 }
 
 static iqs620_t sensor = {
