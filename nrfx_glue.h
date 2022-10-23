@@ -37,7 +37,7 @@
 #define ARRAY_SIZE MP_ARRAY_SIZE
 #endif
 
-#define NRFX_STATIC_ASSERT(expression)
+#define NRFX_STATIC_ASSERT(exp) _Static_assert(exp, #exp)
 
 // If an assert is triggered, the breakpoint is triggered ans GDB stops
 // on the line of the assert, offering to continue.

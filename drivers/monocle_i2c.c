@@ -16,7 +16,7 @@
 #include "nrf_gpio.h"
 #include "nrfx_log.h"
 
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
+#define LOG NRFX_LOG_ERROR
 #define CHECK(err) check(__func__, err)
 
 const nrfx_twi_t i2c0 = NRFX_TWI_INSTANCE(0);

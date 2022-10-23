@@ -98,6 +98,9 @@ void board_init(void)
 
     // Initialise the Display: gpio pins startup sequence then I2C.
     ov5640_pwr_on();
+
+    // Initialise the Capacitive Touch Button controller over I2C.
+    //iqs620_init();
 }
 
 void board_deinit(void)

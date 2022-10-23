@@ -24,16 +24,12 @@
  * THE SOFTWARE.
  */
 
-#include "monocle_battery.h"
 #include "monocle_ble.h"
 #include "monocle_board.h"
-#include "monocle_config.h"
-#include "monocle_ecx335af.h"
-#include "monocle_fpga.h"
-#include "monocle_i2c.h"
-#include "monocle_max77654.h"
-#include "monocle_ov5640.h"
-#include "monocle_spi.h"
+#include "monocle_fpga.h" // debug
+#include "monocle_iqs620.h" // debug
+#include "monocle_config.h" // debug
+#include "monocle_i2c.h" // debug
 #include "nrf_sdm.h"
 #include "nrfx_gpiote.h"
 #include "nrfx_systick.h"
@@ -117,9 +113,8 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-            uint8_t u8;
-            fpga_get_version(&u8, &u8);
-            LOG("FPGA_MEMORY_CONTROL=0x%02X", fpga_read_byte(FPGA_MEMORY_CONTROL));
+            i2c_scan(IQS620_I2C);
+            iqs620_init();
         } else {
             stop = pyexec_friendly_repl();
         }
