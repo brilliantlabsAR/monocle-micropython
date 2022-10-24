@@ -135,7 +135,7 @@
 
 // values
 
-#define IQS620_ID_VALUE                         0x00410882
+#define IQS620_ID_VALUE                         0x410D82
 
 // parameters
 
@@ -155,7 +155,6 @@ static inline void check(char const *func, nrfx_err_t err)
 
 /**
  * Configure a register with given value.
- * @param iqs620 Instance to work upon.
  * @param reg Address of the register.
  * @param data Value to write.
  * @return True if I2C succeeds.
@@ -171,7 +170,6 @@ static void iqs620_write_reg(uint8_t addr, uint8_t data)
 
 /**
  * Read multiple bytes from a register.
- * @param iqs620 Instance to work upon.
  * @param reg Address of the register.
  * @param buf Destination buffer.
  * @param len Size of this buffer, number of bytes to read.
@@ -184,18 +182,15 @@ static void iqs620_read_reg(uint8_t addr, uint8_t *buf, unsigned len)
 
     // I2C write for the register address (without stop)
     ok = i2c_write_no_stop(IQS620_I2C, IQS620_ADDR, &addr, 1);
-    //assert(ok);
+    assert(ok);
 
     // I2C read the data after the write.
     ok = i2c_read(IQS620_I2C, IQS620_ADDR, buf, len);
-    //assert(ok);
-
-    (void)ok; // TODO: debug NRFX driver
+    assert(ok);
 }
 
 /**
  * Configure the IQS620 to get it ready to work.
- * @param iqs620 Instance to work upon.
  * @return True if I2C succeeds.
  */
 static void iqs620_configure(void)
@@ -327,7 +322,6 @@ static void iqs620_prox_touch_1(iqs620_button_t button, tp_t oldstate, tp_t news
 
 /**
  * Process the touch events received from the chip.
- * @param iqs620 Instance to work upon.
  * @param proxflags Binary flags describing the state of touch/proximity.
  */
 static void iqs620_prox_touch(uint8_t proxflags)
@@ -402,25 +396,7 @@ static void iqs620_ready_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t ac
 }
 
 /**
- * Setup an event handler tha will let us know that the IQS620 is ready.
- * @param iqs620 Instance to work upon.
- */
-static void iqs620_init_ready_handler(void)
-{
-    return; // debug
-    // initialize GPIOTE
-    CHECK(nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY));
-
-    // configure the RDY pin for high-to-low edge GPIOTE event
-    nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_HITOLO(true);
-    config.pull = NRF_GPIO_PIN_PULLUP;
-
-    //CHECK(nrfx_gpiote_in_init(iqs620.rdy_pin, &config, iqs620_ready_handler));
-}
-
-/**
  * Enable (or disable) the event telling that IQS620 is ready.
- * @param iqs620 Instance to work upon.
  */
 static void iqs620_set_ready_handler(bool on)
 {
@@ -435,41 +411,19 @@ static void iqs620_set_ready_handler(bool on)
 
 /**
  * Get the ID of the product number.
- * @param iqs620 Instance to work upon.
  * @param id Pointer to memory filled with the ID.
  * @return True if I2C succeeds and the ID is valid.
  */
 uint32_t iqs620_get_id(void)
 {
-    uint8_t data[3];
+    uint8_t data[3] = {0};
 
     iqs620_read_reg(IQS620_ID, data, sizeof(data));
     return (data[0] << 16) | (data[1] << 8) | (data[2] << 0);
 }
 
 /**
- * Reset the chip and reconfigure it.
- * @param iqs620 Instance to work upon.
- */
-void iqs620_reset(void)
-{
-    // disable the RDY event during reset
-    iqs620_set_ready_handler(false);
-
-    // initiate soft reset
-    iqs620_write_reg(IQS620_SYS_SETTINGS, 1 << 7);
-
-    // check that we could read the ID
-    LOG("id=0x%06X", iqs620_get_id()); // debug
-    //assert(iqs620_get_id() == IQS620_ID_VALUE);
-
-    // enable the RDY event after the reset
-    iqs620_set_ready_handler(true);
-}
-
-/**
  * Initialise the chip as well as the iqs620 instance.
- * @param iqs620 Variable that will hold the instance state.
  * @return True on success.
  */
 void iqs620_init(void)
@@ -482,16 +436,31 @@ void iqs620_init(void)
     if(iqs620.ati_target > 0x3F)
         iqs620.ati_target = 0x3F;
 
-    // initialize the RDY pin handler
-    iqs620_init_ready_handler();
+    // configure the RDY pin for high-to-low edge GPIOTE event
+    nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_HITOLO(true);
+    config.pull = NRF_GPIO_PIN_PULLUP;
+    //CHECK(nrfx_gpiote_in_init(iqs620.rdy_pin, &config, iqs620_ready_handler));
 
-    // perform soft reset
-    iqs620_reset();
+    // Reset the chip and reconfigure it.
+
+    // disable the RDY event during reset
+    iqs620_set_ready_handler(false);
+
+    // initiate soft reset
+    iqs620_write_reg(IQS620_SYS_SETTINGS, 1 << 7);
+
+    // Wait for IQS620 system reset completion.
+    nrfx_systick_delay_ms(10);
+
+    // Check that the chip responds correctly.
+    assert(iqs620_get_id() == IQS620_ID_VALUE);
+
+    // enable the RDY event after the reset
+    iqs620_set_ready_handler(true);
 }
 
 /**
  * Wrapper that mimics the CY8CMBR3 driver for code compatibility.
- * @param iqs620 Instance to work upon.
  * @param status Pointer filled with the button status.
  * @return True if I2C succeeds.
  */
@@ -503,7 +472,6 @@ uint16_t iqs620_get_button_status(void)
 
 /**
  * Get the raw counts for tuning thresholds.
- * @param iqs620 Instance to work upon.
  * @param channel Sensor channel number to read the data from
  * @param ch_data Pointer filled with the raw iqs620 output.
  * @return True if I2C succeeds.
