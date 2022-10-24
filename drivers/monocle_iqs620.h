@@ -39,7 +39,7 @@ void iqs620_reset(void);
 void iqs620_callback(iqs620_button_t, iqs620_event_t);
 uint32_t iqs620_get_id(void);
 uint16_t iqs620_get_button_status(void); // added to mimic cy8cmbr3 interfece
-uint16_t iqs620_get_ch_count(uint8_t channel);
+uint16_t iqs620_get_count(uint8_t channel);
 
 /** @} */
 #endif

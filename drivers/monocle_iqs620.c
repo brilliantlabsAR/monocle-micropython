@@ -137,19 +137,16 @@
 
 #define IQS620_ID_VALUE                         0x410D82
 
-// parameters
+// default is 0x10 = target of 512.
+// target = 0x1E * 32 = 960, gives good results on MK11 Flex through
+// 1mm plastic (higher value slow to react)
+#define IQS620_ATI_TARGET                       0x1E
 
-#define IQS620_RESET_TIMEOUT_MS                 50
-#define IQS620_RESET_RETRY_MS                   20
+// 0=default (22), 1=most sensitive, 255=least sensitive
+#define IQS620_PROX_THRESHOLD                   10         
 
-// Set to 0 to use default (22).
-static uint8_t iqs620_prox_threshold;         
-
-// Set to 0 to use default (37).
-static uint8_t iqs620_touch_threshold;        
-
-// 6-bit value, default is 0x10 = target of 512.
-static uint8_t iqs620_ati_target;             
+// 0=default (27), 1=most sensitive, 255=least sensitive
+#define IQS620_TOUCH_THRESHOLD                  10         
 
 // Internal data.
 static uint8_t iqs620_prox_touch_state;       
@@ -171,7 +168,6 @@ static inline void check(char const *func, nrfx_err_t err)
  * Configure a register with given value.
  * @param reg Address of the register.
  * @param data Value to write.
- * @return True if I2C succeeds.
  */
 static void iqs620_write_reg(uint8_t addr, uint8_t data)
 {
@@ -187,7 +183,6 @@ static void iqs620_write_reg(uint8_t addr, uint8_t data)
  * @param reg Address of the register.
  * @param buf Destination buffer.
  * @param len Size of this buffer, number of bytes to read.
- * @return True if I2C succeeds.
  * @bug NRFX library returns ERR_ANACK, but still getting data in: bug in NRFX?
  */
 static void iqs620_read_reg(uint8_t addr, uint8_t *buf, unsigned len)
@@ -205,7 +200,6 @@ static void iqs620_read_reg(uint8_t addr, uint8_t *buf, unsigned len)
 
 /**
  * Configure the IQS620 to get it ready to work.
- * @return True if I2C succeeds.
  */
 static void iqs620_configure(void)
 {
@@ -230,36 +224,34 @@ static void iqs620_configure(void)
 
     // channel 0 cap size 15 pF, full-ATI mode
     iqs620_write_reg(IQS620_PROX_FUSION_1_0,
-        // testing shows better sensitivity with 15pF than with 60pF
         IQS620_PROX_FUSION_1_CAP_15PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL);
-        //IQS620_PROX_FUSION_1_CAP_60PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL); // 60 pF
 
     // channel 1 cap size 15 pF, full-ATI mode
     iqs620_write_reg(IQS620_PROX_FUSION_1_1,
-        // testing shows better sensitivity with 15pF than with 60pF
         IQS620_PROX_FUSION_1_CAP_15PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL);
-        //IQS620_PROX_FUSION_1_CAP_60PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL); // 60 pF
 
     // channel 0 cap sensing ATI base & target (default 0xD0: base=200, target=512 is not sensitive enough)
     iqs620_write_reg(IQS620_PROX_FUSION_2_0,
-        IQS620_PROX_FUSION_2_ATI_BASE_75 | iqs620_ati_target); // base=75, target as configured
+        // base=75, target as configured
+        IQS620_PROX_FUSION_2_ATI_BASE_75 | IQS620_ATI_TARGET);
 
     // channel 1 cap sensing ATI base & target (default 0xD0: base=200, target=512 is not sensitive enough)
     iqs620_write_reg(IQS620_PROX_FUSION_2_1,
-        IQS620_PROX_FUSION_2_ATI_BASE_75 | iqs620_ati_target); // base=75, target as configured
+        // base=75, target as configured
+        IQS620_PROX_FUSION_2_ATI_BASE_75 | IQS620_ATI_TARGET);
 
-    if (iqs620_prox_threshold != 0)
+    if (IQS620_PROX_THRESHOLD != 0)
     {
         // set prox detection threshold for channels 0 and 1
-        iqs620_write_reg(IQS620_PROX_THRESHOLD_0, iqs620_prox_threshold);
-        iqs620_write_reg(IQS620_PROX_THRESHOLD_1, iqs620_prox_threshold);
+        iqs620_write_reg(IQS620_PROX_THRESHOLD_0, IQS620_PROX_THRESHOLD);
+        iqs620_write_reg(IQS620_PROX_THRESHOLD_1, IQS620_PROX_THRESHOLD);
     }
 
-    if (iqs620_touch_threshold != 0)
+    if (IQS620_TOUCH_THRESHOLD != 0)
     {
         // set touch detection threshold for channels 0 and 1
-        iqs620_write_reg(IQS620_TOUCH_THRESHOLD_0, iqs620_touch_threshold);
-        iqs620_write_reg(IQS620_TOUCH_THRESHOLD_1, iqs620_touch_threshold);
+        iqs620_write_reg(IQS620_TOUCH_THRESHOLD_0, IQS620_TOUCH_THRESHOLD);
+        iqs620_write_reg(IQS620_TOUCH_THRESHOLD_1, IQS620_TOUCH_THRESHOLD);
     }
 
     // event mode, comms enabled in ATI, redo ATI
@@ -379,7 +371,7 @@ static void iqs620_prox_touch(uint8_t proxflags)
  * @param pin The pin triggering the event.
  * @param action The event triggered.
  */
-static void iqs620_ready_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
     assert(IQS620_TOUCH_RDY_PIN == pin);
 
@@ -404,10 +396,8 @@ static void iqs620_ready_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t ac
         LOG("sysflags=0x%02x", sysflags);
 
         if (sysflags & IQS620_SYS_FLAGS_RESET_HAPPENED) {
-            // iqs620 reset detected, reconfigure the iqs620
-            LOG("reset detected!");
+            LOG("reset detected, reconfiguring");
             iqs620_configure();
-            LOG("reconfigured");
         }
     }
 }
@@ -415,7 +405,7 @@ static void iqs620_ready_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t ac
 /**
  * Enable (or disable) the event telling that IQS620 is ready.
  */
-static void iqs620_set_ready_handler(bool on)
+static void iqs620_set_touch_rdy_handler(bool on)
 {
     if (on)
         // enable the GPIOTE event
@@ -427,8 +417,6 @@ static void iqs620_set_ready_handler(bool on)
 
 /**
  * Get the ID of the product number.
- * @param id Pointer to memory filled with the ID.
- * @return True if I2C succeeds and the ID is valid.
  */
 uint32_t iqs620_get_id(void)
 {
@@ -440,7 +428,6 @@ uint32_t iqs620_get_id(void)
 
 /**
  * Initialise the chip as well as the iqs620 instance.
- * @return True on success.
  */
 void iqs620_init(void)
 {
@@ -458,19 +445,15 @@ void iqs620_init(void)
     iqs620_prox_touch_state = 0;
     iqs620_button_status = 0;
 
-    // Boundary check ati_target (6 bits).
-    if(iqs620_ati_target > 0x3F)
-        iqs620_ati_target = 0x3F;
-
     // Configure the TOUCH_RDY pin for high-to-low edge GPIOTE event
     nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_HITOLO(true);
     config.pull = NRF_GPIO_PIN_PULLUP;
-    CHECK(nrfx_gpiote_in_init(IQS620_TOUCH_RDY_PIN, &config, iqs620_ready_handler));
+    CHECK(nrfx_gpiote_in_init(IQS620_TOUCH_RDY_PIN, &config, iqs620_touch_rdy_handler));
 
     // Reset the chip and reconfigure it.
 
     // Disable the TOUCH_RDY event during reset.
-    iqs620_set_ready_handler(false);
+    iqs620_set_touch_rdy_handler(false);
 
     // Initiate soft reset.
     iqs620_write_reg(IQS620_SYS_SETTINGS, 1 << 7);
@@ -482,15 +465,12 @@ void iqs620_init(void)
     assert(iqs620_get_id() == IQS620_ID_VALUE);
 
     // Enable the TOUCH_RDY event after the reset.
-    iqs620_set_ready_handler(true);
+    iqs620_set_touch_rdy_handler(true);
 }
 
 /**
  * Wrapper that mimics the CY8CMBR3 driver for code compatibility.
- * @param status Pointer filled with the button status.
- * @return True if I2C succeeds.
  */
-// TODO: if support for cy8cmbr3 is dropped, could be removed after rework of touch.c code
 uint16_t iqs620_get_button_status(void)
 {
     return (iqs620_button_status);
@@ -499,10 +479,8 @@ uint16_t iqs620_get_button_status(void)
 /**
  * Get the raw counts for tuning thresholds.
  * @param channel Sensor channel number to read the data from
- * @param ch_data Pointer filled with the raw iqs620 output.
- * @return True if I2C succeeds.
  */
-uint16_t iqs620_get_ch_count(uint8_t channel)
+uint16_t iqs620_get_count(uint8_t channel)
 {
     uint16_t count;
     uint8_t data[2];
