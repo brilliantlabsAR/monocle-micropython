@@ -16,7 +16,6 @@
 #include "monocle_iqs620.h"
 #include "monocle_i2c.h"
 #include "monocle_config.h"
-#include "nrf_gpiote.h"
 #include "nrfx_timer.h"
 #include "nrfx_log.h"
 

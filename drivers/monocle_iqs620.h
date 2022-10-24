@@ -34,21 +34,9 @@ typedef enum {
 
 typedef void (*iqs620_callback_t)(iqs620_button_t button, iqs620_event_t event);
 
-typedef struct {
-    //nrfx_twi_t       twi_drv;
-    //pin_t               scl_pin;
-    //pin_t               sda_pin;
-    pin_t               rdy_pin;
-    iqs620_callback_t   callback;
-    uint8_t             prox_threshold;         ///< set to 0 to use default (22)
-    uint8_t             touch_threshold;        ///< set to 0 to use default (37)
-    uint8_t             ati_target;             ///< 6-bit value, default is 0x10 = target of 512
-    uint8_t             prox_touch_state;       ///< internal data
-    uint16_t            button_status;          ///< internal data, added to mimic cy8cmbr3 interfece
-} iqs620_t;
-
 void iqs620_init(void);
 void iqs620_reset(void);
+void iqs620_callback(iqs620_button_t, iqs620_event_t);
 uint32_t iqs620_get_id(void);
 uint16_t iqs620_get_button_status(void); // added to mimic cy8cmbr3 interfece
 uint16_t iqs620_get_ch_count(uint8_t channel);

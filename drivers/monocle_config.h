@@ -10,10 +10,8 @@
 
 // Pin mapping
 
-#define IO_TOUCHED_PIN              2       // P0.21 = touched_N
-#define IO_TOUCHED_PIN_ACTIVE       0       // active low
-#define IO_TOUCHED_PIN_PULL         NRF_GPIO_PIN_PULLUP
 #define IO_ADC_VBATT                NRF_SAADC_INPUT_AIN1 // P0.02/AIN0 = vbatt_meas
+#define IQS620_TOUCH_RDY_PIN        2       // P0.02 Interrupt pin.              
 #define SPIM0_SCK_PIN               7       // P0.07 SPI Clock pin
 #define SPIM0_MOSI_PIN              9       // P0.09 SPI Master Out Slave In pin.
 #define SPIM0_MISO_PIN              10      // P0.10 SPI Master In Slave Out pin.

@@ -9,9 +9,10 @@
  * @author Nathan Ashelman
  */
 
-#include "monocle_board.h"
 #include "monocle_battery.h"
 #include "monocle_ble.h"
+#include "monocle_board.h"
+#include "monocle_config.h"
 #include "monocle_ecx335af.h"
 #include "monocle_fpga.h"
 #include "monocle_i2c.h"
@@ -20,8 +21,8 @@
 #include "monocle_ov5640.h"
 #include "monocle_spi.h"
 #include "monocle_touch.h"
-#include "nrfx_systick.h"
 #include "nrfx_gpiote.h"
+#include "nrfx_systick.h"
 #include <stdbool.h>
 
 void board_power_rails_on(void)
