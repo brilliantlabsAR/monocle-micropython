@@ -98,10 +98,9 @@ SRC += modules/board/led.c
 SRC += modules/board/modboard.c
 SRC += modules/machine/modmachine.c
 SRC += modules/machine/fpga.c
-SRC += modules/machine/pin.c
-SRC += modules/machine/pin_gen.c
 SRC += modules/machine/rtcounter.c
 SRC += modules/machine/timer.c
+SRC += modules/machine/touchbutton.c
 
 SRC += micropython/lib/libm/acoshf.c
 SRC += micropython/lib/libm/asinfacosf.c

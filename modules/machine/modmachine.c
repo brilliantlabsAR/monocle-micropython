@@ -35,9 +35,9 @@
 #include "shared/runtime/pyexec.h"
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
-#include "pin.h"
 #include "timer.h"
 #include "fpga.h"
+#include "touchbutton.h"
 #if MICROPY_PY_MACHINE_RTCOUNTER
 #include "rtcounter.h"
 #endif
@@ -143,13 +143,12 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_lightsleep),         MP_ROM_PTR(&machine_lightsleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_deepsleep),          MP_ROM_PTR(&machine_deepsleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset_cause),        MP_ROM_PTR(&machine_reset_cause_obj) },
-    { MP_ROM_QSTR(MP_QSTR_Pin),                MP_ROM_PTR(&pin_type) },
     { MP_ROM_QSTR(MP_QSTR_mem8),               MP_ROM_PTR(&machine_mem8_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem16),              MP_ROM_PTR(&machine_mem16_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem32),              MP_ROM_PTR(&machine_mem32_obj) },
     { MP_ROM_QSTR(MP_QSTR_fpga_read_byte),     MP_ROM_PTR(&machine_fpga_read_byte_obj) },
     { MP_ROM_QSTR(MP_QSTR_fpga_write_byte),    MP_ROM_PTR(&machine_fpga_write_byte_obj) },
-
+    { MP_ROM_QSTR(MP_QSTR_TouchButton),        MP_ROM_PTR(&machine_touchbutton_type) },
     
 #if MICROPY_PY_MACHINE_RTCOUNTER
     { MP_ROM_QSTR(MP_QSTR_RTCounter),          MP_ROM_PTR(&machine_rtcounter_type) },

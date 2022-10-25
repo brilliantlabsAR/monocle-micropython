@@ -19,7 +19,7 @@
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
-#define LOG NRFX_LOG_ERROR
+#define LOG NRFX_LOG_WARNING
 #define CHECK(err) check(__func__, err)
 
 // registers
@@ -280,10 +280,10 @@ typedef struct
  * @param button The button related to this event.
  * @param event The event triggered for that button.
  */
-//__attribute__((__weak__)) // TODO: test overriding this function
+__attribute__((__weak__))
 void iqs620_callback(iqs620_button_t button, iqs620_event_t event)
 {
-    LOG("button=0x%02X event=%02X", button, event);
+    LOG("button=0x%02X event=0x%02X", button, event);
 }
 
 /**

@@ -101,7 +101,7 @@ void board_init(void)
     ov5640_pwr_on();
 
     // Initialise the Capacitive Touch Button controller over I2C.
-    //iqs620_init();
+    iqs620_init();
 }
 
 void board_deinit(void)
