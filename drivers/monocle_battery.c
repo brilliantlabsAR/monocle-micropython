@@ -17,7 +17,7 @@
 #include "nrfx_saadc.h"
 #include "nrfx_log.h"
 
-#define LOG(...) NRFX_LOG_WARNING(__VA_ARGS__)
+#define LOG NRFX_LOG_ERROR
 #define CHECK(err) check(__func__, err)
 
 /*
@@ -75,9 +75,6 @@ static uint8_t battery_percent = 0;
 
 /** Used by the sampling callback. */
 nrf_saadc_value_t adc_buffer[SAMPLES_IN_BUFFER];
-
-
-// linear interpolation functions from https://www.electro-tech-online.com/threads/linear-interpolation-and-lookup-tables-c.147507/
 
 struct table_1d {
     uint8_t x_length;

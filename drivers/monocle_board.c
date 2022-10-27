@@ -102,6 +102,9 @@ void board_init(void)
 
     // Initialise the Capacitive Touch Button controller over I2C.
     iqs620_init();
+
+    // Initialise the battery level sensing with the ADC.
+    battery_init();
 }
 
 void board_deinit(void)

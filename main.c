@@ -26,10 +26,8 @@
 
 #include "monocle_ble.h"
 #include "monocle_board.h"
-#include "monocle_fpga.h" // debug
-#include "monocle_iqs620.h" // debug
+#include "monocle_battery.h" // debug
 #include "monocle_config.h" // debug
-#include "monocle_i2c.h" // debug
 #include "nrf_sdm.h"
 #include "nrfx_gpiote.h"
 #include "nrfx_systick.h"
@@ -113,6 +111,7 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
+            LOG("voltage=%.3lfV percent=%d%%", (double)battery_get_voltage(), battery_get_percent());
         } else {
             stop = pyexec_friendly_repl();
         }

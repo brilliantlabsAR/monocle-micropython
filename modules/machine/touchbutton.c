@@ -19,8 +19,11 @@ void iqs620_callback(iqs620_button_t button, iqs620_event_t event)
 {
     LOG("button=0x%02X event=0x%02X", button, event);
 
-    // Issue the callback.
-    mp_call_function_2(machine_touchbutton.callback, MP_OBJ_NEW_SMALL_INT(button), MP_OBJ_NEW_SMALL_INT(event));
+    mp_obj_t arg = MP_OBJ_NEW_SMALL_INT(button << 1 | event << 0);
+
+    // Issue the callback if configured.
+    if (machine_touchbutton.callback != 0)
+        mp_sched_schedule(machine_touchbutton.callback, arg);
 }
 
 void machine_touchbutton_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)

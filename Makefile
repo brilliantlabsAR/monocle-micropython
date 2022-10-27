@@ -92,12 +92,12 @@ SRC += drivers/monocle_max77654.c
 SRC += drivers/monocle_ecx335af.c
 SRC += drivers/monocle_ov5640.c
 SRC += drivers/monocle_spi.c
-#SRC += drivers/monocle_touch.c
 
 SRC += modules/board/led.c
 SRC += modules/board/modboard.c
-SRC += modules/machine/modmachine.c
+SRC += modules/machine/battery.c
 SRC += modules/machine/fpga.c
+SRC += modules/machine/modmachine.c
 SRC += modules/machine/rtcounter.c
 SRC += modules/machine/timer.c
 SRC += modules/machine/touchbutton.c

@@ -36,6 +36,7 @@
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
 #include "timer.h"
+#include "battery.h"
 #include "fpga.h"
 #include "touchbutton.h"
 #if MICROPY_PY_MACHINE_RTCOUNTER
@@ -149,6 +150,7 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_fpga_read_byte),     MP_ROM_PTR(&machine_fpga_read_byte_obj) },
     { MP_ROM_QSTR(MP_QSTR_fpga_write_byte),    MP_ROM_PTR(&machine_fpga_write_byte_obj) },
     { MP_ROM_QSTR(MP_QSTR_TouchButton),        MP_ROM_PTR(&machine_touchbutton_type) },
+    { MP_ROM_QSTR(MP_QSTR_Battery),            MP_ROM_PTR(&machine_battery_type) },
     
 #if MICROPY_PY_MACHINE_RTCOUNTER
     { MP_ROM_QSTR(MP_QSTR_RTCounter),          MP_ROM_PTR(&machine_rtcounter_type) },
