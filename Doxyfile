@@ -5,10 +5,10 @@ PROJECT_NAME           = Drivers low-level C API
 PROJECT_BRIEF          = Useful for writing new Python libraries or low-level firmware in C
 
 # Driver code from this repository
-INPUT                  = ../drivers
+INPUT                  = drivers
 
 # Output within the Sphinx source directory for DoxySphinx integration.
-OUTPUT_DIRECTORY       = source/drivers
+OUTPUT_DIRECTORY       = monocle-docs/source/drivers
 
 # Deactivate doxygens own treeview (as it doesn't look right)
 GENERATE_TREEVIEW      = NO
@@ -34,7 +34,7 @@ GENERATE_XML           = NO
 SEARCHENGINE           = NO
 
 # generate a tag file
-GENERATE_TAGFILE       = source/drivers/html/tagfile.xml
+GENERATE_TAGFILE       = monocle-docs/source/drivers/html/tagfile.xml
 
 # generates nicer svg images
 DOT_IMAGE_FORMAT       = svg
@@ -49,7 +49,7 @@ INTERACTIVE_SVG        = YES
 HTML_EXTRA_STYLESHEET = doxygen-awesome-css/doxygen-awesome.css
 
 # Empty header and footer
-HTML_FOOTER           = empty.html
+HTML_FOOTER           = /dev/null
 
 # Looks better with shorter path names.
 FULL_PATH_NAMES        = NO

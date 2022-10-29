@@ -1,2 +1,4 @@
 /build
-/doc/source/driver
+/doxygen-awesome-css
+/.sass-cache
+/monocle-docs
