@@ -8,9 +8,9 @@
 #include <stdbool.h>
 #include "nrfx_spim.h"
 /**
- * Wrapper over the nRF5 SDK SPI driver to include a leading address sent first.
+ * Wrapper over the NRFX driver to include a leading address sent first.
  *
- * @defgroup spi
+ * @defgroup SPI
  * @{
  */
 

@@ -7,10 +7,25 @@
 #include <stdbool.h>
 #include <stdint.h>
 /**
- * Driver for the MAX77654 battery charge controller (PMIC).
+ * Driver for the MAX77654 I²C driven battery charge controller (PMIC).
  * https://datasheets.maximintegrated.com/en/ds/MAX77654.pdf
  *
- * @defgroup max77654
+ * There are at least 5 Different voltage outputs.
+ *
+ * Main Power Rail:
+ * 
+ * - 1.8V Power Rail: MCU and the Touch IC, Always on.
+ * 
+ * Auxillary Power Rails, tured ON by MCU in a specific routine, in monocle_board.c.
+ * 
+ * - 1.2V Power Rail
+ * - 2.7V Power Rail
+ * - 10V Power Rail
+ * - LED Power Rail: Can be tured OFF.
+ * 
+ * @bug Right now a little underpowered: there is a 18 sec delay after turning the power for every module.
+ * @bug Occassionally boot failure is also noticed right now.
+ * @defgroup MAX77654
  * @{
  */
 

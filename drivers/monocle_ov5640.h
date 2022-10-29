@@ -7,10 +7,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 /**
- * Driver for the OV5640 camera sensor chip.
+ * Driver for the I²C OV5640 camera sensor.
  * https://cdn.sparkfun.com/datasheets/Sensors/LightImaging/
  *
- * @defgroup ov5640
+ * The parallel data path is connected to FPGA. The MCU only has access to the I²C configuration interface.
+ *
+ * - 5MP max resolutiono
+ * - Recording happens at 15 FPS, and the FPGA triple every frame to match the 50 FPS of the ECX335AF display.
+ * - When using the 4x digital zoom, the camera outputs 640x400 video.
+ *
+ * @defgroup OV5640
  * @{
  */
 

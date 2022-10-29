@@ -7,7 +7,7 @@
 /**
  * Built out of all other drivers, providing a general interface.
  *
- * @defgroup board
+ * @defgroup Board
  * @{
  */
 

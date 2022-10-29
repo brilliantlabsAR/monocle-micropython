@@ -10,7 +10,7 @@
 /**
  * Bluetooth Low Energy driver, providing the Nordic Uart Service console.
  *
- * @defgroup ble
+ * @defgroup BLE
  * @{
  */
 

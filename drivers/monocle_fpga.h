@@ -7,18 +7,21 @@
 #include <stdint.h>
 #include <stdbool.h>
 /**
- * Driver for configuring the FPGA registers over SPI and bulk data transfer.
+ * Driver for configuring the SPI-controlled FPGA.
  *
- * @defgroup fpga
+ * It controls the low-level read/write with the registers and bulk data transfer.
+ *
+ * It provides a higher level API for:
+ *
+ * - the FPGA itself,
+ * - the Camera data path,
+ * - the Microdisplay data path,
+ * - the Microphone data,
+ * - the Checksum calculation,
+ *
+ * @defgroup FPGA
  * @{
  */
-
-#define FPGA_LOG_INFO_ON
-//#define FPGA_LOG_DEBUG_ON
-
-// FPGA version compatibility
-// TODO: a more elegant solution? Possible to remove now?
-#define FPGA_RELEASE_20210709 ///< turn on for compatibility with release of 2021-09-07
 
 /** number of capture buffers supported */
 #define FPGA_BUFFERS_SUPPORTED    1 // single buffer

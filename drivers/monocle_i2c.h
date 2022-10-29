@@ -10,7 +10,7 @@
 /**
  * Driver for the hardware I2C of the board.
  *
- * @defgroup i2c
+ * @defgroup I2C
  * @{
  */
 

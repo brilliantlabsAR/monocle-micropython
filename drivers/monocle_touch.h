@@ -11,8 +11,8 @@
 
 /**
  * Touch interface application logics.
- * @defgroup touch
- * @ingroup firmware
+ *
+ * @defgroup TOUCH
  * @{
  */
 

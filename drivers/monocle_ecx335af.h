@@ -7,10 +7,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 /*
- * Driver for the Sony OLED Microdisplay.
+ * Driver for the SPI Sony OLED Microdisplay.
  * No public datasheet seem to be published on the web.
  *
- * @defgroup oled
+ * The data path is connected directly to the data path to FPGA, the MCU only has access to the SPI configuration interface.
+ *
+ * After the OLED configuration is done, the luminance (brightness) should be set and the display is ready to receive data.
+ *
+ * @defgroup ECX35AF
  * @{
  */
 
