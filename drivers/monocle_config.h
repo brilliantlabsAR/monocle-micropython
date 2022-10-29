@@ -2,11 +2,16 @@
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
-
 #ifndef MONOCLE_CONFIG_H
 #define MONOCLE_CONFIG_H
-
 #include "nrf_gpio.h"
+/**
+ * Configuratin file for the drivers.
+ * GPIO pins used, I2C addresses, peripheral instances in use...
+ *
+ * @defgroup config
+ * @{
+ */
 
 // Pin mapping
 
@@ -46,4 +51,5 @@
 
 #define SPI_INSTANCE                2
 
+/** @} */
 #endif

@@ -2,23 +2,15 @@
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
-
-// Code written from scratch based on datasheet
-
 #ifndef MAX77654_H
 #define MAX77654_H
-
 #include <stdbool.h>
 #include <stdint.h>
-
-#define MAX77654_LOG_INFO_ON
-//#define MAX77654_LOG_DEBUG_ON
-
 /**
  * Driver for the MAX77654 battery charge controller (PMIC).
  * https://datasheets.maximintegrated.com/en/ds/MAX77654.pdf
+ *
  * @defgroup max77654
- * @ingroup driver_chip
  * @{
  */
 

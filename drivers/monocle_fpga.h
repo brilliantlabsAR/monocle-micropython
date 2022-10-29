@@ -2,20 +2,16 @@
  * Copyright (c) 2021 Brilliant Labs Limited
  * Licensed under the MIT License
  */
-
 #ifndef FPGA_H
 #define FPGA_H
-/**
- * Driver for configuring the FPGA registers over SPI and bulk data transfer.
- * @defgroup fpga
- * @ingroup driver_chip
- * @author Shreyas Hemachandra
- * @author Nathan Ashelman
- * @{
- */
-
 #include <stdint.h>
 #include <stdbool.h>
+/**
+ * Driver for configuring the FPGA registers over SPI and bulk data transfer.
+ *
+ * @defgroup fpga
+ * @{
+ */
 
 #define FPGA_LOG_INFO_ON
 //#define FPGA_LOG_DEBUG_ON

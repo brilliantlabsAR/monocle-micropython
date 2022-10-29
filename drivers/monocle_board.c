@@ -20,7 +20,6 @@
 #include "monocle_max77654.h"
 #include "monocle_ov5640.h"
 #include "monocle_spi.h"
-#include "monocle_touch.h"
 #include "nrfx_gpiote.h"
 #include "nrfx_systick.h"
 #include <stdbool.h>

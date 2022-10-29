@@ -1,18 +1,18 @@
-#ifndef ECX335AF_H
-#define ECX335AF_H
 /*
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
- **
- * Driver for the Sony OLED Microdisplay.
- * No public datasheet encountered, ask the provider.
- * @defgroup oled
- * @ingroup driver_chip
- * @{
  */
-
+#ifndef ECX335AF_H
+#define ECX335AF_H
 #include <stdint.h>
 #include <stdbool.h>
+/*
+ * Driver for the Sony OLED Microdisplay.
+ * No public datasheet seem to be published on the web.
+ *
+ * @defgroup oled
+ * @{
+ */
 
 /** See ECX336CN datasheet section 10.8; luminance values are in cd/m^2 */
 typedef enum {

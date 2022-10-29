@@ -2,20 +2,16 @@
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
-
 #ifndef IQS620_H
 #define IQS620_H
-
 #include <stdint.h>
 #include <stdbool.h>
-
 #include "nrfx_twi.h"
-
 /**
  * Driver for the IQS620 hall effect, proximity sensor.
  * https://www.azoteq.com/images/stories/pdf/iqs620_datasheet.pdf
+ *
  * @defgroup iqs620
- * @ingroup driver_chip
  * @{
  */
 

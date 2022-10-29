@@ -2,18 +2,15 @@
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
-
 #ifndef MONOCLE_OV5640_H
 #define MONOCLE_OV5640_H
-
 #include <stdint.h>
 #include <stdbool.h>
-
 /**
  * Driver for the OV5640 camera sensor chip.
  * https://cdn.sparkfun.com/datasheets/Sensors/LightImaging/
+ *
  * @defgroup ov5640
- * @ingroup driver_chip
  * @{
  */
 
@@ -70,4 +67,5 @@ void ov5640_flip(bool on);
 bool ov5640_outsize_set(uint16_t offx, uint16_t offy, uint16_t width, uint16_t height);
 bool ov5640_focus_init(void);
 
+/* @} */
 #endif

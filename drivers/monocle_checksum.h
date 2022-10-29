@@ -2,14 +2,12 @@
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
-
-#ifndef CHECKSUM_H
-#define CHECKSUM_H
-
+#ifndef MONOCLE_CHECKSUM_H
+#define MONOCLE_CHECKSUM_H
 /**
  * Compute and verify a 32-bit checksum of a byte buffer.
+ *
  * @defgroup checksum
- * @ingroup firmware
  * @{
  */
 

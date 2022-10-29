@@ -2,19 +2,15 @@
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
-
 #ifndef SPI_H
 #define SPI_H
-
 #include <stdint.h>
 #include <stdbool.h>
-#include <string.h> // for memset()
 #include "nrfx_spim.h"
-
 /**
  * Wrapper over the nRF5 SDK SPI driver to include a leading address sent first.
+ *
  * @defgroup spi
- * @ingroup driver_nrf52
  * @{
  */
 
