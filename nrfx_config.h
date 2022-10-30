@@ -66,8 +66,9 @@
 #define NRFX_SYSTICK_DEFAULT_CONFIG_IRQ_PRIORITY 7
 
 #define NRFX_TIMER_ENABLED 1
-#define NRFX_TIMER0_ENABLED 1
-#define NRFX_TIMER1_ENABLED 0
+#define NRFX_TIMER0_ENABLED 1  // Used by the SoftDevice
+#define NRFX_TIMER1_ENABLED 0  // Used by monocle_touch.c
+#define NRFX_TIMER2_ENABLED 1  // Used by monocle_touch.c
 #define NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY  7
 
 #define NRFX_NVMC_ENABLED 1

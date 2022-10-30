@@ -19,14 +19,14 @@
 #include "nrfx_timer.h"
 #include "nrfx_log.h"
 
-#define LOG(...) NRFX_LOG_WARNING(__VA_ARGS__)
+#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 #define CHECK(err) check(__func__, err)
 
 /** Timeout for button press (ticks) = 0.5 s */
-#define TOUCH_DELAY_SHORT_MS        500
+#define TOUCH_DELAY_SHORT_MS        500000
 
 /** Timeout for long button press (ticks) = 9.5 s + PRESS_INTERVAL = 10 s */
-#define TOUCH_DELAY_LONG_MS         9500
+#define TOUCH_DELAY_LONG_MS         9500000
 
 /*
  * This state machine can distinguish between the following gestures:
@@ -49,7 +49,10 @@ typedef enum {
     TOUCH_STATE_IDLE,
     TOUCH_STATE_0_ON,
     TOUCH_STATE_1_ON,
+    TOUCH_STATE_0_ON_SHORT,
+    TOUCH_STATE_1_ON_SHORT,
     TOUCH_STATE_BOTH_ON,
+    TOUCH_STATE_BOTH_ON_SHORT,
     TOUCH_STATE_0_ON_OFF,
     TOUCH_STATE_1_ON_OFF,
     TOUCH_STATE_0_ON_OFF_1_ON,
@@ -59,13 +62,21 @@ typedef enum {
     // ' ' for button OFF
     // 'T' for timeout
 
-    // Button 0: [****     ] 
+    // Button 0: [**       ] 
     // Button 1: [         ]
     TOUCH_TRIGGER_0_TAP,
 
     // Button 0: [         ]
-    // Button 1: [****     ]
+    // Button 1: [**       ]
     TOUCH_TRIGGER_1_TAP,
+
+    // Button 0: [****     ] 
+    // Button 1: [         ]
+    TOUCH_TRIGGER_0_PRESS,
+
+    // Button 0: [         ]
+    // Button 1: [****     ]
+    TOUCH_TRIGGER_1_PRESS,
 
     // Button 0: [******T  ] 
     // Button 1: [         ]
@@ -78,6 +89,10 @@ typedef enum {
     // Button 0: [***      ] or [*****    ] or [ ***     ] or [ ***     ]
     // Button 1: [ ***     ]    [ ***     ]    [***      ]    [*****    ]
     TOUCH_TRIGGER_BOTH_TAP,
+
+    // Button 0: [*****    ] or [*******  ] or [ *****   ] or [ *****   ]
+    // Button 1: [ *****   ]    [ *****   ]    [*****    ]    [*******  ]
+    TOUCH_TRIGGER_BOTH_PRESS,
 
     // Button 0: [******T  ] or [ *****T  ]
     // Button 1: [ *****T  ]    [******T  ]
@@ -106,6 +121,14 @@ typedef enum {
 
 touch_state_t touch_state = TOUCH_STATE_IDLE;
 const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
+    [TOUCH_STATE_INVALID] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_IDLE,
+    },
     [TOUCH_STATE_IDLE] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_IDLE,
@@ -119,15 +142,31 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF,
         [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON,
         [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_0_ON,
-        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_0_ON,
-        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_0_LONG,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_0_ON_SHORT,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
     },
     [TOUCH_STATE_1_ON] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON,
         [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON,
         [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_1_ON_OFF,
-        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_1_ON_SHORT,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+    },
+    [TOUCH_STATE_0_ON_SHORT] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON_SHORT,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_0_PRESS,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_0_ON_SHORT,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_0_LONG,
+    },
+    [TOUCH_STATE_1_ON_SHORT] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON_SHORT,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_1_PRESS,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
         [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_1_LONG,
     },
     [TOUCH_STATE_BOTH_ON] = {
@@ -136,6 +175,14 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON,
         [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_BOTH_TAP,
         [TOUCH_EVENT_SHORT]     = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+    },
+    [TOUCH_STATE_BOTH_ON_SHORT] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON_SHORT,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_BOTH_PRESS,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON_SHORT,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_BOTH_PRESS,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
         [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_BOTH_LONG,
     },
     [TOUCH_STATE_0_ON_OFF] = {
@@ -144,7 +191,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_1_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
         [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_0_ON_OFF,
         [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_0_TAP,
-        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_0_TAP,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
     },
     [TOUCH_STATE_1_ON_OFF] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_1_ON,
@@ -152,7 +199,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
         [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_1_ON_OFF,
         [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_1_TAP,
-        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_1_TAP,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
     },
     [TOUCH_STATE_0_ON_OFF_1_ON] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
@@ -160,7 +207,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_1_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
         [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_0_1_SLIDE,
         [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_0_1_SLIDE,
-        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_0_1_SLIDE,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
     },
     [TOUCH_STATE_1_ON_OFF_0_ON] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
@@ -168,8 +215,22 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
         [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_1_0_SLIDE,
         [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_1_0_SLIDE,
-        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_1_0_SLIDE,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
     },
+};
+
+static void (*touch_trigger_fn[TOUCH_STATE_NUM])(void) = {
+    [TOUCH_TRIGGER_0_TAP]      = touch_callback_trigger_0_tap,
+    [TOUCH_TRIGGER_1_TAP]      = touch_callback_trigger_1_tap,
+    [TOUCH_TRIGGER_0_PRESS]    = touch_callback_trigger_0_press,
+    [TOUCH_TRIGGER_1_PRESS]    = touch_callback_trigger_1_press,
+    [TOUCH_TRIGGER_0_LONG]     = touch_callback_trigger_0_long,
+    [TOUCH_TRIGGER_1_LONG]     = touch_callback_trigger_1_long,
+    [TOUCH_TRIGGER_BOTH_TAP]   = touch_callback_trigger_both_tap,
+    [TOUCH_TRIGGER_BOTH_PRESS] = touch_callback_trigger_both_press,
+    [TOUCH_TRIGGER_BOTH_LONG]  = touch_callback_trigger_both_long,
+    [TOUCH_TRIGGER_0_1_SLIDE]  = touch_callback_trigger_0_1_slide,
+    [TOUCH_TRIGGER_1_0_SLIDE]  = touch_callback_trigger_1_0_slide,
 };
 
 static void touch_timer_handler(nrf_timer_event_t event, void *ctx);
@@ -183,13 +244,16 @@ static inline void check(char const *func, nrfx_err_t err)
         LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
 }
 
+// 0 is reserved for SoftDevice, 1 does not work for an unknown reason
+nrfx_timer_t touch_timer = NRFX_TIMER_INSTANCE(2);
 uint32_t touch_timer_ticks;
-nrfx_timer_t touch_timer = NRFX_TIMER_INSTANCE(0);
 nrfx_timer_config_t touch_timer_config = NRFX_TIMER_DEFAULT_CONFIG;
 touch_event_t touch_timer_event;
 
 static void touch_set_timer(touch_event_t event)
 {
+    static bool init = false;
+
     // Choose the apropriate duration depending on the event triggered.
     switch (event)
     {
@@ -199,16 +263,33 @@ static void touch_set_timer(touch_event_t event)
             return;
         case TOUCH_EVENT_SHORT:
             // After a short timer, extend to a long timer.
-            touch_timer_ticks = nrfx_timer_ms_to_ticks(&touch_timer, TOUCH_DELAY_LONG_MS);
+            touch_timer_ticks = TOUCH_DELAY_LONG_MS;
             touch_timer_event = TOUCH_EVENT_LONG;
             break;
         default:
             // After a button event, setup a short timer.
-            touch_timer_ticks = nrfx_timer_ms_to_ticks(&touch_timer, TOUCH_DELAY_SHORT_MS);
+            touch_timer_ticks = TOUCH_DELAY_SHORT_MS;
             touch_timer_event = TOUCH_EVENT_SHORT;
             break;
     }
+
+    // Reset the timer if already configured.
+    if (init)
+        nrfx_timer_uninit(&touch_timer);
+
+    // Prepare the configuration structure.
+    touch_timer_config.mode = NRF_TIMER_MODE_TIMER;
+    touch_timer_config.frequency = NRF_TIMER_FREQ_1MHz;
+    touch_timer_config.bit_width = NRF_TIMER_BIT_WIDTH_8;
+
+    // Submit the configuration.
     CHECK(nrfx_timer_init(&touch_timer, &touch_timer_config, touch_timer_handler));
+    init = 1;
+
+    // Do not raise an interrupt on every MHz, but on every 100 MHz.
+    nrfx_timer_extended_compare(&touch_timer, NRF_TIMER_CC_CHANNEL0, 100, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
+
+    // Start the timer.
     nrfx_timer_enable(&touch_timer);
 }
 
@@ -216,47 +297,29 @@ static void touch_next_state(touch_event_t event)
 {
     // Update the state using the state machine encoded above.
     touch_state = touch_state_machine[touch_state][event];
+    assert(touch_state != TOUCH_STATE_INVALID);
 
-    // React to special TRIGGER states.
-    switch (touch_state)
+    // Handle the multiple states.
+    if (touch_trigger_fn[touch_state] != NULL)
     {
-        case TOUCH_TRIGGER_0_TAP:
-            touch_callback_trigger_0_tap();
-            break;
-        case TOUCH_TRIGGER_1_TAP:
-            touch_callback_trigger_1_tap();
-            break;
-        case TOUCH_TRIGGER_0_LONG:
-            touch_callback_trigger_0_long();
-            break;
-        case TOUCH_TRIGGER_1_LONG:
-            touch_callback_trigger_1_long();
-            break;
-        case TOUCH_TRIGGER_BOTH_TAP:
-            touch_callback_trigger_both_tap();
-            break;
-        case TOUCH_TRIGGER_BOTH_LONG:
-            touch_callback_trigger_both_long();
-            break;
-        case TOUCH_TRIGGER_0_1_SLIDE:
-            touch_callback_trigger_0_1_slide();
-            break;
-        case TOUCH_TRIGGER_1_0_SLIDE:
-            touch_callback_trigger_1_0_slide();
-            break;
-        case TOUCH_STATE_IDLE:
+        // When there is a callback associated with the state, run it.
+        touch_trigger_fn[touch_state]();
+
+        // If something was triggered, come back to the "IDLE" state.
+        touch_state = TOUCH_STATE_IDLE;
+
+        // And then disable the timer.
+        nrfx_timer_disable(&touch_timer);
+    }
+    else if (touch_state == TOUCH_STATE_IDLE)
+    {
             // Idle, do not setup a timer.
-        default:
+    }
+    else
+    {
             // Intermediate states, do not go back to TOUCH_STATE_IDLE.
             touch_set_timer(event);
-            return;
     }
-
-    // If something was triggered, come back to the "IDLE" state.
-    touch_state = TOUCH_STATE_IDLE;
-
-    // And then disable the timer.
-    nrfx_timer_disable(&touch_timer);
 }
 
 static void touch_timer_handler(nrf_timer_event_t event, void *ctx)
@@ -271,17 +334,22 @@ static void touch_timer_handler(nrf_timer_event_t event, void *ctx)
         nrfx_timer_disable(&touch_timer);
 
         // Submit the event to the state machine.
+        LOG("touch_timer_event=%s",
+                touch_timer_event == TOUCH_EVENT_SHORT ? "SHORT" :
+                touch_timer_event == TOUCH_EVENT_LONG ? "LONG" :
+                "?");
         touch_next_state(touch_timer_event);
     }
     else
     {
         // Not triggering yet.
-        touch_timer_ticks--;
+        touch_timer_ticks -= 100;
     }
 }
 
 void iqs620_callback_button_pressed(uint8_t button)
 {
+    LOG("button=%d", button);
     switch (button)
     {
         case 0:
@@ -295,6 +363,7 @@ void iqs620_callback_button_pressed(uint8_t button)
 
 void iqs620_callback_button_released(uint8_t button)
 {
+    LOG("button=%d", button);
     switch (button)
     {
         case 0:
@@ -316,6 +385,16 @@ void touch_callback_trigger_1_tap(void)
     LOG("");
 }
 
+void touch_callback_trigger_0_press(void)
+{
+    LOG("");
+}
+
+void touch_callback_trigger_1_press(void)
+{
+    LOG("");
+}
+
 void touch_callback_trigger_0_long(void)
 {
     LOG("");
@@ -327,6 +406,11 @@ void touch_callback_trigger_1_long(void)
 }
 
 void touch_callback_trigger_both_tap(void)
+{
+    LOG("");
+}
+
+void touch_callback_trigger_both_press(void)
 {
     LOG("");
 }
