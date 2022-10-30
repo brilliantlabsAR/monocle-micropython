@@ -121,14 +121,16 @@ typedef enum {
 
 touch_state_t touch_state = TOUCH_STATE_IDLE;
 const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
+    // When asserts are off, go back to IDLE state on every event.
     [TOUCH_STATE_INVALID] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_IDLE,
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_IDLE,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_IDLE,
         [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_IDLE,
         [TOUCH_EVENT_SHORT]     = TOUCH_STATE_IDLE,
         [TOUCH_EVENT_LONG]      = TOUCH_STATE_IDLE,
     },
+    // Starting point, also set after a TOUCH_TRIGGER_* event.
     [TOUCH_STATE_IDLE] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_IDLE,
@@ -137,6 +139,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_SHORT]     = TOUCH_STATE_IDLE,
         [TOUCH_EVENT_LONG]      = TOUCH_STATE_IDLE,
     },
+    // Touched button 0.
     [TOUCH_STATE_0_ON] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF,
@@ -145,6 +148,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_SHORT]     = TOUCH_STATE_0_ON_SHORT,
         [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
     },
+    // Touched button 1.
     [TOUCH_STATE_1_ON] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON,
@@ -153,6 +157,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_SHORT]     = TOUCH_STATE_1_ON_SHORT,
         [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
     },
+    // Touched button 0 and maintained for a short time.
     [TOUCH_STATE_0_ON_SHORT] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON_SHORT,
         [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_0_PRESS,
@@ -161,6 +166,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
         [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_0_LONG,
     },
+    // Touched button 1 and maintained for a short time.
     [TOUCH_STATE_1_ON_SHORT] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON,
@@ -169,6 +175,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
         [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_1_LONG,
     },
+    // Touched both buttons.
     [TOUCH_STATE_BOTH_ON] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
         [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_BOTH_TAP,
@@ -177,6 +184,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_SHORT]     = TOUCH_STATE_BOTH_ON,
         [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
     },
+    // Touched both buttons and maintained for a short time.
     [TOUCH_STATE_BOTH_ON_SHORT] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON_SHORT,
         [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_BOTH_PRESS,
@@ -185,6 +193,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
         [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_BOTH_LONG,
     },
+    // Touched then released button 0.
     [TOUCH_STATE_0_ON_OFF] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF,
@@ -193,6 +202,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_0_TAP,
         [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
     },
+    // Touched then released button 1.
     [TOUCH_STATE_1_ON_OFF] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_1_ON,
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON_OFF,
@@ -201,6 +211,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_1_TAP,
         [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
     },
+    // Touched then released button 0, then touched button 1.
     [TOUCH_STATE_0_ON_OFF_1_ON] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF_1_ON,
@@ -209,6 +220,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
         [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_0_1_SLIDE,
         [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
     },
+    // Touched then released button 1, then touched button 0.
     [TOUCH_STATE_1_ON_OFF_0_ON] = {
         [TOUCH_EVENT_0_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
         [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON_OFF_0_ON,
