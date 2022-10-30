@@ -8,7 +8,6 @@
  * @file monocle_i2c.c
  * @author Nathan Ashelman
  * @author Shreyas Hemachandra
- * @bug i2c_scan_twi() doesn't work (but is not used, so not urgent)
  */
 
 #include "monocle_config.h"
@@ -109,7 +108,6 @@ bool i2c_read(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz)
 
 /**
  * For debugging, scan the twi and expect MBR3@55=0x37 & OV5640@60=0x3C.
- * @bug this generates a lot of false positives, and didn't detect @55.
  * @return True if all expected addresses were found.
  */
 void i2c_scan(nrfx_twi_t twi)
