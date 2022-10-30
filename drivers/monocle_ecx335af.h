@@ -6,7 +6,7 @@
 #define ECX335AF_H
 #include <stdint.h>
 #include <stdbool.h>
-/*
+/**
  * Driver for the SPI Sony OLED Microdisplay.
  * No public datasheet seem to be published on the web.
  *

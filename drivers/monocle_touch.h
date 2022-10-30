@@ -12,7 +12,7 @@
 /**
  * Touch interface application logics.
  *
- * @defgroup TOUCH
+ * @defgroup Touch
  * @{
  */
 
