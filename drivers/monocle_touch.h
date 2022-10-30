@@ -35,6 +35,14 @@ void touch_quick_init(void);
 bool touch_init(touch_gesture_handler_t handler);
 bool touch_reprogram(void);
 bool touch_print_ch_counts(void);
+void touch_callback_trigger_0_tap(void);
+void touch_callback_trigger_1_tap(void);
+void touch_callback_trigger_0_long(void);
+void touch_callback_trigger_1_long(void);
+void touch_callback_trigger_both_tap(void);
+void touch_callback_trigger_both_long(void);
+void touch_callback_trigger_0_1_slide(void);
+void touch_callback_trigger_1_0_slide(void);
 
 /** @} */
 #endif

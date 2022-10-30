@@ -19,96 +19,163 @@
 #include "nrfx_timer.h"
 #include "nrfx_log.h"
 
+#define LOG(...) NRFX_LOG_WARNING(__VA_ARGS__)
+#define CHECK(err) check(__func__, err)
+
+/** Timeout for button press (ticks) = 0.5 s */
+#define TOUCH_DELAY_SHORT_MS        500
+
+/** Timeout for long button press (ticks) = 9.5 s + PRESS_INTERVAL = 10 s */
+#define TOUCH_DELAY_LONG_MS         9500
+
 /*
- * This state machine can distinguish between the following gestures: 
- * Tap: push & quick release
- * Slide LR or RL +: tap on one button followed by tap on other
- * DoubleTap: Tap, followed quickly by another Tap
- * Press: push one for >0.5s & <10s then release
- * LongPress: push for >10s then release
- * LongBoth +: push both buttons for >10s then release
- * (+ these 3 gestures require TOUCH_CAPSENSE to be enabled)
+ * This state machine can distinguish between the following gestures:
+ * - Tap: push & quick release
+ * - Slide LR or RL +: tap on one button followed by tap on other
+ * - DoubleTap: Tap, followed quickly by another Tap
+ * - Press: push one for >0.5s & <10s then release
+ * - LongPress: push for >10s then release
+ * - LongBoth +: push both buttons for >10s then release
  *
  * Transition to new state is triggered by a timeout or push/release event.
  * Timer, of given duration, is started when entering state that has a timeout.
  * Transitions back to IDLE will generate a gesture, this happens on release
  * for most gestures, but after TAP_INTERVAL for Tap (i.e. some delay).
- *
- * State machine transitions:
- *
- * -----------------------------------------------------------------------------
- * | current state   | event/timeout | new state      | gesture    | _CAPSENSE |
- * |---------------------------------------------------------------------------|
- * | IDLE            | push[one]     | TRIGGERED      |            |           |
- * | IDLE            | push[both]    | BOTH_PRESSED   |            | *         |
- * | TRIGGERED       | 0.5s          | PRESSED        |            |           |
- * | TRIGGERED       | release       | TAPPED         |            |           |
- * | TRIGGERED       | push[other]   | BOTH_PRESSED   |            | *         |
- * | TAPPED          | 0.25s         | IDLE           | Tap        |           |
- * | TAPPED          | push[same]    | TAPPED2        |            |           |
- * | TAPPED          | push[other]   | SLID           |            | *         |
- * | TAPPED2         | (infinite)    | (no change)    |            |           |
- * | TAPPED2         | release       | IDLE           | DoubleTap  |           |
- * | SLID            | (infinite)    | (no change)    |            | *         |
- * | SLID            | release[LR]   | IDLE           | SlideLR    | *         |
- * | SLID            | release[RL]   | IDLE           | SlideRL    | *         |
- * | PRESSED         | 9.5s          | LONG           |            |           |
- * | PRESSED         | release       | IDLE           | Press      |           |
- * | PRESSED         | push[other]   | BOTH_PRESSED   |            | *         |
- * | LONG            | (infinite)    | (no change)    |            |           |
- * | LONG            | release       | IDLE           | LongPress  |           |
- * | BOTH_PRESSED    | 9.5s          | BOTH_LONG      |            | *         |
- * | BOTH_PRESSED    | release[one]  | (no change)+   |            | *         | + and stop timer
- * | BOTH_PRESSED    | release[all]  | IDLE           | PressBoth  | *         |
- * | BOTH_LONG       | (infinite)    | (no change)    |            | *         |
- * | BOTH_LONG       | release[one]  | (no change)    |            | *         |
- * | BOTH_LONG       | release[all]  | IDLE           | LongBoth   | *         |
- * -----------------------------------------------------------------------------
- *
- * See diagram at: https://drive.google.com/file/d/1nErJZ_vvQBIfS90sQ9oX6CoDodD6m3_0/view?usp=sharing
  */
 
-#define TOUCH_TAP_INTERVAL     APP_TIMER_TICKS(250)   /**< Timeout for button tap (ticks) = 0.25 second */
-#define TOUCH_PRESS_INTERVAL   APP_TIMER_TICKS(500)   /**< Timeout for button press (ticks) = 0.5 second */
-#define TOUCH_LONG_INTERVAL    APP_TIMER_TICKS(9500)  /**< Timeout for long button press (ticks) = 9.5 seconds + PRESS_INTERVAL = 10 sec */
-
-#define LOG(...) NRFX_LOG_WARNING(__VA_ARGS__)
-#define CHECK(err) check(__func__, err)
-
 typedef enum {
-    TOUCH_SLID,
-    TOUCH_BOTH_PRESSED,
-    TOUCH_BOTH_LONG,
-    TOUCH_IDLE,
-    TOUCH_TRIGGERED,
-    TOUCH_TAPPED,
-    TOUCH_TAPPED2,
-    TOUCH_PRESSED,
-    TOUCH_LONG
+    TOUCH_STATE_INVALID,
+
+    TOUCH_STATE_IDLE,
+    TOUCH_STATE_0_ON,
+    TOUCH_STATE_1_ON,
+    TOUCH_STATE_BOTH_ON,
+    TOUCH_STATE_0_ON_OFF,
+    TOUCH_STATE_1_ON_OFF,
+    TOUCH_STATE_0_ON_OFF_1_ON,
+    TOUCH_STATE_1_ON_OFF_0_ON,
+
+    // '*' for button ON
+    // ' ' for button OFF
+    // 'T' for timeout
+
+    // Button 0: [****     ] 
+    // Button 1: [         ]
+    TOUCH_TRIGGER_0_TAP,
+
+    // Button 0: [         ]
+    // Button 1: [****     ]
+    TOUCH_TRIGGER_1_TAP,
+
+    // Button 0: [******T  ] 
+    // Button 1: [         ]
+    TOUCH_TRIGGER_0_LONG,
+
+    // Button 0: [         ]
+    // Button 1: [******T  ]
+    TOUCH_TRIGGER_1_LONG,
+
+    // Button 0: [***      ] or [*****    ] or [ ***     ] or [ ***     ]
+    // Button 1: [ ***     ]    [ ***     ]    [***      ]    [*****    ]
+    TOUCH_TRIGGER_BOTH_TAP,
+
+    // Button 0: [******T  ] or [ *****T  ]
+    // Button 1: [ *****T  ]    [******T  ]
+    TOUCH_TRIGGER_BOTH_LONG,
+
+    // Button 0: [***      ]
+    // Button 1: [    ***  ]
+    TOUCH_TRIGGER_0_1_SLIDE,
+
+    // Button 0: [    ***  ]
+    // Button 1: [***      ]
+    TOUCH_TRIGGER_1_0_SLIDE,
+
+    TOUCH_STATE_NUM,
 } touch_state_t;
 
-touch_state_t touch_state_next[] = {
-    []
+typedef enum {
+    TOUCH_EVENT_0_ON,
+    TOUCH_EVENT_0_OFF,
+    TOUCH_EVENT_1_ON,
+    TOUCH_EVENT_1_OFF,
+    TOUCH_EVENT_SHORT,  // timer triggered after a short delay
+    TOUCH_EVENT_LONG,   // timer triggered after a longer delay
+    TOUCH_EVENT_NUM
+} touch_event_t;
+
+touch_state_t touch_state = TOUCH_STATE_IDLE;
+const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
+    [TOUCH_STATE_IDLE] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_IDLE,
+    },
+    [TOUCH_STATE_0_ON] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_0_LONG,
+    },
+    [TOUCH_STATE_1_ON] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_1_ON_OFF,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_1_LONG,
+    },
+    [TOUCH_STATE_BOTH_ON] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_BOTH_TAP,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_BOTH_TAP,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_BOTH_LONG,
+    },
+    [TOUCH_STATE_0_ON_OFF] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_0_ON_OFF,
+        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_0_TAP,
+        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_0_TAP,
+    },
+    [TOUCH_STATE_1_ON_OFF] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON_OFF,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_1_ON_OFF,
+        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_1_TAP,
+        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_1_TAP,
+    },
+    [TOUCH_STATE_0_ON_OFF_1_ON] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_0_1_SLIDE,
+        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_0_1_SLIDE,
+        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_0_1_SLIDE,
+    },
+    [TOUCH_STATE_1_ON_OFF_0_ON] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_1_0_SLIDE,
+        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_1_0_SLIDE,
+        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_1_0_SLIDE,
+    },
 };
 
-static void touch_pin_handler(void *iqs620, iqs620_button_t button, iqs620_event_t event);
-static void touch_event_handler(bool istimer);
-
-/** Current state machine state. */
-static touch_state_t touch_state = TOUCH_IDLE;
-
-/** Gesture handler registered by init(). */
-static touch_gesture_handler_t touch_gesture_handler = NULL;
-
-/** State machine timer id. */
-nrfx_timer_t delay_timer = NRFX_TIMER_INSTANCE(0);
-
-static uint16_t first_push_status = 0;
-static uint16_t second_push_status = 0;
-static uint16_t release_status = 0;
+static void touch_timer_handler(nrf_timer_event_t event, void *ctx);
 
 /**
- * Workaround the fact taht nordic returns an ENUM instead of a simple integer.
+ * Workaround the fact that nordic returns an ENUM instead of a simple integer.
  */
 static inline void check(char const *func, nrfx_err_t err)
 {
@@ -116,382 +183,165 @@ static inline void check(char const *func, nrfx_err_t err)
         LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
 }
 
-static iqs620_t sensor = {
-    .rdy_pin         = IO_TOUCHED_PIN,
-    .addr            = IQS620_ADDR,
-    .callback        = touch_pin_handler,
-    .prox_threshold  = 10, // 0=most sensitive, 255=least sensitive
-    .touch_threshold = 10,
-    .ati_target      = 0x1E // target = 0x1E * 32 = 960, gives good results on MK11 Flex through 1mm plastic (higher value slow to react)
-};
+uint32_t touch_timer_ticks;
+nrfx_timer_t touch_timer = NRFX_TIMER_INSTANCE(0);
+nrfx_timer_config_t touch_timer_config = NRFX_TIMER_DEFAULT_CONFIG;
+touch_event_t touch_timer_event;
 
-static const char *button_names[] = {
-    [IQS620_BUTTON_B0]      = "B0",
-    [IQS620_BUTTON_B1]      = "B1"
-};
-
-static const char *event_names[] = {
-    [IQS620_BUTTON_UP]      = "UP",
-    [IQS620_BUTTON_PROX]    = "PROX",
-    [IQS620_BUTTON_DOWN]    = "DOWN",
-};
-
-// send gesture to the handler (if any) registered by touch_init()
-static void generate_gesture(touch_gesture_t gesture)
+static void touch_set_timer(touch_event_t event)
 {
-    switch(gesture)
+    // Choose the apropriate duration depending on the event triggered.
+    switch (event)
     {
-    case TOUCH_GESTURE_TAP:
-        LOG("Touch gesture Tap.");
-        break;
-    case TOUCH_GESTURE_TAP_BOTH:
-        LOG("Touch gesture DoubleTap.");
-        break;
-    case TOUCH_GESTURE_PRESS:
-        LOG("Touch gesture Press.");
-        break;
-    case TOUCH_GESTURE_LONG_PRESS:
-        LOG("Touch gesture LongPress.");
-        break;
-    case TOUCH_GESTURE_PRESSBOTH:
-        LOG("Touch gesture PressBoth.");
-        break;
-    case TOUCH_GESTURE_LONGBOTH:
-        LOG("Touch gesture LongBoth.");
-        break;
-    case TOUCH_GESTURE_SLIDELR:
-        LOG("Touch gesture SlideLR.");
-        break;
-    case TOUCH_GESTURE_SLIDERL:
-        LOG("Touch gesture SlideRL.");
-        break;
+        case TOUCH_EVENT_LONG:
+            // No timer to configure.
+            nrfx_timer_disable(&touch_timer);
+            return;
+        case TOUCH_EVENT_SHORT:
+            // After a short timer, extend to a long timer.
+            touch_timer_ticks = nrfx_timer_ms_to_ticks(&touch_timer, TOUCH_DELAY_LONG_MS);
+            touch_timer_event = TOUCH_EVENT_LONG;
+            break;
+        default:
+            // After a button event, setup a short timer.
+            touch_timer_ticks = nrfx_timer_ms_to_ticks(&touch_timer, TOUCH_DELAY_SHORT_MS);
+            touch_timer_event = TOUCH_EVENT_SHORT;
+            break;
     }
+    CHECK(nrfx_timer_init(&touch_timer, &touch_timer_config, touch_timer_handler));
+    nrfx_timer_enable(&touch_timer);
+}
 
-    if (touch_gesture_handler)
+static void touch_next_state(touch_event_t event)
+{
+    // Update the state using the state machine encoded above.
+    touch_state = touch_state_machine[touch_state][event];
+
+    // React to special TRIGGER states.
+    switch (touch_state)
     {
-        touch_gesture_handler(gesture);
+        case TOUCH_TRIGGER_0_TAP:
+            touch_callback_trigger_0_tap();
+            break;
+        case TOUCH_TRIGGER_1_TAP:
+            touch_callback_trigger_1_tap();
+            break;
+        case TOUCH_TRIGGER_0_LONG:
+            touch_callback_trigger_0_long();
+            break;
+        case TOUCH_TRIGGER_1_LONG:
+            touch_callback_trigger_1_long();
+            break;
+        case TOUCH_TRIGGER_BOTH_TAP:
+            touch_callback_trigger_both_tap();
+            break;
+        case TOUCH_TRIGGER_BOTH_LONG:
+            touch_callback_trigger_both_long();
+            break;
+        case TOUCH_TRIGGER_0_1_SLIDE:
+            touch_callback_trigger_0_1_slide();
+            break;
+        case TOUCH_TRIGGER_1_0_SLIDE:
+            touch_callback_trigger_1_0_slide();
+            break;
+        case TOUCH_STATE_IDLE:
+            // Idle, do not setup a timer.
+        default:
+            // Intermediate states, do not go back to TOUCH_STATE_IDLE.
+            touch_set_timer(event);
+            return;
     }
+
+    // If something was triggered, come back to the "IDLE" state.
+    touch_state = TOUCH_STATE_IDLE;
+
+    // And then disable the timer.
+    nrfx_timer_disable(&touch_timer);
 }
 
-uint8_t bit_count (uint16_t value) {
-    uint8_t count = 0;
-    while (value > 0) {              // until all bits are zero
-        if ((value & 0x0001) == 1)   // check lower bit
-            count++;
-        value >>= 1;                 // shift bits, removing lower bit
-    }
-    return count;
-}
+static void touch_timer_handler(nrf_timer_event_t event, void *ctx)
+{ 
+    (void)event;
+    (void)ctx;
 
-/**
- * Start the main touch timer with a custom duration.
- * @param ticks The number of ticks of the RTC1 clock (including prescaling).
- */
-static void touch_timer_start(uint32_t ticks)
-{
-    timer_config_t config = NRFX_TIMER_DEFAULT_CONFIG;
-
-    // Start application timer
-    CHECK(nrfx_timer_init(&delay_timer, &config, delay_timeout_handler));
-    CHECK(nrfx_timer_start(delay_timer, ticks, NULL));
-}
-
-/**
- * Get the current status of the touch button.
- * @param status Pointer filled with the button status.
- */
-static void touch_store_button_status(uint16_t *status)
-{
-    iqs620_get_button_status(&sensor, status);
-}
-
-// public function implementations
-
-/**
- * Init the touch peripheral using GPIO instead of the capsense.
- * Used in early init, for wakeup if put to sleep immediately due to low or charging battery
- */
-void touch_quick_init(void)
-{
-    nrf_gpio_cfg(
-        IO_TOUCHED_PIN,
-        NRF_GPIO_PIN_DIR_INPUT,
-        NRF_GPIO_PIN_INPUT_CONNECT,
-        IO_TOUCHED_PIN_PULL,
-        NRF_GPIO_PIN_S0S1,
-        // Sense is set in shutdown_handler().
-        NRF_GPIO_PIN_NOSENSE);
-}
-
-/**
- * Reset the capsense chip, resending all its configuration.
- * @return True on success.
- */
-bool touch_reprogram(void)
-{
-    return iqs620_reset(&sensor);
-}
-
-/**
- * Print the raw count of characters read insofar.
- * @todo Does not currently print anything.
- * @return True on success.
- */
-bool touch_print_ch_counts(void)
-{
-    uint16_t *data = NULL;
-    if (!iqs620_get_ch_count(&sensor, 0, data))
-        return false;
-    if (!iqs620_get_ch_count(&sensor, 1, data))
-        return false;
-    return true;
-}
-
-/**
- * Timer handler for a touch event.
- * @param p_context Unused.
- */
-static void delay_timeout_handler(void * p_context)
-{
-    (void)p_context;
-    LOG("Touch timeout.");
-    // process state machine change, from timer (so true)
-    touch_event_handler(true);
-}
-
-/**
- * Process pin value change event, from the IQS620 capacitive controller.
- * @param iqs620 Pointer to the IQS620 instance structure.
- * @param button Button instance that did trigger that event.
- * @param event Type of event triggered.
- */
-static void touch_pin_handler(void *iqs620, iqs620_button_t button, iqs620_event_t event)
-{
-    assert(iqs620 != NULL);
-    LOG("Touch pin handler: IQS620 %s %s", button_names[button], event_names[event]);
-    // ignore IQS620_BUTTON_PROX event
-    if (event == IQS620_BUTTON_DOWN || event == IQS620_BUTTON_UP) {
-        // process state machine change, from button push/release (not timer, so false)
-        touch_event_handler(false);
-    }
-}
-
-/**
- * Stop the main touch timer, start a new one with a custom duration.
- * @param ticks The number of ticks of the RTC1 clock (including prescaling).
- */
-static void touch_timer_restart(uint32_t ticks)
-{
-    // Stop the timer
-    CHECK(nrfx_timer_stop(delay_timer));
-
-    // Re-initialize the timer (per nrfx_timer.h: "can be called again ... and will re-initialize ... if the timer is not running.")
-    CHECK(nrfx_timer_create(&delay_timer, delay_timeout_handler));
-
-    // Start application timer
-    CHECK(nrfx_timer_start(delay_timer, ticks, NULL));
-}
-
-/**
- * Stop the main touch timer.
- */
-static void touch_timer_stop(void)
-{
-    // Stop the timer
-    CHECK(nrfx_timer_stop(delay_timer));
-
-    // Re-initialize the timer (per nrfx_timer.h: "can be called again ... and will re-initialize ... if the timer is not running.")
-    CHECK(nrfx_timer_create(&delay_timer, delay_timeout_handler));
-
-    // Ready for next call to touch_timer_start()
-}
-
-/**
- * Handle events, which can be button push/release (coming from touch_pin_handler()) or timer timeout.
- * update state machine accordingly
- * @param istimer True if this function is called due to a timeout for this event.
- */
-static void touch_event_handler(bool istimer)
-{
-    switch(touch_state)
+    // If the timer's counter reaches 0
+    if (touch_timer_ticks == 0)
     {
-    case TOUCH_IDLE:
-        if (istimer)
-        {
-            // stay in IDLE
-            LOG("Touch IDLE: Timer was not stopped!");
-        } else {
-            // record first button touched
-            touch_store_button_status(&first_push_status);
-            // check whether one button pushed, or two
-            if(first_push_status == 0) { // no buttons pushed, so an unexpected release event
-                LOG("Touch IDLE: release event, but expected push");
-                return;
-            } else if (bit_count(first_push_status) == 2) { // two buttons pushed simultaneously
-                touch_state = TOUCH_BOTH_PRESSED;
-                LOG("Touch IDLE->BOTH_PRESSED");
-                touch_timer_restart(TOUCH_LONG_INTERVAL);
-            } else { // one button pushed
-                touch_state = TOUCH_TRIGGERED;
-                LOG("Touch IDLE->TRIGGERED");
-                touch_timer_start(TOUCH_PRESS_INTERVAL);
-            }
-        }
-        break;
-    case TOUCH_TRIGGERED:
-        if (istimer) {
-            touch_state = TOUCH_PRESSED;
-            LOG("Touch TRIGGERED->PRESSED");
-            touch_timer_restart(TOUCH_LONG_INTERVAL);
-        } else {
-            touch_store_button_status(&second_push_status);
-            if(second_push_status) { // non-zero -> another push
-                touch_state = TOUCH_BOTH_PRESSED;
-                LOG("Touch TRIGGERED->BOTH_PRESSED");
-                touch_timer_restart(TOUCH_LONG_INTERVAL);
-            } else { // all zeros -> release
-                touch_state = TOUCH_TAPPED;
-                LOG("Touch TRIGGERED->TAPPED");
-                touch_timer_restart(TOUCH_TAP_INTERVAL);
-            }
-        }
-        break;
-    case TOUCH_TAPPED:
-        if (istimer) {
-            touch_state = TOUCH_IDLE;
-            LOG("Touch TAPPED->IDLE");
-            // timer already stopped
-            generate_gesture(TOUCH_GESTURE_TAP);
-        } else {
-            touch_timer_stop();
-            // no timer in TAPPED2 or SLID; wait indefinitely for release
-            touch_store_button_status(&second_push_status);
-            if(second_push_status != first_push_status) { // pushed different button
-                touch_state = TOUCH_SLID;
-                LOG("Touch TAPPED->SLID");
-            } else { // pushed same button
-                touch_state = TOUCH_TAPPED2;
-                LOG("Touch TAPPED->TAPPED2");
-            }
-        }
-        break;
-    case TOUCH_TAPPED2:
-        if (istimer) {
-            // stay in TAPPED2
-            LOG("Touch TAPPED2: should not be a timer here!");
-        } else {
-            touch_state = TOUCH_IDLE;
-            LOG("Touch TAPPED2->IDLE");
-            touch_timer_stop();
-            generate_gesture(TOUCH_GESTURE_TAP_BOTH);
-        }
-        break;
-    case TOUCH_PRESSED:
-        if (istimer) {
-            touch_state = TOUCH_LONG;
-            LOG("Touch PRESSED->LONG");
-            // timer already stopped
-            // no timer in LONG; wait indefinitely for release
-        } else {
-            touch_store_button_status(&second_push_status);
-            if(second_push_status) { // non-zero -> another push
-                touch_state = TOUCH_BOTH_PRESSED;
-                LOG("Touch PRESSED->BOTH_PRESSED");
-                touch_timer_restart(TOUCH_LONG_INTERVAL);
-            } else { // all zeros -> release
-                touch_state = TOUCH_IDLE;
-                LOG("Touch PRESSED->IDLE");
-                touch_timer_stop();
-                // no timer in IDLE
-                generate_gesture(TOUCH_GESTURE_PRESS);
-            }
-        }
-        break;
-    case TOUCH_LONG:
-        if (istimer) {
-            // stay in LONG;
-            LOG("Touch LONG: should not be a timer here!");
-        } else {
-            touch_state = TOUCH_IDLE;
-            LOG("Touch LONG->IDLE");
-            touch_timer_stop();
-            generate_gesture(TOUCH_GESTURE_LONG_PRESS);
-        }
-        break;
-    case TOUCH_SLID:
-        if (istimer) {
-            // stay in SLID;
-            LOG("Touch SLID: should not be a timer here!");
-        } else { // must be a release
-            touch_state = TOUCH_IDLE;
-            LOG("Touch SLID->IDLE");
+        // Disable the timer for now.
+        nrfx_timer_disable(&touch_timer);
 
-            if(first_push_status < second_push_status) {
-                generate_gesture(TOUCH_GESTURE_SLIDELR);
-            } else {
-                generate_gesture(TOUCH_GESTURE_SLIDERL);
-            }
-        }
-        break;
-    case TOUCH_BOTH_PRESSED:
-        if (istimer) {
-            touch_state = TOUCH_BOTH_LONG;
-            LOG("Touch BOTH_PRESSED->BOTH_LONG");
-            // timer already stopped
-            // no timer in BOTH_LONG; wait indefinitely for release
-        } else {
-            touch_timer_stop();
-            // no timer in either case
-            // check whether both are released, or just one
-            touch_store_button_status(&release_status);
-            if(release_status == 0) { // both buttons released
-                touch_state = TOUCH_IDLE;
-                LOG("Touch BOTH_PRESSED->IDLE");
-                generate_gesture(TOUCH_GESTURE_PRESSBOTH);
-            } else { // one button released
-                LOG("Touch BOTH_PRESSED: one button released");
-            }
-        }
-        break;
-    case TOUCH_BOTH_LONG:
-        if (istimer) {
-            // stay in BOTH_LONG;
-            LOG("Touch BOTH_LONG: should not be a timer here!");
-        } else {
-            // check whether both are released, or just one
-            touch_store_button_status(&release_status);
-            if(release_status == 0) { // both buttons released
-                touch_state = TOUCH_IDLE;
-                LOG("Touch BOTH_LONG->IDLE");
-                generate_gesture(TOUCH_GESTURE_LONGBOTH);
-            } else { // one button released
-                LOG("Touch BOTH_LONG: one button released");
-            }
-        }
-        break;
+        // Submit the event to the state machine.
+        touch_next_state(touch_timer_event);
+    }
+    else
+    {
+        // Not triggering yet.
+        touch_timer_ticks--;
     }
 }
 
-/**
- * Init the touch peripheral with the capsense chip support.
- * Used in full init.
- * @param handler Callback to a handler for touch gestures.
- * @return True on success.
- */
-bool touch_init(touch_gesture_handler_t handler)
+void iqs620_callback_button_pressed(uint8_t button)
 {
-    bool success = false;
+    switch (button)
+    {
+        case 0:
+            touch_next_state(TOUCH_EVENT_0_ON);
+            break;
+        case 1:
+            touch_next_state(TOUCH_EVENT_1_ON);
+            break;
+    }
+}
 
-    // configure touched_N pin
-    success = iqs620_init(&sensor);
+void iqs620_callback_button_released(uint8_t button)
+{
+    switch (button)
+    {
+        case 0:
+            touch_next_state(TOUCH_EVENT_0_OFF);
+            break;
+        case 1:
+            touch_next_state(TOUCH_EVENT_1_OFF);
+            break;
+    }
+}
 
-    CHECK(nrfx_timer_create(&delay_timer, delay_timeout_handler));
+void touch_callback_trigger_0_tap(void)
+{
+    LOG("");
+}
 
-    // resgister the handler
-    touch_gesture_handler = handler;
+void touch_callback_trigger_1_tap(void)
+{
+    LOG("");
+}
 
-    // start in IDLE state & wait for button push interrupt
-    touch_state = TOUCH_IDLE;
+void touch_callback_trigger_0_long(void)
+{
+    LOG("");
+}
 
-    return(success);
+void touch_callback_trigger_1_long(void)
+{
+    LOG("");
+}
+
+void touch_callback_trigger_both_tap(void)
+{
+    LOG("");
+}
+
+void touch_callback_trigger_both_long(void)
+{
+    LOG("");
+}
+
+void touch_callback_trigger_0_1_slide(void)
+{
+    LOG("");
+}
+
+void touch_callback_trigger_1_0_slide(void)
+{
+    LOG("");
 }

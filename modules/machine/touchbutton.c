@@ -15,15 +15,13 @@ struct {
  * @param button The button related to this event.
  * @param event The event triggered for that button.
  */
-void iqs620_callback(iqs620_button_t button, iqs620_event_t event)
+void iqs620_callback(uint8_t button)
 {
-    LOG("button=0x%02X event=0x%02X", button, event);
-
-    mp_obj_t arg = MP_OBJ_NEW_SMALL_INT(button << 1 | event << 0);
+    LOG("button=0x%02X", button);
 
     // Issue the callback if configured.
     if (machine_touchbutton.callback != 0)
-        mp_sched_schedule(machine_touchbutton.callback, arg);
+        mp_sched_schedule(machine_touchbutton.callback, MP_OBJ_NEW_SMALL_INT(button));
 }
 
 void machine_touchbutton_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
