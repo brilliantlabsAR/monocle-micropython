@@ -87,6 +87,10 @@ typedef enum {
     TOUCH_LONG
 } touch_state_t;
 
+touch_state_t touch_state_next[] = {
+    []
+};
+
 static void touch_pin_handler(void *iqs620, iqs620_button_t button, iqs620_event_t event);
 static void touch_event_handler(bool istimer);
 
@@ -140,13 +144,13 @@ static void generate_gesture(touch_gesture_t gesture)
     case TOUCH_GESTURE_TAP:
         LOG("Touch gesture Tap.");
         break;
-    case TOUCH_GESTURE_DOUBLETAP:
+    case TOUCH_GESTURE_TAP_BOTH:
         LOG("Touch gesture DoubleTap.");
         break;
     case TOUCH_GESTURE_PRESS:
         LOG("Touch gesture Press.");
         break;
-    case TOUCH_GESTURE_LONGPRESS:
+    case TOUCH_GESTURE_LONG_PRESS:
         LOG("Touch gesture LongPress.");
         break;
     case TOUCH_GESTURE_PRESSBOTH:
@@ -379,7 +383,7 @@ static void touch_event_handler(bool istimer)
             touch_state = TOUCH_IDLE;
             LOG("Touch TAPPED2->IDLE");
             touch_timer_stop();
-            generate_gesture(TOUCH_GESTURE_DOUBLETAP);
+            generate_gesture(TOUCH_GESTURE_TAP_BOTH);
         }
         break;
     case TOUCH_PRESSED:
@@ -411,7 +415,7 @@ static void touch_event_handler(bool istimer)
             touch_state = TOUCH_IDLE;
             LOG("Touch LONG->IDLE");
             touch_timer_stop();
-            generate_gesture(TOUCH_GESTURE_LONGPRESS);
+            generate_gesture(TOUCH_GESTURE_LONG_PRESS);
         }
         break;
     case TOUCH_SLID:

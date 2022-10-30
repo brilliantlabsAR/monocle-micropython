@@ -148,12 +148,9 @@
 // 0=default (27), 1=most sensitive, 255=least sensitive
 #define IQS620_TOUCH_THRESHOLD                  10         
 
-// Internal data.
-static uint8_t iqs620_prox_touch_state;       
-
-// State of the button
-static uint16_t iqs620_button_status;         
-
+// Last known state of the buttons.
+static uint8_t iqs620_button_0_state;       
+static uint8_t iqs620_button_1_state;       
 
 /**
  * Workaround the fact taht nordic returns an ENUM instead of a simple integer.
@@ -259,142 +256,103 @@ static void iqs620_configure(void)
         IQS620_SYS_SETTINGS_COMMS_ATI | IQS620_SYS_SETTINGS_REDO_ATI);
 }
 
-// OLD  NEW
-  //TP   TP
-  //01   00     RELEASE             (A)
-  //00   01     PROX-IN             (B)
-  //0X   1X     TOUCH               (C)
-  //1X   01     PROX-OUT            (D)
-  //1X   00     RELEASE             (E)
-
-typedef struct
+/**
+ * State of one button.
+ *
+ * In the IQS620, the state is encoded as two boolean flags:
+ * Proximity state and Touch state.
+ *
+ * Here we assume that when Touch is set, Proximity is also implicitly
+ * set, as it is not possible to touch the button without getting close
+ * to it.
+ */
+typedef enum
 {
-    bool prox;
-    bool touch;
-} tp_t;
-
-#define TP(x, p, t)         { .prox = (x) & (p), .touch = (x) & (t) }
+    IQS620_STATE_NONE,
+    IQS620_STATE_PROX,
+    IQS620_STATE_TOUCH,
+} iqs620_state_t;
 
 /**
- * To override by an user-provided function.
- * @param button The button related to this event.
- * @param event The event triggered for that button.
+ * Callback to override to react to button 0 or 1 press event.
+ * @param button The button number.
  */
-__attribute__((__weak__))
-void iqs620_callback(iqs620_button_t button, iqs620_event_t event)
+__attribute__((weak))
+void iqs620_callback_button_pressed(uint8_t button)
 {
-    LOG("button=0x%02X event=0x%02X", button, event);
+    LOG("button=0x%02X", button);
 }
 
 /**
- * Helper function for iqs620_prox_touch.
+ * Callback to override to react to button 0 or 1 press event.
+ * @param button The button number.
  */
-static void iqs620_process_events(iqs620_button_t button, tp_t oldstate, tp_t newstate)
+__attribute__((weak))
+void iqs620_callback_button_released(uint8_t button)
 {
-    if (!oldstate.touch && newstate.touch)
-    {
-        // event C (touch)
-        // update button_status: set button bit
-        iqs620_button_status = iqs620_button_status | (1 << button);
-        LOG("button_status=0x%02X.", iqs620_button_status);
-    
-        iqs620_callback(button, IQS620_BUTTON_DOWN);
-    }
-    else if (oldstate.touch && !newstate.touch)
-    {
-        if (newstate.prox)
-        {
-            // event D (prox-out)
-            iqs620_callback(button, IQS620_BUTTON_PROX);
-        }
-        else
-        {
-            // event E (release)
-            // update button_status: clear button bit
-            iqs620_button_status = iqs620_button_status & ~(1 << button);
-            LOG("release: button_status = 0x%x.", iqs620_button_status);
-    
-            iqs620_callback(button, IQS620_BUTTON_UP);
-        }
-    }
-    else if (!oldstate.touch && !newstate.touch)
-    {
-        if (!oldstate.prox && newstate.prox)
-        {
-            // event B (prox-in)
-            iqs620_callback(button, IQS620_BUTTON_PROX);
-        }
-        if (oldstate.prox && !newstate.prox)
-        {
-            // event A (release)
-            // update button_status: clear button bit
-            iqs620_button_status = iqs620_button_status & ~(1 << button);
-            LOG("release: button_status = 0x%x.", iqs620_button_status);
-    
-            iqs620_callback(button, IQS620_BUTTON_UP);
-        }
-    }
+    LOG("button=0x%02X", button);
 }
 
 /**
- * Process the touch events received from the chip.
- * @param proxflags Binary flags describing the state of touch/proximity.
+ * Trigger
+ *
+ * Proximity is just here to debounce the touch event: switching quickly
+ * between proximity and touch has no effect.
  */
-static void iqs620_prox_touch(uint8_t proxflags)
+static void iqs620_process_state(uint8_t button, iqs620_state_t *old, iqs620_state_t new)
 {
-    // extract B0 prox/touch flags
-    tp_t b0old = TP(iqs620_prox_touch_state,
-        IQS620_PROX_FUSION_FLAGS_CH0_P, IQS620_PROX_FUSION_FLAGS_CH0_T);
-    tp_t b0new = TP(proxflags,
-        IQS620_PROX_FUSION_FLAGS_CH0_P, IQS620_PROX_FUSION_FLAGS_CH0_T);
+    if (*old == new)
+        return;
 
-    // process B0 events
-    iqs620_process_events(IQS620_BUTTON_B0, b0old, b0new);
-
-    // extract B1 prox/touch flags
-    tp_t b1old = TP(iqs620_prox_touch_state,
-        IQS620_PROX_FUSION_FLAGS_CH1_P, IQS620_PROX_FUSION_FLAGS_CH1_T);
-    tp_t b1new = TP(proxflags,
-        IQS620_PROX_FUSION_FLAGS_CH1_P, IQS620_PROX_FUSION_FLAGS_CH1_T);
-
-    // process B1 events
-    iqs620_process_events(IQS620_BUTTON_B1, b1old, b1new);
-
-    // udpate state
-    iqs620_prox_touch_state = proxflags;
+    // We changed from some state to either TOUCH or NONE.
+    switch (new)
+    {
+        case IQS620_STATE_PROX:
+            // Not triggering anything, state just useful for debouncing.
+            break;
+        case IQS620_STATE_NONE:
+            iqs620_callback_button_released(button);
+            break;
+        case IQS620_STATE_TOUCH:
+            iqs620_callback_button_pressed(button);
+            break;
+    }
+    *old = new;
 }
 
-// TOUCH_RDY pin high-to-low state change handler
+#define STATE(x, ch) (\
+    (x) & (IQS620_PROX_FUSION_FLAGS_CH ## ch ## _T) ? IQS620_STATE_TOUCH : \
+    (x) & (IQS620_PROX_FUSION_FLAGS_CH ## ch ## _P) ? IQS620_STATE_PROX : \
+    IQS620_STATE_NONE \
+)
 
 /**
+ * TOUCH_RDY pin high-to-low state change handler
  * Handler for an event on a GPIO pin, notifying that the IQS620 is ready.
  * @param pin The pin triggering the event.
  * @param action The event triggered.
  */
 static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
-    assert(IQS620_TOUCH_RDY_PIN == pin);
+    assert(pin == IQS620_TOUCH_RDY_PIN);
 
-    uint8_t events = 0;
+    uint8_t events;
     iqs620_read_reg(IQS620_GLOBAL_EVENTS, &events, 1);
     LOG("events=0x%02x", events);
 
     if (events & IQS620_GLOBAL_EVENTS_PROX)
     {
-        // read prox/touch UI status
-        uint8_t proxflags = 0;
+        uint8_t proxflags;
         iqs620_read_reg(IQS620_PROX_FUSION_FLAGS, &proxflags, 1);
-        LOG("proxflags=0x%02X", proxflags);
-
-        // process prox/touch events
-        iqs620_prox_touch(proxflags);
+        LOG("proxflags=0x%02x", proxflags);
+        iqs620_process_state(0, &iqs620_button_0_state, STATE(proxflags, 0));
+        iqs620_process_state(1, &iqs620_button_1_state, STATE(proxflags, 1));
     }
     if (events & IQS620_GLOBAL_EVENTS_SYS)
     {
-        uint8_t sysflags = 0;
+        uint8_t sysflags;
         iqs620_read_reg(IQS620_SYS_FLAGS, &sysflags, 1);
         LOG("sysflags=0x%02x", sysflags);
-
         if (sysflags & IQS620_SYS_FLAGS_RESET_HAPPENED) {
             LOG("reset detected, reconfiguring");
             iqs620_configure();
@@ -402,21 +360,10 @@ static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_
     }
 }
 
-/**
- * Enable (or disable) the event telling that IQS620 is ready.
- */
-static void iqs620_set_touch_rdy_handler(bool on)
-{
-    if (on)
-        // enable the GPIOTE event
-        nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);
-    else
-        // disable the GPIOTE event
-        nrfx_gpiote_in_event_disable(IQS620_TOUCH_RDY_PIN);
-}
+#undef STATE
 
 /**
- * Get the ID of the product number.
+ * Get the product number ID.
  */
 uint32_t iqs620_get_id(void)
 {
@@ -441,19 +388,13 @@ void iqs620_init(void)
         NRF_GPIO_PIN_SENSE_LOW
     );
 
-    // Initialize the internal state.
-    iqs620_prox_touch_state = 0;
-    iqs620_button_status = 0;
-
     // Configure the TOUCH_RDY pin for high-to-low edge GPIOTE event
     nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_HITOLO(true);
     config.pull = NRF_GPIO_PIN_PULLUP;
     CHECK(nrfx_gpiote_in_init(IQS620_TOUCH_RDY_PIN, &config, iqs620_touch_rdy_handler));
 
-    // Reset the chip and reconfigure it.
-
     // Disable the TOUCH_RDY event during reset.
-    iqs620_set_touch_rdy_handler(false);
+    nrfx_gpiote_in_event_disable(IQS620_TOUCH_RDY_PIN);
 
     // Initiate soft reset.
     iqs620_write_reg(IQS620_SYS_SETTINGS, 1 << 7);
@@ -465,15 +406,7 @@ void iqs620_init(void)
     assert(iqs620_get_id() == IQS620_ID_VALUE);
 
     // Enable the TOUCH_RDY event after the reset.
-    iqs620_set_touch_rdy_handler(true);
-}
-
-/**
- * Wrapper that mimics the CY8CMBR3 driver for code compatibility.
- */
-uint16_t iqs620_get_button_status(void)
-{
-    return (iqs620_button_status);
+    nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);
 }
 
 /**
