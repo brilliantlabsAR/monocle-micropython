@@ -107,6 +107,10 @@ int main(void)
     // Initialise the readline module for REPL
     readline_init0();
 
+    // If main.py exits, fallback to a REPL.
+    // TODO: add an #ifdef to reboot instead of running the REPL.
+    pyexec_frozen_module("main.py");
+
     // REPL mode can change, or it can request a soft reset
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
