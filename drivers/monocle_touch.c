@@ -29,17 +29,10 @@
 #define TOUCH_DELAY_LONG_MS         9500000
 
 /*
- * This state machine can distinguish between the following gestures:
- * - Tap: push & quick release
- * - Slide LR or RL +: tap on one button followed by tap on other
- * - DoubleTap: Tap, followed quickly by another Tap
- * - Press: push one for >0.5s & <10s then release
- * - LongPress: push for >10s then release
- * - LongBoth +: push both buttons for >10s then release
- *
+ * This state machine can distinguish between the various gestures.
  * Transition to new state is triggered by a timeout or push/release event.
- * Timer, of given duration, is started when entering state that has a timeout.
- * Transitions back to IDLE will generate a gesture, this happens on release
+ * Timer of various duration is started when entering state that has a timeout.
+ * Trigger states will reset the state back to IDLE. This happens on release
  * for most gestures, but after TAP_INTERVAL for Tap (i.e. some delay).
  */
 
@@ -232,17 +225,23 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
 };
 
 static void (*touch_trigger_fn[TOUCH_STATE_NUM])(void) = {
+    // Push and quick release.
     [TOUCH_TRIGGER_0_TAP]      = touch_callback_trigger_0_tap,
     [TOUCH_TRIGGER_1_TAP]      = touch_callback_trigger_1_tap,
+    [TOUCH_TRIGGER_BOTH_TAP]   = touch_callback_trigger_both_tap,
+    // Push one for >0.5s and <10s then release.
     [TOUCH_TRIGGER_0_PRESS]    = touch_callback_trigger_0_press,
     [TOUCH_TRIGGER_1_PRESS]    = touch_callback_trigger_1_press,
+    [TOUCH_TRIGGER_BOTH_PRESS] = touch_callback_trigger_both_press,
+    // Push for >10s then release.
     [TOUCH_TRIGGER_0_LONG]     = touch_callback_trigger_0_long,
     [TOUCH_TRIGGER_1_LONG]     = touch_callback_trigger_1_long,
-    [TOUCH_TRIGGER_BOTH_TAP]   = touch_callback_trigger_both_tap,
-    [TOUCH_TRIGGER_BOTH_PRESS] = touch_callback_trigger_both_press,
     [TOUCH_TRIGGER_BOTH_LONG]  = touch_callback_trigger_both_long,
+    // Tap on one button followed by tap on other.
     [TOUCH_TRIGGER_0_1_SLIDE]  = touch_callback_trigger_0_1_slide,
     [TOUCH_TRIGGER_1_0_SLIDE]  = touch_callback_trigger_1_0_slide,
+    // Tap, followed quickly by another Tap.
+    // TODO
 };
 
 static void touch_timer_handler(nrf_timer_event_t event, void *ctx);
