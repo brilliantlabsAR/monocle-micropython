@@ -10,18 +10,13 @@
 /**
  * Driver for the IQS620 hall effect, proximity sensor.
  * https://www.azoteq.com/images/stories/pdf/iqs620_datasheet.pdf
- *
  * The interrupt line indicates that there is an event pending, that the MCU queries over I²C.
- *
  * There are 2 touch buttons on the Monocle, each triggering these events:
- *
- * 
  * - TOUCH_GESTURE_TAP        : 0.25s
  * - TOUCH_GESTURE_DOUBLETAP  : 0.25s (Both Tapped)
  * - TOUCH_GESTURE_PRESS      : 0.5s
  * - TOUCH_GESTURE_LONGPRESS  : 9.5s
  * - TOUCH_GESTURE_LONGBOTH   : 9.5s (Both Pressed)
- * 
  * @defgroup IQS620
  * @{
  */

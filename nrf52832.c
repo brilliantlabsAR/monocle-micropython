@@ -25,6 +25,7 @@
  */
 
 #include <stdint.h>
+#include <assert.h>
 
 extern uint32_t _estack;
 extern uint32_t _sidata;
@@ -39,7 +40,11 @@ extern void  main(void) __attribute__((noreturn));
 extern void SystemInit(void);
 
 void Default_Handler(void) {
-    while (1);
+    assert(!"Default_Handler");
+}
+
+void HardFault_Default(void) {
+    assert(!"Hard_Fault");
 }
 
 void Reset_Handler(void) {
@@ -61,7 +66,7 @@ void Reset_Handler(void) {
 }
 
 void NMI_Handler              (void) __attribute__ ((weak, alias("Default_Handler")));
-void HardFault_Handler        (void) __attribute__ ((weak, alias("Default_Handler")));
+void HardFault_Handler        (void) __attribute__ ((weak, alias("HardFault_Default")));
 void MemoryManagement_Handler (void) __attribute__ ((weak, alias("Default_Handler")));
 void BusFault_Handler         (void) __attribute__ ((weak, alias("Default_Handler")));
 void UsageFault_Handler       (void) __attribute__ ((weak, alias("Default_Handler")));

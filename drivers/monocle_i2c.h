@@ -9,7 +9,6 @@
 #include "nrfx_twi.h"
 /**
  * Driver for the hardware I2C of the board.
- *
  * @defgroup I2C
  * @{
  */

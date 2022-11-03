@@ -113,9 +113,8 @@ void spi_write_burst(uint8_t addr, const uint8_t *data, uint16_t length)
     memcpy(&m_tx_buf[1], data, length + 1);
 
     // wait for any pending SPI operation to complete
-    while (!m_spi_xfer_done) {
+    while (!m_spi_xfer_done)
         __WFE();
-    }
 
     // Reset rx buffer and transfer done flag
     memset(m_rx_buf, 0, length + 1);
@@ -128,9 +127,8 @@ void spi_write_burst(uint8_t addr, const uint8_t *data, uint16_t length)
     CHECK(nrfx_spim_xfer(&m_spi, &xfer_desc, 0));
 
     // Wait until SPI Master completes transfer data
-    while (!m_spi_xfer_done) {
+    while (!m_spi_xfer_done)
         __WFE();
-    }
 }
 
 /**
@@ -207,51 +205,4 @@ uint8_t spi_read_byte(uint8_t addr)
     LOG("SPI: read addr=%02X byte=%02X", addr, byte);
 
     return byte;
-}
-
-/**
- * Attempt multiple times to read and write bytes at the same address.
- * The read value is compared with the write value.
- * @pre Correct CS pin must be set (for OLED or FPGA).
- * @param addr Address being tseted.
- * @return True if all tests pass.
- */
-bool spi_exercise_register(uint8_t addr)
-{
-    bool success = true;
-    uint8_t original_value = spi_read_byte(addr);
-    uint8_t write_value = 0x00;
-    uint8_t read_value = 0x00;
-
-    while (success && (write_value < 0xFF)) { // count up
-        spi_write_byte(addr, write_value);
-        read_value = spi_read_byte(addr);
-        success = (read_value == write_value);
-        if (success) {
-            write_value++;
-        } else {
-            NRFX_LOG_ERROR("SPI ERROR: register(0x%x) = 0x%x, expected 0x%x", addr, read_value, write_value);
-        }
-    }
-    if (success) { // count down
-        //LOG("SPI test: register (0x%x) count up passed.", addr);
-        while (success && (write_value > 0x00)) { // count up
-            spi_write_byte(addr, write_value);
-            read_value = spi_read_byte(addr);
-            success = (read_value == write_value);
-            if (success) {
-                write_value--;
-            } else {
-                NRFX_LOG_ERROR("SPI ERROR: register(0x%x) = 0x%x, expected 0x%x", addr, read_value, write_value);
-            }
-        }
-    }
-    if (success) {
-        //LOG("SPI test: register (0x%x) count down passed.", addr);
-    }
-
-    // attempt to restore original value, but this might fail if !success
-    spi_write_byte(addr, original_value);
-
-    return(success);
 }

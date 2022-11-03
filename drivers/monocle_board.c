@@ -14,6 +14,7 @@
 #include "monocle_board.h"
 #include "monocle_config.h"
 #include "monocle_ecx335af.h"
+#include "monocle_flash.h"
 #include "monocle_fpga.h"
 #include "monocle_i2c.h"
 #include "monocle_iqs620.h"
@@ -21,36 +22,33 @@
 #include "monocle_ov5640.h"
 #include "monocle_spi.h"
 #include "nrfx_gpiote.h"
+#include "nrfx_log.h"
 #include "nrfx_systick.h"
 #include <stdbool.h>
 
-void board_power_rails_on(void)
+static void board_power_on(void)
 {
-    // Advised not to pause the debugger in this function to preserve
-    // power-on timing requirements
-
     // FPGA requires VCC(1.2V) before VCCX(2.7V) or VCCO(1.8V).
     max77654_rail_1v2(true);
+    nrfx_systick_delay_ms(4);
 
     // Camera requires 1.8V before 2.7V.
     max77654_rail_1v8sw(true);
+    nrfx_systick_delay_ms(10);
 
-    // 1.8V ramp rate is slower than 2.7V; without this, 1.8V reaches
-    // target voltage 0.2s _after_ 2.7V
-    nrfx_systick_delay_ms(1);
     max77654_rail_2v7(true);
-
-    // Rise time measured as 1.2ms; give FPGA time to boot, while MODE1 is still held low.
-    nrfx_systick_delay_ms(2);
+    nrfx_systick_delay_ms(4);
 
     // Used by the display.
     max77654_rail_10v(true);
+    nrfx_systick_delay_ms(4);
 
     // Used by the red and green LEDs.
     max77654_rail_vled(true);
+    nrfx_systick_delay_ms(4);
 }
 
-void board_power_rails_off(void)
+static void board_power_off(void)
 {
     max77654_rail_vled(false);
     max77654_rail_10v(false);
@@ -77,33 +75,38 @@ void board_init(void)
     max77654_init();
 
     // I2C calls to make sure all power rails are turned off.
-    board_power_rails_on();
+    board_power_off();
 
     // Initialise GPIO before the chips are powered on.
     ecx335af_prepare();
     fpga_prepare();
     ov5640_prepare();
+    flash_prepare();
 
     // I2C calls to setup power rails of the MAX77654.
-    board_power_rails_on();
-
-    // Custom wrapper around SPI used by the other drivers.
-    spi_init();
-
-    // Initialise the FPGA: providing the clock for the display and screen.
-    fpga_init();
-
-    // Enable the XCLK signal used by the Camera module.
-    fpga_xclk_on();
-
-    // Initialise the Display: gpio pins startup sequence then I2C.
-    ov5640_pwr_on();
+    board_power_on();
 
     // Initialise the Capacitive Touch Button controller over I2C.
     iqs620_init();
 
     // Initialise the battery level sensing with the ADC.
     battery_init();
+
+    // Initialise the Display: gpio pins startup sequence then I2C config.
+    //ov5640_pwr_on();
+    //ov5640_focus_init();
+
+    // Custom wrapper around SPI used by the other drivers.
+    //spi_init();
+
+    // Initialise the SPI conection to the flash.
+    flash_init();
+    NRFX_LOG_ERROR("id=0x%06X", flash_get_id());
+
+    // Initialise the FPGA: providing the clock for the display and screen.
+    //fpga_init();
+    //fpga_xclk_on();
+    //NRFX_LOG_ERROR("FPGA_MEMORY_CONTROL=0x%02X", fpga_read_byte(FPGA_MEMORY_CONTROL));
 }
 
 void board_deinit(void)
@@ -113,5 +116,6 @@ void board_deinit(void)
     fpga_deinit();
     ov5640_deinit();
 
-    // Turn the power rails off before turning off.
+    // Turn the power rails off.
+    board_power_off();
 }

@@ -195,17 +195,13 @@ bool fpga_spi_exercise_register(uint8_t addr)
  */
 void fpga_prepare(void)
 {
-    // Make sure the interrupt pin is not pulled low which could prevent
-    // the FPGA from starting and cause damage to the flash.
-    //
-    // There is a weak pull-up on this line, and it can be used as
-    // GPIO output for the FPGA, input for the MCU.
-    nrf_gpio_pin_set(FPGA_RECONFIG_N_PIN);
-    nrf_gpio_cfg_output(FPGA_RECONFIG_N_PIN);
-
     // MODE1 set low for AUTOBOOT from FPGA internal flash
     nrf_gpio_pin_clear(FPGA_MODE1_PIN);
     nrf_gpio_cfg_output(FPGA_MODE1_PIN);
+
+    // Keep the FPGA in reset/reconfig mode until fpga_init() is called.
+    nrf_gpio_pin_clear(FPGA_RECONFIG_N_PIN);
+    nrf_gpio_cfg_output(FPGA_RECONFIG_N_PIN);
 }
 
 /**
@@ -213,8 +209,12 @@ void fpga_prepare(void)
  */
 void fpga_init(void)
 {
+    // Make sure the RECONFIG_N pin is not pulled low which could prevent
+    // the FPGA from starting and cause damage to the flash while programming.
+    nrf_gpio_pin_set(FPGA_RECONFIG_N_PIN);
+
     // Give the FPGA some time to boot.
-    nrfx_systick_delay_ms(1000);
+    nrfx_systick_delay_ms(500);
 
     // Set all registers to a known state.
     fpga_soft_reset();

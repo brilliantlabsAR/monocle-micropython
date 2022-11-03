@@ -11,7 +11,6 @@
  * ADC driver for sensing battery voltage.
  * battery_start_sample() must be called periodically within the main application
  * every 5 samples will be averaged, and the battery voltage and SoC updated.
- *
  * @defgroup Battery
  * @{
  */

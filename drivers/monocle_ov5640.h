@@ -9,20 +9,17 @@
 /**
  * Driver for the I²C OV5640 camera sensor.
  * https://cdn.sparkfun.com/datasheets/Sensors/LightImaging/
- *
  * The parallel data path is connected to FPGA. The MCU only has access to the I²C configuration interface.
- *
  * - 5MP max resolutiono
  * - Recording happens at 15 FPS, and the FPGA triple every frame to match the 50 FPS of the ECX335AF display.
  * - When using the 4x digital zoom, the camera outputs 640x400 video.
- *
  * @defgroup OV5640
  * @{
  */
 
-#define OV5640_CHIPIDH          0X300A ///< OV5640 Chip ID Register address, high byte
-#define OV5640_CHIPIDL          0X300B ///< OV5640 Chip ID Register address, low byte
-#define OV5640_ID               0X5640 ///< OV5640 Chip ID, expected value
+#define OV5640_CHIPIDH          0x300A ///< OV5640 Chip ID Register address, high byte
+#define OV5640_CHIPIDL          0x300B ///< OV5640 Chip ID Register address, low byte
+#define OV5640_ID               0x5640 ///< OV5640 Chip ID, expected value
 #define OV5640_FPS              15     ///< frames per second, as implemented in camera configuration
 
 #define TRANSFER_CMPLT 0x00u
@@ -52,7 +49,7 @@
 void ov5640_prepare(void);
 void ov5640_init(void);
 void ov5640_deinit(void);
-bool ov5640_pwr_on(void);
+void ov5640_pwr_on(void);
 void ov5640_pwr_sleep(void);
 void ov5640_pwr_wake(void);
 //void ov5640_pwr_off(void);
@@ -70,8 +67,8 @@ void ov5640_flash_ctrl(bool on);
 void ov5640_mirror(bool on);
 void ov5640_flip(bool on);
 
-bool ov5640_outsize_set(uint16_t offx, uint16_t offy, uint16_t width, uint16_t height);
-bool ov5640_focus_init(void);
+void ov5640_outsize_set(uint16_t offx, uint16_t offy, uint16_t width, uint16_t height);
+void ov5640_focus_init(void);
 
 /* @} */
 #endif

@@ -8,17 +8,13 @@
 #include <stdbool.h>
 /**
  * Driver for configuring the SPI-controlled FPGA.
- *
  * It controls the low-level read/write with the registers and bulk data transfer.
- *
  * It provides a higher level API for:
- *
  * - the FPGA itself,
  * - the Camera data path,
  * - the Microdisplay data path,
  * - the Microphone data,
  * - the Checksum calculation,
- *
  * @defgroup FPGA
  * @{
  */

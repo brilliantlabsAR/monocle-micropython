@@ -20,6 +20,7 @@
 #include "nrfx_log.h"
 
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
+#define LEN(x) (sizeof (x) / sizeof *(x))
 
 static inline void ov5640_delay_ms(uint32_t ms)
 {
@@ -127,27 +128,24 @@ void ov5640_deinit(void)
 }
 
 /**
- * Merge 3 configuration steps into one, to reduce high current draw of ov5640_uxga_init_reg_tbl[] and speed boot.
+ * Merge 3 configuration steps into one, to reduce high current draw of ov5640_uxga_init_tbl[] and speed boot.
  * It combines
- * - ov5640_uxga_init_reg_tbl[] in ov5640_pwr_on()
- * - ov5640_rgb565_reg_tbl in ov5640_yuv422_mode()
- * - ov5640_rgb565_reg_1x_tbl in ov5640_mode_1x()
+ * - ov5640_uxga_init_tbl[] in ov5640_pwr_on()
+ * - ov5640_rgb565_tbl in ov5640_yuv422_mode()
+ * - ov5640_rgb565_1x_tbl in ov5640_mode_1x()
  */
 void ov5640_yuv422_direct(void)
 {
-    for (uint16_t i = 0; sizeof(ov5640_yuv422_direct_reg_tbl) / 4; i++)
-        ov5640_write_reg(ov5640_yuv422_direct_reg_tbl[i][0], ov5640_yuv422_direct_reg_tbl[i][1]);
+    for (size_t i = 0; i < LEN(ov5640_yuv422_direct_tbl); i++)
+        ov5640_write_reg(ov5640_yuv422_direct_tbl[i].addr, ov5640_yuv422_direct_tbl[i].value);
 }
 
 /**
  * Power on the camera.
  * Precondition: ov5640_init() called earlier in main.c
- * @return True on success.
  */
-bool ov5640_pwr_on(void)
+void ov5640_pwr_on(void)
 {
-    uint16_t reg;
-
     // Power on sequence, references: Datasheet section 2.7.1; Application Notes section 3.1.1
     // assume XCLK is on & kept on, per the current code (it could be turned off when powered down)
     // 1) PWDN (active high) is high, RESET (active low) is low
@@ -172,16 +170,14 @@ bool ov5640_pwr_on(void)
     // step (6)
     ov5640_delay_ms(20);
 
-    reg = ov5640_read_reg(OV5640_CHIPIDH);
-    reg <<= 8;
-    reg |= ov5640_read_reg(OV5640_CHIPIDL);
-    if (reg != OV5640_ID)
-        return false; // unexpected chip ID, init failed
-    ov5640_write_reg(0x3103, 0x11);    //system clock from pad, bit[1]
+    // Check the chip ID
+    uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
+    LOG("id=%04x", id);
+    assert(id == OV5640_ID);
+
+    ov5640_write_reg(0x3103, 0x11);    // system clock from pad, bit[1]
     ov5640_write_reg(0x3008, 0x82);
     ov5640_yuv422_direct();
-
-    return true;
 }
 
 /**
@@ -209,10 +205,10 @@ void ov5640_mode_1x(void)
     // (guaranteed to be written prior to the internal latch at the frame boundary).
     // see Datasheet section 2.6
     ov5640_write_reg(0x3212, 0x03); // start group 3 -- for some reason this makes transition worse!
-    for (uint16_t i = 0; i < (sizeof(ov5640_rgb565_reg_1x_tbl) / 4); i++)
-        ov5640_write_reg(ov5640_rgb565_reg_1x_tbl[i][0], ov5640_rgb565_reg_1x_tbl[i][1]);
+    for (size_t i = 0; i < LEN(ov5640_rgb565_1x_tbl); i++)
+        ov5640_write_reg(ov5640_rgb565_1x_tbl[i].addr, ov5640_rgb565_1x_tbl[i].value);
     ov5640_write_reg(0x3212, 0x13); // end group 3
-    ov5640_write_reg(0x3212, 0xa3); // launch group 3
+    ov5640_write_reg(0x3212, 0xA3); // launch group 3
 }
 
 /**
@@ -223,14 +219,14 @@ void ov5640_mode_2x(void)
     // start group 3
     ov5640_write_reg(0x3212, 0x03);
 
-    for (uint16_t i = 0; i < (sizeof(ov5640_rgb565_reg_2x_tbl) / 4); i++)
-        ov5640_write_reg(ov5640_rgb565_reg_2x_tbl[i][0], ov5640_rgb565_reg_2x_tbl[i][1]);
+    for (size_t i = 0; i < LEN(ov5640_rgb565_2x_tbl); i++)
+        ov5640_write_reg(ov5640_rgb565_2x_tbl[i].addr, ov5640_rgb565_2x_tbl[i].value);
 
     // end group 3
     ov5640_write_reg(0x3212, 0x13);
 
     // launch group 3
-    ov5640_write_reg(0x3212, 0xa3);
+    ov5640_write_reg(0x3212, 0xA3);
 }
 
 /**
@@ -245,13 +241,16 @@ void ov5640_reduce_size(uint16_t Hpixels, uint16_t Vpixels)
 {
     ov5640_write_reg(0x3212, 0x03); // start group 3
 
-    ov5640_write_reg(0x3808, Hpixels >> 8);   //DVPHO, upper byte
-    ov5640_write_reg(0x3809, Hpixels & 0xFF); //DVPHO, lower byte
-    ov5640_write_reg(0x380a, Vpixels >> 8);   //DVPVO, upper byte
-    ov5640_write_reg(0x380b, Vpixels & 0xFF); //DVPVO, lower byte
+    ov5640_write_reg(0x3808, Hpixels >> 8);   // DVPHO, upper byte
+    ov5640_write_reg(0x3809, Hpixels & 0xFF); // DVPHO, lower byte
+    ov5640_write_reg(0x380a, Vpixels >> 8);   // DVPVO, upper byte
+    ov5640_write_reg(0x380b, Vpixels & 0xFF); // DVPVO, lower byte
 
-    ov5640_write_reg(0x3212, 0x13); // end group 3
-    ov5640_write_reg(0x3212, 0xa3); // launch group 3
+    // end group 3
+    ov5640_write_reg(0x3212, 0x13);
+
+    // launch group 3
+    ov5640_write_reg(0x3212, 0xA3);
 }
 
 /** AWB Light mode config [0..4] [Auto, Sunny, Office, Cloudy, Home]. */
@@ -274,7 +273,7 @@ void ov5640_light_mode(uint8_t mode)
     for (int i = 0; i < 7; i++)
         ov5640_write_reg(0x3400 + i, ov5640_lightmode_tbl[mode][i]);
     ov5640_write_reg(0x3212, 0x13); //end group 3
-    ov5640_write_reg(0x3212, 0xa3); //launch group 3
+    ov5640_write_reg(0x3212, 0xA3); //launch group 3
 }
 
 /** Color saturation config [0..6] [-3, -2, -1, 0, 1, 2, 3]> */
@@ -296,15 +295,15 @@ const static uint8_t OV5640_SATURATION_TBL[7][6] =
 void ov5640_color_saturation(uint8_t sat)
 {
     ov5640_write_reg(0x3212, 0x03); // start group 3
-    ov5640_write_reg(0x5381, 0x1c);
-    ov5640_write_reg(0x5382, 0x5a);
+    ov5640_write_reg(0x5381, 0x1C);
+    ov5640_write_reg(0x5382, 0x5A);
     ov5640_write_reg(0x5383, 0x06);
     for (int i = 0; i < 6; i++)
         ov5640_write_reg(0x5384 + i, OV5640_SATURATION_TBL[sat][i]);
     ov5640_write_reg(0x538b, 0x98);
     ov5640_write_reg(0x538a, 0x01);
     ov5640_write_reg(0x3212, 0x13); // end group 3
-    ov5640_write_reg(0x3212, 0xa3); // launch group 3
+    ov5640_write_reg(0x3212, 0xA3); // launch group 3
 }
 
 /**
@@ -321,7 +320,7 @@ void ov5640_brightness(uint8_t bright)
         ov5640_write_reg(0x5588, 0x09);
     else ov5640_write_reg(0x5588, 0x01);
     ov5640_write_reg(0x3212, 0x13); //end group 3
-    ov5640_write_reg(0x3212, 0xa3); //launch group 3
+    ov5640_write_reg(0x3212, 0xA3); //launch group 3
 }
 
 /**
@@ -360,7 +359,7 @@ void ov5640_contrast(uint8_t contrast)
     ov5640_write_reg(0x5585, reg0val);
     ov5640_write_reg(0x5586, reg1val);
     ov5640_write_reg(0x3212, 0x13); // end group 3
-    ov5640_write_reg(0x3212, 0xa3); // launch group 3
+    ov5640_write_reg(0x3212, 0xA3); // launch group 3
 }
 
 /**
@@ -412,7 +411,7 @@ void ov5640_special_effects(uint8_t eft)
     ov5640_write_reg(0x5584, ov5640_effects_tbl[eft][2]); // sat V
     ov5640_write_reg(0x5003, 0x08);
     ov5640_write_reg(0x3212, 0x13); //end group 3
-    ov5640_write_reg(0x3212, 0xa3); //launch group 3
+    ov5640_write_reg(0x3212, 0xA3); //launch group 3
 }
 
 /**
@@ -452,35 +451,32 @@ void ov5640_flip(bool on)
  * @param offy Offset Y
  * @param width Prescale width
  * @param height Presclae height
- * @return true Once set
  */
-bool ov5640_outsize_set(uint16_t offx, uint16_t offy, uint16_t width, uint16_t height)
+void ov5640_outsize_set(uint16_t offx, uint16_t offy, uint16_t width, uint16_t height)
 {
     ov5640_write_reg(0x3212, 0x03);
 
     // Set pre-scaling size
     ov5640_write_reg(0x3808, width >> 8);
-    ov5640_write_reg(0x3809, width & 0xff);
+    ov5640_write_reg(0x3809, width & 0xFF);
     ov5640_write_reg(0x380a, height >> 8);
-    ov5640_write_reg(0x380b, height & 0xff);
+    ov5640_write_reg(0x380b, height & 0xFF);
 
     // Set ofsset
     ov5640_write_reg(0x3810, offx >> 8);
-    ov5640_write_reg(0x3811, offx & 0xff);
+    ov5640_write_reg(0x3811, offx & 0xFF);
 
     ov5640_write_reg(0x3812, offy >> 8);
-    ov5640_write_reg(0x3813, offy & 0xff);
+    ov5640_write_reg(0x3813, offy & 0xFF);
 
     ov5640_write_reg(0x3212, 0x13);
-    ov5640_write_reg(0x3212, 0xa3);
-    return true;
+    ov5640_write_reg(0x3212, 0xA3);
 }
 
 /**
  * Focus init transfer camera module firmware.
- * @return true on success
  */
-bool ov5640_focus_init(void)
+void ov5640_focus_init(void)
 {
     uint8_t state = 0x8F;
 
@@ -488,7 +484,7 @@ bool ov5640_focus_init(void)
     ov5640_write_reg(0x3000, 0x20);
 
     // program ov5640 MCU firmware
-    for (uint16_t i = 0; i < sizeof(ov5640_af_config_tbl); i++)
+    for (size_t i = 0; i < LEN(ov5640_af_config_tbl); i++)
         ov5640_write_reg(0x8000 + i, ov5640_af_config_tbl[i]);
 
     ov5640_write_reg(0x3022, 0x00); // ? undocumented
@@ -498,16 +494,13 @@ bool ov5640_focus_init(void)
     ov5640_write_reg(0x3026, 0x00); // ?
     ov5640_write_reg(0x3027, 0x00); // ?
     ov5640_write_reg(0x3028, 0x00); // ?
-    ov5640_write_reg(0x3029, 0x7f); // ?
+    ov5640_write_reg(0x3029, 0x7F); // ?
     ov5640_write_reg(0x3000, 0x00); // enable MCU
 
     uint16_t i = 0;
     do {
         state = ov5640_read_reg(0x3029);
         ov5640_delay_ms(5);
-        if (++i > 1000)
-            return false;
+        assert(++i <= 1000);
     } while (state != 0x70);
-
-    return true;
 }

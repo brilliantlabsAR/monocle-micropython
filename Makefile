@@ -85,14 +85,15 @@ SRC += drivers/monocle_battery.c
 SRC += drivers/monocle_ble.c
 SRC += drivers/monocle_board.c
 SRC += drivers/monocle_checksum.c
+SRC += drivers/monocle_ecx335af.c
+SRC += drivers/monocle_flash.c
 SRC += drivers/monocle_fpga.c
 SRC += drivers/monocle_i2c.c
 SRC += drivers/monocle_iqs620.c
-SRC += drivers/monocle_touch.c
 SRC += drivers/monocle_max77654.c
-SRC += drivers/monocle_ecx335af.c
 SRC += drivers/monocle_ov5640.c
 SRC += drivers/monocle_spi.c
+SRC += drivers/monocle_touch.c
 
 SRC += modules/board/led.c
 SRC += modules/board/modboard.c

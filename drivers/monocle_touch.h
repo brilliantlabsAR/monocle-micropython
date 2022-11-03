@@ -11,7 +11,6 @@
 
 /**
  * Touch interface application logics.
- *
  * @defgroup Touch
  * @{
  */
