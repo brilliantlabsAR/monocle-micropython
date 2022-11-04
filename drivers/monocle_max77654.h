@@ -40,9 +40,9 @@ typedef enum MAX77654_charge_fault {
 } max77654_fault;
 
 void max77654_init(void);
-void max77654_rail_1v8sw(bool on);
-void max77654_rail_2v7(bool on);
 void max77654_rail_1v2(bool on);
+void max77654_rail_1v8(bool on);
+void max77654_rail_2v7(bool on);
 void max77654_rail_10v(bool on);
 void max77654_rail_vled(bool on);
 void max77654_led_red(bool on);

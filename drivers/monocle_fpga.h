@@ -171,7 +171,6 @@ bool fpga_is_buffer_read_done(void);
 
 // for validation testing
 bool fpga_test_reset(void);
-bool fpga_spi_exercise_register(uint8_t addr);
 
 void fpga_soft_reset(void);
 bool fpga_ram_check(void);

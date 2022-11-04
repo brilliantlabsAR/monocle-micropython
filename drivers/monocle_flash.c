@@ -3,12 +3,6 @@
  * Licensed under the MIT License
  */
 
-/**
- * Flash I/O library for sending a bitstream to the FPGA.
- * @file monocle_flash.c
- * @author Josuah Demangeon
- */
-
 #include "monocle_config.h"
 #include "monocle_flash.h"
 #include "nrf_gpio.h"

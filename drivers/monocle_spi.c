@@ -49,11 +49,16 @@ void spim_event_handler(nrfx_spim_evt_t const * p_event, void *p_context)
  */
 void spi_init(void)
 {
-    nrfx_spim_config_t spi_config = NRFX_SPIM_DEFAULT_CONFIG(SPIM0_SCK_PIN, SPIM0_MOSI_PIN, SPIM0_MISO_PIN, NRFX_SPIM_PIN_NOT_USED);
-    spi_config.frequency      = NRF_SPIM_FREQ_1M;
-    spi_config.mode           = NRF_SPIM_MODE_3;
-    spi_config.bit_order      = NRF_SPIM_BIT_ORDER_LSB_FIRST;
-    CHECK(nrfx_spim_init(&m_spi, &spi_config, spim_event_handler, NULL));
+    nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
+        SPIM0_SCK_PIN,
+        SPIM0_MOSI_PIN,
+        SPIM0_MISO_PIN,
+        NRFX_SPIM_PIN_NOT_USED
+    );
+    config.frequency      = NRF_SPIM_FREQ_1M;
+    config.mode           = NRF_SPIM_MODE_3;
+    config.bit_order      = NRF_SPIM_BIT_ORDER_LSB_FIRST;
+    CHECK(nrfx_spim_init(&m_spi, &config, spim_event_handler, NULL));
 
     // configure CS pin for the Display (for active low)
     nrf_gpio_pin_set(SPIM0_DISP_CS_PIN);

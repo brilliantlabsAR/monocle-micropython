@@ -14,9 +14,9 @@
  */
 
 #define SPI_MAX_BURST_LENGTH 254 // maximum length of burst write or read (Bytes)
-#if(SPI_MAX_BURST_LENGTH >= UINT16_MAX)
+#if (SPI_MAX_BURST_LENGTH >= UINT16_MAX)
 #error "Reduce SPI_MAX_BURST_LENGTH or redefine length type."
-#elif(SPI_MAX_BURST_LENGTH > 1024)
+#elif (SPI_MAX_BURST_LENGTH > 1024)
 #error "Current FPGA FIFO limit is 1024 bytes."
 #endif
 
@@ -27,9 +27,6 @@ void spi_write_byte(uint8_t addr, uint8_t data);
 void spi_write_burst(uint8_t addr, const uint8_t *data, uint16_t length);
 uint8_t spi_read_byte(uint8_t addr);
 uint8_t *spi_read_burst(uint8_t addr, uint16_t length);
-
-// for unit testing
-bool spi_exercise_register(uint8_t addr);
 
 /** @} */
 #endif

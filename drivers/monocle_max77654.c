@@ -764,7 +764,7 @@ void max77654_init(void)
  * @param on True for power on.
  * @return True if I2C succeeds.
  */
-void max77654_rail_1v8sw(bool on)
+void max77654_rail_1v8(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
     NRFX_ASSERT(max77654_initialized);

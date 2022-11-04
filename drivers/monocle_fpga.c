@@ -178,18 +178,6 @@ bool fpga_ram_check(void)
     return (fpga_read_byte(FPGA_SYSTEM_STATUS) == FPGA_SYSTEM_STATUS_DEFAULT);
 }
 
-bool fpga_spi_exercise_register(uint8_t addr)
-{
-    // check that it is a valid register
-    assert(FPGA_REGISTER_EXISTS(addr));
-
-    // select FPGA on SPI bus
-    spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
-
-    // run SPI exercise, return TRUE if successful
-    return (spi_exercise_register(addr));
-}
-
 /**
  * Preparations for GPIO pins before to power-on the FPGA.
  */

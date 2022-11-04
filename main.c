@@ -26,6 +26,7 @@
 
 #include "monocle_ble.h"
 #include "monocle_board.h"
+#include "monocle_flash.h" // debug
 #include "monocle_battery.h" // debug
 #include "monocle_config.h" // debug
 #include "nrf_sdm.h"
@@ -115,7 +116,7 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-            LOG("voltage=%.3lfV percent=%d%%", (double)battery_get_voltage(), battery_get_percent());
+            LOG("id=0x%06X", flash_get_id());
         } else {
             stop = pyexec_friendly_repl();
         }
