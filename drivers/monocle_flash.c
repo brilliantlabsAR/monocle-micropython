@@ -67,7 +67,7 @@ void flash_init(void)
         SPIM0_MISO_PIN,
         NRFX_SPIM_PIN_NOT_USED
     );
-    config.frequency    = NRF_SPIM_FREQ_1M;
+    config.frequency    = NRF_SPIM_FREQ_125K;
     config.mode         = NRF_SPIM_MODE_0;
     config.bit_order    = NRF_SPIM_BIT_ORDER_MSB_FIRST;
     CHECK(nrfx_spim_init(&m_spi, &config, &flash_event_handler, NULL));

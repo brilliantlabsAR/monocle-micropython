@@ -30,7 +30,6 @@
 #include "monocle_battery.h" // debug
 #include "monocle_config.h" // debug
 #include "nrf_sdm.h"
-#include "nrfx_gpiote.h"
 #include "nrfx_systick.h"
 #include "py/compile.h"
 #include "py/gc.h"
@@ -88,6 +87,8 @@ static void test_flash(void)
 
     for (size_t i = 0; i < sizeof buf_w; i++)
         buf_w[i] = i;
+
+    nrfx_systick_delay_ms(100);
 
     flash_program_page(0x0000, buf_w);
 

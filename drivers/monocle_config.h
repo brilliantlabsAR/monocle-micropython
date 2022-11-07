@@ -19,21 +19,21 @@
 #define SPIM0_SCK_PIN               17      // P0.07 SPI Clock pin
 #define SPIM0_MOSI_PIN              20      // P0.09 SPI Master Out Slave In pin.
 #define SPIM0_MISO_PIN              13      // P0.10 SPI Master In Slave Out pin.
-#define SPIM0_DISP_CS_PIN           22      // P0.06 SPI Slave Select pin for the display.
-#define SPIM0_FPGA_CS_PIN           20      // P0.08 SPI Slave Select pin for the FPGA.
+#define SPIM0_DISP_CS_PIN           0       // P0.06 SPI Slave Select pin for the display.
+#define SPIM0_FPGA_CS_PIN           0       // P0.08 SPI Slave Select pin for the FPGA.
 #define SPIM0_FLASH_CS_PIN          15      // P0.04 SPI Slave Select pin for the flash.
 #define FPGA_MODE1_PIN              SPIM0_FPGA_CS_PIN // Alias
-#define FPGA_INT_PIN                1       // P0.05 FPGA Interrupt pin, to hold low in init.
+#define FPGA_INT_PIN                0       // P0.05 FPGA Interrupt pin, to hold low in init.
 #define FPGA_RECONFIG_N_PIN         FPGA_INT_PIN // Alias
-#define I2C0_SCL_PIN                2       // P0.17 I2C clock GPIO pin.
-#define I2C0_SDA_PIN                3       // P0.13 I2C data GPIO pin.
-#define I2C1_SCL_PIN                4       // P0.18 I2C clock GPIO pin.
-#define I2C1_SDA_PIN                5       // P0.16 I2C data GPIO pin.
-#define PMIC_IRQ_PIN                8       // P0.14
-#define RESET_L_PIN                 9       // P0.21
-#define OV5640_NRESETB_PIN          10      // P0.00
-#define OV5640_PWDN_PIN             11      // P0.01
-#define ECX335AF_XCLR_PIN           12      // P0.15
+#define I2C0_SCL_PIN                0       // P0.17 I2C clock GPIO pin.
+#define I2C0_SDA_PIN                0       // P0.13 I2C data GPIO pin.
+#define I2C1_SCL_PIN                0       // P0.18 I2C clock GPIO pin.
+#define I2C1_SDA_PIN                0       // P0.16 I2C data GPIO pin.
+#define PMIC_IRQ_PIN                0       // P0.14
+#define RESET_L_PIN                 0       // P0.21
+#define OV5640_NRESETB_PIN          0       // P0.00
+#define OV5640_PWDN_PIN             0       // P0.01
+#define ECX335AF_XCLR_PIN           0       // P0.15
 
 // SPI
 
