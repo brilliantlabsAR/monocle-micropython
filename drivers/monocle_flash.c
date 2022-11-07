@@ -43,7 +43,6 @@ static void flash_event_handler(nrfx_spim_evt_t const * p_event, void *p_context
     (void)p_event;
     (void)p_context;
 
-    nrf_gpio_pin_set(SPIM0_FLASH_CS_PIN);
     m_xfer_done = true;
 }
 
@@ -69,7 +68,7 @@ void flash_init(void)
         NRFX_SPIM_PIN_NOT_USED
     );
     config.frequency    = NRF_SPIM_FREQ_1M;
-    config.mode         = NRF_SPIM_MODE_3;
+    config.mode         = NRF_SPIM_MODE_0;
     config.bit_order    = NRF_SPIM_BIT_ORDER_MSB_FIRST;
     CHECK(nrfx_spim_init(&m_spi, &config, &flash_event_handler, NULL));
 }
@@ -149,9 +148,9 @@ static void flash_spi_read(uint8_t *buf, size_t len)
  */
 static inline void flash_chip_select(void)
 {
-    nrfx_systick_delay_us(1);
+    nrfx_systick_delay_us(10);
     nrf_gpio_pin_clear(SPIM0_FLASH_CS_PIN);
-    nrfx_systick_delay_us(1);
+    nrfx_systick_delay_us(10);
 }
 
 /**
@@ -159,9 +158,9 @@ static inline void flash_chip_select(void)
  */
 static inline void flash_chip_deselect(void)
 {
-    nrfx_systick_delay_us(1);
+    nrfx_systick_delay_us(10);
     nrf_gpio_pin_set(SPIM0_FLASH_CS_PIN);
-    nrfx_systick_delay_us(1);
+    nrfx_systick_delay_us(10);
 }
 
 /**

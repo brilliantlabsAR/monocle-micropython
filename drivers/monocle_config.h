@@ -16,12 +16,12 @@
 
 #define IO_ADC_VBATT                NRF_SAADC_INPUT_AIN1 // P0.02/AIN0 = vbatt_meas
 #define IQS620_TOUCH_RDY_PIN        0       // P0.02 Interrupt pin.              
-#define SPIM0_SCK_PIN               13      // P0.07 SPI Clock pin
-#define SPIM0_MOSI_PIN              15      // P0.09 SPI Master Out Slave In pin.
-#define SPIM0_MISO_PIN              17      // P0.10 SPI Master In Slave Out pin.
-#define SPIM0_DISP_CS_PIN           20      // P0.06 SPI Slave Select pin for the display.
-#define SPIM0_FPGA_CS_PIN           22      // P0.08 SPI Slave Select pin for the FPGA.
-#define SPIM0_FLASH_CS_PIN          24      // P0.04 SPI Slave Select pin for the flash.
+#define SPIM0_SCK_PIN               17      // P0.07 SPI Clock pin
+#define SPIM0_MOSI_PIN              20      // P0.09 SPI Master Out Slave In pin.
+#define SPIM0_MISO_PIN              13      // P0.10 SPI Master In Slave Out pin.
+#define SPIM0_DISP_CS_PIN           22      // P0.06 SPI Slave Select pin for the display.
+#define SPIM0_FPGA_CS_PIN           20      // P0.08 SPI Slave Select pin for the FPGA.
+#define SPIM0_FLASH_CS_PIN          15      // P0.04 SPI Slave Select pin for the flash.
 #define FPGA_MODE1_PIN              SPIM0_FPGA_CS_PIN // Alias
 #define FPGA_INT_PIN                1       // P0.05 FPGA Interrupt pin, to hold low in init.
 #define FPGA_RECONFIG_N_PIN         FPGA_INT_PIN // Alias

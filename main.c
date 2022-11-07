@@ -82,6 +82,26 @@ void nlr_jump_fail(void *val)
 #include "nrfx_log.h"
 #define LOG NRFX_LOG_ERROR
 
+static void test_flash(void)
+{
+    uint8_t buf_r[FLASH_PAGE_SIZE], buf_w[FLASH_PAGE_SIZE];
+
+    for (size_t i = 0; i < sizeof buf_w; i++)
+        buf_w[i] = i;
+
+    flash_program_page(0x0000, buf_w);
+
+    nrfx_systick_delay_ms(100);
+
+    flash_read(0x0000, buf_r, sizeof buf_r);
+    for (size_t i = 0; i < sizeof buf_r; i++) {
+        mp_printf(MP_PYTHON_PRINTER, " %02X", buf_r[i]);
+        if (i % 0x40 == (0x40 - 1))
+            mp_printf(MP_PYTHON_PRINTER, "\r\n");
+    }
+    mp_printf(MP_PYTHON_PRINTER, "\r\n");
+}
+
 /**
  * Main application called from Reset_Handler().
  */
@@ -116,7 +136,7 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-            LOG("id=0x%06X", flash_get_id());
+            test_flash();
         } else {
             stop = pyexec_friendly_repl();
         }
