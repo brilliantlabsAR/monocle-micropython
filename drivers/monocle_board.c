@@ -69,32 +69,32 @@ void board_init(void)
     nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
 
     // Custom wrapper around I2C used by the other drivers.
-    //i2c_init();
+    i2c_init();
 
     // I2C-controlled PMIC, also controlling the red/green LEDs over I2C
     // Needs: i2c
-    //max77654_init();
+    max77654_init();
 
     // I2C calls to make sure all power rails are turned off.
     // Needs: max77654
-    //board_power_off();
+    board_power_off();
 
     // Initialise GPIO before the chips are powered on.
-    //ecx335af_prepare();
-    //fpga_prepare();
-    //ov5640_prepare();
+    ecx335af_prepare();
+    fpga_prepare();
+    ov5640_prepare();
     flash_prepare();
 
     // I2C calls to setup power rails of the MAX77654.
     // Needs: max77654
-    //board_power_on();
+    board_power_on();
 
     // Initialise the Capacitive Touch Button controller over I2C.
     // Needs: i2c, gpiote
-    //iqs620_init();
+    iqs620_init();
 
     // Initialise the battery level sensing with the ADC.
-    //battery_init();
+    battery_init();
 
     // Custom wrapper around SPI used by the other drivers.
     //spi_init();
