@@ -22,26 +22,13 @@
 #include "ble.h"
 #include "nrf_sdm.h"
 
-/**
- * Buffer sizes for REPL ring buffers. +45 allows for a bytearray(256) to
- * be printed in one go.
- */
+/** Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go. */
 #define RING_BUFFER_LENGTH (1024 + 45)
 
-/**
- * Maximum MTU size that our device will support
- */
-#define MAX_MTU_LENGTH 128
-
-/**
- * This is the ram start pointer as set in the nrf52811.ld file
- */
+/** This is the ram start pointer as set in the nrf52811.ld file.  */
 extern uint32_t _ram_start;
 
-/**
- * To avoid pointer juggling, we dereference _ram_start and store its
- * address into a uint32_t variable.
- */
+/** The `_ram_start` symbol's address often needs to be passed as an integer. */
 static uint32_t ram_start = (uint32_t)&_ram_start;
 
 /**
@@ -74,7 +61,7 @@ typedef struct {
     uint16_t tail;
 } ring_buf_t;
 
-ring_buf_t rx, tx;
+ring_buf_t rfcomm_rx, rfcomm_tx;
 
 static inline bool ring_full(ring_buf_t const *ring)
 {
@@ -115,18 +102,18 @@ static uint16_t negotiated_mtu;
 void ble_flush_tx(void)
 {
     // Local buffer for sending data
-    uint8_t out_buffer[MAX_MTU_LENGTH] = "";
+    uint8_t out_buffer[BLE_MAX_MTU_LENGTH] = "";
     uint16_t out_len = 0;
 
     // If there's no data to send, simply return
-    if (ring_empty(&tx))
+    if (ring_empty(&rfcomm_tx))
         return;
 
     // For all the remaining characters, i.e until the heads come back together
-    while (!ring_empty(&tx))
+    while (!ring_empty(&rfcomm_tx))
     {
         // Copy over a character from the tail to the outgoing buffer
-        out_buffer[out_len++] = ring_pop(&tx);
+        out_buffer[out_len++] = ring_pop(&rfcomm_tx);
 
         // Break if we over-run the negotiated MTU size, send the rest later
         if (out_len >= negotiated_mtu)
@@ -158,33 +145,33 @@ void ble_flush_tx(void)
 
 int ble_rfcomm_rx(void)
 {
-    while (ring_empty(&rx))
+    while (ring_empty(&rfcomm_rx))
     {
         // While waiting for incoming data, we can push outgoing data
         ble_flush_tx();
 
         // If there's nothing to do
-        if (ring_empty(&tx) && ring_empty(&rx))
+        if (ring_empty(&rfcomm_tx) && ring_empty(&rfcomm_rx))
             // Wait for events to save power
             sd_app_evt_wait();
     }
 
     // Return next character from the RX buffer.
-    return ring_pop(&rx);
+    return ring_pop(&rfcomm_rx);
 }
 
 void ble_rfcomm_tx(char const *buf, size_t sz)
 {
     for (; sz > 0; buf++, sz--) {
-        while (ring_full(&tx))
+        while (ring_full(&rfcomm_tx))
             ble_flush_tx();
-        ring_push(&tx, *buf);
+        ring_push(&rfcomm_tx, *buf);
     }
 }
 
 bool ble_rfcomm_is_rx_pending(void)
 {
-    return ring_empty(&rx);
+    return ring_empty(&rfcomm_rx);
 }
 
 /**
@@ -237,7 +224,7 @@ static void ble_add_service_tx_rx(ble_uuid128_t *uuid128)
     rx_attr.p_uuid = &rx_uuid;
     rx_attr.p_attr_md = &rx_attr_md;
     rx_attr.init_len = sizeof(uint8_t);
-    rx_attr.max_len = MAX_MTU_LENGTH - 3;
+    rx_attr.max_len = BLE_MAX_MTU_LENGTH - 3;
 
     err = sd_ble_gatts_characteristic_add(service_handle,
                                           &rx_char_md,
@@ -259,7 +246,7 @@ static void ble_add_service_tx_rx(ble_uuid128_t *uuid128)
     tx_attr.p_uuid = &tx_uuid;
     tx_attr.p_attr_md = &tx_attr_md;
     tx_attr.init_len = sizeof(uint8_t);
-    tx_attr.max_len = MAX_MTU_LENGTH - 3;
+    tx_attr.max_len = BLE_MAX_MTU_LENGTH - 3;
 
     err = sd_ble_gatts_characteristic_add(service_handle,
                                           &tx_char_md,
@@ -356,7 +343,7 @@ void ble_init(void)
     // Set max MTU size
     memset(&ble_conf, 0, sizeof(ble_conf));
     ble_conf.conn_cfg.conn_cfg_tag = 1;
-    ble_conf.conn_cfg.params.gatt_conn_cfg.att_mtu = MAX_MTU_LENGTH;
+    ble_conf.conn_cfg.params.gatt_conn_cfg.att_mtu = BLE_MAX_MTU_LENGTH;
     err = sd_ble_cfg_set(BLE_CONN_CFG_GATT, &ble_conf, ram_start);
     NRFX_ASSERT(!err);
 
@@ -385,7 +372,8 @@ void ble_init(void)
     err = sd_ble_cfg_set(BLE_GATTS_CFG_SERVICE_CHANGED, &ble_conf, ram_start);
     NRFX_ASSERT(!err);
 
-    // Start bluetooth. The ram_start returned is the total required RAM for SD
+    // Start bluetooth. `ram_start` is the address of a variable containing an address, defined in the linker script.
+    // It updates that address with another one planning ahead the RAM needed by the softdevice.
     err = sd_ble_enable(&ram_start);
     NRFX_ASSERT(!err);
 
@@ -425,7 +413,7 @@ void ble_init(void)
 void SWI2_IRQHandler(void)
 {
     uint32_t evt_id;
-    uint8_t ble_evt_buffer[sizeof(ble_evt_t) + MAX_MTU_LENGTH];
+    uint8_t ble_evt_buffer[sizeof(ble_evt_t) + BLE_MAX_MTU_LENGTH];
 
     // While any softdevice events are pending, handle flash operations
     while (sd_evt_get(&evt_id) != NRF_ERROR_NOT_FOUND)
@@ -521,13 +509,13 @@ void SWI2_IRQHandler(void)
             // Respond with our max MTU size
             err = sd_ble_gatts_exchange_mtu_reply(
                 ble_evt->evt.gatts_evt.conn_handle,
-                MAX_MTU_LENGTH);
+                BLE_MAX_MTU_LENGTH);
             NRFX_ASSERT(!err);
 
             // Choose the smaller MTU as the final length we'll use
             // -3 bytes to accommodate for Op-code and attribute handle
-            negotiated_mtu = MAX_MTU_LENGTH < client_mtu
-                                 ? MAX_MTU_LENGTH - 3
+            negotiated_mtu = BLE_MAX_MTU_LENGTH < client_mtu
+                                 ? BLE_MAX_MTU_LENGTH - 3
                                  : client_mtu - 3;
             break;
         }
@@ -541,11 +529,11 @@ void SWI2_IRQHandler(void)
                  length++)
             {
                 // Break if the ring buffer is full, we can't write more
-                if (ring_full(&rx))
+                if (ring_full(&rfcomm_rx))
                     break;
 
                 // Copy a character into the ring buffer
-                ring_push(&rx, ble_evt->evt.gatts_evt.params.write.data[length]);
+                ring_push(&rfcomm_rx, ble_evt->evt.gatts_evt.params.write.data[length]);
             }
             break;
         }

@@ -14,7 +14,9 @@
 
 // Bluetooth params
 
-#define BLE_DEVICE_NAME "Monocle"
+#define BLE_DEVICE_NAME             "Monocle"
+#define BLE_MAX_MTU_LENGTH          128
+
 
 // Pin mapping
 
