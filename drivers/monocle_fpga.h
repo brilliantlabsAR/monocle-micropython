@@ -19,6 +19,8 @@
  * @{
  */
 
+#define fpga_check_pin(pin) LOG("%s=%d=%d", #pin, pin, nrf_gpio_pin_read(pin))
+
 /** number of capture buffers supported */
 #define FPGA_BUFFERS_SUPPORTED    1 // single buffer
 
@@ -174,11 +176,11 @@ bool fpga_test_reset(void);
 
 void fpga_soft_reset(void);
 bool fpga_ram_check(void);
-bool fpga_xclk_on(void);
-bool fpga_camera_on(void);
-bool fpga_camera_off(void);
-bool fpga_mic_on(void);
-bool fpga_mic_off(void);
+void fpga_xclk_on(void);
+void fpga_camera_on(void);
+void fpga_camera_off(void);
+void fpga_mic_on(void);
+void fpga_mic_off(void);
 #if defined(MONOCLE_BOARD_MK9B) || defined(MONOCLE_BOARD_MK10) // only MK9B and MK10 have LEDs controlled by FPGA
 // NOTE it is recommended to use the LED interface in led.h instead of calling these directly from main 
 void fpga_led_on(uint8_t led_number);

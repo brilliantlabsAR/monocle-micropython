@@ -24,9 +24,11 @@
  * THE SOFTWARE.
  */
 
+#include "monocle_spi.h"
 #include "monocle_ble.h"
 #include "monocle_board.h"
 #include "monocle_flash.h" // debug
+#include "monocle_fpga.h" // debug
 #include "monocle_battery.h" // debug
 #include "monocle_config.h" // debug
 #include "nrf_sdm.h"
@@ -81,28 +83,6 @@ void nlr_jump_fail(void *val)
 #include "nrfx_log.h"
 #define LOG NRFX_LOG_ERROR
 
-static void test_flash(void)
-{
-    uint8_t buf_r[FLASH_PAGE_SIZE], buf_w[FLASH_PAGE_SIZE];
-
-    for (size_t i = 0; i < sizeof buf_w; i++)
-        buf_w[i] = i;
-
-    nrfx_systick_delay_ms(100);
-
-    flash_program_page(0x0000, buf_w);
-
-    nrfx_systick_delay_ms(100);
-
-    flash_read(0x0000, buf_r, sizeof buf_r);
-    for (size_t i = 0; i < sizeof buf_r; i++) {
-        mp_printf(MP_PYTHON_PRINTER, " %02X", buf_r[i]);
-        if (i % 0x40 == (0x40 - 1))
-            mp_printf(MP_PYTHON_PRINTER, "\r\n");
-    }
-    mp_printf(MP_PYTHON_PRINTER, "\r\n");
-}
-
 /**
  * Main application called from Reset_Handler().
  */
@@ -131,13 +111,34 @@ int main(void)
 
     // If main.py exits, fallback to a REPL.
     // TODO: add an #ifdef to reboot instead of running the REPL.
-    pyexec_frozen_module("main.py");
+    //pyexec_frozen_module("main.py");
 
     // REPL mode can change, or it can request a soft reset
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-            test_flash();
+
+            LOG("spi_init");
+            spi_init();
+            fpga_check_pin(FPGA_MODE1_PIN);
+            fpga_check_pin(FPGA_RECONFIG_N_PIN);
+
+            LOG("fpga_prepare");
+            fpga_prepare();
+            fpga_check_pin(FPGA_MODE1_PIN);
+            fpga_check_pin(FPGA_RECONFIG_N_PIN);
+
+            LOG("board_power_on");
+            board_power_on();
+            fpga_check_pin(FPGA_MODE1_PIN);
+            fpga_check_pin(FPGA_RECONFIG_N_PIN);
+
+            LOG("fpga_prepare");
+            fpga_init();
+            fpga_check_pin(FPGA_MODE1_PIN);
+            fpga_check_pin(FPGA_RECONFIG_N_PIN);
+
+            nrfx_systick_delay_ms(1000);
         } else {
             stop = pyexec_friendly_repl();
         }

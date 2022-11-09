@@ -10,6 +10,7 @@
  * @author Shreyas Hemachandra
  */
 
+#include "monocle_fpga.h" // debug
 #include "monocle_spi.h"
 #include "monocle_config.h"
 #include "nrfx_log.h"
@@ -40,7 +41,9 @@ static uint8_t m_rx_buf[SPI_MAX_BURST_LENGTH + 1];  /**< RX buffer. */
 void spim_event_handler(nrfx_spim_evt_t const * p_event, void *p_context)
 {
     // NOTE: there is only one event type: NRFX_SPIM_EVENT_DONE, so no need for case statement
+    fpga_check_pin(m_spi_cs_pin);
     nrf_gpio_pin_set(m_spi_cs_pin);
+    fpga_check_pin(m_spi_cs_pin);
     m_spi_xfer_done = true;
 }
 
@@ -126,7 +129,9 @@ void spi_write_burst(uint8_t addr, const uint8_t *data, uint16_t length)
     m_spi_xfer_done = false;
 
     // set the current CS pin low (will be set high by event handler)
+    fpga_check_pin(m_spi_cs_pin);
     nrf_gpio_pin_clear(m_spi_cs_pin);
+    fpga_check_pin(m_spi_cs_pin);
 
     // CS must remain asserted for both bytes (verified with scope)
     CHECK(nrfx_spim_xfer(&m_spi, &xfer_desc, 0));
@@ -143,6 +148,7 @@ void spi_write_burst(uint8_t addr, const uint8_t *data, uint16_t length)
  */
 void spi_write_byte(uint8_t addr, uint8_t byte)
 {
+    LOG("addr=%02X byte=%02X", addr, byte);
     spi_write_burst(addr, &byte, 1);
 }
 
@@ -207,7 +213,7 @@ uint8_t spi_read_byte(uint8_t addr)
     // address contents should have been sent on MISO pin during second byte; read from Rx buffer
     byte = m_rx_buf[1];
 
-    LOG("SPI: read addr=%02X byte=%02X", addr, byte);
+    LOG("addr=%02X byte=%02X", addr, byte);
 
     return byte;
 }

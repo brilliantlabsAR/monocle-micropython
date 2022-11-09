@@ -11,7 +11,7 @@
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
-#define LOG NRFX_LOG_WARNING
+#define LOG NRFX_LOG_ERROR
 
 /**
  * Write a byte to the FPGA over SPI using a bridge protocol.
@@ -26,7 +26,7 @@ void fpga_write_byte(uint8_t addr, uint8_t byte)
     // select FPGA on SPI bus and write to it.
     spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
     spi_write_byte(addr, byte);
-    LOG("fpga_write_byte(addr=0x%x, byte=0x%x).", addr, byte);
+    LOG("addr=0x02%X, byte=0x02%X", addr, byte);
 }
 
 /**
@@ -45,7 +45,7 @@ uint8_t fpga_read_byte(uint8_t addr)
     spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
 
     byte = spi_read_byte(addr);
-    LOG("fpga_read_byte(addr=0x%x) returned 0x%x.", addr, byte);    
+    LOG("addr=0x02%X, byte=0x02%X", addr, byte);
     return byte;
 }
 
@@ -185,11 +185,27 @@ void fpga_prepare(void)
 {
     // MODE1 set low for AUTOBOOT from FPGA internal flash
     nrf_gpio_pin_clear(FPGA_MODE1_PIN);
-    nrf_gpio_cfg_output(FPGA_MODE1_PIN);
+    nrf_gpio_cfg(
+        FPGA_MODE1_PIN,
+        NRF_GPIO_PIN_DIR_OUTPUT,
+        NRF_GPIO_PIN_INPUT_CONNECT,
+        NRF_GPIO_PIN_NOPULL,
+        NRF_GPIO_PIN_S0S1,
+        NRF_GPIO_PIN_NOSENSE
+    );
+    fpga_check_pin(FPGA_MODE1_PIN);
 
-    // Keep the FPGA in reset/reconfig mode until fpga_init() is called.
-    nrf_gpio_pin_clear(FPGA_RECONFIG_N_PIN);
-    nrf_gpio_cfg_output(FPGA_RECONFIG_N_PIN);
+    // Let the FPGA start as soon as it has the power on.
+    nrf_gpio_pin_set(FPGA_RECONFIG_N_PIN);
+    nrf_gpio_cfg(
+        FPGA_RECONFIG_N_PIN,
+        NRF_GPIO_PIN_DIR_OUTPUT,
+        NRF_GPIO_PIN_INPUT_CONNECT,
+        NRF_GPIO_PIN_NOPULL,
+        NRF_GPIO_PIN_S0S1,
+        NRF_GPIO_PIN_NOSENSE
+    );
+    fpga_check_pin(FPGA_RECONFIG_N_PIN);
 }
 
 /**
@@ -197,18 +213,29 @@ void fpga_prepare(void)
  */
 void fpga_init(void)
 {
-    // Make sure the RECONFIG_N pin is not pulled low which could prevent
-    // the FPGA from starting and cause damage to the flash while programming.
+    // Set the FPGA to boot from its internal flash.
+    nrf_gpio_pin_clear(FPGA_MODE1_PIN);
+    nrfx_systick_delay_ms(1);
+    fpga_check_pin(FPGA_MODE1_PIN);
+
+    // Issue a "reconfig" pulse.
+    // Datasheet UG290E: T_recfglw >= 70 us
+    nrf_gpio_pin_clear(FPGA_RECONFIG_N_PIN);
+    nrfx_systick_delay_ms(100); // 1000 times more than needed
     nrf_gpio_pin_set(FPGA_RECONFIG_N_PIN);
+    fpga_check_pin(FPGA_RECONFIG_N_PIN);
 
     // Give the FPGA some time to boot.
-    nrfx_systick_delay_ms(500);
+    // Datasheet UG290E: T_recfgtdonel <= 
+    nrfx_systick_delay_ms(100);
+    fpga_check_pin(FPGA_MODE1_PIN);
+    fpga_check_pin(FPGA_RECONFIG_N_PIN);
 
     // Set all registers to a known state.
     fpga_soft_reset();
 
     // Give the FPGA some further time.
-    nrfx_systick_delay_ms(500);
+    nrfx_systick_delay_ms(10);
 }
 
 void fpga_deinit(void)
@@ -231,28 +258,21 @@ void fpga_soft_reset(void)
     // from testing, 2ms seems to be the minimum delay needed for all registers to return to expected values
     // reason is unclear
     // use 5ms for extra safety margin (used to work earlier)
-    nrfx_systick_delay_ms(5);
-
-    // NOTE: from 2021-02-19, 5ms is no longer enough
+    // But from 2021-02-19, 5ms is no longer enough
     // TODO: why? Seems to require 170ms delay now
-    nrfx_systick_delay_ms(185);
+    nrfx_systick_delay_ms(200);
 }
 
-bool fpga_xclk_on(void)
+void fpga_xclk_on(void)
 {
     fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK);
-
-    // TODO: is this still needed?
-    nrfx_systick_delay_ms(300);
-
-    return (fpga_read_byte(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
+    assert(fpga_read_byte(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
 }
 
 /**
  * Turn on the camera.
- * @return True if it has been effectively turned on.
  */
-bool fpga_camera_on(void)
+void fpga_camera_on(void)
 {
     // delay 4 frames to discard AWB adjustments (needed if camera was just powered up)
     nrfx_systick_delay_ms(4*(1000/OV5640_FPS) + 1);
@@ -260,15 +280,14 @@ bool fpga_camera_on(void)
     // enable camera interface (& keep XCLK enabled!)
     fpga_write_byte(FPGA_CAMERA_CONTROL, (FPGA_EN_XCLK | FPGA_EN_CAM));
 
-    LOG("fpga_camera_on() waited 4 frames, sent FPGA_EN_XCLK, FPGA_EN_CAM");
-    return (fpga_read_byte(FPGA_CAMERA_CONTROL) == (FPGA_EN_XCLK | FPGA_EN_CAM));
+    LOG("waited 4 frames, sent FPGA_EN_XCLK, FPGA_EN_CAM");
+    assert(fpga_read_byte(FPGA_CAMERA_CONTROL) == (FPGA_EN_XCLK | FPGA_EN_CAM));
 }
 
 /**
  * Turn off the camera.
- * @return True if it has been effectively turned off.
  */
-bool fpga_camera_off(void)
+void fpga_camera_off(void)
 {
     // turn off camera interface (but keep XCLK enabled!)
     fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK);
@@ -276,28 +295,28 @@ bool fpga_camera_off(void)
     // allow last frame to finish entering video buffer to avoid split screen
     nrfx_systick_delay_ms(1*(1000/OV5640_FPS) + 1);
 
-    LOG("fpga_camera_off() sent FPGA_EN_XCLK, waited 1 frame");
-    return (fpga_read_byte(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
+    LOG("sent FPGA_EN_XCLK, waited 1 frame");
+    assert(fpga_read_byte(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
 }
 
 /**
  * Turn on the microphone.
  * @return True if it has been effectively turned on.
  */
-bool fpga_mic_on(void)
+void fpga_mic_on(void)
 {
     fpga_write_byte(FPGA_MIC_CONTROL, FPGA_EN_MIC);
-    return (fpga_read_byte(FPGA_MIC_CONTROL) == FPGA_EN_MIC);
+    assert(fpga_read_byte(FPGA_MIC_CONTROL) == FPGA_EN_MIC);
 }
 
 /**
  * Turn off the microphone.
  * @return True if it has been effectively turned off.
  */
-bool fpga_mic_off(void)
+void fpga_mic_off(void)
 {
     fpga_write_byte(FPGA_MIC_CONTROL, 0x00);
-    return (fpga_read_byte(FPGA_MIC_CONTROL) == 0x00);
+    assert(fpga_read_byte(FPGA_MIC_CONTROL) == 0x00);
 }
 
 /**
@@ -397,7 +416,7 @@ void fpga_replay_rate(uint8_t repeat)
     assert(repeat <= FPGA_REP_RATE_MASK);
 
     fpga_write_byte(FPGA_REPLAY_RATE_CONTROL, repeat);
-    //LOG("FPGA replay rate set to %d", repeat);
+    LOG("replay rate set to %d", repeat);
 }
 
 bool fpga_capture_done(void)
@@ -462,7 +481,7 @@ void fpga_set_zoom(uint8_t level)
             fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK | FPGA_EN_CAM | zoom_bits | FPGA_EN_ZOOM | FPGA_EN_LUMA_COR);
             break;
         default:
-            assert(!"FPGA Zoom invalid zoom level.");
+            assert(!"invalid zoom level");
     }
 }
 
@@ -490,10 +509,10 @@ void fpga_set_luma(bool turn_on)
 
     if (turn_on) {
         reg = reg | FPGA_EN_LUMA_COR;
-        LOG("FPGA turn luma correction on.");
+        LOG("turn luma correction on.");
     } else {
         reg = reg & ~FPGA_EN_LUMA_COR;
-        LOG("FPGA turn luma correction off.");
+        LOG("turn luma correction off.");
     }
     fpga_write_byte(FPGA_CAMERA_CONTROL, reg);
 }
@@ -508,22 +527,22 @@ void fpga_set_display(uint8_t mode)
     switch(mode) {
         case 0:
             fpga_disp_off();
-            LOG("FPGA display mode = off.");
+            LOG("display mode = off.");
             break;
         case 1:
             fpga_disp_live();
-            LOG("FPGA display mode = video.");
+            LOG("display mode = video.");
             break;
         case 2:
             fpga_disp_busy();
-            LOG("FPGA display mode = busy.");
+            LOG("display mode = busy.");
             break;
         case 3:
             fpga_disp_bars();
-            LOG("FPGA display mode = color bars.");
+            LOG("display mode = color bars.");
             break;
         default:
-            assert(!"FPGA display mode invalid.");
+            assert(!"display mode invalid.");
     }
 }
 
