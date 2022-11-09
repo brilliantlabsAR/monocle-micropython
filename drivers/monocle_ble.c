@@ -29,7 +29,7 @@
 #define RING_BUFFER_LENGTH (1024 + 45)
 
 /**
- * @brief Maximum MTU size that our device will support
+ * Maximum MTU size that our device will support
  */
 #define MAX_MTU_LENGTH 128
 
@@ -188,11 +188,126 @@ bool ble_rfcomm_is_rx_pending(void)
 }
 
 /**
- * @brief Softdevice assert handler. Called whenever softdevice crashes.
+ * Softdevice assert handler. Called whenever softdevice crashes.
  */
 static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
 {
     NRFX_ASSERT(id == 0);
+}
+
+/**
+ * Append and advertise service that uses a Serivce/Rx/Tx UUID scheme.
+ * It requires to start advertising it afterward.
+ * @param uuid128 The long UUID identifying the service.
+ */
+static void ble_add_service_tx_rx(ble_uuid128_t *uuid128)
+{
+    uint32_t err;
+
+    // Set the 16 bit UUIDs for the service and characteristics
+    ble_uuid_t service_uuid = {.uuid = 0x0001};
+    ble_uuid_t rx_uuid = {.uuid = 0x0002};
+    ble_uuid_t tx_uuid = {.uuid = 0x0003};
+
+    // Temporary NUS handle
+    uint16_t service_handle;
+
+    err = sd_ble_uuid_vs_add(uuid128, &service_uuid.type);
+    NRFX_ASSERT(!err);
+
+    err = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
+                                   &service_uuid, &service_handle);
+
+    // Copy the service UUID type to both rx and tx UUID
+    rx_uuid.type = service_uuid.type;
+    tx_uuid.type = service_uuid.type;
+
+    // Add rx characterisic
+    ble_gatts_char_md_t rx_char_md = {0};
+    rx_char_md.char_props.write = 1;
+    rx_char_md.char_props.write_wo_resp = 1;
+
+    ble_gatts_attr_md_t rx_attr_md = {0};
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&rx_attr_md.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&rx_attr_md.write_perm);
+    rx_attr_md.vloc = BLE_GATTS_VLOC_STACK;
+    rx_attr_md.vlen = 1;
+
+    ble_gatts_attr_t rx_attr = {0};
+    rx_attr.p_uuid = &rx_uuid;
+    rx_attr.p_attr_md = &rx_attr_md;
+    rx_attr.init_len = sizeof(uint8_t);
+    rx_attr.max_len = MAX_MTU_LENGTH - 3;
+
+    err = sd_ble_gatts_characteristic_add(service_handle,
+                                          &rx_char_md,
+                                          &rx_attr,
+                                          &ble_handles.rx_characteristic);
+    NRFX_ASSERT(!err);
+
+    // Add tx characterisic
+    ble_gatts_char_md_t tx_char_md = {0};
+    tx_char_md.char_props.notify = 1;
+
+    ble_gatts_attr_md_t tx_attr_md = {0};
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&tx_attr_md.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&tx_attr_md.write_perm);
+    tx_attr_md.vloc = BLE_GATTS_VLOC_STACK;
+    tx_attr_md.vlen = 1;
+
+    ble_gatts_attr_t tx_attr = {0};
+    tx_attr.p_uuid = &tx_uuid;
+    tx_attr.p_attr_md = &tx_attr_md;
+    tx_attr.init_len = sizeof(uint8_t);
+    tx_attr.max_len = MAX_MTU_LENGTH - 3;
+
+    err = sd_ble_gatts_characteristic_add(service_handle,
+                                          &tx_char_md,
+                                          &tx_attr,
+                                          &ble_handles.tx_characteristic);
+    NRFX_ASSERT(!err);
+
+    // Add name to advertising payload
+    adv.payload[adv.length++] = strlen((const char *)BLE_DEVICE_NAME) + 1;
+    adv.payload[adv.length++] = BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME;
+    memcpy(&adv.payload[adv.length],
+           BLE_DEVICE_NAME,
+           sizeof(BLE_DEVICE_NAME));
+    adv.length += strlen((const char *)BLE_DEVICE_NAME);
+
+    // Set discovery mode flag
+    adv.payload[adv.length++] = 0x02;
+    adv.payload[adv.length++] = BLE_GAP_AD_TYPE_FLAGS;
+    adv.payload[adv.length++] = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+
+    // Add Nordic UART service to advertising data
+    uint8_t encoded_uuid_length;
+    err = sd_ble_uuid_encode(&service_uuid,
+                             &encoded_uuid_length,
+                             &adv.payload[adv.length + 2]);
+    NRFX_ASSERT(!err);
+
+    adv.payload[adv.length++] = 0x01 + encoded_uuid_length;
+    adv.payload[adv.length++] = BLE_GAP_AD_TYPE_128BIT_SERVICE_UUID_COMPLETE;
+    adv.length += encoded_uuid_length;
+
+    ble_gap_adv_data_t adv_data = {
+        .adv_data.p_data = adv.payload,
+        .adv_data.len = adv.length,
+        .scan_rsp_data.p_data = NULL,
+        .scan_rsp_data.len = 0};
+
+    // Set up advertising parameters
+    ble_gap_adv_params_t adv_params;
+    memset(&adv_params, 0, sizeof(adv_params));
+    adv_params.properties.type = BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED;
+    adv_params.primary_phy = BLE_GAP_PHY_AUTO;
+    adv_params.secondary_phy = BLE_GAP_PHY_AUTO;
+    adv_params.interval = (20 * 1000) / 625;
+
+    // Configure the advertising set
+    err = sd_ble_gap_adv_set_configure(&ble_handles.advertising, &adv_data, &adv_params);
+    NRFX_ASSERT(!err);
 }
 
 /**
@@ -278,9 +393,8 @@ void ble_init(void)
     ble_gap_conn_sec_mode_t sec_mode;
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
-    // Set device name. Last four characters are taken from MAC address
-    char device_name[] = "Monocle";
-    err = sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)device_name, sizeof device_name - 1);
+    // Set device name. Last four characters are taken from MAC address ;
+    err = sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)BLE_DEVICE_NAME, sizeof BLE_DEVICE_NAME - 1);
     NRFX_ASSERT(!err);
 
     // Set connection parameters
@@ -293,115 +407,12 @@ void ble_init(void)
     NRFX_ASSERT(!err);
 
     // Add the Nordic UART service long UUID
-    ble_uuid128_t uuid128 = {.uuid128 = {0x9E, 0xCA, 0xDC, 0x24,
-                                         0x0E, 0xE5, 0xA9, 0xE0,
-                                         0x93, 0xF3, 0xA3, 0xB5,
-                                         0x00, 0x00, 0x40, 0x6E}};
+    ble_uuid128_t uuid128_nordic_uart_console = {.uuid128 = {
+        0x9E, 0xCA, 0xDC, 0x24, 0x0E, 0xE5, 0xA9, 0xE0,
+        0x93, 0xF3, 0xA3, 0xB5, 0x00, 0x00, 0x40, 0x6E
+    }};
 
-    // Set the 16 bit UUIDs for the service and characteristics
-    ble_uuid_t service_uuid = {.uuid = 0x0001};
-    ble_uuid_t rx_uuid = {.uuid = 0x0002};
-    ble_uuid_t tx_uuid = {.uuid = 0x0003};
-
-    // Temporary NUS handle
-    uint16_t nordic_uart_service_handle;
-
-    err = sd_ble_uuid_vs_add(&uuid128, &service_uuid.type);
-    NRFX_ASSERT(!err);
-
-    err = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
-                                   &service_uuid, &nordic_uart_service_handle);
-
-    // Copy the service UUID type to both rx and tx UUID
-    rx_uuid.type = service_uuid.type;
-    tx_uuid.type = service_uuid.type;
-
-    // Add rx characterisic
-    ble_gatts_char_md_t rx_char_md = {0};
-    rx_char_md.char_props.write = 1;
-    rx_char_md.char_props.write_wo_resp = 1;
-
-    ble_gatts_attr_md_t rx_attr_md = {0};
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&rx_attr_md.read_perm);
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&rx_attr_md.write_perm);
-    rx_attr_md.vloc = BLE_GATTS_VLOC_STACK;
-    rx_attr_md.vlen = 1;
-
-    ble_gatts_attr_t rx_attr = {0};
-    rx_attr.p_uuid = &rx_uuid;
-    rx_attr.p_attr_md = &rx_attr_md;
-    rx_attr.init_len = sizeof(uint8_t);
-    rx_attr.max_len = MAX_MTU_LENGTH - 3;
-
-    err = sd_ble_gatts_characteristic_add(nordic_uart_service_handle,
-                                          &rx_char_md,
-                                          &rx_attr,
-                                          &ble_handles.rx_characteristic);
-    NRFX_ASSERT(!err);
-
-    // Add tx characterisic
-    ble_gatts_char_md_t tx_char_md = {0};
-    tx_char_md.char_props.notify = 1;
-
-    ble_gatts_attr_md_t tx_attr_md = {0};
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&tx_attr_md.read_perm);
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&tx_attr_md.write_perm);
-    tx_attr_md.vloc = BLE_GATTS_VLOC_STACK;
-    tx_attr_md.vlen = 1;
-
-    ble_gatts_attr_t tx_attr = {0};
-    tx_attr.p_uuid = &tx_uuid;
-    tx_attr.p_attr_md = &tx_attr_md;
-    tx_attr.init_len = sizeof(uint8_t);
-    tx_attr.max_len = MAX_MTU_LENGTH - 3;
-
-    err = sd_ble_gatts_characteristic_add(nordic_uart_service_handle,
-                                          &tx_char_md,
-                                          &tx_attr,
-                                          &ble_handles.tx_characteristic);
-    NRFX_ASSERT(!err);
-
-    // Add name to advertising payload
-    adv.payload[adv.length++] = strlen((const char *)device_name) + 1;
-    adv.payload[adv.length++] = BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME;
-    memcpy(&adv.payload[adv.length],
-           device_name,
-           sizeof(device_name));
-    adv.length += strlen((const char *)device_name);
-
-    // Set discovery mode flag
-    adv.payload[adv.length++] = 0x02;
-    adv.payload[adv.length++] = BLE_GAP_AD_TYPE_FLAGS;
-    adv.payload[adv.length++] = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
-
-    // Add Nordic UART service to advertising data
-    uint8_t encoded_uuid_length;
-    err = sd_ble_uuid_encode(&service_uuid,
-                             &encoded_uuid_length,
-                             &adv.payload[adv.length + 2]);
-    NRFX_ASSERT(!err);
-
-    adv.payload[adv.length++] = 0x01 + encoded_uuid_length;
-    adv.payload[adv.length++] = BLE_GAP_AD_TYPE_128BIT_SERVICE_UUID_COMPLETE;
-    adv.length += encoded_uuid_length;
-
-    ble_gap_adv_data_t adv_data = {
-        .adv_data.p_data = adv.payload,
-        .adv_data.len = adv.length,
-        .scan_rsp_data.p_data = NULL,
-        .scan_rsp_data.len = 0};
-
-    // Set up advertising parameters
-    ble_gap_adv_params_t adv_params;
-    memset(&adv_params, 0, sizeof(adv_params));
-    adv_params.properties.type = BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED;
-    adv_params.primary_phy = BLE_GAP_PHY_AUTO;
-    adv_params.secondary_phy = BLE_GAP_PHY_AUTO;
-    adv_params.interval = (20 * 1000) / 625;
-
-    // Configure the advertising set
-    err = sd_ble_gap_adv_set_configure(&ble_handles.advertising, &adv_data, &adv_params);
-    NRFX_ASSERT(!err);
+    ble_add_service_tx_rx(&uuid128_nordic_uart_console);
 
     // Start advertising
     err = sd_ble_gap_adv_start(ble_handles.advertising, 1);

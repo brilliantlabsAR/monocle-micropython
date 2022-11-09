@@ -12,6 +12,10 @@
  * @{
  */
 
+// Bluetooth params
+
+#define BLE_DEVICE_NAME "Monocle"
+
 // Pin mapping
 
 #define IO_ADC_VBATT                NRF_SAADC_INPUT_AIN1 // P0.02/AIN0 = vbatt_meas
