@@ -9,7 +9,7 @@ _minimum_heap_size = 32K;
 
 /* GNU linker script for s140 SoftDevice version 6.1.1 */
 
-_sd_size = 0x00026000;
+_sd_size = 0x00026000 + 16; /* 16 bytes more per UUID */
 _sd_ram  = 0x000039c0;
 
 /* Flash layout: bootloader_head | softdevice      | application     | filesystem    | bootloader_tail */

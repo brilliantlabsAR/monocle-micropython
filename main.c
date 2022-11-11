@@ -138,6 +138,8 @@ int main(void)
             fpga_check_pin(FPGA_MODE1_PIN);
             fpga_check_pin(FPGA_RECONFIG_N_PIN);
 
+            LOG("FPGA_MEMORY_CONTROL=%d", fpga_read_byte(FPGA_MEMORY_CONTROL));
+
             nrfx_systick_delay_ms(1000);
         } else {
             stop = pyexec_friendly_repl();

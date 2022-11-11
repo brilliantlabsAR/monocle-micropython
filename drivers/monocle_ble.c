@@ -53,6 +53,13 @@ static struct {
 }; 
 
 /**
+ * This is the negotiated MTU length. Not used for anything currently.
+ */
+static uint16_t negotiated_mtu;
+
+// Ring buffer library
+
+/**
  * Ring buffers for the repl rx and tx data which goes over BLE.
  */
 typedef struct {
@@ -91,15 +98,12 @@ static inline uint8_t ring_pop(ring_buf_t *ring)
     return byte;
 }
 
-/**
- * This is the negotiated MTU length. Not used for anything currently.
- */
-static uint16_t negotiated_mtu;
+// RFCOMM service functions
 
 /**
  * Sends all buffered data in the tx ring buffer over BLE.
  */
-void ble_flush_tx(void)
+void ble_rfcomm_flush_tx(void)
 {
     // Local buffer for sending data
     uint8_t out_buffer[BLE_MAX_MTU_LENGTH] = "";
@@ -148,7 +152,7 @@ int ble_rfcomm_rx(void)
     while (ring_empty(&rfcomm_rx))
     {
         // While waiting for incoming data, we can push outgoing data
-        ble_flush_tx();
+        ble_rfcomm_flush_tx();
 
         // If there's nothing to do
         if (ring_empty(&rfcomm_tx) && ring_empty(&rfcomm_rx))
@@ -164,7 +168,7 @@ void ble_rfcomm_tx(char const *buf, size_t sz)
 {
     for (; sz > 0; buf++, sz--) {
         while (ring_full(&rfcomm_tx))
-            ble_flush_tx();
+            ble_rfcomm_flush_tx();
         ring_push(&rfcomm_tx, *buf);
     }
 }
@@ -173,6 +177,8 @@ bool ble_rfcomm_is_rx_pending(void)
 {
     return ring_empty(&rfcomm_rx);
 }
+
+// Global Bluetooth Low Energy setup
 
 /**
  * Softdevice assert handler. Called whenever softdevice crashes.
@@ -190,6 +196,8 @@ static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
 static void ble_add_service_tx_rx(ble_uuid128_t *uuid128)
 {
     uint32_t err;
+
+    __asm__("bkpt");
 
     // Set the 16 bit UUIDs for the service and characteristics
     ble_uuid_t service_uuid = {.uuid = 0x0001};
@@ -395,12 +403,18 @@ void ble_init(void)
     NRFX_ASSERT(!err);
 
     // Add the Nordic UART service long UUID
-    ble_uuid128_t uuid128_nordic_uart_console = {.uuid128 = {
+    ble_uuid128_t uuid128_rfcomm = {.uuid128 = {
         0x9E, 0xCA, 0xDC, 0x24, 0x0E, 0xE5, 0xA9, 0xE0,
         0x93, 0xF3, 0xA3, 0xB5, 0x00, 0x00, 0x40, 0x6E
     }};
+    ble_add_service_tx_rx(&uuid128_rfcomm);
 
-    ble_add_service_tx_rx(&uuid128_nordic_uart_console);
+    // Add the Raw service long UUID
+    ble_uuid128_t uuid128_raw = {.uuid128 = {
+        0x9E, 0xCA, 0xDC, 0x24, 0x0E, 0xE5, 0xA9, 0xE1,
+        0x93, 0xF3, 0xA3, 0xB5, 0x00, 0x00, 0x40, 0x6E
+    }};
+    //ble_add_service_tx_rx(&uuid128_raw);
 
     // Start advertising
     err = sd_ble_gap_adv_start(ble_handles.advertising, 1);
@@ -436,6 +450,8 @@ void SWI2_IRQHandler(void)
     // While any BLE events are pending
     while (1)
     {
+        uint32_t err;
+
         // Pull an event from the queue
         uint16_t buffer_len = sizeof(ble_evt_buffer);
         uint32_t status = sd_ble_evt_get(ble_evt_buffer, &buffer_len);
@@ -446,9 +462,6 @@ void SWI2_IRQHandler(void)
 
         // Check for other errors
         NRFX_ASSERT(status == 0);
-
-        // Error flag for use later
-        uint32_t err;
 
         // Make a pointer from the buffer which we can use to find the event
         ble_evt_t *ble_evt = (ble_evt_t *)ble_evt_buffer;
