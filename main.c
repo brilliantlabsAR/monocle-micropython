@@ -92,7 +92,7 @@ int main(void)
     ble_init();
 
     // Configure the hardware and IO pins
-    board_init();
+    //board_init();
 
     // Initialise the stack pointer for the main thread
     mp_stack_set_top(&_stack_top);
