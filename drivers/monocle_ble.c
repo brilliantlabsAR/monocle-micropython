@@ -5,7 +5,7 @@
  */
 
 /**
- * Bluetooth Low Energy (BLE) driver with UART console.
+ * Bluetooth Low Energy (BLE) driver with Nordic Uart Service console.
  * @file monocle_ble.c
  * @author Raj Nakarja - Silicon Witchery AB
  * @author Josuah Demangeon - Panoramix Labs
@@ -21,6 +21,8 @@
 // From the SoftDevice include dir:
 #include "ble.h"
 #include "nrf_sdm.h"
+
+#define BLE_ADV_MAX_SIZE 31
 
 /** Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go. */
 #define RING_BUFFER_LENGTH (1024 + 45)
@@ -90,7 +92,7 @@ static inline uint8_t ring_pop(ring_buf_t *ring)
     return byte;
 }
 
-// UART service functions
+// Nordic Uart Service service functions
 
 /**
  * Sends all buffered data in the tx ring buffer over BLE.
@@ -175,7 +177,7 @@ bool ble_nus_is_rx_pending(void)
 // Advertising data which needs to stay in scope between connections.
 static struct {
     uint8_t len;
-    uint8_t buf[128];
+    uint8_t buf[BLE_ADV_MAX_SIZE];
 } adv;
 
 static inline void ble_adv_add_device_name(const char *name)
@@ -193,16 +195,20 @@ static inline void ble_adv_add_discovery_mode(void)
     adv.buf[adv.len++] = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 }
 
-static inline void ble_adv_add_uuid(ble_uuid_t *uuid)
+static inline void ble_adv_add_uuid(ble_uuid_t *service_uuid)
 {
     uint32_t err;
     uint8_t encoded_uuid_len;
+    uint8_t *p_adv_size;
 
-    err = sd_ble_uuid_encode(uuid, &encoded_uuid_len, &adv.buf[adv.len + 2]);
+    p_adv_size = &adv.buf[adv.len];
+    adv.buf[adv.len++] = 1;
+    adv.buf[adv.len++] = BLE_GAP_AD_TYPE_128BIT_SERVICE_UUID_MORE_AVAILABLE;
+
+    err = sd_ble_uuid_encode(service_uuid, &encoded_uuid_len, &adv.buf[adv.len]);
     NRFX_ASSERT(!err);
-    adv.buf[adv.len++] = 1 + encoded_uuid_len;
-    adv.buf[adv.len++] = BLE_GAP_AD_TYPE_128BIT_SERVICE_UUID_COMPLETE;
     adv.len += encoded_uuid_len;
+    *p_adv_size += encoded_uuid_len;
 }
 
 static inline void ble_adv_submit(void)
@@ -232,7 +238,7 @@ static inline void ble_adv_submit(void)
 /**
  * Add rx characterisic to the advertisement.
  */
-static void ble_adv_add_rx(uint16_t service_handle, ble_uuid_t *rx_uuid)
+static void ble_service_add_characteristic_rx(uint16_t service_handle, ble_uuid_t *rx_uuid)
 {
     uint32_t err;
 
@@ -260,7 +266,7 @@ static void ble_adv_add_rx(uint16_t service_handle, ble_uuid_t *rx_uuid)
 /**
  * Add tx characterisic to the advertisement.
  */
-static void ble_adv_add_tx(uint16_t service_handle, ble_uuid_t *tx_uuid)
+static void ble_service_add_characteristic_tx(uint16_t service_handle, ble_uuid_t *tx_uuid)
 {
     uint32_t err;
 
@@ -284,7 +290,7 @@ static void ble_adv_add_tx(uint16_t service_handle, ble_uuid_t *tx_uuid)
     NRFX_ASSERT(!err);
 }
 
-static void ble_configure_service_nus(void)
+static void ble_configure_nus_service(ble_uuid_t *service_uuid)
 {
     uint32_t err;
 
@@ -294,32 +300,29 @@ static void ble_configure_service_nus(void)
     } };
 
     // Set the 16 bit UUIDs for the service and characteristics
-    ble_uuid_t service_uuid = { .uuid = 0x0001 };
+    service_uuid->uuid = 0x0001;
     ble_uuid_t rx_uuid = { .uuid = 0x0002 };
     ble_uuid_t tx_uuid = { .uuid = 0x0003 };
 
     // Temporary NUS handle
     uint16_t service_handle;
 
-    err = sd_ble_uuid_vs_add(&uuid128, &service_uuid.type);
+    err = sd_ble_uuid_vs_add(&uuid128, &service_uuid->type);
     NRFX_ASSERT(!err);
 
     err = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
-                                   &service_uuid, &service_handle);
+        service_uuid, &service_handle);
 
     // Copy the service UUID type to both rx and tx UUID
-    rx_uuid.type = service_uuid.type;
-    tx_uuid.type = service_uuid.type;
+    rx_uuid.type = service_uuid->type;
+    tx_uuid.type = service_uuid->type;
 
     // Add tx and rx characterisics to the advertisement.
-    ble_adv_add_rx(service_handle, &rx_uuid);
-    ble_adv_add_tx(service_handle, &tx_uuid);
-
-    // Add the service UUID to advertising data
-    ble_adv_add_uuid(&service_uuid);
+    ble_service_add_characteristic_rx(service_handle, &rx_uuid);
+    ble_service_add_characteristic_tx(service_handle, &tx_uuid);
 }
 
-void ble_configure_service_raw(void)
+void ble_configure_raw_service(ble_uuid_t *service_uuid)
 {
     uint32_t err;
 
@@ -329,29 +332,26 @@ void ble_configure_service_raw(void)
     } };
 
     // Set the 16 bit UUIDs for the service and characteristics
-    ble_uuid_t service_uuid = { .uuid = 0x0007 };
-    ble_uuid_t rx_uuid = { .uuid = 0x0008 };
-    ble_uuid_t tx_uuid = { .uuid = 0x0009 };
+    service_uuid->uuid = 0x0001;
+    ble_uuid_t rx_uuid = { .uuid = 0x0002 };
+    ble_uuid_t tx_uuid = { .uuid = 0x0003 };
 
     // Temporary NUS handle
     uint16_t service_handle;
 
-    err = sd_ble_uuid_vs_add(&uuid128, &service_uuid.type);
+    err = sd_ble_uuid_vs_add(&uuid128, &service_uuid->type);
     NRFX_ASSERT(!err);
 
     err = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
-                                   &service_uuid, &service_handle);
+        service_uuid, &service_handle);
 
     // Copy the service UUID type to both rx and tx UUID
-    rx_uuid.type = service_uuid.type;
-    tx_uuid.type = service_uuid.type;
+    rx_uuid.type = service_uuid->type;
+    tx_uuid.type = service_uuid->type;
 
     // Add tx and rx characterisics to the advertisement.
-    ble_adv_add_rx(service_handle, &rx_uuid);
-    ble_adv_add_tx(service_handle, &tx_uuid);
-
-    // Add the service UUID to advertising data
-    ble_adv_add_uuid(&service_uuid);
+    ble_service_add_characteristic_rx(service_handle, &rx_uuid);
+    ble_service_add_characteristic_tx(service_handle, &tx_uuid);
 }
 
 /**
@@ -391,7 +391,7 @@ void ble_configure_softdevice(void)
 
     // Configure number of custom UUIDs
     memset(&cfg, 0, sizeof(cfg));
-    cfg.common_cfg.vs_uuid_cfg.vs_uuid_count = 1;
+    cfg.common_cfg.vs_uuid_cfg.vs_uuid_count = 2;
     err = sd_ble_cfg_set(BLE_COMMON_CFG_VS_UUID, &cfg, ram_start);
     NRFX_ASSERT(!err);
 
@@ -477,11 +477,16 @@ void ble_init(void)
     // Set discovery mode flag
     ble_adv_add_discovery_mode();
 
-    // Add the Nordic UART service (NUS, fancy word for UART) long UUID
-    ble_configure_service_nus();
+    ble_uuid_t nus_service_uuid, raw_service_uuid;
+
+    // Add the Nordic UART service (NUS, vendor-specific BLE UART) long UUID
+    ble_configure_nus_service(&nus_service_uuid);
 
     // Add the Raw service
-    //ble_configure_service_raw();
+    ble_configure_raw_service(&raw_service_uuid);
+
+    // Add the service UUID to advertising data
+    ble_adv_add_uuid(&nus_service_uuid);
 
     // Submit the adv now that it is complete.
     ble_adv_submit();
