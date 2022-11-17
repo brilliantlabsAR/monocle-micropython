@@ -27,24 +27,34 @@
 /** Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go. */
 #define RING_BUFFER_LENGTH (1024 + 45)
 
-/** This is the ram start pointer as set in the nrf52811.ld file.  */
+/**
+ * Holds the handles for the conenction and characteristics.
+ * Convenient for use in interrupts, to get all service-specific data
+ * we need to carry around.
+ */
+typedef struct {
+    uint16_t handle;
+    ble_gatts_char_handles_t rx_characteristic;
+    ble_gatts_char_handles_t tx_characteristic;
+} ble_service_t;
+
+/** List of all services we might get a connection for. */
+static ble_service_t ble_nus_service, ble_raw_service; // TODO: initialise handle with "INVALID_SERVICE"
+
+/** Advertising configured globally for all services. */
+uint8_t ble_advertising_id = BLE_GAP_ADV_SET_HANDLE_NOT_SET;
+
+/** Identifier for the active connection with a single device. */
+uint16_t ble_conn_handle = BLE_CONN_HANDLE_INVALID;
+
+/** Identifier for the Bluetooth Low-Energy advertisement being broadcast. */
+uint8_t ble_adv_handle = BLE_GAP_ADV_SET_HANDLE_NOT_SET;
+
+/** This is the ram start pointer as set in the nrf52811.ld file. */
 extern uint32_t _ram_start;
 
 /** The `_ram_start` symbol's address often needs to be passed as an integer. */
 static uint32_t ram_start = (uint32_t)&_ram_start;
-
-/**
- * This struct holds the handles for the conenction and characteristics.
- */
-static struct {
-    uint16_t connection;
-    uint8_t advertising;
-    ble_gatts_char_handles_t rx_characteristic;
-    ble_gatts_char_handles_t tx_characteristic;
-} ble_handles = {
-    .connection = BLE_CONN_HANDLE_INVALID,
-    .advertising = BLE_GAP_ADV_SET_HANDLE_NOT_SET,
-}; 
 
 /**
  * This is the negotiated MTU length. Not used for anything currently.
@@ -102,6 +112,7 @@ void ble_nus_flush_tx(void)
     // Local buffer for sending data
     uint8_t out_buffer[BLE_MAX_MTU_LENGTH] = "";
     uint16_t out_len = 0;
+    ble_service_t *service = &ble_nus_service;
 
     // If there's no data to send, simply return
     if (ring_empty(&nus_tx))
@@ -118,9 +129,9 @@ void ble_nus_flush_tx(void)
             break;
     }
 
-    // Initialise the handle value parameters
+    // Initialise the service value parameters
     ble_gatts_hvx_params_t hvx_params = {0};
-    hvx_params.handle = ble_handles.tx_characteristic.value_handle;
+    hvx_params.handle = service->tx_characteristic.value_handle;
     hvx_params.p_data = out_buffer;
     hvx_params.p_len = (uint16_t *)&out_len;
     hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
@@ -128,7 +139,7 @@ void ble_nus_flush_tx(void)
     uint32_t err;
     do {
         // Send the data
-        err = sd_ble_gatts_hvx(ble_handles.connection, &hvx_params);
+        err = sd_ble_gatts_hvx(ble_conn_handle, &hvx_params);
 
     // Retry if resources are unavailable.
     } while (err == NRF_ERROR_RESOURCES);
@@ -195,32 +206,29 @@ static inline void ble_adv_add_discovery_mode(void)
     adv.buf[adv.len++] = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 }
 
-static inline void ble_adv_add_uuid(ble_uuid_t *service_uuid)
+static inline void ble_adv_add_uuid(ble_uuid_t *uuid)
 {
     uint32_t err;
-    uint8_t encoded_uuid_len;
+    uint8_t len;
     uint8_t *p_adv_size;
 
     p_adv_size = &adv.buf[adv.len];
     adv.buf[adv.len++] = 1;
     adv.buf[adv.len++] = BLE_GAP_AD_TYPE_128BIT_SERVICE_UUID_MORE_AVAILABLE;
 
-    err = sd_ble_uuid_encode(service_uuid, &encoded_uuid_len, &adv.buf[adv.len]);
+    err = sd_ble_uuid_encode(uuid, &len, &adv.buf[adv.len]);
     NRFX_ASSERT(!err);
-    adv.len += encoded_uuid_len;
-    *p_adv_size += encoded_uuid_len;
+    adv.len += len;
+    *p_adv_size += len;
 }
 
-static inline void ble_adv_submit(void)
+static inline void ble_adv_submit()
 {
     uint32_t err;
 
-    // Format the custom `adv` struct 
     ble_gap_adv_data_t adv_data = {
         .adv_data.p_data = adv.buf,
         .adv_data.len = adv.len,
-        .scan_rsp_data.p_data = NULL,
-        .scan_rsp_data.len = 0
     };
 
     // Set up advertising parameters
@@ -231,14 +239,14 @@ static inline void ble_adv_submit(void)
     adv_params.interval = (20 * 1000) / 625;
 
     // Configure the advertising set
-    err = sd_ble_gap_adv_set_configure(&ble_handles.advertising, &adv_data, &adv_params);
+    err = sd_ble_gap_adv_set_configure(&ble_adv_handle, &adv_data, &adv_params);
     NRFX_ASSERT(!err);
 }
 
 /**
  * Add rx characterisic to the advertisement.
  */
-static void ble_service_add_characteristic_rx(uint16_t service_handle, ble_uuid_t *rx_uuid)
+static void ble_service_add_characteristic_rx(ble_service_t *service, ble_uuid_t *uuid)
 {
     uint32_t err;
 
@@ -253,20 +261,20 @@ static void ble_service_add_characteristic_rx(uint16_t service_handle, ble_uuid_
     rx_attr_md.vlen = 1;
 
     ble_gatts_attr_t rx_attr = {0};
-    rx_attr.p_uuid = rx_uuid;
+    rx_attr.p_uuid = uuid;
     rx_attr.p_attr_md = &rx_attr_md;
     rx_attr.init_len = sizeof(uint8_t);
     rx_attr.max_len = BLE_MAX_MTU_LENGTH - 3;
 
-    err = sd_ble_gatts_characteristic_add(service_handle, &rx_char_md, &rx_attr,
-        &ble_handles.rx_characteristic);
+    err = sd_ble_gatts_characteristic_add(service->handle, &rx_char_md, &rx_attr,
+        &service->rx_characteristic);
     NRFX_ASSERT(!err);
 }
 
 /**
  * Add tx characterisic to the advertisement.
  */
-static void ble_service_add_characteristic_tx(uint16_t service_handle, ble_uuid_t *tx_uuid)
+static void ble_service_add_characteristic_tx(ble_service_t *service, ble_uuid_t *uuid)
 {
     uint32_t err;
 
@@ -280,20 +288,20 @@ static void ble_service_add_characteristic_tx(uint16_t service_handle, ble_uuid_
     tx_attr_md.vlen = 1;
 
     ble_gatts_attr_t tx_attr = {0};
-    tx_attr.p_uuid = tx_uuid;
+    tx_attr.p_uuid = uuid;
     tx_attr.p_attr_md = &tx_attr_md;
     tx_attr.init_len = sizeof(uint8_t);
     tx_attr.max_len = BLE_MAX_MTU_LENGTH - 3;
 
-    err = sd_ble_gatts_characteristic_add(service_handle, &tx_char_md, &tx_attr,
-        &ble_handles.tx_characteristic);
+    err = sd_ble_gatts_characteristic_add(service->handle, &tx_char_md, &tx_attr,
+        &service->tx_characteristic);
     NRFX_ASSERT(!err);
 }
 
 static void ble_configure_nus_service(ble_uuid_t *service_uuid)
 {
     uint32_t err;
-
+    ble_service_t *service = &ble_nus_service;
     ble_uuid128_t uuid128 = { .uuid128 = {
         // Reverse byte endianess to the string representation.
         0x9E,0xCA,0xDC,0x24,0x0E,0xE5, 0xA9,0xE0, 0x93,0xF3, 0xA3,0xB5, 0x00,0x00,0x40,0x6E
@@ -304,27 +312,25 @@ static void ble_configure_nus_service(ble_uuid_t *service_uuid)
     ble_uuid_t rx_uuid = { .uuid = 0x0002 };
     ble_uuid_t tx_uuid = { .uuid = 0x0003 };
 
-    // Temporary NUS handle
-    uint16_t service_handle;
-
     err = sd_ble_uuid_vs_add(&uuid128, &service_uuid->type);
     NRFX_ASSERT(!err);
 
     err = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
-        service_uuid, &service_handle);
+        service_uuid, &service->handle);
 
     // Copy the service UUID type to both rx and tx UUID
     rx_uuid.type = service_uuid->type;
     tx_uuid.type = service_uuid->type;
 
     // Add tx and rx characterisics to the advertisement.
-    ble_service_add_characteristic_rx(service_handle, &rx_uuid);
-    ble_service_add_characteristic_tx(service_handle, &tx_uuid);
+    ble_service_add_characteristic_rx(service, &rx_uuid);
+    ble_service_add_characteristic_tx(service, &tx_uuid);
 }
 
 void ble_configure_raw_service(ble_uuid_t *service_uuid)
 {
     uint32_t err;
+    ble_service_t *service = &ble_raw_service;
 
     ble_uuid128_t uuid128 = { .uuid128 = {
         // Reverse byte endianess to the string representation.
@@ -336,22 +342,19 @@ void ble_configure_raw_service(ble_uuid_t *service_uuid)
     ble_uuid_t rx_uuid = { .uuid = 0x0002 };
     ble_uuid_t tx_uuid = { .uuid = 0x0003 };
 
-    // Temporary NUS handle
-    uint16_t service_handle;
-
     err = sd_ble_uuid_vs_add(&uuid128, &service_uuid->type);
     NRFX_ASSERT(!err);
 
     err = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
-        service_uuid, &service_handle);
+        service_uuid, &service->handle);
 
     // Copy the service UUID type to both rx and tx UUID
     rx_uuid.type = service_uuid->type;
     tx_uuid.type = service_uuid->type;
 
     // Add tx and rx characterisics to the advertisement.
-    ble_service_add_characteristic_rx(service_handle, &rx_uuid);
-    ble_service_add_characteristic_tx(service_handle, &tx_uuid);
+    ble_service_add_characteristic_rx(service, &rx_uuid);
+    ble_service_add_characteristic_tx(service, &tx_uuid);
 }
 
 /**
@@ -492,7 +495,7 @@ void ble_init(void)
     ble_adv_submit();
 
     // Start the configured BLE advertisement
-    err = sd_ble_gap_adv_start(ble_handles.advertising, 1);
+    err = sd_ble_gap_adv_start(ble_advertising_id, 1);
     NRFX_ASSERT(!err);
 }
 
@@ -504,7 +507,7 @@ void SWI2_IRQHandler(void)
     uint32_t evt_id;
     uint8_t ble_evt_buffer[sizeof(ble_evt_t) + BLE_MAX_MTU_LENGTH];
 
-    // While any softdevice events are pending, handle flash operations
+    // While any softdevice events are pending, service flash operations
     while (sd_evt_get(&evt_id) != NRF_ERROR_NOT_FOUND)
     {
         switch (evt_id)
@@ -541,15 +544,15 @@ void SWI2_IRQHandler(void)
         // Make a pointer from the buffer which we can use to find the event
         ble_evt_t *ble_evt = (ble_evt_t *)ble_evt_buffer;
 
-        // Otherwise on NRF_SUCCESS, we handle the new event
+        // Otherwise on NRF_SUCCESS, we service the new event
         switch (ble_evt->header.evt_id)
         {
 
         // When connected
         case BLE_GAP_EVT_CONNECTED:
         {
-            // Set the connection handle
-            ble_handles.connection = ble_evt->evt.gap_evt.conn_handle;
+            // Set the connection service
+            ble_conn_handle = ble_evt->evt.gap_evt.conn_handle;
 
             // Update connection parameters
             ble_gap_conn_params_t conn_params;
@@ -566,11 +569,11 @@ void SWI2_IRQHandler(void)
         // When disconnected
         case BLE_GAP_EVT_DISCONNECTED:
         {
-            // Clear the connection handle
-            ble_handles.connection = BLE_CONN_HANDLE_INVALID;
+            // Clear the connection service
+            ble_conn_handle = BLE_CONN_HANDLE_INVALID;
 
             // Start advertising
-            err = sd_ble_gap_adv_start(ble_handles.advertising, 1);
+            err = sd_ble_gap_adv_start(ble_advertising_id, 1);
             NRFX_ASSERT(!err);
             break;
         }
@@ -601,7 +604,7 @@ void SWI2_IRQHandler(void)
             NRFX_ASSERT(!err);
 
             // Choose the smaller MTU as the final length we'll use
-            // -3 bytes to accommodate for Op-code and attribute handle
+            // -3 bytes to accommodate for Op-code and attribute service
             negotiated_mtu = BLE_MAX_MTU_LENGTH < client_mtu
                                  ? BLE_MAX_MTU_LENGTH - 3
                                  : client_mtu - 3;
