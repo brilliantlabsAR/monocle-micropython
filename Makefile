@@ -42,7 +42,7 @@ APPLICATION_HEX := build/application.hex
 BLSETTINGS_HEX := build/blsettings.hex
 
 # Bootloader from Swaralink
-BOOTLOADER_HEX := bootloader/build/nrf52832_xxaa_s132.hex
+BOOTLOADER_HEX := bootloader/nrf52832_xxaa_s132.hex
 
 # Key used by the Swaralink bootloader
 BOOTLOADER_KEY := bootloader/published_privkey.pem
