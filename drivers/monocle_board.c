@@ -72,6 +72,8 @@ void board_init(void)
     // Initialise the GPIO driver with event support.
     nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
 
+    return; // debug
+
     // Custom wrapper around I2C used by the other drivers.
     i2c_init();
 
@@ -84,40 +86,40 @@ void board_init(void)
     board_power_off();
 
     // Initialise GPIO before the chips are powered on.
-    //ecx335af_prepare();
-    //fpga_prepare();
-    //ov5640_prepare();
-    //flash_prepare();
+    ecx335af_prepare();
+    fpga_prepare();
+    ov5640_prepare();
+    flash_prepare();
     nrfx_systick_delay_ms(100);
 
     // I2C calls to setup power rails of the MAX77654.
     // Needs: max77654
-    //board_power_on();
+    board_power_on();
 
     // Initialise the Capacitive Touch Button controller over I2C.
     // Needs: i2c, gpiote
-    //iqs620_init();
+    iqs620_init();
 
     // Initialise the battery level sensing with the ADC.
-    //battery_init();
+    battery_init();
 
     // Custom wrapper around SPI used by the other drivers.
-    //spi_init();
+    spi_init();
 
     // Initialise the FPGA: providing the clock for the display and screen.
     // Needs: power, spi
-    //fpga_init();
-    //fpga_xclk_on();
+    fpga_init();
+    fpga_xclk_on();
     //NRFX_LOG_ERROR("FPGA_MEMORY_CONTROL=0x%02X", fpga_read_byte(FPGA_MEMORY_CONTROL));
 
     // Initialise the Camera: gpio pins startup sequence then I2C config.
     // Needs: power, fpga, i2c
-    //ov5640_pwr_on();
-    //ov5640_focus_init();
+    ov5640_pwr_on();
+    ov5640_focus_init();
 
     // Initialise the SPI conection to the flash.
     // Needs: power
-    //flash_init();
+    flash_init();
 }
 
 void board_deinit(void)

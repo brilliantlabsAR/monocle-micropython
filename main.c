@@ -117,30 +117,6 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-
-            LOG("spi_init");
-            spi_init();
-            fpga_check_pin(FPGA_MODE1_PIN);
-            fpga_check_pin(FPGA_RECONFIG_N_PIN);
-
-            LOG("fpga_prepare");
-            fpga_prepare();
-            fpga_check_pin(FPGA_MODE1_PIN);
-            fpga_check_pin(FPGA_RECONFIG_N_PIN);
-
-            LOG("board_power_on");
-            board_power_on();
-            fpga_check_pin(FPGA_MODE1_PIN);
-            fpga_check_pin(FPGA_RECONFIG_N_PIN);
-
-            LOG("fpga_prepare");
-            fpga_init();
-            fpga_check_pin(FPGA_MODE1_PIN);
-            fpga_check_pin(FPGA_RECONFIG_N_PIN);
-
-            LOG("FPGA_MEMORY_CONTROL=%d", fpga_read_byte(FPGA_MEMORY_CONTROL));
-
-            nrfx_systick_delay_ms(1000);
         } else {
             stop = pyexec_friendly_repl();
         }
