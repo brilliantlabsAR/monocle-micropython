@@ -72,8 +72,6 @@ void board_init(void)
     // Initialise the GPIO driver with event support.
     nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
 
-    return; // debug
-
     // Custom wrapper around I2C used by the other drivers.
     i2c_init();
 
@@ -110,7 +108,6 @@ void board_init(void)
     // Needs: power, spi
     fpga_init();
     fpga_xclk_on();
-    //NRFX_LOG_ERROR("FPGA_MEMORY_CONTROL=0x%02X", fpga_read_byte(FPGA_MEMORY_CONTROL));
 
     // Initialise the Camera: gpio pins startup sequence then I2C config.
     // Needs: power, fpga, i2c
@@ -119,7 +116,7 @@ void board_init(void)
 
     // Initialise the SPI conection to the flash.
     // Needs: power
-    flash_init();
+    //flash_init();
 }
 
 void board_deinit(void)

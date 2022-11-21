@@ -117,6 +117,7 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
+            NRFX_LOG_ERROR("FPGA_MEMORY_CONTROL=0x%02X", fpga_read_byte(FPGA_MEMORY_CONTROL));
         } else {
             stop = pyexec_friendly_repl();
         }

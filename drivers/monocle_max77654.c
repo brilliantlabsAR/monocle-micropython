@@ -647,7 +647,7 @@ void max77654_init(void)
     // ICHGIN_LIM_DEF=0: clear this bit so dev brd "M" OTP matches "B" OTP of 0, that is ICHGIN_LIM scale starts at 95mA
     // Drive strength, slow down to reduce EMI (but reduces efficiency)
     // Second slowest.
-    max77654_write(MAX77654_CNFG_SBB_TOP_REG, 0x02);
+    max77654_write(MAX77654_CNFG_SBB_TOP_REG, 0x00);
 
     // GPIO configuration
 
