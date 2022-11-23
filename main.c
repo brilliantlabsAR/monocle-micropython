@@ -114,7 +114,6 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-            dfu_reboot_bootloader();
         } else {
             stop = pyexec_friendly_repl();
         }
