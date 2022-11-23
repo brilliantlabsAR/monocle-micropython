@@ -85,6 +85,7 @@ SRC += drivers/monocle_battery.c
 SRC += drivers/monocle_ble.c
 SRC += drivers/monocle_board.c
 SRC += drivers/monocle_checksum.c
+SRC += drivers/monocle_dfu.c
 SRC += drivers/monocle_ecx335af.c
 SRC += drivers/monocle_flash.c
 SRC += drivers/monocle_fpga.c

@@ -27,10 +27,7 @@
 #include "monocle_spi.h"
 #include "monocle_ble.h"
 #include "monocle_board.h"
-#include "monocle_flash.h" // debug
-#include "monocle_fpga.h" // debug
-#include "monocle_battery.h" // debug
-#include "monocle_config.h" // debug
+#include "monocle_dfu.h" // debug
 #include "nrf_sdm.h"
 #include "nrfx_systick.h"
 #include "py/compile.h"
@@ -92,7 +89,7 @@ int main(void)
     ble_init();
 
     // Configure the hardware and IO pins
-    //board_init();
+    board_init();
 
     // Initialise the stack pointer for the main thread
     mp_stack_set_top(&_stack_top);
@@ -117,7 +114,7 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-            NRFX_LOG_ERROR("FPGA_MEMORY_CONTROL=0x%02X", fpga_read_byte(FPGA_MEMORY_CONTROL));
+            dfu_reboot_bootloader();
         } else {
             stop = pyexec_friendly_repl();
         }

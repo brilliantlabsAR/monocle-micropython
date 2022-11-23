@@ -107,6 +107,9 @@ void board_init(void)
     // Initialise the FPGA: providing the clock for the display and screen.
     // Needs: power, spi
     fpga_init();
+
+    return; // debug: I need to get the FPGA running
+
     fpga_xclk_on();
 
     // Initialise the Camera: gpio pins startup sequence then I2C config.
