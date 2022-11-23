@@ -19,6 +19,7 @@ pip install --user intelhex bleak
 # import the submodules
 git submodule init nrfx
 git submodule init micropython
+git submodule update --recursive
 make -C micropython/ports/nrf/ submodules
 
 # build the firmware image
