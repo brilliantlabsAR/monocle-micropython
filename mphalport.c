@@ -175,7 +175,7 @@ void mp_hal_set_interrupt_char(int c) {
  */
 void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len)
 {
-    ble_rfcomm_tx(str, len);
+    ble_nus_tx(str, len);
 }
 
 void mp_hal_stdout_tx_strn_cooked(const char *str, mp_uint_t len)
@@ -185,7 +185,7 @@ void mp_hal_stdout_tx_strn_cooked(const char *str, mp_uint_t len)
 
 uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags) {
     uintptr_t ret = 0;
-    if ((poll_flags & MP_STREAM_POLL_RD) && ble_rfcomm_is_rx_pending()) {
+    if ((poll_flags & MP_STREAM_POLL_RD) && ble_nus_is_rx_pending()) {
         ret |= MP_STREAM_POLL_RD;
     }
     return ret;
@@ -197,7 +197,7 @@ uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags) {
  */
 int mp_hal_stdin_rx_chr(void)
 {
-    return ble_rfcomm_rx();
+    return ble_nus_rx();
 }
 
 void mp_hal_stdout_tx_str(const char *str) {

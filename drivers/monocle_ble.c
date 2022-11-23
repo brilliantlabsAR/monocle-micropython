@@ -5,7 +5,7 @@
  */
 
 /**
- * Bluetooth Low Energy (BLE) driver with RFCOMM console.
+ * Bluetooth Low Energy (BLE) driver with UART console.
  * @file monocle_ble.c
  * @author Raj Nakarja - Silicon Witchery AB
  * @author Josuah Demangeon - Panoramix Labs
@@ -60,7 +60,7 @@ typedef struct {
     uint16_t tail;
 } ring_buf_t;
 
-ring_buf_t rfcomm_rx, rfcomm_tx;
+ring_buf_t nus_rx, nus_tx;
 
 static inline bool ring_full(ring_buf_t const *ring)
 {
@@ -90,26 +90,26 @@ static inline uint8_t ring_pop(ring_buf_t *ring)
     return byte;
 }
 
-// RFCOMM service functions
+// UART service functions
 
 /**
  * Sends all buffered data in the tx ring buffer over BLE.
  */
-void ble_rfcomm_flush_tx(void)
+void ble_nus_flush_tx(void)
 {
     // Local buffer for sending data
     uint8_t out_buffer[BLE_MAX_MTU_LENGTH] = "";
     uint16_t out_len = 0;
 
     // If there's no data to send, simply return
-    if (ring_empty(&rfcomm_tx))
+    if (ring_empty(&nus_tx))
         return;
 
     // For all the remaining characters, i.e until the heads come back together
-    while (!ring_empty(&rfcomm_tx))
+    while (!ring_empty(&nus_tx))
     {
         // Copy over a character from the tail to the outgoing buffer
-        out_buffer[out_len++] = ring_pop(&rfcomm_tx);
+        out_buffer[out_len++] = ring_pop(&nus_tx);
 
         // Break if we over-run the negotiated MTU size, send the rest later
         if (out_len >= negotiated_mtu)
@@ -139,35 +139,35 @@ void ble_rfcomm_flush_tx(void)
     NRFX_ASSERT(!err);
 }
 
-int ble_rfcomm_rx(void)
+int ble_nus_rx(void)
 {
-    while (ring_empty(&rfcomm_rx))
+    while (ring_empty(&nus_rx))
     {
         // While waiting for incoming data, we can push outgoing data
-        ble_rfcomm_flush_tx();
+        ble_nus_flush_tx();
 
         // If there's nothing to do
-        if (ring_empty(&rfcomm_tx) && ring_empty(&rfcomm_rx))
+        if (ring_empty(&nus_tx) && ring_empty(&nus_rx))
             // Wait for events to save power
             sd_app_evt_wait();
     }
 
     // Return next character from the RX buffer.
-    return ring_pop(&rfcomm_rx);
+    return ring_pop(&nus_rx);
 }
 
-void ble_rfcomm_tx(char const *buf, size_t sz)
+void ble_nus_tx(char const *buf, size_t sz)
 {
     for (; sz > 0; buf++, sz--) {
-        while (ring_full(&rfcomm_tx))
-            ble_rfcomm_flush_tx();
-        ring_push(&rfcomm_tx, *buf);
+        while (ring_full(&nus_tx))
+            ble_nus_flush_tx();
+        ring_push(&nus_tx, *buf);
     }
 }
 
-bool ble_rfcomm_is_rx_pending(void)
+bool ble_nus_is_rx_pending(void)
 {
-    return ring_empty(&rfcomm_rx);
+    return ring_empty(&nus_rx);
 }
 
 // Global Bluetooth Low Energy setup
@@ -284,7 +284,7 @@ static void ble_adv_add_tx(uint16_t service_handle, ble_uuid_t *tx_uuid)
     NRFX_ASSERT(!err);
 }
 
-static void ble_configure_service_rfcomm(void)
+static void ble_configure_service_nus(void)
 {
     uint32_t err;
 
@@ -477,8 +477,8 @@ void ble_init(void)
     // Set discovery mode flag
     ble_adv_add_discovery_mode();
 
-    // Add the Nordic UART service (NUS, fancy word for RFCOMM) long UUID
-    ble_configure_service_rfcomm();
+    // Add the Nordic UART service (NUS, fancy word for UART) long UUID
+    ble_configure_service_nus();
 
     // Add the Raw service
     //ble_configure_service_raw();
@@ -612,11 +612,11 @@ void SWI2_IRQHandler(void)
                  length++)
             {
                 // Break if the ring buffer is full, we can't write more
-                if (ring_full(&rfcomm_rx))
+                if (ring_full(&nus_rx))
                     break;
 
                 // Copy a character into the ring buffer
-                ring_push(&rfcomm_rx, ble_evt->evt.gatts_evt.params.write.data[length]);
+                ring_push(&nus_rx, ble_evt->evt.gatts_evt.params.write.data[length]);
             }
             break;
         }

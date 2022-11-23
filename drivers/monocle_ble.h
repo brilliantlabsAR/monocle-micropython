@@ -14,9 +14,9 @@
  */
 
 void ble_init(void);
-void ble_rfcomm_tx(char const *buf, size_t sz);
-int ble_rfcomm_rx(void);
-bool ble_rfcomm_is_rx_pending(void);
+void ble_nus_tx(char const *buf, size_t sz);
+int ble_nus_rx(void);
+bool ble_nus_is_rx_pending(void);
 
 /** @} */
 #endif
