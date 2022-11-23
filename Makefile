@@ -23,6 +23,12 @@ JLINKGDBSERVERCL = JLinkGDBServerCLExe
 GDB = gdb-multiarch
 PYTHON = python3
 
+# Complete firmware containing all of the below hex files
+FIRMWARE_HEX = build/firmware.hex
+
+# Signed Zip archive of the firmware.
+FIRMWARE_ZIP = build/firmware.zip
+
 # Softdevice binary placed to the flash, imported from the nRF5-SDK
 SOFTDEVICE_HEX = softdevice/$(SD)_nrf52_$(SOFTDEVICE_VERSION)_softdevice.hex
 
@@ -174,7 +180,7 @@ OBJ += $(PY_O)
 OBJ += $(addprefix build/, $(SRC:.c=.o))
 OBJ += $(addprefix build/, $(SRC_MOD:.c=.o))
 
-all: build/firmware.hex
+all: ${FIRMWARE_HEX}
 
 flash_openocd_stlink:
 	$(OPENOCD) $(OPENOCD_STLINK) $(OPENOCD_FLASH)
@@ -183,7 +189,7 @@ flash_openocd_jlink:
 	$(OPENOCD) $(OPENOCD_JLINK) $(OPENOCD_FLASH)
 
 flash_nrfjprog_jlink:
-	$(NRFJPROG) --sectorerase --verify --family nrf52 --program build/firmware.hex
+	$(NRFJPROG) --sectorerase --verify --family nrf52 --program ${FIRMWARE_HEX}
 
 gdb_openocd_stlink:
 	$(OPENOCD) $(OPENOCD_STLINK) -c "gdb_port 2331"
@@ -212,11 +218,12 @@ build/application.elf: $(OBJ)
 	$(Q)$(CC) $(LDFLAGS) -o $@ $(OBJ) $(LDFLAGS_MOD) $(LIBS)
 	$(Q)$(SIZE) $@
 
-build/firmware.hex: $(SOFTDEVICE_HEX) $(BOOTLOADER_HEX) build/application.hex
-	$(NRFUTIL) settings generate --family NRF52 \
-	    --application build/application.hex --application-version 0 \
-	    --bootloader-version 0 --bl-settings-version 2 $(BLSETTINGS_HEX)
+${FIRMWARE_HEX}: $(SOFTDEVICE_HEX) $(BOOTLOADER_HEX) ${APPLICATION_HEX}
+	$(NRFUTIL) settings generate --family NRF52 --application ${APPLICATION_HEX} --application-version 0 --bootloader-version 0 --bl-settings-version 2 $(BLSETTINGS_HEX)
 	$(HEXMERGE) $(APPLICATION_HEX) $(BOOTLOADER_HEX) $(SOFTDEVICE_HEX) $(BLSETTINGS_HEX) -o $@
+
+$(FIRMWARE_ZIP): $(APPLICATION_HEX) $(BOOTLOADER_KEY)
+	$(NRFUTIL) pkg generate --hw-version 52 --application-version 1 --application $(APPLICATION_HEX) --sd-req 0x101 --key-file $(BOOTLOADER_KEY) $@
 
 .SUFFIXES: .elf .hex
 
