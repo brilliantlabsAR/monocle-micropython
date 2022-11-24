@@ -43,3 +43,10 @@ jobs:
           name: dfu_package.zip
           path: build/dfu_package.zip
           retention-days: 5
+
+      - name: Upload application.map
+        uses: actions/upload-artifact@v3
+        with:
+          name: application.map
+          path: build/application.map
+          retention-days: 5
