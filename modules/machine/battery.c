@@ -42,7 +42,7 @@ STATIC mp_obj_t machine_battery_make_new(const mp_obj_type_t *type, size_t n_arg
     // Parse args.
     mp_arg_check_num(n_args, n_kw, 0, 0, false);
 
-    // Return the newly created TouchButton object.
+    // Return the newly created object.
     return MP_OBJ_FROM_PTR(NULL);
 }
 

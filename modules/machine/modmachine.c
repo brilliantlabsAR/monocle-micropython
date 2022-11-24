@@ -35,6 +35,7 @@
 #include "shared/runtime/pyexec.h"
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
+#include "monocle_dfu.h"
 #include "timer.h"
 #include "battery.h"
 #include "fpga.h"
@@ -121,6 +122,12 @@ STATIC mp_obj_t machine_reset_cause(void) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_reset_cause_obj, machine_reset_cause);
 
+STATIC mp_obj_t machine_update(void) {
+    dfu_reboot_bootloader();
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_0(machine_update_obj, machine_update);
+
 STATIC mp_obj_t machine_enable_irq(void) {
     return mp_const_none;
 }
@@ -144,13 +151,13 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_lightsleep),         MP_ROM_PTR(&machine_lightsleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_deepsleep),          MP_ROM_PTR(&machine_deepsleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset_cause),        MP_ROM_PTR(&machine_reset_cause_obj) },
+    { MP_ROM_QSTR(MP_QSTR_update),             MP_ROM_PTR(&machine_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem8),               MP_ROM_PTR(&machine_mem8_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem16),              MP_ROM_PTR(&machine_mem16_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem32),              MP_ROM_PTR(&machine_mem32_obj) },
-    { MP_ROM_QSTR(MP_QSTR_fpga_read_byte),     MP_ROM_PTR(&machine_fpga_read_byte_obj) },
-    { MP_ROM_QSTR(MP_QSTR_fpga_write_byte),    MP_ROM_PTR(&machine_fpga_write_byte_obj) },
     { MP_ROM_QSTR(MP_QSTR_TouchButton),        MP_ROM_PTR(&machine_touchbutton_type) },
     { MP_ROM_QSTR(MP_QSTR_Battery),            MP_ROM_PTR(&machine_battery_type) },
+    { MP_ROM_QSTR(MP_QSTR_FPGA),               MP_ROM_PTR(&machine_fpga_type) },
     
 #if MICROPY_PY_MACHINE_RTCOUNTER
     { MP_ROM_QSTR(MP_QSTR_RTCounter),          MP_ROM_PTR(&machine_rtcounter_type) },
