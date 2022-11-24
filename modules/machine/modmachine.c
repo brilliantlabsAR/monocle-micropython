@@ -101,14 +101,6 @@ STATIC mp_obj_t machine_soft_reset(void)
 }
 MP_DEFINE_CONST_FUN_OBJ_0(machine_soft_reset_obj, machine_soft_reset);
 
-NORETURN mp_obj_t machine_bootloader(size_t n_args, const mp_obj_t *args)
-{
-    MICROPY_BOARD_ENTER_BOOTLOADER(n_args, args);
-    for (;;) {
-    }
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_bootloader_obj, 0, 1, machine_bootloader);
-
 STATIC mp_obj_t machine_lightsleep(void)
 {
     __WFE();
