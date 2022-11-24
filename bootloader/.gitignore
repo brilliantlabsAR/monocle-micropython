@@ -1,2 +1,3 @@
-/build
 /nRF5_SDK_*
+/build/*
+!/build/nrf52832_xxaa_s132.hex

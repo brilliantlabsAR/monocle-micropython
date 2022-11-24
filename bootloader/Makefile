@@ -1,13 +1,13 @@
-PROJECT_NAME     := secure_bootloader_ble_s132_monocle
-TARGETS          := nrf52832_xxaa_s132
-OUTPUT_DIRECTORY := build
-GNU_INSTALL_ROOT :=
-SDK_ROOT := nRF5_SDK_17.1.0_ddde560
-SDK_URL := https://www.nordicsemi.com/-/media/Software-and-other-downloads/SDKs/nRF5/Binaries/$(SDK_ROOT).zip
-PROJ_DIR := .
+PROJECT_NAME = secure_bootloader_ble_s132_monocle
+TARGETS = nrf52832_xxaa_s132
+OUTPUT_DIRECTORY = build
+GNU_INSTALL_ROOT =
+SDK_ROOT = nRF5_SDK_17.1.0_ddde560
+SDK_URL = https://www.nordicsemi.com/-/media/Software-and-other-downloads/SDKs/nRF5/Binaries/$(SDK_ROOT).zip
+PRIVKEY_PEM = published_privkey.pem
+NRFUTIL = nrfutil
 
-$(OUTPUT_DIRECTORY)/nrf52832_xxaa_s132.out: \
-  LINKER_SCRIPT  := secure_bootloader_gcc_nrf52.ld
+LINKER_SCRIPT = secure_bootloader_gcc_nrf52.ld
 
 # Source files common to all targets
 SRC_FILES += \
@@ -83,8 +83,8 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/crypto/backend/oberon/oberon_backend_eddsa.c \
   $(SDK_ROOT)/components/libraries/crypto/backend/oberon/oberon_backend_hash.c \
   $(SDK_ROOT)/components/libraries/crypto/backend/oberon/oberon_backend_hmac.c \
-  $(PROJ_DIR)/dfu_public_key.c \
-  $(PROJ_DIR)/main.c \
+  dfu_public_key.c \
+  main.c \
 
 # Include folders common to all targets
 INC_FOLDERS += \
@@ -135,7 +135,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/external/nano-pb \
   $(SDK_ROOT)/components/libraries/queue \
   $(SDK_ROOT)/components/libraries/ringbuf \
-  $(PROJ_DIR) \
+  . \
 
 # Libraries common to all targets
 LIB_FILES += \
@@ -221,8 +221,7 @@ LIB_FILES += -lc -lnosys -lm
 # Default target - first one defined
 default: nrf52832_xxaa_s132
 
-TEMPLATE_PATH := $(SDK_ROOT)/components/toolchain/gcc
-
+TEMPLATE_PATH = $(SDK_ROOT)/components/toolchain/gcc
 -include $(TEMPLATE_PATH)/Makefile.common
 
 $(foreach target, $(TARGETS), $(call define_target, $(target)))
@@ -235,3 +234,6 @@ download_uecc:
 	git clone https://github.com/kmackay/micro-ecc $(SDK_ROOT)/external/micro-ecc/micro-ecc
 	make -C nRF5_SDK_17.1.0_ddde560/external/micro-ecc/nrf52hf_armgcc/armgcc \
 	    GNU_INSTALL_ROOT=$(GNU_INSTALL_ROOT) \
+
+dfu_public_key.c:
+	$(NRFUTIL) keys display --format code --key pk $(PRIVKEY_PEM) >$@

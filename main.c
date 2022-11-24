@@ -27,7 +27,6 @@
 #include "monocle_spi.h"
 #include "monocle_ble.h"
 #include "monocle_board.h"
-#include "monocle_dfu.h" // debug
 #include "nrf_sdm.h"
 #include "nrfx_systick.h"
 #include "py/compile.h"

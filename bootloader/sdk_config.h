@@ -98,11 +98,9 @@
 //==========================================================
 // <e> NRF_BL_DFU_ENTER_METHOD_BUTTON - Enter DFU mode on button press.
 //==========================================================
-#ifndef NRF_BL_DFU_ENTER_METHOD_BUTTON
-#define NRF_BL_DFU_ENTER_METHOD_BUTTON 1
-#endif
-// <o> NRF_BL_DFU_ENTER_METHOD_BUTTON_PIN  - Button for entering DFU mode.
+#define NRF_BL_DFU_ENTER_METHOD_BUTTON 0
  
+// <o> NRF_BL_DFU_ENTER_METHOD_BUTTON_PIN  - Button for entering DFU mode.
 // <0=> 0 (P0.0) 
 // <1=> 1 (P0.1) 
 // <2=> 2 (P0.2) 
@@ -157,11 +155,8 @@
 #endif
 
 // <q> NRF_BL_DFU_ENTER_METHOD_BUTTONLESS  - Enter DFU mode when the Boolean enter_buttonless_dfu in DFU settings is true.
- 
 
-#ifndef NRF_BL_DFU_ENTER_METHOD_BUTTONLESS
-#define NRF_BL_DFU_ENTER_METHOD_BUTTONLESS 0
-#endif
+#define NRF_BL_DFU_ENTER_METHOD_BUTTONLESS 1
 
 // </h> 
 //==========================================================
@@ -187,7 +182,7 @@
 // <i> If 0, no inactivity timer will be used. Values 1-99 are invalid.
 
 #ifndef NRF_BL_DFU_INACTIVITY_TIMEOUT_MS
-#define NRF_BL_DFU_INACTIVITY_TIMEOUT_MS 120000
+#define NRF_BL_DFU_INACTIVITY_TIMEOUT_MS 15000
 #endif
 
 // </h> 

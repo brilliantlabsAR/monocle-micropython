@@ -23,11 +23,14 @@ JLINKGDBSERVERCL = JLinkGDBServerCLExe
 GDB = gdb-multiarch
 PYTHON = python3
 
-# Complete firmware containing all of the below hex files
+# Complete firmware containing everything.
 FIRMWARE_HEX = build/firmware.hex
 
-# Signed Zip archive of the firmware.
-FIRMWARE_ZIP = build/firmware.zip
+# Hex file with everything to include into a DFU package.
+DFU_PACKAGE_HEX = build/dfu_package.hex
+
+# Signed Zip archive of the merged dfu package hex file.
+DFU_PACKAGE_ZIP = build/dfu_package.zip
 
 # Softdevice binary placed to the flash, imported from the nRF5-SDK
 SOFTDEVICE_HEX = softdevice/$(SD)_nrf52_$(SOFTDEVICE_VERSION)_softdevice.hex
@@ -39,7 +42,7 @@ APPLICATION_HEX := build/application.hex
 BLSETTINGS_HEX := build/blsettings.hex
 
 # Bootloader from Swaralink
-BOOTLOADER_HEX := bootloader/nrf52832_xxaa_s132.hex
+BOOTLOADER_HEX := bootloader/build/nrf52832_xxaa_s132.hex
 
 # Key used by the Swaralink bootloader
 BOOTLOADER_KEY := bootloader/published_privkey.pem
@@ -180,7 +183,7 @@ OBJ += $(PY_O)
 OBJ += $(addprefix build/, $(SRC:.c=.o))
 OBJ += $(addprefix build/, $(SRC_MOD:.c=.o))
 
-all: ${FIRMWARE_HEX}
+all: ${FIRMWARE_HEX} ${DFU_PACKAGE_ZIP}
 
 flash_openocd_stlink:
 	$(OPENOCD) $(OPENOCD_STLINK) $(OPENOCD_FLASH)
@@ -219,11 +222,16 @@ build/application.elf: $(OBJ)
 	$(Q)$(SIZE) $@
 
 ${FIRMWARE_HEX}: $(SOFTDEVICE_HEX) $(BOOTLOADER_HEX) ${APPLICATION_HEX}
-	$(NRFUTIL) settings generate --family NRF52 --application ${APPLICATION_HEX} --application-version 0 --bootloader-version 0 --bl-settings-version 2 $(BLSETTINGS_HEX)
 	$(HEXMERGE) $(APPLICATION_HEX) $(BOOTLOADER_HEX) $(SOFTDEVICE_HEX) $(BLSETTINGS_HEX) -o $@
 
-$(FIRMWARE_ZIP): $(APPLICATION_HEX) $(BOOTLOADER_KEY)
-	$(NRFUTIL) pkg generate --hw-version 52 --application-version 1 --application $(APPLICATION_HEX) --sd-req 0x101 --key-file $(BOOTLOADER_KEY) $@
+$(BLSETTINGS_HEX): $(APPLICATION_HEX)
+	$(NRFUTIL) settings generate --family NRF52 --application ${APPLICATION_HEX} --application-version 0 --bootloader-version 0 --bl-settings-version 2 $@
+
+$(DFU_PACKAGE_HEX): $(APPLICATION_HEX) $(BLSETTINGS_HEX)
+	$(HEXMERGE) $(APPLICATION_HEX) $(BLSETTINGS_HEX) -o $@
+
+$(DFU_PACKAGE_ZIP): $(BOOTLOADER_KEY) $(DFU_PACKAGE_HEX)
+	$(NRFUTIL) pkg generate --hw-version 52 --application-version 1 --application $(DFU_PACKAGE_HEX) --sd-req 0xB6 --key-file $(BOOTLOADER_KEY) $@
 
 .SUFFIXES: .elf .hex
 
