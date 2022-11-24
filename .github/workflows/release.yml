@@ -1,0 +1,63 @@
+name: release_on_tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  firmware_release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt install gcc-arm-none-eabi libnewlib-arm-none-eabi
+          pip install --user nrfutil intelhex
+
+      - name: Build the firmware and issue a release
+        run: |
+          make
+
+      - name: Bump the "latest" version tag
+        run: |
+          git config --global user.name "Release Script"
+          git config --global user.email "<github/workflows/release.yml>"
+          git tag --force latest
+          git push --force --tags
+
+      - name: Create a release
+        id: create_release
+        uses: actions/create-release@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+          draft: false
+          prerelease: false
+
+      - name: Upload firmware.hex
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: build/firmware.hex
+          asset_name: firmware.hex
+          asset_content_type: text/plain
+
+      - name: Upload dfu_package.zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: build/dfu_package.zip
+          asset_name: dfu_package.zip
+          asset_content_type: application/zip

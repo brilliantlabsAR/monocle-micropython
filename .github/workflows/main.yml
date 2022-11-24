@@ -1,0 +1,38 @@
+name: build_on_push
+
+on:
+  push:
+    branches: [ "main", "develop_branch" ]
+  pull_request:
+    branches: [ "main", "develop_branch" ]
+  workflow_dispatch:
+
+jobs:
+  mcu_build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt install gcc-arm-none-eabi libnewlib-arm-none-eabi
+          pip install --user nrfutil intelhex
+
+      - name: Build the firmware and issue a release
+        run: |
+          make
+
+      - name: Upload release.hex
+        uses: actions/upload-artifact@v3
+        with:
+          name: firmware.hex
+          path: build/firmware.hex
+          retention-days: 5
+
+      - name: Upload dfu_package.zip
+        uses: actions/upload-artifact@v3
+        with:
+          name: dfu_package.zip
+          path: build/dfu_package.zip
+          retention-days: 5
