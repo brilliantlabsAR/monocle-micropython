@@ -19,6 +19,13 @@ jobs:
           sudo apt install gcc-arm-none-eabi libnewlib-arm-none-eabi
           pip install --user nrfutil intelhex
 
+      - name: Bootstrap the dependencies
+        run: |
+          git submodule init nrfx
+          git submodule init micropython
+          git submodule update --recursive
+          make -C micropython/ports/nrf/ submodules
+
       - name: Build the firmware and issue a release
         run: |
           make
