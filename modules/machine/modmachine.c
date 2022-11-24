@@ -57,7 +57,8 @@
 
 STATIC uint32_t reset_cause;
 
-void machine_init(void) {
+void machine_init(void)
+{
     uint32_t state = NRF_POWER->RESETREAS;
     if (state & POWER_RESETREAS_RESETPIN_Msk) {
         reset_cause = PYB_RESET_HARD;
@@ -86,55 +87,64 @@ void machine_init(void) {
 }
 
 // Resets the board in a manner similar to pushing the external RESET button.
-STATIC mp_obj_t machine_reset(void) {
+STATIC mp_obj_t machine_reset(void)
+{
     NVIC_SystemReset();
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(machine_reset_obj, machine_reset);
 
-STATIC mp_obj_t machine_soft_reset(void) {
+STATIC mp_obj_t machine_soft_reset(void)
+{
     pyexec_system_exit = PYEXEC_FORCED_EXIT;
     mp_raise_type(&mp_type_SystemExit);
 }
 MP_DEFINE_CONST_FUN_OBJ_0(machine_soft_reset_obj, machine_soft_reset);
 
-NORETURN mp_obj_t machine_bootloader(size_t n_args, const mp_obj_t *args) {
+NORETURN mp_obj_t machine_bootloader(size_t n_args, const mp_obj_t *args)
+{
     MICROPY_BOARD_ENTER_BOOTLOADER(n_args, args);
     for (;;) {
     }
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_bootloader_obj, 0, 1, machine_bootloader);
 
-STATIC mp_obj_t machine_lightsleep(void) {
+STATIC mp_obj_t machine_lightsleep(void)
+{
     __WFE();
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(machine_lightsleep_obj, machine_lightsleep);
 
-STATIC mp_obj_t machine_deepsleep(void) {
+STATIC mp_obj_t machine_deepsleep(void)
+{
     __WFI();
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(machine_deepsleep_obj, machine_deepsleep);
 
-STATIC mp_obj_t machine_reset_cause(void) {
+STATIC mp_obj_t machine_reset_cause(void)
+{
     return MP_OBJ_NEW_SMALL_INT(reset_cause);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_reset_cause_obj, machine_reset_cause);
 
-STATIC mp_obj_t machine_update(void) {
+STATIC mp_obj_t machine_update(void)
+{
     dfu_reboot_bootloader();
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(machine_update_obj, machine_update);
 
-STATIC mp_obj_t machine_enable_irq(void) {
+STATIC mp_obj_t machine_enable_irq(void)
+{
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(machine_enable_irq_obj, machine_enable_irq);
 
 // Resets the board in a manner similar to pushing the external RESET button.
-STATIC mp_obj_t machine_disable_irq(void) {
+STATIC mp_obj_t machine_disable_irq(void)
+{
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(machine_disable_irq_obj, machine_disable_irq);
