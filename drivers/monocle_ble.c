@@ -38,7 +38,7 @@ typedef struct {
 } ble_service_t;
 
 /** List of all services we might get a connection for. */
-static ble_service_t ble_nus_service, ble_raw_service; // TODO: initialise handle with "INVALID_SERVICE"
+static ble_service_t ble_nus_service, ble_raw_service;
 
 /** Identifier for the active connection with a single device. */
 uint16_t ble_conn_handle = BLE_CONN_HANDLE_INVALID;
@@ -188,24 +188,22 @@ bool ble_nus_is_rx_pending(void)
 // Global Bluetooth Low Energy setup
 
 // Advertising data which needs to stay in scope between connections.
-static struct {
-    uint8_t len;
-    uint8_t buf[BLE_ADV_MAX_SIZE];
-} adv;
+uint8_t ble_adv_len;
+uint8_t ble_adv_buf[BLE_ADV_MAX_SIZE];
 
 static inline void ble_adv_add_device_name(const char *name)
 {
-    adv.buf[adv.len++] = 1 + strlen(name);
-    adv.buf[adv.len++] = BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME;
-    memcpy(&adv.buf[adv.len], name, strlen(name));
-    adv.len += strlen(name);
+    ble_adv_buf[ble_adv_len++] = 1 + strlen(name);
+    ble_adv_buf[ble_adv_len++] = BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME;
+    memcpy(&ble_adv_buf[ble_adv_len], name, strlen(name));
+    ble_adv_len += strlen(name);
 }
 
 static inline void ble_adv_add_discovery_mode(void)
 {
-    adv.buf[adv.len++] = 2;
-    adv.buf[adv.len++] = BLE_GAP_AD_TYPE_FLAGS;
-    adv.buf[adv.len++] = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+    ble_adv_buf[ble_adv_len++] = 2;
+    ble_adv_buf[ble_adv_len++] = BLE_GAP_AD_TYPE_FLAGS;
+    ble_adv_buf[ble_adv_len++] = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 }
 
 static inline void ble_adv_add_uuid(ble_uuid_t *uuid)
@@ -214,23 +212,23 @@ static inline void ble_adv_add_uuid(ble_uuid_t *uuid)
     uint8_t len;
     uint8_t *p_adv_size;
 
-    p_adv_size = &adv.buf[adv.len];
-    adv.buf[adv.len++] = 1;
-    adv.buf[adv.len++] = BLE_GAP_AD_TYPE_128BIT_SERVICE_UUID_MORE_AVAILABLE;
+    p_adv_size = &ble_adv_buf[ble_adv_len];
+    ble_adv_buf[ble_adv_len++] = 1;
+    ble_adv_buf[ble_adv_len++] = BLE_GAP_AD_TYPE_128BIT_SERVICE_UUID_MORE_AVAILABLE;
 
-    err = sd_ble_uuid_encode(uuid, &len, &adv.buf[adv.len]);
+    err = sd_ble_uuid_encode(uuid, &len, &ble_adv_buf[ble_adv_len]);
     NRFX_ASSERT(!err);
-    adv.len += len;
+    ble_adv_len += len;
     *p_adv_size += len;
 }
 
-static inline void ble_adv_submit()
+static inline void ble_adv_start(void)
 {
     uint32_t err;
 
     ble_gap_adv_data_t adv_data = {
-        .adv_data.p_data = adv.buf,
-        .adv_data.len = adv.len,
+        .adv_data.p_data = ble_adv_buf,
+        .adv_data.len = ble_adv_len,
     };
 
     // Set up advertising parameters
@@ -242,6 +240,10 @@ static inline void ble_adv_submit()
 
     // Configure the advertising set
     err = sd_ble_gap_adv_set_configure(&ble_adv_handle, &adv_data, &adv_params);
+    NRFX_ASSERT(!err);
+
+    // Start the configured BLE advertisement
+    err = sd_ble_gap_adv_start(ble_adv_handle, 1);
     NRFX_ASSERT(!err);
 }
 
@@ -492,11 +494,7 @@ void ble_init(void)
     ble_adv_add_uuid(&nus_service_uuid);
 
     // Submit the adv now that it is complete.
-    ble_adv_submit();
-
-    // Start the configured BLE advertisement
-    err = sd_ble_gap_adv_start(ble_adv_handle, 1);
-    NRFX_ASSERT(!err);
+    ble_adv_start();
 }
 
 /**
