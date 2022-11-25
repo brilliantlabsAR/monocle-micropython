@@ -110,6 +110,10 @@ void ble_nus_flush_tx(void)
     uint16_t out_len = 0;
     ble_service_t *service = &ble_nus_service;
 
+    // If not connected, do not flush.
+    if (ble_conn_handle == BLE_CONN_HANDLE_INVALID)
+        return;
+
     // If there's no data to send, simply return
     if (ring_empty(&nus_tx))
         return;
@@ -135,7 +139,6 @@ void ble_nus_flush_tx(void)
     uint32_t err;
     do {
         NRFX_ASSERT(ble_conn_handle != BLE_CONN_HANDLE_INVALID);
-        NRFX_ASSERT(ble_conn_handle == 0);
 
         // Send the data
         err = sd_ble_gatts_hvx(ble_conn_handle, &hvx_params);
