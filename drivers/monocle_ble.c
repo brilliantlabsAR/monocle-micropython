@@ -431,7 +431,7 @@ void ble_init(void)
         .source = NRF_CLOCK_LF_SRC_XTAL,
         .rc_ctiv = 0,
         .rc_temp_ctiv = 0,
-        .accuracy = NRF_CLOCK_LF_ACCURACY_20_PPM
+        .accuracy = NRF_CLOCK_LF_ACCURACY_10_PPM
     };
 
     // Enable the softdevice
