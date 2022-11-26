@@ -647,7 +647,7 @@ void SWI2_IRQHandler(void)
         case BLE_GATTS_EVT_TIMEOUT:
         {
             NRFX_ASSERT(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-            err = sd_ble_gap_disconnect(ble_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+            //err = sd_ble_gap_disconnect(ble_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
             NRFX_ASSERT(!err);
             break;
         }

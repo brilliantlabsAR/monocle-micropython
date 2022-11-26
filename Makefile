@@ -9,8 +9,8 @@ include micropython/extmod/extmod.mk
 include micropython/py/py.mk
 
 NRF = 52832
-SD = s140
-SOFTDEVICE_VERSION = 6.1.1
+SD = s132
+SOFTDEVICE_VERSION = 7.3.0
 HEXMERGE = hexmerge.py --overlap=ignore
 OPENOCD = openocd
 OPENOCD_FLASH = -c "init; nrf52_recover; program build/firmware.hex verify; exit"
@@ -33,7 +33,7 @@ DFU_PACKAGE_HEX = build/dfu_package.hex
 DFU_PACKAGE_ZIP = build/dfu_package.zip
 
 # Softdevice binary placed to the flash, imported from the nRF5-SDK
-SOFTDEVICE_HEX = softdevice/$(SD)_nrf52_$(SOFTDEVICE_VERSION)_softdevice.hex
+SOFTDEVICE_HEX = $(SD)/$(SD)_nrf52_$(SOFTDEVICE_VERSION)_softdevice.hex
 
 # Application built by this Makefile
 APPLICATION_HEX := build/application.hex
@@ -86,15 +86,15 @@ INC += -Inrfx/drivers/include
 INC += -Inrfx/drivers/src
 INC += -Inrfx/hal
 INC += -Inrfx/mdk
-INC += -Isoftdevice/include
-INC += -Isoftdevice/include/nrf52
+INC += -I$(SD)/include
+INC += -I$(SD)/include/nrf52
 
 DEF += -DNRF$(NRF)_XXAA
 DEF += -DNRF$(NRF)
 DEF += -DCONFIG_GPIO_AS_PINRESET
 DEF += -DNRF5_HAL_H="<nrf$(NRF)_hal.h>"
 DEF += -DSOFTDEVICE_PRESENT
-DEF += -DBLUETOOTH_SD=140
+DEF += -DBLUETOOTH_SD=132
 DEF += -DBLUETOOTH_SD_DEBUG=1
 DEF += -DMICROPY_QSTR_EXTRA_POOL=mp_qstr_frozen_const_pool
 DEF += -DMICROPY_MODULE_FROZEN_MPY

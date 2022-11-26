@@ -108,7 +108,7 @@ void board_init(void)
     // Needs: power, spi
     fpga_init();
 
-    return; // debug: I need to get the FPGA running
+    return; // debug
 
     fpga_xclk_on();
 
@@ -119,7 +119,7 @@ void board_init(void)
 
     // Initialise the SPI conection to the flash.
     // Needs: power
-    //flash_init();
+    flash_init();
 }
 
 void board_deinit(void)

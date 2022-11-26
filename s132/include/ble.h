@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 - 2018, Nordic Semiconductor ASA
+ * Copyright (c) Nordic Semiconductor ASA
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -89,8 +89,9 @@ enum BLE_COMMON_SVCS
  */
 enum BLE_COMMON_EVTS
 {
-  BLE_EVT_USER_MEM_REQUEST = BLE_EVT_BASE + 0,   /**< User Memory request. @ref ble_evt_user_mem_request_t */
-  BLE_EVT_USER_MEM_RELEASE = BLE_EVT_BASE + 1,   /**< User Memory release. @ref ble_evt_user_mem_release_t */
+  BLE_EVT_USER_MEM_REQUEST = BLE_EVT_BASE + 0,   /**< User Memory request. See @ref ble_evt_user_mem_request_t 
+                                                   \n Reply with @ref sd_ble_user_mem_reply. */
+  BLE_EVT_USER_MEM_RELEASE = BLE_EVT_BASE + 1,   /**< User Memory release. See @ref ble_evt_user_mem_release_t */
 };
 
 /**@brief BLE Connection Configuration IDs.
@@ -123,7 +124,6 @@ enum BLE_COMMON_OPTS
   BLE_COMMON_OPT_PA_LNA          = BLE_OPT_BASE + 0, /**< PA and LNA options */
   BLE_COMMON_OPT_CONN_EVT_EXT    = BLE_OPT_BASE + 1, /**< Extended connection events option */
   BLE_COMMON_OPT_EXTENDED_RC_CAL = BLE_OPT_BASE + 2, /**< Extended RC calibration option */
-  BLE_COMMON_OPT_ADV_SCHED_CFG   = BLE_OPT_BASE + 3, /**< Advertiser role scheduling configuration option */
 };
 
 /** @} */
@@ -146,12 +146,6 @@ enum BLE_COMMON_OPTS
 #define BLE_EVT_LEN_MAX(ATT_MTU) ( \
     offsetof(ble_evt_t, evt.gattc_evt.params.prim_srvc_disc_rsp.services) + ((ATT_MTU) - 1) / 4 * sizeof(ble_gattc_service_t) \
 )
-
-/** @defgroup ADV_SCHED_CFG Advertiser Role Scheduling Configuration
- * @{ */
-#define ADV_SCHED_CFG_DEFAULT  0  /**< Default advertiser role scheduling configuration. */
-#define ADV_SCHED_CFG_IMPROVED 1  /**< Improved advertiser role scheduling configuration in which the housekeeping time is reduced. */
-/** @} */
 
 /** @defgroup BLE_USER_MEM_TYPES User Memory Types
  * @{ */
@@ -310,23 +304,12 @@ typedef struct
    uint8_t enable : 1; /**< Enable extended RC calibration, enabled by default. */
 } ble_common_opt_extended_rc_cal_t;
 
-/**
- * @brief Configuration of BLE advertiser role scheduling.
- *
- * @note @ref sd_ble_opt_get is not supported for this option.
- */
-typedef struct
-{
-  uint8_t sched_cfg;  /**< See @ref ADV_SCHED_CFG. */
-} ble_common_opt_adv_sched_cfg_t;
-
 /**@brief Option structure for common options. */
 typedef union
 {
   ble_common_opt_pa_lna_t          pa_lna;          /**< Parameters for controlling PA and LNA pin toggling. */
   ble_common_opt_conn_evt_ext_t    conn_evt_ext;    /**< Parameters for enabling extended connection events. */
   ble_common_opt_extended_rc_cal_t extended_rc_cal; /**< Parameters for enabling extended RC calibration. */
-  ble_common_opt_adv_sched_cfg_t   adv_sched_cfg;   /**< Parameters for configuring advertiser role scheduling. */
 } ble_common_opt_t;
 
 /**@brief Common BLE Option type, wrapping the module specific options. */
@@ -334,6 +317,7 @@ typedef union
 {
   ble_common_opt_t  common_opt;         /**< COMMON options, opt_id in @ref BLE_COMMON_OPTS series. */
   ble_gap_opt_t     gap_opt;            /**< GAP option, opt_id in @ref BLE_GAP_OPTS series. */
+  ble_gattc_opt_t   gattc_opt;          /**< GATTC option, opt_id in @ref BLE_GATTC_OPTS series. */
 } ble_opt_t;
 
 /**@brief BLE connection configuration type, wrapping the module specific configurations, set with
@@ -406,6 +390,21 @@ typedef union
  *                                  application RAM region (APP_RAM_BASE). On return, this will
  *                                  contain the minimum start address of the application RAM region
  *                                  required by the SoftDevice for this configuration.
+ * @warning After this call, the SoftDevice may generate several events. The list of events provided 
+ *          below require the application to initiate a SoftDevice API call. The corresponding API call 
+ *          is referenced in the event documentation. 
+ *          If the application fails to do so, the BLE connection may timeout, or the SoftDevice may stop 
+ *          communicating with the peer device.
+ *          - @ref BLE_GAP_EVT_CONN_PARAM_UPDATE_REQUEST
+ *          - @ref BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST
+ *          - @ref BLE_GAP_EVT_PHY_UPDATE_REQUEST
+ *          - @ref BLE_GAP_EVT_SEC_PARAMS_REQUEST
+ *          - @ref BLE_GAP_EVT_SEC_INFO_REQUEST
+ *          - @ref BLE_GAP_EVT_SEC_REQUEST
+ *          - @ref BLE_GAP_EVT_AUTH_KEY_REQUEST
+ *          - @ref BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST
+ *          - @ref BLE_EVT_USER_MEM_REQUEST
+ *          - @ref BLE_L2CAP_EVT_CH_SETUP_REQUEST
  *
  * @note The memory requirement for a specific configuration will not increase between SoftDevices
  *       with the same major version number.
@@ -539,31 +538,30 @@ SVCALL(SD_BLE_UUID_VS_ADD, uint32_t, sd_ble_uuid_vs_add(ble_uuid128_t const *p_v
 
 
 /**@brief Remove a Vendor Specific base UUID.
- * 
- * @details This call removes a Vendor Specific base UUID that has been added with @ref sd_ble_uuid_vs_add. This function allows
+ *
+ * @details This call removes a Vendor Specific base UUID. This function allows
  * the application to reuse memory allocated for Vendor Specific base UUIDs.
  *
  * @note Currently this function can only be called with a p_uuid_type set to @ref BLE_UUID_TYPE_UNKNOWN or the last added UUID type.
  *
- * @param[in]  p_uuid_type  Pointer to a uint8_t where the type field in @ref ble_uuid_t::type corresponds to the UUID type that
- *                          shall be removed. If the type is set to @ref BLE_UUID_TYPE_UNKNOWN, or the pointer is NULL, the last
- *                          Vendor Specific base UUID will be removed.
- * @param[out] p_uuid_type  Pointer to a uint8_t where the type field in @ref ble_uuid_t corresponds to the UUID type that was
- *                          removed. If function returns with a failure, it contains the last type that is in use by the ATT Server.
+ * @param[inout] p_uuid_type Pointer to a uint8_t where its value matches the UUID type in @ref ble_uuid_t::type to be removed.
+ *                           If the type is set to @ref BLE_UUID_TYPE_UNKNOWN, or the pointer is NULL, the last Vendor Specific
+ *                           base UUID will be removed. If the function returns successfully, the UUID type that was removed will
+ *                           be written back to @p p_uuid_type. If function returns with a failure, it contains the last type that
+ *                           is in use by the ATT Server.
  *
  * @retval ::NRF_SUCCESS Successfully removed the Vendor Specific base UUID.
  * @retval ::NRF_ERROR_INVALID_ADDR If p_uuid_type is invalid.
  * @retval ::NRF_ERROR_INVALID_PARAM If p_uuid_type points to a non-valid UUID type.
  * @retval ::NRF_ERROR_FORBIDDEN If the Vendor Specific base UUID is in use by the ATT Server.
  */
-
 SVCALL(SD_BLE_UUID_VS_REMOVE, uint32_t, sd_ble_uuid_vs_remove(uint8_t *p_uuid_type));
 
 
 /** @brief Decode little endian raw UUID bytes (16-bit or 128-bit) into a 24 bit @ref ble_uuid_t structure.
  *
  * @details The raw UUID bytes excluding bytes 12 and 13 (i.e. bytes 0-11 and 14-15) of p_uuid_le are compared
- * to the corresponding ones in each entry of the table of Vendor Specific base UUIDs populated with @ref sd_ble_uuid_vs_add
+ * to the corresponding ones in each entry of the table of Vendor Specific base UUIDs
  * to look for a match. If there is such a match, bytes 12 and 13 are returned as p_uuid->uuid and the index
  * relative to @ref BLE_UUID_TYPE_VENDOR_BEGIN as p_uuid->type.
  *
@@ -638,12 +636,8 @@ SVCALL(SD_BLE_USER_MEM_REPLY, uint32_t, sd_ble_user_mem_reply(uint16_t conn_hand
  *
  * @details This call allows the application to set the value of an option.
  *
- * @mscs
- * @mmsc{@ref BLE_GAP_PERIPH_BONDING_STATIC_PK_MSC}
- * @endmscs
- *
- * @param[in] opt_id Option ID, see @ref BLE_COMMON_OPTS and @ref BLE_GAP_OPTS.
- * @param[in] p_opt Pointer to a ble_opt_t structure containing the option value.
+ * @param[in] opt_id Option ID, see @ref BLE_COMMON_OPTS, @ref BLE_GAP_OPTS, and @ref BLE_GATTC_OPTS.
+ * @param[in] p_opt Pointer to a @ref ble_opt_t structure containing the option value.
  *
  * @retval ::NRF_SUCCESS  Option set successfully.
  * @retval ::NRF_ERROR_INVALID_ADDR Invalid pointer supplied.

@@ -45,12 +45,19 @@ STATIC mp_obj_t machine_fpga_read_byte(mp_obj_t addr_obj)
     return mp_obj_new_int(byte);
 }
 
+STATIC mp_obj_t machine_fpga_test(void)
+{
+    return mp_const_none;
+}
+
 MP_DEFINE_CONST_FUN_OBJ_1(machine_fpga_read_byte_obj, &machine_fpga_read_byte);
 MP_DEFINE_CONST_FUN_OBJ_2(machine_fpga_write_byte_obj, &machine_fpga_write_byte);
+MP_DEFINE_CONST_FUN_OBJ_0(machine_fpga_test_obj, &machine_fpga_test);
 
 STATIC const mp_rom_map_elem_t machine_fpga_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_write_byte),     MP_ROM_PTR(&machine_fpga_read_byte_obj) },
-    { MP_ROM_QSTR(MP_QSTR_read_byte),     MP_ROM_PTR(&machine_fpga_write_byte_obj) },
+    { MP_ROM_QSTR(MP_QSTR_write_byte),  MP_ROM_PTR(&machine_fpga_write_byte_obj) },
+    { MP_ROM_QSTR(MP_QSTR_read_byte),   MP_ROM_PTR(&machine_fpga_read_byte_obj) },
+    { MP_ROM_QSTR(MP_QSTR_test),        MP_ROM_PTR(&machine_fpga_test_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(machine_fpga_locals_dict, machine_fpga_locals_dict_table);
 

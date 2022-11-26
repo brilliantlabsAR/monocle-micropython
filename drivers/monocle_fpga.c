@@ -193,7 +193,6 @@ void fpga_prepare(void)
         NRF_GPIO_PIN_S0S1,
         NRF_GPIO_PIN_NOSENSE
     );
-    fpga_check_pin(FPGA_MODE1_PIN);
 
     // Let the FPGA start as soon as it has the power on.
     nrf_gpio_pin_set(FPGA_RECONFIG_N_PIN);
@@ -205,7 +204,6 @@ void fpga_prepare(void)
         NRF_GPIO_PIN_S0S1,
         NRF_GPIO_PIN_NOSENSE
     );
-    fpga_check_pin(FPGA_RECONFIG_N_PIN);
 }
 
 /**
@@ -213,6 +211,9 @@ void fpga_prepare(void)
  */
 void fpga_init(void)
 {
+    fpga_check_pin(FPGA_MODE1_PIN);
+    fpga_check_pin(FPGA_RECONFIG_N_PIN);
+
     // Set the FPGA to boot from its internal flash.
     nrf_gpio_pin_clear(FPGA_MODE1_PIN);
     nrfx_systick_delay_ms(1);
@@ -342,18 +343,6 @@ void fpga_disp_bars(void)
 {
     fpga_write_byte(FPGA_DISPLAY_CONTROL, FPGA_DISP_BARS);
 }
-
-#ifndef FPGA_RELEASE_20210709 // TODO: Remove this?
-/**
- * Enable the red-blue shift chrominance correction.
- */
-void fpga_disp_rb_shift(bool on)
-{
-    uint8_t reg = fpga_read_byte(FPGA_DISPLAY_CONTROL);
-    reg = on ? (reg | FPGA_EN_RB_SHIFT) : (reg & ~FPGA_EN_RB_SHIFT);
-    fpga_write_byte(FPGA_DISPLAY_CONTROL, reg);
-}
-#endif
 
 /**
  * Disable the red-blue shift chrominace correction.
@@ -556,13 +545,4 @@ void fpga_get_version(uint8_t *major, uint8_t *minor)
     *major = fpga_read_byte(FPGA_VERSION_MAJOR);
     *minor = fpga_read_byte(FPGA_VERSION_MINOR);
     LOG("%d.%d", *major, *minor);
-}
-
-/**
- * Inform the FPGA to discard the oldest capture buffer.
- * For now, the FPGA only supports one buffer, and it is discarded when a new capture is made.
- */
-void fpga_discard_buffer(void)
-{
-    // TODO:
 }

@@ -19,7 +19,7 @@
  * @{
  */
 
-#define fpga_check_pin(pin) LOG("%s=%d=%d", #pin, pin, nrf_gpio_pin_read(pin))
+#define fpga_check_pin(pin) LOG("pin%d %-s is 0x%25d", pin, #pin, nrf_gpio_pin_read(pin))
 
 /** number of capture buffers supported */
 #define FPGA_BUFFERS_SUPPORTED    1 // single buffer
