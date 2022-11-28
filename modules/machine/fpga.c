@@ -6,6 +6,8 @@
 #include "py/obj.h"
 #include "py/runtime.h"
 #include "monocle_fpga.h"
+#include "monocle_config.h"
+#include "nrfx_log.h"
 
 STATIC mp_obj_t machine_fpga_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args)
 {
@@ -14,6 +16,36 @@ STATIC mp_obj_t machine_fpga_make_new(const mp_obj_type_t *type, size_t n_args, 
 
     // Parse args.
     mp_arg_check_num(n_args, n_kw, 0, 0, false);
+
+    fpga_init();
+    fpga_check_reg(FPGA_SYSTEM_CONTROL);
+    fpga_check_reg(FPGA_DISPLAY_CONTROL);
+    fpga_check_reg(FPGA_MEMORY_CONTROL);
+    fpga_check_reg(FPGA_LED_CONTROL);
+    fpga_check_reg(FPGA_CAMERA_CONTROL);
+    fpga_check_reg(FPGA_SYSTEM_STATUS);
+    fpga_check_reg(FPGA_WR_BURST_SIZE_LO);
+    fpga_check_reg(FPGA_WR_BURST_SIZE_HI);
+    fpga_check_reg(FPGA_BURST_WR_DATA);
+    fpga_check_reg(FPGA_RD_BURST_SIZE_LO);
+    fpga_check_reg(FPGA_RD_BURST_SIZE_HI);
+    fpga_check_reg(FPGA_BURST_RD_DATA);
+    fpga_check_reg(FPGA_CAPTURE_CONTROL);
+    fpga_check_reg(FPGA_CAPTURE_STATUS);
+    fpga_check_reg(FPGA_CAPTURE_SIZE_0);
+    fpga_check_reg(FPGA_CAPTURE_SIZE_1);
+    fpga_check_reg(FPGA_CAPTURE_SIZE_2);
+    fpga_check_reg(FPGA_CAPTURE_SIZE_3);
+    fpga_check_reg(FPGA_CAPT_FRM_CHECKSUM_0);
+    fpga_check_reg(FPGA_CAPT_FRM_CHECKSUM_1);
+    fpga_check_reg(FPGA_REPLAY_RATE_CONTROL);
+    fpga_check_reg(FPGA_MIC_CONTROL);
+    fpga_check_reg(FPGA_CAPT_BYTE_COUNT_0);
+    fpga_check_reg(FPGA_CAPT_BYTE_COUNT_1);
+    fpga_check_reg(FPGA_CAPT_BYTE_COUNT_2);
+    fpga_check_reg(FPGA_CAPT_BYTE_COUNT_3);
+    fpga_check_reg(FPGA_VERSION_MINOR);
+    fpga_check_reg(FPGA_VERSION_MAJOR);
 
     // Return the newly created object.
     return MP_OBJ_FROM_PTR(NULL);
@@ -45,19 +77,12 @@ STATIC mp_obj_t machine_fpga_read_byte(mp_obj_t addr_obj)
     return mp_obj_new_int(byte);
 }
 
-STATIC mp_obj_t machine_fpga_test(void)
-{
-    return mp_const_none;
-}
-
 MP_DEFINE_CONST_FUN_OBJ_1(machine_fpga_read_byte_obj, &machine_fpga_read_byte);
 MP_DEFINE_CONST_FUN_OBJ_2(machine_fpga_write_byte_obj, &machine_fpga_write_byte);
-MP_DEFINE_CONST_FUN_OBJ_0(machine_fpga_test_obj, &machine_fpga_test);
 
 STATIC const mp_rom_map_elem_t machine_fpga_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_write_byte),  MP_ROM_PTR(&machine_fpga_write_byte_obj) },
     { MP_ROM_QSTR(MP_QSTR_read_byte),   MP_ROM_PTR(&machine_fpga_read_byte_obj) },
-    { MP_ROM_QSTR(MP_QSTR_test),        MP_ROM_PTR(&machine_fpga_test_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(machine_fpga_locals_dict, machine_fpga_locals_dict_table);
 

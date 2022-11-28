@@ -601,6 +601,9 @@ void max77654_init(void)
 
     // Power Rail Configuration
 
+    // Works best for MK12! 
+    max77654_write(MAX77654_CNFG_SBB_TOP_REG, 0x0);
+
     // Power Rail: 2.7V
     // set SBB0 to 2.7V, buck, 333mA, active discharge, OFF
     max77654_write(MAX77654_CNFG_SBB0_A_REG, MAX77654_CNFG_SBB_A_TV_2V7);

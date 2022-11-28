@@ -40,8 +40,8 @@ void board_power_on(void)
     nrfx_systick_delay_ms(20);
 
     // Used by the display.
-    max77654_rail_10v(true);
-    nrfx_systick_delay_ms(20);
+    //max77654_rail_10v(true);
+    //nrfx_systick_delay_ms(20);
 
     // Used by the red and green LEDs.
     max77654_rail_vled(true);
@@ -104,11 +104,11 @@ void board_init(void)
     // Custom wrapper around SPI used by the other drivers.
     spi_init();
 
+    return; // debug
+
     // Initialise the FPGA: providing the clock for the display and screen.
     // Needs: power, spi
     fpga_init();
-
-    return; // debug
 
     fpga_xclk_on();
 

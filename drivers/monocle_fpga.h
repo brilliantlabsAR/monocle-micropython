@@ -19,7 +19,7 @@
  * @{
  */
 
-#define fpga_check_pin(pin) LOG("pin%d %-s is 0x%25d", pin, #pin, nrf_gpio_pin_read(pin))
+#define fpga_check_reg(reg) NRFX_LOG_ERROR("spi0x%02X %-s is %d", reg, #reg, fpga_read_byte(reg))
 
 /** number of capture buffers supported */
 #define FPGA_BUFFERS_SUPPORTED    1 // single buffer
@@ -174,7 +174,6 @@ bool fpga_is_buffer_read_done(void);
 // for validation testing
 bool fpga_test_reset(void);
 
-void fpga_soft_reset(void);
 bool fpga_ram_check(void);
 void fpga_xclk_on(void);
 void fpga_camera_on(void);
@@ -208,6 +207,9 @@ void fpga_set_display(uint8_t mode);
 // TODO: future implementation (refer to monocal_mrb branch)
 void fpga_get_version(uint8_t *major, uint8_t *minor);
 void fpga_discard_buffer(void);
+
+// debug
+void fpga_check_pins(char const *msg);
 
 /** @} */
 #endif

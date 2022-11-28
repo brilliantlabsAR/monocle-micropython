@@ -13,6 +13,28 @@
 
 #define LOG NRFX_LOG_ERROR
 
+void fpga_check_pins(char const *msg)
+{
+    static bool first = true;
+
+    if (first) {
+        LOG("| INT   |       | MODE1 |       |       |");
+        LOG("| RECFG | SCK   | CSN   | MOSI  | MISO  |");
+        LOG("+-------+-------+-------+-------+-------+");
+        LOG("| P0.05 | P0.07 | P0.08 | P0.09 | P0.10 |");
+        LOG("+=======+=======+=======+=======+=======+");
+        first = false;
+    }
+    LOG("|  %3d  |  %3d  |  %3d  |  %3d  |  %3d  | %s",
+        nrf_gpio_pin_read(5),
+        nrf_gpio_pin_read(7),
+        nrf_gpio_pin_read(8),
+        nrf_gpio_pin_read(9),
+        nrf_gpio_pin_read(10),
+        msg
+    );
+}
+
 /**
  * Write a byte to the FPGA over SPI using a bridge protocol.
  * @param addr The address of the FPGA to write to.
@@ -26,7 +48,6 @@ void fpga_write_byte(uint8_t addr, uint8_t byte)
     // select FPGA on SPI bus and write to it.
     spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
     spi_write_byte(addr, byte);
-    LOG("addr=0x02%X, byte=0x02%X", addr, byte);
 }
 
 /**
@@ -45,7 +66,6 @@ uint8_t fpga_read_byte(uint8_t addr)
     spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
 
     byte = spi_read_byte(addr);
-    LOG("addr=0x02%X, byte=0x02%X", addr, byte);
     return byte;
 }
 
@@ -140,51 +160,13 @@ bool fpga_is_buffer_read_done(void)
     //return (fpga_read_byte(FPGA_CAPTURE_STATUS) & (FPGA_AUDIO_CAPT_DONE));
 }
 
-// testing functions
-bool fpga_test_reset(void)
-{
-    // currently this register does nothing, can be used for test
-    fpga_write_byte(FPGA_MEMORY_CONTROL, 0xBB);
-    if (0xBB != fpga_read_byte(FPGA_MEMORY_CONTROL))
-        return (false);
-    // this will turn on XCLK
-    fpga_write_byte(FPGA_CAMERA_CONTROL, 0x01);
-    if (0x01 != fpga_read_byte(FPGA_CAMERA_CONTROL))
-        return (false);
-
-    fpga_soft_reset();
-
-    // check registers all have default values
-    if (fpga_read_byte(FPGA_SYSTEM_CONTROL) != FPGA_SYSTEM_CONTROL_DEFAULT)
-        return (false);
-    if (fpga_read_byte(FPGA_DISPLAY_CONTROL) != FPGA_DISPLAY_CONTROL_DEFAULT)
-        return (false);
-    if (fpga_read_byte(FPGA_MEMORY_CONTROL) != FPGA_MEMORY_CONTROL_DEFAULT)
-        return (false);
-    if (fpga_read_byte(FPGA_CAMERA_CONTROL) != FPGA_CAMERA_CONTROL_DEFAULT)
-        return (false);
-    // moved this to memory self-test, since bit FPGA_MEM_INIT_DONE will not be set if memory initialization fails
-    //if (FPGA_SYSTEM_STATUS_DEFAULT != fpga_read_byte(FPGA_SYSTEM_STATUS))
-    //    return (false);
-    return (true);
-}
-
-bool fpga_ram_check(void)
-{
-    //first check that memory initialization succeeded
-    // NOTE as of 2021-10-28, FPGA IP only supports one memory chip, so on MK11 only uses U10
-    // run memory self-test
-    // TODO: requires FPGA code support
-    return (fpga_read_byte(FPGA_SYSTEM_STATUS) == FPGA_SYSTEM_STATUS_DEFAULT);
-}
-
 /**
  * Preparations for GPIO pins before to power-on the FPGA.
  */
 void fpga_prepare(void)
 {
     // MODE1 set low for AUTOBOOT from FPGA internal flash
-    nrf_gpio_pin_clear(FPGA_MODE1_PIN);
+    nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
     nrf_gpio_cfg(
         FPGA_MODE1_PIN,
         NRF_GPIO_PIN_DIR_OUTPUT,
@@ -195,7 +177,7 @@ void fpga_prepare(void)
     );
 
     // Let the FPGA start as soon as it has the power on.
-    nrf_gpio_pin_set(FPGA_RECONFIG_N_PIN);
+    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
     nrf_gpio_cfg(
         FPGA_RECONFIG_N_PIN,
         NRF_GPIO_PIN_DIR_OUTPUT,
@@ -206,54 +188,16 @@ void fpga_prepare(void)
     );
 }
 
-/**
- * Initial configuration of the registers of the FPGA.
- */
-void fpga_init(void)
-{
-    fpga_check_pin(FPGA_MODE1_PIN);
-    fpga_check_pin(FPGA_RECONFIG_N_PIN);
-
-    // Set the FPGA to boot from its internal flash.
-    nrf_gpio_pin_clear(FPGA_MODE1_PIN);
-    nrfx_systick_delay_ms(1);
-    fpga_check_pin(FPGA_MODE1_PIN);
-
-    // Issue a "reconfig" pulse.
-    // Datasheet UG290E: T_recfglw >= 70 us
-    nrf_gpio_pin_clear(FPGA_RECONFIG_N_PIN);
-    nrfx_systick_delay_ms(100); // 1000 times more than needed
-    nrf_gpio_pin_set(FPGA_RECONFIG_N_PIN);
-    fpga_check_pin(FPGA_RECONFIG_N_PIN);
-
-    // Give the FPGA some time to boot.
-    // Datasheet UG290E: T_recfgtdonel <= 
-    nrfx_systick_delay_ms(100);
-    fpga_check_pin(FPGA_MODE1_PIN);
-    fpga_check_pin(FPGA_RECONFIG_N_PIN);
-
-    // Set all registers to a known state.
-    fpga_soft_reset();
-
-    // Give the FPGA some further time.
-    nrfx_systick_delay_ms(10);
-}
-
-void fpga_deinit(void)
-{
-    nrf_gpio_cfg_default(FPGA_MODE1_PIN);
-    nrf_gpio_cfg_default(FPGA_RECONFIG_N_PIN);
-}
-
-void fpga_soft_reset(void)
+static void fpga_reset(void)
 {
     // reset FPGA
+    fpga_check_pins("will write 0x01 to FPGA_SYSTEM_CONTROL");
     fpga_write_byte(FPGA_SYSTEM_CONTROL, 0x01);
 
     // TODO: not sure if we need this, but just in case...
     nrfx_systick_delay_ms(185);
-
     // clear the reset (needed for some FPGA projects, like OLED unit test)
+    fpga_check_pins("will write 0x00 to FPGA_SYSTEM_CONTROL");
     fpga_write_byte(FPGA_SYSTEM_CONTROL, 0x00);
 
     // from testing, 2ms seems to be the minimum delay needed for all registers to return to expected values
@@ -262,6 +206,46 @@ void fpga_soft_reset(void)
     // But from 2021-02-19, 5ms is no longer enough
     // TODO: why? Seems to require 170ms delay now
     nrfx_systick_delay_ms(200);
+}
+
+/**
+ * Initial configuration of the registers of the FPGA.
+ */
+void fpga_init(void)
+{
+    // Set the FPGA to boot from its internal flash.
+    fpga_check_pins("will set MODE1 to 0");
+    nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
+    nrfx_systick_delay_ms(1);
+
+    // Issue a "reconfig" pulse.
+    // Datasheet UG290E: T_recfglw >= 70 us
+    fpga_check_pins("will set RECFG to 0");
+    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, false);
+    nrfx_systick_delay_ms(100); // 1000 times more than needed
+    fpga_check_pins("will set RECFG to 1");
+    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
+
+    // Give the FPGA some time to boot.
+    // Datasheet UG290E: T_recfgtdonel <= 
+    nrfx_systick_delay_ms(100);
+
+    // Reset the CSN pin, changed as it is also MODE1.
+    fpga_check_pins("will set CSN to 1");
+    nrf_gpio_pin_write(SPIM0_FPGA_CS_PIN, true);
+
+    // Set all registers to a known state.
+    fpga_reset();
+
+    // Give the FPGA some further time.
+    nrfx_systick_delay_ms(10);
+    fpga_check_pins("init done");
+}
+
+void fpga_deinit(void)
+{
+    nrf_gpio_cfg_default(FPGA_MODE1_PIN);
+    nrf_gpio_cfg_default(FPGA_RECONFIG_N_PIN);
 }
 
 void fpga_xclk_on(void)
