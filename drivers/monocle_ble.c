@@ -22,6 +22,8 @@
 #include "nrf_sdm.h"
 
 #define BLE_ADV_MAX_SIZE 31
+#define BLE_MAX_MTU_LENGTH          128
+#define BLE_UUID_COUNT              2
 
 /** Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go. */
 #define RING_BUFFER_LENGTH (1024 + 45)
@@ -543,7 +545,8 @@ void SWI2_IRQHandler(void)
         ble_evt_t *ble_evt = (ble_evt_t *)ble_evt_buffer;
 
         // Otherwise on NRF_SUCCESS, we service the new event
-        switch (ble_evt->header.evt_id)
+        volatile uint16_t ble_evt_id = ble_evt->header.evt_id;
+        switch (ble_evt_id)
         {
 
         // When connected
@@ -647,7 +650,7 @@ void SWI2_IRQHandler(void)
         case BLE_GATTS_EVT_TIMEOUT:
         {
             NRFX_ASSERT(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-            //err = sd_ble_gap_disconnect(ble_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+            err = sd_ble_gap_disconnect(ble_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
             NRFX_ASSERT(!err);
             break;
         }
@@ -670,9 +673,50 @@ void SWI2_IRQHandler(void)
             break;
         }
 
-        // Ignore unused events
-        default:
+        case BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST:
+        {
+            NRFX_ASSERT(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            err = sd_ble_gap_data_length_update(ble_conn_handle, NULL, NULL);
+            NRFX_ASSERT(!err);
             break;
+        }
+
+        case BLE_GAP_EVT_SEC_INFO_REQUEST:
+        {
+            NRFX_ASSERT(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            err = sd_ble_gap_sec_info_reply(ble_conn_handle, NULL, NULL, NULL);
+            NRFX_ASSERT(!err);
+            break;
+        }
+
+        case BLE_GAP_EVT_SEC_REQUEST:
+        {
+            NRFX_ASSERT(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            err = sd_ble_gap_authenticate(ble_conn_handle, NULL);
+            NRFX_ASSERT(!err);
+            break;
+        }
+
+        case BLE_GAP_EVT_AUTH_KEY_REQUEST:
+        {
+            NRFX_ASSERT(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            err = sd_ble_gap_auth_key_reply(ble_conn_handle, BLE_GAP_AUTH_KEY_TYPE_NONE, NULL);
+            NRFX_ASSERT(!err);
+            break;
+        }
+
+        case BLE_EVT_USER_MEM_REQUEST:
+        case BLE_GAP_EVT_CONN_PARAM_UPDATE_REQUEST:
+        {
+            NRFX_ASSERT(!"only expected on Bluetooth Centrals, not on Peripherals");
+            break;
+        }
+
+        default:
+        {
+            // ignore unused events
+            break;
+        }
         }
     }
 }

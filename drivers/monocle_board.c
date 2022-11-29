@@ -75,6 +75,8 @@ void board_init(void)
     // Custom wrapper around I2C used by the other drivers.
     i2c_init();
 
+    return;
+
     // I2C-controlled PMIC, also controlling the red/green LEDs over I2C
     // Needs: i2c
     max77654_init();
