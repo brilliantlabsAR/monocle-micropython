@@ -129,13 +129,6 @@ STATIC mp_obj_t machine_reset_cause(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_reset_cause_obj, machine_reset_cause);
 
-STATIC mp_obj_t machine_bootloader(void)
-{
-    dfu_reboot_bootloader();
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_0(machine_bootloader_obj, machine_bootloader);
-
 STATIC mp_obj_t machine_enable_irq(void)
 {
     return mp_const_none;
