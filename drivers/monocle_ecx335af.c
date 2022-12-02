@@ -22,8 +22,15 @@
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
 
-#define ecx335af_write_byte(addr, data) spi_write_byte(addr, data)
-#define ecx335af_read_byte(addr) spi_read_byte(addr)
+static inline const void ecx335af_write_byte(uint8_t addr, uint8_t data)
+{
+    spi_write_register(SPIM0_DISP_CS_PIN, addr, data);
+}
+
+static inline uint8_t ecx335af_read_byte(uint8_t addr)
+{
+    return spi_read_register(SPIM0_DISP_CS_PIN, addr);
+}
 
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 
@@ -48,10 +55,6 @@ void ecx335af_init(void)
 
     // set XCLR to high (1.8V to take it) to change to power-saving mode
     nrf_gpio_pin_set(ECX335AF_XCLR_PIN);
-
-    // select OLED on SPI bus
-    spi_set_cs_pin(SPIM0_DISP_CS_PIN);
-
     // SONY ECX336-CN register configuration, see Datasheet section 10.1
     // for RGB mode
     //ecx335af_write_byte(0x00,0x0E); // [0]=0 -> enter power save mode
@@ -205,9 +208,6 @@ void ecx335af_deinit(void)
  */
 bool ecx335af_verify(void)
 {
-    // select OLED on SPI bus
-    spi_set_cs_pin(SPIM0_DISP_CS_PIN);
-
     // check that 0x29 changed from default 0x0A to 0x0B
     // and that 0x2A has been restored
     return (ecx335af_read_byte(0x29) == 0x0B && ecx335af_read_byte(0x2A) == 0xBE);
@@ -220,9 +220,6 @@ bool ecx335af_verify(void)
 void ecx335af_set_luminance(ecx335af_luminance_t level)
 {
     uint8_t prev_0x05, new_0x05, check_0x05;  // register values
-
-    // select OLED on SPI bus
-    spi_set_cs_pin(SPIM0_DISP_CS_PIN);
 
     // maximum value value is 4
     if (level > 4) return; 
@@ -241,9 +238,6 @@ void ecx335af_set_luminance(ecx335af_luminance_t level)
  */
 void ecx335af_sleep(void)
 {
-    // select OLED on SPI bus
-    spi_set_cs_pin(SPIM0_DISP_CS_PIN);
-
     ecx335af_write_byte(0x00,0x9E); // enter power saving mode (YUV)
     //en_vcc10_Write(0);        // turn off 10V power, not available in MK9B
 }
@@ -253,9 +247,6 @@ void ecx335af_sleep(void)
  */
 void ecx335af_awake(void)
 {
-    // select OLED on SPI bus
-    spi_set_cs_pin(SPIM0_DISP_CS_PIN);
-
     //en_vcc10_Write(1);        // turn on 10V power, not available in MK9B
     ecx335af_write_byte(0x00,0x9F); // exit power saving mode (YUV)
 }

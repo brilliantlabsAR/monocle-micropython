@@ -75,8 +75,6 @@ void board_init(void)
     // Custom wrapper around I2C used by the other drivers.
     i2c_init();
 
-    return;
-
     // I2C-controlled PMIC, also controlling the red/green LEDs over I2C
     // Needs: i2c
     max77654_init();
@@ -89,7 +87,7 @@ void board_init(void)
     ecx335af_prepare();
     fpga_prepare();
     ov5640_prepare();
-    flash_prepare();
+    //flash_prepare();
     nrfx_systick_delay_ms(100);
 
     // I2C calls to setup power rails of the MAX77654.
@@ -106,12 +104,11 @@ void board_init(void)
     // Custom wrapper around SPI used by the other drivers.
     spi_init();
 
-    return; // debug
-
     // Initialise the FPGA: providing the clock for the display and screen.
     // Needs: power, spi
     fpga_init();
 
+    return; // debug
     fpga_xclk_on();
 
     // Initialise the Camera: gpio pins startup sequence then I2C config.

@@ -17,7 +17,6 @@ STATIC mp_obj_t machine_fpga_make_new(const mp_obj_type_t *type, size_t n_args, 
     // Parse args.
     mp_arg_check_num(n_args, n_kw, 0, 0, false);
 
-    fpga_init();
     fpga_check_reg(FPGA_SYSTEM_CONTROL);
     fpga_check_reg(FPGA_DISPLAY_CONTROL);
     fpga_check_reg(FPGA_MEMORY_CONTROL);
@@ -64,7 +63,7 @@ STATIC mp_obj_t machine_fpga_write_byte(mp_obj_t addr_obj, mp_obj_t byte_obj)
     uint8_t addr = mp_obj_get_int(addr_obj);
     uint8_t byte = mp_obj_get_int(byte_obj);
 
-    fpga_write_byte(addr, byte);
+    fpga_set_register(addr, byte);
     return mp_const_none;
 }
 
@@ -73,7 +72,7 @@ STATIC mp_obj_t machine_fpga_read_byte(mp_obj_t addr_obj)
     uint8_t addr = mp_obj_get_int(addr_obj);
     uint8_t byte;
 
-    byte = fpga_read_byte(addr);
+    byte = fpga_get_register(addr);
     return mp_obj_new_int(byte);
 }
 

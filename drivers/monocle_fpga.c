@@ -40,14 +40,10 @@ void fpga_check_pins(char const *msg)
  * @param addr The address of the FPGA to write to.
  * @param byte The byte to write on that address.
  */
-void fpga_write_byte(uint8_t addr, uint8_t byte)
+void fpga_set_register(uint8_t addr, uint8_t byte)
 {
-    // check that it is a valid register to write to
     assert(FPGA_REGISTER_IS_WRITABLE(addr));
-
-    // select FPGA on SPI bus and write to it.
-    spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
-    spi_write_byte(addr, byte);
+    spi_write_register(SPIM0_FPGA_CS_PIN, addr, byte);
 }
 
 /**
@@ -55,18 +51,10 @@ void fpga_write_byte(uint8_t addr, uint8_t byte)
  * @param addr The address of the FPGA to read from.
  * @return The value read at that address.
  */
-uint8_t fpga_read_byte(uint8_t addr)
+uint8_t fpga_get_register(uint8_t addr)
 {
-    uint8_t byte;
-
-    // check that it is a valid register
     assert(FPGA_REGISTER_EXISTS(addr));
-
-    // select FPGA on SPI bus
-    spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
-
-    byte = spi_read_byte(addr);
-    return byte;
+    return spi_read_register(SPIM0_FPGA_CS_PIN, addr);
 }
 
 /**
@@ -75,15 +63,14 @@ uint8_t fpga_read_byte(uint8_t addr)
  * @param buf The buffer containing the data.
  * @param len The size of that buffer.
  */
-void fpga_write_burst(const uint8_t *buf, uint16_t len)
+void fpga_write_burst(uint8_t *buf, uint16_t len)
 {
     // prepare FPGA to receive the byte stream
-    fpga_write_byte(FPGA_WR_BURST_SIZE_LO, (len & 0x00FF) >> 0);
-    fpga_write_byte(FPGA_WR_BURST_SIZE_HI, (len & 0xFF00) >> 8);
+    fpga_set_register(FPGA_WR_BURST_SIZE_LO, (len & 0x00FF) >> 0);
+    fpga_set_register(FPGA_WR_BURST_SIZE_HI, (len & 0xFF00) >> 8);
 
-    // select FPGA on SPI bus
-    spi_set_cs_pin(SPIM0_FPGA_CS_PIN); 
-    spi_write_burst(FPGA_BURST_WR_DATA, buf, len);
+    // send the buffer to the FPGA
+    spi_write_buffer(SPIM0_FPGA_CS_PIN, FPGA_BURST_WR_DATA, buf, len);
 }
 
 /**
@@ -92,72 +79,62 @@ void fpga_write_burst(const uint8_t *buf, uint16_t len)
  * @param data The buffer that will be written to.
  * @param len The number of bytes to read onto that buffer.
  */
-void fpga_read_burst_ref(uint8_t *data_buf, uint16_t data_len)
+void fpga_read_burst_ref(uint8_t *buf, uint16_t len)
 {
      do {
-        size_t chunk_len = MIN(SPI_MAX_BURST_LENGTH, data_len);
-        uint8_t *chunk_buf;
+        size_t chunk_len = MIN(SPI_MAX_XFER_LEN, len);
 
         // prepare FPGA for burst read
-        fpga_write_byte(FPGA_RD_BURST_SIZE_LO, (chunk_len & 0x00FF) >> 0);
-        fpga_write_byte(FPGA_RD_BURST_SIZE_HI, (chunk_len & 0xFF00) >> 8);
+        fpga_set_register(FPGA_RD_BURST_SIZE_LO, (chunk_len & 0x00FF) >> 0);
+        fpga_set_register(FPGA_RD_BURST_SIZE_HI, (chunk_len & 0xFF00) >> 8);
 
-        // select FPGA on SPI bus
-        spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
-
-        chunk_buf = spi_read_burst(FPGA_BURST_RD_DATA, data_len);
-        memcpy(data_buf, chunk_buf, chunk_len);
-
-        data_buf += chunk_len;
-        data_len -= chunk_len;
-    } while (data_len > 0);
+        spi_read_buffer(SPIM0_FPGA_CS_PIN, FPGA_BURST_RD_DATA, buf, len);
+        buf += chunk_len;
+        len -= chunk_len;
+    } while (len > 0);
 }
 
-uint8_t *fpga_read_burst(uint16_t len)
+void fpga_read_burst(uint8_t *buf, uint16_t len)
 {
     // prepare FPGA for burst read
-    fpga_write_byte(FPGA_RD_BURST_SIZE_LO, (len & 0x00FF) >> 0);
-    fpga_write_byte(FPGA_RD_BURST_SIZE_HI, (len & 0xFF00) >> 8);
-
-    // select FPGA on SPI bus
-    spi_set_cs_pin(SPIM0_FPGA_CS_PIN);
-
-    return spi_read_burst(FPGA_BURST_RD_DATA, len);
+    fpga_set_register(FPGA_RD_BURST_SIZE_LO, (len & 0x00FF) >> 0);
+    fpga_set_register(FPGA_RD_BURST_SIZE_HI, (len & 0xFF00) >> 8);
+    spi_read_buffer(SPIM0_FPGA_CS_PIN, FPGA_BURST_RD_DATA, buf, len);
 }
 
 uint32_t fpga_get_capture_size(void)
 {
     assert(fpga_capture_done());
-    return (fpga_read_byte(FPGA_CAPTURE_SIZE_0) << 24
-          | fpga_read_byte(FPGA_CAPTURE_SIZE_1) << 16
-          | fpga_read_byte(FPGA_CAPTURE_SIZE_2) << 8
-          | fpga_read_byte(FPGA_CAPTURE_SIZE_3) << 0);
+    return (fpga_get_register(FPGA_CAPTURE_SIZE_0) << 24
+          | fpga_get_register(FPGA_CAPTURE_SIZE_1) << 16
+          | fpga_get_register(FPGA_CAPTURE_SIZE_2) << 8
+          | fpga_get_register(FPGA_CAPTURE_SIZE_3) << 0);
 }
 
 uint32_t fpga_get_bytes_read(void)
 {
-    return (fpga_read_byte(FPGA_CAPT_BYTE_COUNT_0) << 24
-          | fpga_read_byte(FPGA_CAPT_BYTE_COUNT_1) << 16
-          | fpga_read_byte(FPGA_CAPT_BYTE_COUNT_2) << 8
-          | fpga_read_byte(FPGA_CAPT_BYTE_COUNT_3) << 0);
+    return (fpga_get_register(FPGA_CAPT_BYTE_COUNT_0) << 24
+          | fpga_get_register(FPGA_CAPT_BYTE_COUNT_1) << 16
+          | fpga_get_register(FPGA_CAPT_BYTE_COUNT_2) << 8
+          | fpga_get_register(FPGA_CAPT_BYTE_COUNT_3) << 0);
 }
 
 uint16_t fpga_get_checksum(void)
 {
-    return (fpga_read_byte(FPGA_CAPT_FRM_CHECKSUM_0) << 8
-          | fpga_read_byte(FPGA_CAPT_FRM_CHECKSUM_1) << 0);
+    return (fpga_get_register(FPGA_CAPT_FRM_CHECKSUM_0) << 8
+          | fpga_get_register(FPGA_CAPT_FRM_CHECKSUM_1) << 0);
 }
 
 bool fpga_is_buffer_at_start(void)
 {
-    return (fpga_read_byte(FPGA_CAPTURE_STATUS) & FPGA_START_OF_CAPT);
+    return (fpga_get_register(FPGA_CAPTURE_STATUS) & FPGA_START_OF_CAPT);
 }
 
 bool fpga_is_buffer_read_done(void)
 {
-    return (fpga_read_byte(FPGA_CAPTURE_STATUS)
+    return (fpga_get_register(FPGA_CAPTURE_STATUS)
             & (FPGA_VIDEO_CAPT_DONE | FPGA_AUDIO_CAPT_DONE | FPGA_FRAME_CAPT_DONE));
-    //return (fpga_read_byte(FPGA_CAPTURE_STATUS) & (FPGA_AUDIO_CAPT_DONE));
+    //return (fpga_get_register(FPGA_CAPTURE_STATUS) & (FPGA_AUDIO_CAPT_DONE));
 }
 
 /**
@@ -192,13 +169,13 @@ static void fpga_reset(void)
 {
     // reset FPGA
     fpga_check_pins("will write 0x01 to FPGA_SYSTEM_CONTROL");
-    fpga_write_byte(FPGA_SYSTEM_CONTROL, 0x01);
+    fpga_set_register(FPGA_SYSTEM_CONTROL, 0x01);
 
     // TODO: not sure if we need this, but just in case...
     nrfx_systick_delay_ms(185);
     // clear the reset (needed for some FPGA projects, like OLED unit test)
     fpga_check_pins("will write 0x00 to FPGA_SYSTEM_CONTROL");
-    fpga_write_byte(FPGA_SYSTEM_CONTROL, 0x00);
+    fpga_set_register(FPGA_SYSTEM_CONTROL, 0x00);
 
     // from testing, 2ms seems to be the minimum delay needed for all registers to return to expected values
     // reason is unclear
@@ -250,8 +227,8 @@ void fpga_deinit(void)
 
 void fpga_xclk_on(void)
 {
-    fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK);
-    assert(fpga_read_byte(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
+    fpga_set_register(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK);
+    assert(fpga_get_register(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
 }
 
 /**
@@ -263,10 +240,10 @@ void fpga_camera_on(void)
     nrfx_systick_delay_ms(4*(1000/OV5640_FPS) + 1);
 
     // enable camera interface (& keep XCLK enabled!)
-    fpga_write_byte(FPGA_CAMERA_CONTROL, (FPGA_EN_XCLK | FPGA_EN_CAM));
+    fpga_set_register(FPGA_CAMERA_CONTROL, (FPGA_EN_XCLK | FPGA_EN_CAM));
 
     LOG("waited 4 frames, sent FPGA_EN_XCLK, FPGA_EN_CAM");
-    assert(fpga_read_byte(FPGA_CAMERA_CONTROL) == (FPGA_EN_XCLK | FPGA_EN_CAM));
+    assert(fpga_get_register(FPGA_CAMERA_CONTROL) == (FPGA_EN_XCLK | FPGA_EN_CAM));
 }
 
 /**
@@ -275,13 +252,13 @@ void fpga_camera_on(void)
 void fpga_camera_off(void)
 {
     // turn off camera interface (but keep XCLK enabled!)
-    fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK);
+    fpga_set_register(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK);
 
     // allow last frame to finish entering video buffer to avoid split screen
     nrfx_systick_delay_ms(1*(1000/OV5640_FPS) + 1);
 
     LOG("sent FPGA_EN_XCLK, waited 1 frame");
-    assert(fpga_read_byte(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
+    assert(fpga_get_register(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
 }
 
 /**
@@ -290,8 +267,8 @@ void fpga_camera_off(void)
  */
 void fpga_mic_on(void)
 {
-    fpga_write_byte(FPGA_MIC_CONTROL, FPGA_EN_MIC);
-    assert(fpga_read_byte(FPGA_MIC_CONTROL) == FPGA_EN_MIC);
+    fpga_set_register(FPGA_MIC_CONTROL, FPGA_EN_MIC);
+    assert(fpga_get_register(FPGA_MIC_CONTROL) == FPGA_EN_MIC);
 }
 
 /**
@@ -300,8 +277,8 @@ void fpga_mic_on(void)
  */
 void fpga_mic_off(void)
 {
-    fpga_write_byte(FPGA_MIC_CONTROL, 0x00);
-    assert(fpga_read_byte(FPGA_MIC_CONTROL) == 0x00);
+    fpga_set_register(FPGA_MIC_CONTROL, 0x00);
+    assert(fpga_get_register(FPGA_MIC_CONTROL) == 0x00);
 }
 
 /**
@@ -309,7 +286,7 @@ void fpga_mic_off(void)
  */
 void fpga_disp_live(void)
 {
-    fpga_write_byte(FPGA_DISPLAY_CONTROL, FPGA_DISP_CAM);
+    fpga_set_register(FPGA_DISPLAY_CONTROL, FPGA_DISP_CAM);
 }
 
 /**
@@ -317,7 +294,7 @@ void fpga_disp_live(void)
  */
 void fpga_disp_busy(void)
 {
-    fpga_write_byte(FPGA_DISPLAY_CONTROL, FPGA_DISP_BUSY);
+    fpga_set_register(FPGA_DISPLAY_CONTROL, FPGA_DISP_BUSY);
 }
 
 /**
@@ -325,7 +302,7 @@ void fpga_disp_busy(void)
  */
 void fpga_disp_bars(void)
 {
-    fpga_write_byte(FPGA_DISPLAY_CONTROL, FPGA_DISP_BARS);
+    fpga_set_register(FPGA_DISPLAY_CONTROL, FPGA_DISP_BARS);
 }
 
 /**
@@ -333,7 +310,7 @@ void fpga_disp_bars(void)
  */
 void fpga_disp_off(void)
 {
-    fpga_write_byte(FPGA_DISPLAY_CONTROL, FPGA_DISP_OFF);
+    fpga_set_register(FPGA_DISPLAY_CONTROL, FPGA_DISP_OFF);
 }
 
 /**
@@ -341,8 +318,8 @@ void fpga_disp_off(void)
  */
 void fpga_resume_live_video(void)
 {
-    //fpga_write_byte(FPGA_CAPTURE_CONTROL, FPGA_RESUME_FILL);
-    fpga_write_byte(FPGA_CAPTURE_CONTROL, (FPGA_RESUME_FILL | FPGA_CLR_CHKSM));
+    //fpga_set_register(FPGA_CAPTURE_CONTROL, FPGA_RESUME_FILL);
+    fpga_set_register(FPGA_CAPTURE_CONTROL, (FPGA_RESUME_FILL | FPGA_CLR_CHKSM));
 }
 
 /**
@@ -350,15 +327,15 @@ void fpga_resume_live_video(void)
  */
 void fpga_image_capture(void)
 {
-    fpga_write_byte(FPGA_CAPTURE_CONTROL, (FPGA_CAPT_EN | FPGA_CAPT_FRM));
+    fpga_set_register(FPGA_CAPTURE_CONTROL, (FPGA_CAPT_EN | FPGA_CAPT_FRM));
 }
 
 void fpga_video_capture(void)
 {
 #ifdef MIC_ON
-    fpga_write_byte(FPGA_CAPTURE_CONTROL, (FPGA_CAPT_EN | FPGA_CAPT_VIDEO | FPGA_CAPT_AUDIO));
+    fpga_set_register(FPGA_CAPTURE_CONTROL, (FPGA_CAPT_EN | FPGA_CAPT_VIDEO | FPGA_CAPT_AUDIO));
 #else
-    fpga_write_byte(FPGA_CAPTURE_CONTROL, (FPGA_CAPT_EN | FPGA_CAPT_VIDEO));
+    fpga_set_register(FPGA_CAPTURE_CONTROL, (FPGA_CAPT_EN | FPGA_CAPT_VIDEO));
 #endif
 }
 
@@ -367,16 +344,16 @@ void fpga_prep_read_audio(void)
 {
 #ifdef MIC_ON
     // ensure CLR_CHECKSUM gets a rising edge
-    fpga_write_byte(FPGA_CAPTURE_CONTROL, 0x00);
+    fpga_set_register(FPGA_CAPTURE_CONTROL, 0x00);
 
     // clear checksum (left from video transfer)
-    fpga_write_byte(FPGA_CAPTURE_CONTROL, FPGA_CLR_CHKSM);
+    fpga_set_register(FPGA_CAPTURE_CONTROL, FPGA_CLR_CHKSM);
 
     // this also sets CLR_CHKSM back to 0
-    fpga_write_byte(FPGA_CAPTURE_CONTROL, FPGA_RD_AUDIO);
+    fpga_set_register(FPGA_CAPTURE_CONTROL, FPGA_RD_AUDIO);
 
     // this also sets CLR_CHKSM back to 0
-    //fpga_write_byte(FPGA_CAPTURE_CONTROL, (FPGA_CAPT_EN | FPGA_CAPT_VIDEO | FPGA_CAPT_AUDIO));
+    //fpga_set_register(FPGA_CAPTURE_CONTROL, (FPGA_CAPT_EN | FPGA_CAPT_VIDEO | FPGA_CAPT_AUDIO));
 #else
     // do nothing
 #endif
@@ -388,13 +365,13 @@ void fpga_replay_rate(uint8_t repeat)
     assert(repeat > 0);
     assert(repeat <= FPGA_REP_RATE_MASK);
 
-    fpga_write_byte(FPGA_REPLAY_RATE_CONTROL, repeat);
+    fpga_set_register(FPGA_REPLAY_RATE_CONTROL, repeat);
     LOG("replay rate set to %d", repeat);
 }
 
 bool fpga_capture_done(void)
 {
-    return (fpga_read_byte(FPGA_CAPTURE_STATUS) & FPGA_CAPT_RD_VLD);
+    return (fpga_get_register(FPGA_CAPTURE_STATUS) & FPGA_CAPT_RD_VLD);
 }
 
 // Simple checksum calculation; matching the algorithm used on FPGA
@@ -445,13 +422,13 @@ void fpga_set_zoom(uint8_t level)
     {
         case 1:
             zoom_bits = 0 << FPGA_ZOOM_SHIFT;
-            fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK | FPGA_EN_CAM | zoom_bits);
+            fpga_set_register(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK | FPGA_EN_CAM | zoom_bits);
             break;
         case 2:
         case 4:
         case 8:
             zoom_bits = (level >> 2) << FPGA_ZOOM_SHIFT;
-            fpga_write_byte(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK | FPGA_EN_CAM | zoom_bits | FPGA_EN_ZOOM | FPGA_EN_LUMA_COR);
+            fpga_set_register(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK | FPGA_EN_CAM | zoom_bits | FPGA_EN_ZOOM | FPGA_EN_LUMA_COR);
             break;
         default:
             assert(!"invalid zoom level");
@@ -469,7 +446,7 @@ void fpga_set_luma(bool turn_on)
     bool luma_on = false;
 
     // get current zoom & luma status
-    reg = fpga_read_byte(FPGA_CAMERA_CONTROL);
+    reg = fpga_get_register(FPGA_CAMERA_CONTROL);
 
     // only valid when zoom is active
     if (!(reg & FPGA_EN_ZOOM))
@@ -487,7 +464,7 @@ void fpga_set_luma(bool turn_on)
         reg = reg & ~FPGA_EN_LUMA_COR;
         LOG("turn luma correction off.");
     }
-    fpga_write_byte(FPGA_CAMERA_CONTROL, reg);
+    fpga_set_register(FPGA_CAMERA_CONTROL, reg);
 }
 
 /**
@@ -526,7 +503,7 @@ void fpga_set_display(uint8_t mode)
  */
 void fpga_get_version(uint8_t *major, uint8_t *minor)
 {
-    *major = fpga_read_byte(FPGA_VERSION_MAJOR);
-    *minor = fpga_read_byte(FPGA_VERSION_MINOR);
+    *major = fpga_get_register(FPGA_VERSION_MAJOR);
+    *minor = fpga_get_register(FPGA_VERSION_MINOR);
     LOG("%d.%d", *major, *minor);
 }
