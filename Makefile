@@ -100,6 +100,9 @@ DEF += -DMICROPY_QSTR_EXTRA_POOL=mp_qstr_frozen_const_pool
 DEF += -DMICROPY_MODULE_FROZEN_MPY
 DEF += -DMICROPY_MODULE_FROZEN_STR
 
+# https://github.com/sandeepmistry/arduino-nRF5/issues/206
+DEF += -DCONFIG_NFCT_PINS_AS_GPIOS
+
 SRC += help.c
 SRC += main.c
 SRC += mphalport.c

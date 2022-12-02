@@ -87,8 +87,7 @@ void board_init(void)
     ecx335af_prepare();
     fpga_prepare();
     ov5640_prepare();
-    //flash_prepare();
-    nrfx_systick_delay_ms(100);
+    flash_prepare();
 
     // I2C calls to setup power rails of the MAX77654.
     // Needs: max77654

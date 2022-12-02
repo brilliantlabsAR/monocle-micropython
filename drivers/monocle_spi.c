@@ -67,7 +67,6 @@ void spi_init(void)
     config.frequency      = NRF_SPIM_FREQ_1M;
     config.mode           = NRF_SPIM_MODE_3;
     config.bit_order      = NRF_SPIM_BIT_ORDER_LSB_FIRST;
-    config.miso_pull      = 0;
     CHECK(nrfx_spim_init(&m_spi, &config, spim_event_handler, NULL));
 
     // configure CS pin for the Display (for active low)
