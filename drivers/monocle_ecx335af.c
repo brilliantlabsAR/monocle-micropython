@@ -194,23 +194,17 @@ void ecx335af_init(void)
     ecx335af_write_byte(0x00, 0x9F); // exit power saving mode, YUV
 
     nrfx_systick_delay_ms(1);
+
+    // check that 0x29 changed from default 0x0A to 0x0B
+    // and that 0x2A has been restored
+    assert(ecx335af_read_byte(0x29) == 0x0B);
+    assert(ecx335af_read_byte(0x2A) == 0xBE);
 }
 
 void ecx335af_deinit(void)
 {
     nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);
     nrf_gpio_cfg_default(ECX335AF_XCLR_PIN);
-}
-
-/**
- * Verify that OLED is connected & configuration succeeded.
- * @return True if configured correctly.
- */
-bool ecx335af_verify(void)
-{
-    // check that 0x29 changed from default 0x0A to 0x0B
-    // and that 0x2A has been restored
-    return (ecx335af_read_byte(0x29) == 0x0B && ecx335af_read_byte(0x2A) == 0xBE);
 }
 
 /**

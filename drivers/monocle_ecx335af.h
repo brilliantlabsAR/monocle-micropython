@@ -30,7 +30,6 @@ typedef enum {
 void ecx335af_prepare(void);
 void ecx335af_init(void);
 void ecx335af_deinit(void);
-bool ecx335af_verify(void);
 void ecx335af_set_luminance(ecx335af_luminance_t level);
 void ecx335af_sleep(void);
 void ecx335af_awake(void);

@@ -8,9 +8,18 @@
 #include "monocle_fpga.h"
 #include "monocle_config.h"
 #include "nrfx_log.h"
+#include "fpga.h"
+
+typedef struct {
+    mp_obj_base_t base;
+    uint8_t id;
+} machine_fpga_obj_t;
+
+static machine_fpga_obj_t fpga_obj = {{&machine_fpga_type}, 0};
 
 STATIC mp_obj_t machine_fpga_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args)
 {
+    machine_fpga_obj_t *self = &fpga_obj;
     (void)type;
     (void)all_args;
 
@@ -47,34 +56,35 @@ STATIC mp_obj_t machine_fpga_make_new(const mp_obj_type_t *type, size_t n_args, 
     fpga_check_reg(FPGA_VERSION_MAJOR);
 
     // Return the newly created object.
-    return MP_OBJ_NEW_SMALL_INT(0);
+    return MP_OBJ_FROM_PTR(self);
 }
 
 STATIC void machine_fpga_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
 {
-    (void)self_in;
+    machine_fpga_obj_t *self = MP_OBJ_TO_PTR(self_in);
     (void)kind;
 
+    assert(self->id == 0);
     mp_printf(print, "FPGA()\n");
 }
 
 STATIC mp_obj_t machine_fpga_read_byte(mp_obj_t self_in, mp_obj_t addr_in)
 {
-    uint8_t self = mp_obj_get_int(self_in);
+    machine_fpga_obj_t *self = MP_OBJ_TO_PTR(self_in);
     uint8_t addr = mp_obj_get_int(addr_in);
-    (void)self;
 
+    assert(self->id == 0);
     return mp_obj_new_int(fpga_get_register(addr));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(machine_fpga_read_byte_obj, machine_fpga_read_byte);
 
 STATIC mp_obj_t machine_fpga_write_byte(mp_obj_t self_in, mp_obj_t addr_in, mp_obj_t data_in)
 {
-    uint8_t self = mp_obj_get_int(self_in);
+    machine_fpga_obj_t *self = MP_OBJ_TO_PTR(self_in);
     uint8_t addr = mp_obj_get_int(addr_in);
     uint8_t data = mp_obj_get_int(data_in);
-    (void)self;
 
+    assert(self->id == 0);
     fpga_set_register(addr, data);
     return mp_const_none;
 }

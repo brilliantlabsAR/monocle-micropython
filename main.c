@@ -24,7 +24,6 @@
  * THE SOFTWARE.
  */
 
-#include "monocle_spi.h"
 #include "monocle_ble.h"
 #include "monocle_board.h"
 #include "nrf_sdm.h"

@@ -40,8 +40,8 @@ void board_power_on(void)
     nrfx_systick_delay_ms(20);
 
     // Used by the display.
-    //max77654_rail_10v(true);
-    //nrfx_systick_delay_ms(20);
+    max77654_rail_10v(true);
+    nrfx_systick_delay_ms(20);
 
     // Used by the red and green LEDs.
     max77654_rail_vled(true);
@@ -106,11 +106,13 @@ void board_init(void)
     // Initialise the FPGA: providing the clock for the display and screen.
     // Needs: power, spi
     fpga_init();
-
-    return; // debug
     fpga_xclk_on();
 
-    // Initialise the Camera: gpio pins startup sequence then I2C config.
+    // Initialise the Screen
+    // Needs: power, spi, fpga
+    ecx335af_init();
+
+    // Initialise the Camera: startup sequence then I2C config.
     // Needs: power, fpga, i2c
     ov5640_pwr_on();
     ov5640_focus_init();
