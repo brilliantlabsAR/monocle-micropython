@@ -44,25 +44,11 @@ typedef struct _machine_timer_obj_t {
 STATIC mp_obj_t machine_timer_callbacks[] = {
     NULL,
     NULL,
-    NULL,
-#if defined(NRF52_SERIES)
-    NULL,
-    NULL,
-#endif
 };
 
 STATIC const machine_timer_obj_t machine_timer_obj[] = {
     {{&machine_timer_type}, NRFX_TIMER_INSTANCE(0)},
-#if MICROPY_PY_MACHINE_SOFT_PWM
-    { },
-#else
     {{&machine_timer_type}, NRFX_TIMER_INSTANCE(1)},
-#endif
-    {{&machine_timer_type}, NRFX_TIMER_INSTANCE(2)},
-#if defined(NRF52_SERIES)
-    {{&machine_timer_type}, NRFX_TIMER_INSTANCE(3)},
-    {{&machine_timer_type}, NRFX_TIMER_INSTANCE(4)},
-#endif
 };
 
 void timer_init0(void) {
@@ -115,12 +101,6 @@ STATIC mp_obj_t machine_timer_make_new(const mp_obj_type_t *type, size_t n_args,
 #if BLUETOOTH_SD
     if (timer_id == 0) {
         mp_raise_ValueError(MP_ERROR_TEXT("Timer reserved by Bluetooth LE stack"));
-    }
-#endif
-
-#if MICROPY_PY_MACHINE_SOFT_PWM
-    if (timer_id == 1) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Timer reserved by ticker driver"));
     }
 #endif
 

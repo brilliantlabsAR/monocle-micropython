@@ -47,7 +47,7 @@ STATIC mp_obj_t machine_fpga_make_new(const mp_obj_type_t *type, size_t n_args, 
     fpga_check_reg(FPGA_VERSION_MAJOR);
 
     // Return the newly created object.
-    return MP_OBJ_FROM_PTR(NULL);
+    return MP_OBJ_NEW_SMALL_INT(0);
 }
 
 STATIC void machine_fpga_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
@@ -55,29 +55,30 @@ STATIC void machine_fpga_print(const mp_print_t *print, mp_obj_t self_in, mp_pri
     (void)self_in;
     (void)kind;
 
-    mp_printf(print, "FPGA()");
+    mp_printf(print, "FPGA()\n");
 }
 
-STATIC mp_obj_t machine_fpga_write_byte(mp_obj_t addr_obj, mp_obj_t byte_obj)
+STATIC mp_obj_t machine_fpga_read_byte(mp_obj_t self_in, mp_obj_t addr_in)
 {
-    uint8_t addr = mp_obj_get_int(addr_obj);
-    uint8_t byte = mp_obj_get_int(byte_obj);
+    uint8_t self = mp_obj_get_int(self_in);
+    uint8_t addr = mp_obj_get_int(addr_in);
+    (void)self;
 
-    fpga_set_register(addr, byte);
+    return mp_obj_new_int(fpga_get_register(addr));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(machine_fpga_read_byte_obj, machine_fpga_read_byte);
+
+STATIC mp_obj_t machine_fpga_write_byte(mp_obj_t self_in, mp_obj_t addr_in, mp_obj_t data_in)
+{
+    uint8_t self = mp_obj_get_int(self_in);
+    uint8_t addr = mp_obj_get_int(addr_in);
+    uint8_t data = mp_obj_get_int(data_in);
+    (void)self;
+
+    fpga_set_register(addr, data);
     return mp_const_none;
 }
-
-STATIC mp_obj_t machine_fpga_read_byte(mp_obj_t addr_obj)
-{
-    uint8_t addr = mp_obj_get_int(addr_obj);
-    uint8_t byte;
-
-    byte = fpga_get_register(addr);
-    return mp_obj_new_int(byte);
-}
-
-MP_DEFINE_CONST_FUN_OBJ_1(machine_fpga_read_byte_obj, &machine_fpga_read_byte);
-MP_DEFINE_CONST_FUN_OBJ_2(machine_fpga_write_byte_obj, &machine_fpga_write_byte);
+MP_DEFINE_CONST_FUN_OBJ_3(machine_fpga_write_byte_obj, &machine_fpga_write_byte);
 
 STATIC const mp_rom_map_elem_t machine_fpga_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_write_byte),  MP_ROM_PTR(&machine_fpga_write_byte_obj) },

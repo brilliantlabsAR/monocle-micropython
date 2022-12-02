@@ -106,7 +106,7 @@
 #define MICROPY_PY_MACHINE_HW_SPI               0 // used by drivers
 #define MICROPY_PY_MACHINE_HW_PWM               0
 #define MICROPY_PY_MACHINE_SOFT_PWM             0
-#define MICROPY_PY_MACHINE_TIMER                0
+#define MICROPY_PY_MACHINE_TIMER                1
 #define MICROPY_PY_MACHINE_RTCOUNTER            0
 #define MICROPY_PY_TIME_TICKS                   1
 
