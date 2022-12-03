@@ -277,7 +277,7 @@ void fpga_disp_bars(void)
 }
 
 /**
- * Disable the red-blue shift chrominace correction.
+ * Disable the red-blue shift chrominance correction.
  */
 void fpga_disp_off(void)
 {
