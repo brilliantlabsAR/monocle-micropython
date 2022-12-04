@@ -17,7 +17,7 @@
  * - TOUCH_GESTURE_PRESS      : 0.5s
  * - TOUCH_GESTURE_LONGPRESS  : 9.5s
  * - TOUCH_GESTURE_LONGBOTH   : 9.5s (Both Pressed)
- * @defgroup IQS620
+ * @defgroup iqs620
  * @{
  */
 

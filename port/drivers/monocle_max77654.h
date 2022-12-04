@@ -19,7 +19,7 @@
  * - LED Power Rail: Can be tured OFF.
  * @bug Right now a little underpowered: there is a 18 sec delay after turning the power for every module.
  * @bug Occassionally boot failure is also noticed right now.
- * @defgroup MAX77654
+ * @defgroup max77654
  * @{
  */
 

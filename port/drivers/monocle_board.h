@@ -6,7 +6,7 @@
 #define MONOCLE_BOARD_H
 /**
  * Built out of all other drivers, providing a general interface.
- * @defgroup Board
+ * @defgroup board
  * @{
  */
 

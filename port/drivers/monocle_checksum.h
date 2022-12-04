@@ -6,7 +6,7 @@
 #define MONOCLE_CHECKSUM_H
 /**
  * Compute and verify a 32-bit checksum of a byte buffer.
- * @defgroup Checksum
+ * @defgroup checksum
  * @{
  */
 

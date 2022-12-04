@@ -13,7 +13,7 @@
  * MCU only has access to the SPI configuration interface.
  * After the OLED configuration is done, the luminance (brightness)
  * should be set and the display is ready to receive data.
- * @defgroup ECX35AF
+ * @defgroup ecx335af
  * @{
  */
 

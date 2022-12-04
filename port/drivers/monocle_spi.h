@@ -9,7 +9,7 @@
 #include "nrfx_spim.h"
 /**
  * Wrapper over the NRFX driver to include a leading address sent first.
- * @defgroup SPI
+ * @defgroup spi
  * @{
  */
 

@@ -15,7 +15,7 @@
  * - the Microdisplay data path,
  * - the Microphone data,
  * - the Checksum calculation,
- * @defgroup FPGA
+ * @defgroup fpga
  * @{
  */
 

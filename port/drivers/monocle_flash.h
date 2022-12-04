@@ -10,7 +10,7 @@
 /**
  * SPI flash chip I/O library for reading/writing to/from the onboard flash chip.
  * for programming the FPGA.
- * @defgroup Flash
+ * @defgroup flash
  * @{
  */
 

@@ -1,0 +1,4 @@
+board
+-----
+
+.. doxygengroup:: board

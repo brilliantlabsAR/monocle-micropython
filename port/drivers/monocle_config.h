@@ -8,7 +8,7 @@
 /**
  * Configuratin file for the drivers.
  * GPIO pins used, I2C addresses, peripheral instances in use...
- * @defgroup Config
+ * @defgroup config
  * @{
  */
 

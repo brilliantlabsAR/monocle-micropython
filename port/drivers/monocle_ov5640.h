@@ -13,7 +13,7 @@
  * - 5MP max resolutiono
  * - Recording happens at 15 FPS, and the FPGA triple every frame to match the 50 FPS of the ECX335AF display.
  * - When using the 4x digital zoom, the camera outputs 640x400 video.
- * @defgroup OV5640
+ * @defgroup ov5640
  * @{
  */
 

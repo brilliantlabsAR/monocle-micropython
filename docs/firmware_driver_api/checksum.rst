@@ -1,0 +1,4 @@
+checksum
+--------
+
+.. doxygengroup:: checksum

@@ -9,7 +9,7 @@
 #include <stdbool.h>
 /**
  * Bluetooth Low Energy driver, providing the Nordic Uart Service console.
- * @defgroup BLE
+ * @defgroup ble
  * @{
  */
 
