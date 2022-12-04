@@ -210,13 +210,6 @@ gdb:
 	    -ex "monitor reset halt" \
 	    -ex "continue" build/application.elf
 
-shell:
-	@echo "You should soon get a Python shell over Bluetooth"
-	@echo "  CTRL-B then Enter to switch to the friendly REPL"
-	@echo "  CTRL-A to switch to the raw REPL"
-	@echo "  CTRL-\\ to exit"
-	$(PYTHON) serial_console.py
-
 build/application.elf: $(OBJ)
 	$(ECHO) "LINK $@"
 	$(Q)$(CC) $(LDFLAGS) -o $@ $(OBJ) $(LDFLAGS_MOD) $(LIBS)
