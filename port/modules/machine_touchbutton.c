@@ -3,6 +3,7 @@
 #include "py/obj.h"
 #include "py/qstr.h"
 #include "py/runtime.h"
+#include "machine_touchbutton.h"
 
 #define LOG NRFX_LOG_ERROR
 

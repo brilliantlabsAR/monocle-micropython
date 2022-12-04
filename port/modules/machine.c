@@ -26,7 +26,6 @@
  */
 #include <stdio.h>
 
-#include "modmachine.h"
 #include "py/gc.h"
 #include "py/runtime.h"
 #include "py/mphal.h"
@@ -36,12 +35,13 @@
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
 #include "monocle_dfu.h"
-#include "timer.h"
-#include "battery.h"
-#include "fpga.h"
-#include "touchbutton.h"
+#include "machine.h"
+#include "machine_timer.h"
+#include "machine_battery.h"
+#include "machine_fpga.h"
+#include "machine_touchbutton.h"
 #if MICROPY_PY_MACHINE_RTCOUNTER
-#include "rtcounter.h"
+#include "machine_rtcounter.h"
 #endif
 
 #if MICROPY_PY_MACHINE

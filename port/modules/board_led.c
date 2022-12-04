@@ -28,7 +28,7 @@
 #include "py/runtime.h"
 
 #include "mphalport.h"
-#include "led.h"
+#include "board_led.h"
 #include "mpconfigport.h"
 #include "monocle_max77654.h"
 

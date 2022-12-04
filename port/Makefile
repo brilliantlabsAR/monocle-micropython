@@ -1,12 +1,12 @@
 MICROPY_ROM_TEXT_COMPRESSION ?= 1
 MICROPY_VFS_LFS2 = 1
 MICROPY_VFS_FAT = 0
-FROZEN_MANIFEST = modules/manifest.py
+FROZEN_MANIFEST = ../python/manifest.py
 CROSS_COMPILE = arm-none-eabi-
 
-include micropython/py/mkenv.mk
-include micropython/extmod/extmod.mk
-include micropython/py/py.mk
+include ../micropython/py/mkenv.mk
+include ../micropython/extmod/extmod.mk
+include ../micropython/py/py.mk
 
 NRF = 52832
 SD = s132
@@ -33,7 +33,7 @@ DFU_PACKAGE_HEX = build/dfu_package.hex
 DFU_PACKAGE_ZIP = build/dfu_package.zip
 
 # Softdevice binary placed to the flash, imported from the nRF5-SDK
-SOFTDEVICE_HEX = $(SD)/$(SD)_nrf52_$(SOFTDEVICE_VERSION)_softdevice.hex
+SOFTDEVICE_HEX = ../$(SD)/$(SD)_nrf52_$(SOFTDEVICE_VERSION)_softdevice.hex
 
 # Application built by this Makefile
 APPLICATION_HEX := build/application.hex
@@ -42,10 +42,10 @@ APPLICATION_HEX := build/application.hex
 BLSETTINGS_HEX := build/blsettings.hex
 
 # Bootloader from Swaralink
-BOOTLOADER_HEX := bootloader/build/nrf52832_xxaa_s132.hex
+BOOTLOADER_HEX := ../bootloader/build/nrf52832_xxaa_s132.hex
 
 # Key used by the Swaralink bootloader
-BOOTLOADER_KEY := bootloader/published_privkey.pem
+BOOTLOADER_KEY := ../bootloader/published_privkey.pem
 
 CFLAGS += $(DEF) $(INC) $(CFLAGS_EXTRA) $(CFLAGS_MOD) $(CFLAGS_MCU_m4)
 CFLAGS += -mthumb
@@ -74,20 +74,18 @@ LIBS += -lgcc -lm
 INC += -I.
 INC += -Ibuild
 INC += -Idrivers
-INC += -Igenhdr
-INC += -Imicropython
-INC += -Imicropython/lib/cmsis/inc
-INC += -Imicropython/shared/readline
-INC += -Imodules/board
-INC += -Imodules/machine
-INC += -Inrfx
-INC += -Inrfx/drivers
-INC += -Inrfx/drivers/include
-INC += -Inrfx/drivers/src
-INC += -Inrfx/hal
-INC += -Inrfx/mdk
-INC += -I$(SD)/include
-INC += -I$(SD)/include/nrf52
+INC += -Imodules
+INC += -I../micropython
+INC += -I../micropython/lib/cmsis/inc
+INC += -I../micropython/shared/readline
+INC += -I../nrfx
+INC += -I../nrfx/drivers
+INC += -I../nrfx/drivers/include
+INC += -I../nrfx/drivers/src
+INC += -I../nrfx/hal
+INC += -I../nrfx/mdk
+INC += -I../$(SD)/include
+INC += -I../$(SD)/include/nrf52
 
 DEF += -DNRF$(NRF)_XXAA
 DEF += -DNRF$(NRF)
@@ -123,62 +121,62 @@ SRC += drivers/monocle_ov5640.c
 SRC += drivers/monocle_spi.c
 SRC += drivers/monocle_touch.c
 
-SRC += modules/board/led.c
-SRC += modules/board/modboard.c
-SRC += modules/machine/battery.c
-SRC += modules/machine/fpga.c
-SRC += modules/machine/modmachine.c
-SRC += modules/machine/rtcounter.c
-SRC += modules/machine/timer.c
-SRC += modules/machine/touchbutton.c
+SRC += modules/board.c
+SRC += modules/board_led.c
+SRC += modules/machine.c
+SRC += modules/machine_battery.c
+SRC += modules/machine_fpga.c
+SRC += modules/machine_rtcounter.c
+SRC += modules/machine_timer.c
+SRC += modules/machine_touchbutton.c
 
-SRC += micropython/lib/libm/acoshf.c
-SRC += micropython/lib/libm/asinfacosf.c
-SRC += micropython/lib/libm/asinhf.c
-SRC += micropython/lib/libm/atan2f.c
-SRC += micropython/lib/libm/atanf.c
-SRC += micropython/lib/libm/atanhf.c
-SRC += micropython/lib/libm/ef_rem_pio2.c
-SRC += micropython/lib/libm/ef_sqrt.c
-SRC += micropython/lib/libm/erf_lgamma.c
-SRC += micropython/lib/libm/fmodf.c
-SRC += micropython/lib/libm/kf_cos.c
-SRC += micropython/lib/libm/kf_rem_pio2.c
-SRC += micropython/lib/libm/kf_sin.c
-SRC += micropython/lib/libm/kf_tan.c
-SRC += micropython/lib/libm/log1pf.c
-SRC += micropython/lib/libm/math.c
-SRC += micropython/lib/libm/nearbyintf.c
-SRC += micropython/lib/libm/roundf.c
-SRC += micropython/lib/libm/sf_cos.c
-SRC += micropython/lib/libm/sf_erf.c
-SRC += micropython/lib/libm/sf_frexp.c
-SRC += micropython/lib/libm/sf_ldexp.c
-SRC += micropython/lib/libm/sf_modf.c
-SRC += micropython/lib/libm/sf_sin.c
-SRC += micropython/lib/libm/sf_tan.c
-SRC += micropython/lib/libm/wf_lgamma.c
-SRC += micropython/lib/libm/wf_tgamma.c
-SRC += micropython/shared/libc/string0.c
-SRC += micropython/shared/readline/readline.c
-SRC += micropython/shared/runtime/interrupt_char.c
-SRC += micropython/shared/runtime/pyexec.c
-SRC += micropython/shared/runtime/sys_stdio_mphal.c
-SRC += micropython/shared/timeutils/timeutils.c
+SRC += ../micropython/lib/libm/acoshf.c
+SRC += ../micropython/lib/libm/asinfacosf.c
+SRC += ../micropython/lib/libm/asinhf.c
+SRC += ../micropython/lib/libm/atan2f.c
+SRC += ../micropython/lib/libm/atanf.c
+SRC += ../micropython/lib/libm/atanhf.c
+SRC += ../micropython/lib/libm/ef_rem_pio2.c
+SRC += ../micropython/lib/libm/ef_sqrt.c
+SRC += ../micropython/lib/libm/erf_lgamma.c
+SRC += ../micropython/lib/libm/fmodf.c
+SRC += ../micropython/lib/libm/kf_cos.c
+SRC += ../micropython/lib/libm/kf_rem_pio2.c
+SRC += ../micropython/lib/libm/kf_sin.c
+SRC += ../micropython/lib/libm/kf_tan.c
+SRC += ../micropython/lib/libm/log1pf.c
+SRC += ../micropython/lib/libm/math.c
+SRC += ../micropython/lib/libm/nearbyintf.c
+SRC += ../micropython/lib/libm/roundf.c
+SRC += ../micropython/lib/libm/sf_cos.c
+SRC += ../micropython/lib/libm/sf_erf.c
+SRC += ../micropython/lib/libm/sf_frexp.c
+SRC += ../micropython/lib/libm/sf_ldexp.c
+SRC += ../micropython/lib/libm/sf_modf.c
+SRC += ../micropython/lib/libm/sf_sin.c
+SRC += ../micropython/lib/libm/sf_tan.c
+SRC += ../micropython/lib/libm/wf_lgamma.c
+SRC += ../micropython/lib/libm/wf_tgamma.c
+SRC += ../micropython/shared/libc/string0.c
+SRC += ../micropython/shared/readline/readline.c
+SRC += ../micropython/shared/runtime/interrupt_char.c
+SRC += ../micropython/shared/runtime/pyexec.c
+SRC += ../micropython/shared/runtime/sys_stdio_mphal.c
+SRC += ../micropython/shared/timeutils/timeutils.c
 
-SRC += nrfx/drivers/src/nrfx_clock.c
-SRC += nrfx/drivers/src/nrfx_gpiote.c
-SRC += nrfx/drivers/src/nrfx_nvmc.c
-SRC += nrfx/drivers/src/nrfx_rtc.c
-SRC += nrfx/drivers/src/nrfx_saadc.c
-SRC += nrfx/drivers/src/nrfx_spi.c
-SRC += nrfx/drivers/src/nrfx_spim.c
-SRC += nrfx/drivers/src/nrfx_systick.c
-SRC += nrfx/drivers/src/nrfx_timer.c
-SRC += nrfx/drivers/src/nrfx_twi.c
-SRC += nrfx/drivers/src/prs/nrfx_prs.c
-SRC += nrfx/helpers/nrfx_flag32_allocator.c
-SRC += nrfx/mdk/system_nrf52.c
+SRC += ../nrfx/drivers/src/nrfx_clock.c
+SRC += ../nrfx/drivers/src/nrfx_gpiote.c
+SRC += ../nrfx/drivers/src/nrfx_nvmc.c
+SRC += ../nrfx/drivers/src/nrfx_rtc.c
+SRC += ../nrfx/drivers/src/nrfx_saadc.c
+SRC += ../nrfx/drivers/src/nrfx_spi.c
+SRC += ../nrfx/drivers/src/nrfx_spim.c
+SRC += ../nrfx/drivers/src/nrfx_systick.c
+SRC += ../nrfx/drivers/src/nrfx_timer.c
+SRC += ../nrfx/drivers/src/nrfx_twi.c
+SRC += ../nrfx/drivers/src/prs/nrfx_prs.c
+SRC += ../nrfx/helpers/nrfx_flag32_allocator.c
+SRC += ../nrfx/mdk/system_nrf52.c
 
 SRC_QSTR += $(SRC) $(SRC_MOD)
 
@@ -241,4 +239,4 @@ $(DFU_PACKAGE_ZIP): $(BOOTLOADER_KEY) $(DFU_PACKAGE_HEX)
 .elf.hex:
 	$(OBJCOPY) -O ihex $< $@
 
-include ./micropython/py/mkrules.mk
+include ../micropython/py/mkrules.mk

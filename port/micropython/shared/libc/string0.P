@@ -1,0 +1,7 @@
+build/../micropython/shared/libc/string0.o: \
+ ../micropython/shared/libc/string0.c \
+ /usr/lib/gcc/arm-none-eabi/8.3.1/include/stdint.h \
+ /usr/lib/gcc/arm-none-eabi/8.3.1/include/stddef.h
+ ../micropython/shared/libc/string0.c :
+ /usr/lib/gcc/arm-none-eabi/8.3.1/include/stdint.h :
+ /usr/lib/gcc/arm-none-eabi/8.3.1/include/stddef.h :

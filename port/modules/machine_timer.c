@@ -26,8 +26,8 @@
 
 #include "py/nlr.h"
 #include "py/runtime.h"
-#include "timer.h"
 #include "nrfx_timer.h"
+#include "machine_timer.h"
 
 #if MICROPY_PY_MACHINE_TIMER
 

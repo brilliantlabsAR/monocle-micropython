@@ -5,10 +5,10 @@
 
 #include "py/obj.h"
 #include "py/runtime.h"
+#include "nrfx_log.h"
 #include "monocle_fpga.h"
 #include "monocle_config.h"
-#include "nrfx_log.h"
-#include "fpga.h"
+#include "machine_fpga.h"
 
 typedef struct {
     mp_obj_base_t base;

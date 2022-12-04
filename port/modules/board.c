@@ -28,7 +28,7 @@
 #include "shared/runtime/pyexec.h"
 #include "py/runtime.h"
 #include "py/obj.h"
-#include "led.h"
+#include "board_led.h"
 #include "nrf.h" // TODO: figure out where to put this import
 
 STATIC const mp_rom_map_elem_t board_module_globals_table[] = {

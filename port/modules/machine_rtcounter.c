@@ -27,9 +27,9 @@
 
 #include "py/nlr.h"
 #include "py/runtime.h"
-#include "rtcounter.h"
 #include "nrfx_rtc.h"
 #include "nrf_clock.h"
+#include "machine_rtcounter.h"
 
 #if MICROPY_PY_MACHINE_RTCOUNTER
 
