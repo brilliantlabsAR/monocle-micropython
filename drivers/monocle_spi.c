@@ -34,22 +34,16 @@ static const nrfx_spim_t m_spi = NRFX_SPIM_INSTANCE(SPI_INSTANCE);
 // Indicate that SPI completed the transfer from the interrupt handler to main loop.
 static volatile bool m_xfer_done = true;
 
-static inline void spi_chip_select(uint8_t cs_pin)
-{
-    nrf_gpio_pin_clear(cs_pin);
-}
-
-static inline void spi_chip_deselect(uint8_t cs_pin)
-{
-    nrf_gpio_pin_set(cs_pin);
-}
+// Compatibility with the previous API.
+static uint8_t m_cs_pin;
 
 /**
  * SPI event handler
  */
 void spim_event_handler(nrfx_spim_evt_t const * p_event, void *p_context)
 {
-    // NOTE: there is only one event type: NRFX_SPIM_EVENT_DONE, so no need for case statement
+    // NOTE: there is only one event type: NRFX_SPIM_EVENT_DONE
+    // so no need for case statement
     m_xfer_done = true;
 }
 
@@ -59,14 +53,13 @@ void spim_event_handler(nrfx_spim_evt_t const * p_event, void *p_context)
 void spi_init(void)
 {
     nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
-        SPIM0_SCK_PIN,
-        SPIM0_MOSI_PIN,
-        SPIM0_MISO_PIN,
-        NRFX_SPIM_PIN_NOT_USED
+        SPIM0_SCK_PIN, SPIM0_MOSI_PIN, SPIM0_MISO_PIN, NRFX_SPIM_PIN_NOT_USED
     );
-    config.frequency      = NRF_SPIM_FREQ_1M;
-    config.mode           = NRF_SPIM_MODE_3;
-    config.bit_order      = NRF_SPIM_BIT_ORDER_LSB_FIRST;
+
+    config.frequency = NRF_SPIM_FREQ_1M;
+    config.mode      = NRF_SPIM_MODE_3;
+    config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
+
     CHECK(nrfx_spim_init(&m_spi, &config, spim_event_handler, NULL));
 
     // configure CS pin for the Display (for active low)
@@ -104,110 +97,41 @@ void spi_uninit(void)
     // NOTE: this did not make a measurable difference
 }
 
-
-static void spi_xfer(nrfx_spim_xfer_desc_t *xfer)
+/**
+ * Select the CS pin: software control.
+ * @param cs_pin GPIO pin to use, must be configured as output.
+ */
+void spi_chip_select(uint8_t cs_pin)
 {
+    nrf_gpio_pin_clear(cs_pin);
+}
+
+/**
+ * Deselect the CS pin: software control.
+ * @param cs_pin GPIO pin to use, must be configured as output.
+ */
+void spi_chip_deselect(uint8_t cs_pin)
+{
+    nrf_gpio_pin_set(cs_pin);
+}
+
+/**
+ * Write a buffer over SPI, and read the result back to the same buffer.
+ * @param cs_pin Pin to use as chip-select signal, must be configured as output.
+ * @param buf Data buffer to send, starting one byte just before that pointer (compatibility hack).
+ * @param len Length of the buffer (buf[-1] excluded).
+ */
+void spi_xfer(uint8_t *buf, size_t len)
+{
+    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TRX(buf, len, buf, len);
+
     // wait for any pending SPI operation to complete
     while (!m_xfer_done)
         __WFE();
 
     // Start the transaction and wait for the interrupt handler to warn us it is done.
     m_xfer_done = false;
-    CHECK(nrfx_spim_xfer(&m_spi, xfer, 0));
+    CHECK(nrfx_spim_xfer(&m_spi, &xfer, 0));
     while (!m_xfer_done)
         __WFE();
-}
-
-static inline void spi_tx_buffer(uint8_t *tx_buf, uint16_t tx_len)
-{
-    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(tx_buf, tx_len);
-    spi_xfer(&xfer);
-}
-
-static inline void spi_rx_buffer(uint8_t *rx_buf, uint16_t rx_len)
-{
-    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(rx_buf, rx_len);
-    spi_xfer(&xfer);
-}
-
-static inline void spi_tx_byte(uint8_t tx_byte)
-{
-    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(&tx_byte, 1);
-    spi_xfer(&xfer);
-}
-
-static inline uint8_t spi_rx_byte(void)
-{
-    uint8_t rx_byte;
-    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(&rx_byte, 1);
-    spi_xfer(&xfer);
-    return rx_byte;
-}
-
-/**
- * Write a burst of multiple bytes over SPI, prefixed by an address field.
- * @param cs_pin GPIO pin number.
- * @param addr First byte of the SPI transaction, indicating an address.
- * @param buf Data buffer to send.
- * @param len Length of the buf buffer.
- */
-void spi_write_buffer(uint8_t cs_pin, uint8_t addr, uint8_t *buf, uint16_t len)
-{
-    spi_chip_select(cs_pin);
-    spi_tx_byte(addr);
-    spi_tx_buffer(buf, len);
-    spi_chip_deselect(cs_pin);
-}
-
-/**
- * Write a single byte over SPI
- * @param cs_pin GPIO pin number.
- * @param addr Address sent before the byte.
- * @param byte Byte to send after the address.
- */
-void spi_write_register(uint8_t cs_pin, uint8_t addr, uint8_t data)
-{
-    spi_write_buffer(cs_pin, addr, &data, 1);
-}
-
-/**
- * Read a burst of multiple bytes at an address.
- * @param cs_pin GPIO pin number.
- * @param addr Address sent before the data is read.
- * @param len Number of bytes to read.
- * @return Pointer to data, but data will be overwritten by the next SPI read or write
- * so caller must guarantee processing of the data before the next SPI transaction.
- */
-void spi_read_buffer(uint8_t cs_pin, uint8_t addr, uint8_t *rx_buf, uint16_t rx_len)
-{
-    // set RD_ON register to 1
-    spi_chip_select(cs_pin);
-    spi_tx_byte(0x80);
-    spi_tx_byte(0x01);
-    spi_chip_deselect(cs_pin);
-
-    // write address of target register to read continuously
-    spi_chip_select(cs_pin);
-    spi_tx_byte(0x81);
-    spi_tx_byte(addr);
-    spi_chip_deselect(cs_pin);
-
-    // read the data at that burst register
-    spi_chip_select(cs_pin);
-    spi_tx_byte(0x81);
-    spi_rx_buffer(rx_buf, rx_len);
-    spi_chip_deselect(cs_pin);
-}
-
-/*
- * Read a single byte over SPI at the given address.
- * @param cs_pin GPIO pin number.
- * @param addr Byte sent before the data is read.
- * @return The byte read after the address is sent.
- */
-uint8_t spi_read_register(uint8_t cs_pin, uint8_t addr)
-{
-    uint8_t rx_byte;
-    spi_read_buffer(cs_pin, addr, &rx_byte, 1);
-    return rx_byte;
 }

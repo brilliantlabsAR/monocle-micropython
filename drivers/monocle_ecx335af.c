@@ -24,12 +24,25 @@
 
 static inline const void ecx335af_write_byte(uint8_t addr, uint8_t data)
 {
-    spi_write_register(SPIM0_DISP_CS_PIN, addr, data);
+    uint8_t buf[2] = { addr, data };
+
+    spi_chip_select(SPIM0_DISP_CS_PIN);
+    spi_xfer(buf, sizeof buf);
+    spi_chip_deselect(SPIM0_DISP_CS_PIN);
 }
 
 static inline uint8_t ecx335af_read_byte(uint8_t addr)
 {
-    return spi_read_register(SPIM0_DISP_CS_PIN, addr);
+    uint8_t buf[2] = { 0x81, 0x00 };
+
+    ecx335af_write_byte(0x80, 0x01);
+    ecx335af_write_byte(0x81, addr);
+
+    spi_chip_select(SPIM0_DISP_CS_PIN);
+    spi_xfer(buf, sizeof buf);
+    spi_chip_deselect(SPIM0_DISP_CS_PIN);
+
+    return buf[1];
 }
 
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
@@ -190,6 +203,7 @@ void ecx335af_init(void)
     ecx335af_write_byte(0x7D, 0x00);
     ecx335af_write_byte(0x7E, 0x00);
     ecx335af_write_byte(0x7F, 0x00);
+
     //ecx335af_write_byte(0x00, 0x0F); // exit power saving mode, RGB
     ecx335af_write_byte(0x00, 0x9F); // exit power saving mode, YUV
 

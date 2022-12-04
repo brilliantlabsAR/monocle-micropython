@@ -19,7 +19,7 @@
  * @{
  */
 
-#define fpga_check_reg(reg) NRFX_LOG_ERROR("spi0x%02X %-s is %d", reg, #reg, fpga_get_register(reg))
+#define fpga_check_reg(reg) NRFX_LOG_ERROR("spi0x%02X %-s is %d", reg, #reg, fpga_read_register(reg))
 
 /** number of capture buffers supported */
 #define FPGA_BUFFERS_SUPPORTED    1 // single buffer
@@ -64,12 +64,6 @@
 
 #define FPGA_REGISTER_EXISTS(reg)  \
     ((reg) >= FPGA_SYSTEM_CONTROL && (reg) <= FPGA_VERSION_MAJOR)
-
-#define FPGA_REGISTER_IS_WRITABLE(reg) ( \
-    ((reg) >= FPGA_SYSTEM_CONTROL && (reg) <= FPGA_CAPTURE_CONTROL \
-     && (reg) != FPGA_SYSTEM_STATUS && (reg) != FPGA_BURST_RD_DATA) \
-    || (reg) == FPGA_REPLAY_RATE_CONTROL || (reg) == FPGA_MIC_CONTROL \
-)
 
 #ifndef BIT
 #define BIT(n) (0x01<<n)
@@ -157,8 +151,8 @@ void fpga_init(void);
 void fpga_deinit(void);
 
 // TODO: these should eventually be hidden, after we are done debugging (& move #defines above to .c file)
-void fpga_set_register(uint8_t addr, uint8_t byte);
-uint8_t fpga_get_register(uint8_t addr);
+void fpga_write_register(uint8_t addr, uint8_t byte);
+uint8_t fpga_read_register(uint8_t addr);
 // TODO: should be hidden after writing a higher-level burst read function
 void fpga_write_burst(uint8_t *buf, uint16_t len);
 void fpga_read_burst(uint8_t *buf, uint16_t len);
