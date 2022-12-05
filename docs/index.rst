@@ -49,7 +49,6 @@ Monocle Phone Application Side
    firmware_architecture.rst
    firmware_driver_api/index.rst
    firmware_python_api/index.rst
-   firmware_release_notes.rst
 
 .. toctree::
    :maxdepth: 5
