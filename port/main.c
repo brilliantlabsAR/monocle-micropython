@@ -137,8 +137,8 @@ void MP_WEAK __assert_func(const char *file, int line, const char *func, const c
     (void)expr;
     (void)file;
     (void)line;
-    NRFX_ASSERT(false);
-    for (;;); // Make the compiler happy.
+    //NRFX_ASSERT(false);
+    //for (;;); // Make the compiler happy.
 }
 
 /**

@@ -81,19 +81,19 @@
       Stops any ongoing audio stream
 
 
-.. py:class:: Power() 🟠
+.. py:class:: Power
 
-   Controlling general power.
+   Controlling general power state of the device.
 
    .. py:method:: hibernate(enable) 🟠
 
       Enables or disables all the high power devices. Networking remains active. Upon re-enabling the FPGA will remain in reset until booted using FPGA.boot()
 
-   .. py:method:: reset() 🟠
+   .. py:method:: reset()
 
       Resets the device
 
-   .. py:method:: reset_cause() 🟠
+   .. py:method:: reset_cause()
 
       :return: the reason for the previous reset or startup state
 
@@ -119,11 +119,33 @@
       De-initializes the timer and stops any callbacks
 
 
-.. py:class:: Touch(callback) 🟠
+.. py:class:: Touch(callback)
 
-   :param function callback():
+   :param function callback(event): The callback called upon a touch event, passed as argument.
 
-   Setting up touch event callbacks
+   Invoking Touch sets-up a function as callback, called upon any of those events:
+
+   .. py:data:: TOUCH_TRIGGER_0_TAP
+
+   .. py:data:: TOUCH_TRIGGER_1_TAP
+
+   .. py:data:: TOUCH_TRIGGER_BOTH_TAP
+
+   .. py:data:: TOUCH_TRIGGER_0_PRESS
+
+   .. py:data:: TOUCH_TRIGGER_1_PRESS
+
+   .. py:data:: TOUCH_TRIGGER_BOTH_PRESS
+
+   .. py:data:: TOUCH_TRIGGER_0_LONG
+
+   .. py:data:: TOUCH_TRIGGER_1_LONG
+
+   .. py:data:: TOUCH_TRIGGER_BOTH_LONG
+
+   .. py:data:: TOUCH_TRIGGER_0_1_SLIDE
+
+   .. py:data:: TOUCH_TRIGGER_1_0_SLIDE
 
 .. py:function:: mac_address() 🟠
 

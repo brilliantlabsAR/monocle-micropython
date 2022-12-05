@@ -14,10 +14,9 @@
 
 typedef struct {
     mp_obj_base_t base;
-    uint8_t id;
 } machine_fpga_obj_t;
 
-static machine_fpga_obj_t fpga_obj = {{&machine_fpga_type}, 0};
+static machine_fpga_obj_t fpga_obj = {{&machine_fpga_type}};
 
 STATIC mp_obj_t machine_fpga_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args)
 {
@@ -34,11 +33,10 @@ STATIC mp_obj_t machine_fpga_make_new(const mp_obj_type_t *type, size_t n_args, 
 
 STATIC void machine_fpga_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
 {
-    machine_fpga_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    (void)self_in;
     (void)kind;
 
-    assert(self->id == 0);
-    mp_printf(print, "FPGA()");
+    mp_printf(print, "FPGA(\n");
     fpga_check_reg(FPGA_SYSTEM_CONTROL);
     fpga_check_reg(FPGA_DISPLAY_CONTROL);
     fpga_check_reg(FPGA_MEMORY_CONTROL);
@@ -67,11 +65,13 @@ STATIC void machine_fpga_print(const mp_print_t *print, mp_obj_t self_in, mp_pri
     fpga_check_reg(FPGA_CAPT_BYTE_COUNT_3);
     fpga_check_reg(FPGA_VERSION_MINOR);
     fpga_check_reg(FPGA_VERSION_MAJOR);
-    mp_printf(print, ")\n");
+    mp_printf(print, ")");
 }
 
 STATIC mp_obj_t machine_fpga_spi_read(mp_obj_t self_in, mp_obj_t addr_in)
 {
+    (void)self_in;
+    (void)addr_in;
     // use spi_write instead, which fills the bytearray with the value read.
     return mp_const_notimplemented;
 }
@@ -79,10 +79,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(machine_fpga_spi_read_obj, machine_fpga_spi_rea
 
 STATIC mp_obj_t machine_fpga_spi_write(mp_obj_t self_in, mp_obj_t bytearray_in)
 {
-    machine_fpga_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    (void)self_in;
     mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
 
-    assert(self->id == 0);
     spi_chip_select(SPIM0_FPGA_CS_PIN);
     spi_xfer(bytearray->items, bytearray->len);
     spi_chip_deselect(SPIM0_FPGA_CS_PIN);

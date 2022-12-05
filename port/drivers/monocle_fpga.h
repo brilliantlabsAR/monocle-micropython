@@ -19,7 +19,7 @@
  * @{
  */
 
-#define fpga_check_reg(reg) NRFX_LOG_ERROR("spi0x%02X %-s is %d", reg, #reg, fpga_read_register(reg))
+#define fpga_check_reg(reg) NRFX_LOG_ERROR("[0x%02X] %-s=%d", reg, #reg, fpga_read_register(reg))
 
 /** number of capture buffers supported */
 #define FPGA_BUFFERS_SUPPORTED    1 // single buffer

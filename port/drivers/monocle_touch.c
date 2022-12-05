@@ -158,7 +158,7 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
     },
 };
 
-static void (*touch_trigger_is_on[TOUCH_STATE_NUM])(void) = {
+static bool touch_trigger_is_on[TOUCH_STATE_NUM] = {
     // Push and quick release.
     [TOUCH_TRIGGER_0_TAP]      = true,
     [TOUCH_TRIGGER_1_TAP]      = true,
@@ -245,7 +245,7 @@ static void touch_next_state(touch_event_t event)
     assert(touch_state != TOUCH_STATE_INVALID);
 
     // Handle the multiple states.
-    if (touch_trigger_is_on[touch_state] != NULL)
+    if (touch_trigger_is_on[touch_state])
     {
         // When there is a callback associated with the state, run it.
         touch_callback(touch_state);

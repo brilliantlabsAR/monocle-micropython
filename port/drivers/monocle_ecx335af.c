@@ -16,7 +16,6 @@
 #include <stddef.h>
 #include "monocle_board.h"
 #include "monocle_config.h"
-#include "monocle_fpga.h"
 #include "monocle_spi.h"
 #include "nrf_gpio.h"
 #include "nrfx_log.h"
