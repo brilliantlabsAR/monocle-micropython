@@ -17,10 +17,12 @@ struct {
  */
 void touch_callback(touch_state_t trigger)
 {
-    LOG("trigger=0x%02X", trigger);
-
-    if (machine_touch.callback)
+    if (machine_touch.callback) {
+        LOG("trigger=0x%02X scheduling trigger", trigger);
         mp_sched_schedule(machine_touch.callback, MP_OBJ_NEW_SMALL_INT(trigger));
+    } else {
+        LOG("trigger=0x%02X no callback set", trigger);
+    }
 }
 
 void machine_touch_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
