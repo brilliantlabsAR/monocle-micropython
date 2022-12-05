@@ -37,72 +37,6 @@
  */
 
 typedef enum {
-    TOUCH_STATE_INVALID,
-
-    TOUCH_STATE_IDLE,
-    TOUCH_STATE_0_ON,
-    TOUCH_STATE_1_ON,
-    TOUCH_STATE_0_ON_SHORT,
-    TOUCH_STATE_1_ON_SHORT,
-    TOUCH_STATE_BOTH_ON,
-    TOUCH_STATE_BOTH_ON_SHORT,
-    TOUCH_STATE_0_ON_OFF,
-    TOUCH_STATE_1_ON_OFF,
-    TOUCH_STATE_0_ON_OFF_1_ON,
-    TOUCH_STATE_1_ON_OFF_0_ON,
-
-    // '*' for button ON
-    // ' ' for button OFF
-    // 'T' for timeout
-
-    // Button 0: [**       ] 
-    // Button 1: [         ]
-    TOUCH_TRIGGER_0_TAP,
-
-    // Button 0: [         ]
-    // Button 1: [**       ]
-    TOUCH_TRIGGER_1_TAP,
-
-    // Button 0: [****     ] 
-    // Button 1: [         ]
-    TOUCH_TRIGGER_0_PRESS,
-
-    // Button 0: [         ]
-    // Button 1: [****     ]
-    TOUCH_TRIGGER_1_PRESS,
-
-    // Button 0: [******T  ] 
-    // Button 1: [         ]
-    TOUCH_TRIGGER_0_LONG,
-
-    // Button 0: [         ]
-    // Button 1: [******T  ]
-    TOUCH_TRIGGER_1_LONG,
-
-    // Button 0: [***      ] or [*****    ] or [ ***     ] or [ ***     ]
-    // Button 1: [ ***     ]    [ ***     ]    [***      ]    [*****    ]
-    TOUCH_TRIGGER_BOTH_TAP,
-
-    // Button 0: [*****    ] or [*******  ] or [ *****   ] or [ *****   ]
-    // Button 1: [ *****   ]    [ *****   ]    [*****    ]    [*******  ]
-    TOUCH_TRIGGER_BOTH_PRESS,
-
-    // Button 0: [******T  ] or [ *****T  ]
-    // Button 1: [ *****T  ]    [******T  ]
-    TOUCH_TRIGGER_BOTH_LONG,
-
-    // Button 0: [***      ]
-    // Button 1: [    ***  ]
-    TOUCH_TRIGGER_0_1_SLIDE,
-
-    // Button 0: [    ***  ]
-    // Button 1: [***      ]
-    TOUCH_TRIGGER_1_0_SLIDE,
-
-    TOUCH_STATE_NUM,
-} touch_state_t;
-
-typedef enum {
     TOUCH_EVENT_0_ON,
     TOUCH_EVENT_0_OFF,
     TOUCH_EVENT_1_ON,
@@ -224,22 +158,22 @@ const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
     },
 };
 
-static void (*touch_trigger_fn[TOUCH_STATE_NUM])(void) = {
+static void (*touch_trigger_is_on[TOUCH_STATE_NUM])(void) = {
     // Push and quick release.
-    [TOUCH_TRIGGER_0_TAP]      = touch_callback_trigger_0_tap,
-    [TOUCH_TRIGGER_1_TAP]      = touch_callback_trigger_1_tap,
-    [TOUCH_TRIGGER_BOTH_TAP]   = touch_callback_trigger_both_tap,
+    [TOUCH_TRIGGER_0_TAP]      = true,
+    [TOUCH_TRIGGER_1_TAP]      = true,
+    [TOUCH_TRIGGER_BOTH_TAP]   = true,
     // Push one for >0.5s and <10s then release.
-    [TOUCH_TRIGGER_0_PRESS]    = touch_callback_trigger_0_press,
-    [TOUCH_TRIGGER_1_PRESS]    = touch_callback_trigger_1_press,
-    [TOUCH_TRIGGER_BOTH_PRESS] = touch_callback_trigger_both_press,
+    [TOUCH_TRIGGER_0_PRESS]    = true,
+    [TOUCH_TRIGGER_1_PRESS]    = true,
+    [TOUCH_TRIGGER_BOTH_PRESS] = true,
     // Push for >10s then release.
-    [TOUCH_TRIGGER_0_LONG]     = touch_callback_trigger_0_long,
-    [TOUCH_TRIGGER_1_LONG]     = touch_callback_trigger_1_long,
-    [TOUCH_TRIGGER_BOTH_LONG]  = touch_callback_trigger_both_long,
+    [TOUCH_TRIGGER_0_LONG]     = true,
+    [TOUCH_TRIGGER_1_LONG]     = true,
+    [TOUCH_TRIGGER_BOTH_LONG]  = true,
     // Tap on one button followed by tap on other.
-    [TOUCH_TRIGGER_0_1_SLIDE]  = touch_callback_trigger_0_1_slide,
-    [TOUCH_TRIGGER_1_0_SLIDE]  = touch_callback_trigger_1_0_slide,
+    [TOUCH_TRIGGER_0_1_SLIDE]  = true,
+    [TOUCH_TRIGGER_1_0_SLIDE]  = true,
     // Tap, followed quickly by another Tap.
     // TODO
 };
@@ -311,10 +245,10 @@ static void touch_next_state(touch_event_t event)
     assert(touch_state != TOUCH_STATE_INVALID);
 
     // Handle the multiple states.
-    if (touch_trigger_fn[touch_state] != NULL)
+    if (touch_trigger_is_on[touch_state] != NULL)
     {
         // When there is a callback associated with the state, run it.
-        touch_trigger_fn[touch_state]();
+        touch_callback(touch_state);
 
         // If something was triggered, come back to the "IDLE" state.
         touch_state = TOUCH_STATE_IDLE;
@@ -386,57 +320,8 @@ void iqs620_callback_button_released(uint8_t button)
     }
 }
 
-void touch_callback_trigger_0_tap(void)
+__attribute__((weak))
+void touch_callback(touch_state_t trigger)
 {
-    LOG("");
-}
-
-void touch_callback_trigger_1_tap(void)
-{
-    LOG("");
-}
-
-void touch_callback_trigger_0_press(void)
-{
-    LOG("");
-}
-
-void touch_callback_trigger_1_press(void)
-{
-    LOG("");
-}
-
-void touch_callback_trigger_0_long(void)
-{
-    LOG("");
-}
-
-void touch_callback_trigger_1_long(void)
-{
-    LOG("");
-}
-
-void touch_callback_trigger_both_tap(void)
-{
-    LOG("");
-}
-
-void touch_callback_trigger_both_press(void)
-{
-    LOG("");
-}
-
-void touch_callback_trigger_both_long(void)
-{
-    LOG("");
-}
-
-void touch_callback_trigger_0_1_slide(void)
-{
-    LOG("");
-}
-
-void touch_callback_trigger_1_0_slide(void)
-{
-    LOG("");
+    LOG("trigger=%d", trigger);
 }

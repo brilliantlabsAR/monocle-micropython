@@ -128,7 +128,7 @@ SRC += modules/machine_battery.c
 SRC += modules/machine_fpga.c
 SRC += modules/machine_rtcounter.c
 SRC += modules/machine_timer.c
-SRC += modules/machine_touchbutton.c
+SRC += modules/machine_touch.c
 
 SRC += ../micropython/lib/libm/acoshf.c
 SRC += ../micropython/lib/libm/asinfacosf.c

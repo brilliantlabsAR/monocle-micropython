@@ -15,36 +15,73 @@
  * @{
  */
 
-/** "Gestures" detected by this module. */
 typedef enum {
-    TOUCH_GESTURE_SLIDELR,    ///< "slide" left to right = Tap left then right buttons
-    TOUCH_GESTURE_SLIDERL,    ///< "slide" right to left = Tap right then left buttons
-    TOUCH_GESTURE_PRESSBOTH,  ///< push both buttons for >0.5s & <10s then release
-    TOUCH_GESTURE_LONGBOTH,   ///< push both buttons for >10s then release
-    TOUCH_GESTURE_TAP,        ///< button push & release in <0.5s, with no push in following 0.25s
-    TOUCH_GESTURE_DOUBLETAP,  ///< Tap, followed by another Tap <0.25s later
-    TOUCH_GESTURE_PRESS,      ///< push for >0.5s & <10s then release
-    TOUCH_GESTURE_LONGPRESS   ///< push for >10s then release
-} touch_gesture_t;
+    TOUCH_STATE_INVALID,
 
-/** Touch gesture handler type. */
-typedef void (*touch_gesture_handler_t)(touch_gesture_t gesture);
+    TOUCH_STATE_IDLE,
+    TOUCH_STATE_0_ON,
+    TOUCH_STATE_1_ON,
+    TOUCH_STATE_0_ON_SHORT,
+    TOUCH_STATE_1_ON_SHORT,
+    TOUCH_STATE_BOTH_ON,
+    TOUCH_STATE_BOTH_ON_SHORT,
+    TOUCH_STATE_0_ON_OFF,
+    TOUCH_STATE_1_ON_OFF,
+    TOUCH_STATE_0_ON_OFF_1_ON,
+    TOUCH_STATE_1_ON_OFF_0_ON,
 
-void touch_quick_init(void);
-bool touch_init(touch_gesture_handler_t handler);
-bool touch_reprogram(void);
-bool touch_print_ch_counts(void);
-void touch_callback_trigger_0_tap(void);
-void touch_callback_trigger_1_tap(void);
-void touch_callback_trigger_0_press(void);
-void touch_callback_trigger_1_press(void);
-void touch_callback_trigger_0_long(void);
-void touch_callback_trigger_1_long(void);
-void touch_callback_trigger_both_tap(void);
-void touch_callback_trigger_both_press(void);
-void touch_callback_trigger_both_long(void);
-void touch_callback_trigger_0_1_slide(void);
-void touch_callback_trigger_1_0_slide(void);
+    // '*' for button ON
+    // ' ' for button OFF
+    // 'T' for timeout
+
+    // Button 0: [**       ]
+    // Button 1: [         ]
+    TOUCH_TRIGGER_0_TAP,
+
+    // Button 0: [         ]
+    // Button 1: [**       ]
+    TOUCH_TRIGGER_1_TAP,
+
+    // Button 0: [****     ]
+    // Button 1: [         ]
+    TOUCH_TRIGGER_0_PRESS,
+
+    // Button 0: [         ]
+    // Button 1: [****     ]
+    TOUCH_TRIGGER_1_PRESS,
+
+    // Button 0: [******T  ]
+    // Button 1: [         ]
+    TOUCH_TRIGGER_0_LONG,
+
+    // Button 0: [         ]
+    // Button 1: [******T  ]
+    TOUCH_TRIGGER_1_LONG,
+
+    // Button 0: [***      ] or [*****    ] or [ ***     ] or [ ***     ]
+    // Button 1: [ ***     ]    [ ***     ]    [***      ]    [*****    ]
+    TOUCH_TRIGGER_BOTH_TAP,
+
+    // Button 0: [*****    ] or [*******  ] or [ *****   ] or [ *****   ]
+    // Button 1: [ *****   ]    [ *****   ]    [*****    ]    [*******  ]
+    TOUCH_TRIGGER_BOTH_PRESS,
+
+    // Button 0: [******T  ] or [ *****T  ]
+    // Button 1: [ *****T  ]    [******T  ]
+    TOUCH_TRIGGER_BOTH_LONG,
+
+    // Button 0: [***      ]
+    // Button 1: [    ***  ]
+    TOUCH_TRIGGER_0_1_SLIDE,
+
+    // Button 0: [    ***  ]
+    // Button 1: [***      ]
+    TOUCH_TRIGGER_1_0_SLIDE,
+
+    TOUCH_STATE_NUM,
+} touch_state_t;
+
+void touch_callback(touch_state_t trigger);
 
 /** @} */
 #endif

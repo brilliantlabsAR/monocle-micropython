@@ -42,7 +42,7 @@
       Pushes a framebuffer object to the FPGA for drawing onto the display
 
 
-.. py:class:: FPGA() 🟠
+.. py:class:: FPGA()
 
    Communication with the FPGA.
 
@@ -51,7 +51,7 @@
       Downloads and reboots the FPGA with the bitstream from Bluetooth.
       Automatically powers up the FPGA if it was powered down.
 
-   .. py:method:: spi_read() 🟠
+   .. py:method:: spi_read()
 
       Not implemented, see spi_write() below.
 
@@ -119,7 +119,9 @@
       De-initializes the timer and stops any callbacks
 
 
-.. py:class:: Touch() 🟠
+.. py:class:: Touch(callback) 🟠
+
+   :param function callback():
 
    Setting up touch event callbacks
 

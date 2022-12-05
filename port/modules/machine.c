@@ -39,7 +39,7 @@
 #include "machine_timer.h"
 #include "machine_battery.h"
 #include "machine_fpga.h"
-#include "machine_touchbutton.h"
+#include "machine_touch.h"
 #if MICROPY_PY_MACHINE_RTCOUNTER
 #include "machine_rtcounter.h"
 #endif
@@ -158,7 +158,7 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_mem8),               MP_ROM_PTR(&machine_mem8_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem16),              MP_ROM_PTR(&machine_mem16_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem32),              MP_ROM_PTR(&machine_mem32_obj) },
-    { MP_ROM_QSTR(MP_QSTR_TouchButton),        MP_ROM_PTR(&machine_touchbutton_type) },
+    { MP_ROM_QSTR(MP_QSTR_Touch),              MP_ROM_PTR(&machine_touch_type) },
     { MP_ROM_QSTR(MP_QSTR_Battery),            MP_ROM_PTR(&machine_battery_type) },
     { MP_ROM_QSTR(MP_QSTR_FPGA),               MP_ROM_PTR(&machine_fpga_type) },
     
