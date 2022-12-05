@@ -182,7 +182,6 @@ SRC_QSTR += $(SRC) $(SRC_MOD)
 
 OBJ += $(PY_O)
 OBJ += $(addprefix build/, $(SRC:.c=.o))
-OBJ += $(addprefix build/, $(SRC_MOD:.c=.o))
 
 all: ${FIRMWARE_HEX} ${DFU_PACKAGE_ZIP}
 

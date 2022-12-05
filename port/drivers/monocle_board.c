@@ -111,7 +111,7 @@ void board_init(void)
     // Initialise the Screen
     // Needs: power, spi, fpga
     ecx335af_init();
-    fpga_disp_live();
+    //fpga_disp_live();
 
     // Initialise the Camera: startup sequence then I2C config.
     // Needs: power, fpga, i2c

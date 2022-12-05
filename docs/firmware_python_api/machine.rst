@@ -51,16 +51,17 @@
       Downloads and reboots the FPGA with the bitstream from Bluetooth.
       Automatically powers up the FPGA if it was powered down.
 
-   .. py:method:: spi_read(cmd, addr, bytes) 🟠
+   .. py:method:: spi_read() 🟠
 
-      :param int cmd: the command
-      :return: a byte array
+      Not implemented, see spi_write() below.
 
-      Reads bytes from the FPGA with a given command and address.
+   .. py:method:: spi_write(buf) 🟠
+      :param bytearray buf: Buffer holding the data to write.
 
-   .. py:method:: spi_write(cmd, addr, bytes, buffer) 🟠
-
-      Writes n bytes from buffer to the FPGA with a given command and address. 
+      Writes all bytes from the bytearray buffer to the FPGA in a single SPI transaction (CS pin going down then up).
+      The buffer is filled with the response data then returned.
+      For instance, ``[0x80, 0x00, 0x00, 0x00, 0x00]`` would send a ``0x80`` query then read 4 more bytes.
+      The same array, passed as argument would contain the response, such as ``[0x00, 0x12, 0x34, 0x56, 0x78]``.
 
    .. py:method:: status() 🟠
 

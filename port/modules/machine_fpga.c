@@ -4,9 +4,11 @@
  */
 
 #include "py/obj.h"
+#include "py/objarray.h"
 #include "py/runtime.h"
 #include "nrfx_log.h"
 #include "monocle_fpga.h"
+#include "monocle_spi.h"
 #include "monocle_config.h"
 #include "machine_fpga.h"
 
@@ -36,7 +38,7 @@ STATIC void machine_fpga_print(const mp_print_t *print, mp_obj_t self_in, mp_pri
     (void)kind;
 
     assert(self->id == 0);
-    mp_printf(print, "FPGA(");
+    mp_printf(print, "FPGA()");
     fpga_check_reg(FPGA_SYSTEM_CONTROL);
     fpga_check_reg(FPGA_DISPLAY_CONTROL);
     fpga_check_reg(FPGA_MEMORY_CONTROL);
@@ -70,27 +72,23 @@ STATIC void machine_fpga_print(const mp_print_t *print, mp_obj_t self_in, mp_pri
 
 STATIC mp_obj_t machine_fpga_spi_read(mp_obj_t self_in, mp_obj_t addr_in)
 {
-    machine_fpga_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    uint8_t addr = mp_obj_get_int(addr_in);
-
-    assert(self->id == 0);
-    return mp_obj_new_int(fpga_read_register(addr));
+    // use spi_write instead, which fills the bytearray with the value read.
+    return mp_const_notimplemented;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(machine_fpga_spi_read_obj, machine_fpga_spi_read);
 
-STATIC mp_obj_t machine_fpga_spi_write(mp_obj_t self_in, mp_obj_t addr_in, mp_obj_t data_in)
+STATIC mp_obj_t machine_fpga_spi_write(mp_obj_t self_in, mp_obj_t bytearray_in)
 {
-#if 0
     machine_fpga_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    uint8_t addr = mp_obj_get_int(addr_in);
-    uint8_t *data = mp_obj_get_int(data_in);
+    mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
 
     assert(self->id == 0);
-    fpga_set_register(addr, data);
-#endif
+    spi_chip_select(SPIM0_FPGA_CS_PIN);
+    spi_xfer(bytearray->items, bytearray->len);
+    spi_chip_deselect(SPIM0_FPGA_CS_PIN);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_3(machine_fpga_spi_write_obj, &machine_fpga_spi_write);
+MP_DEFINE_CONST_FUN_OBJ_2(machine_fpga_spi_write_obj, &machine_fpga_spi_write);
 
 STATIC const mp_rom_map_elem_t machine_fpga_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_spi_write),  MP_ROM_PTR(&machine_fpga_spi_write_obj) },
