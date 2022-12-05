@@ -1,5 +1,5 @@
-Get Started with the Developer Board
-====================================
+Getting Started
+===============
 
 This section describes all the necessary steps to connect the Monocle Developer Board for firmware and FPGA development. 
 

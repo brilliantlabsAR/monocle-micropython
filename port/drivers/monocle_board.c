@@ -111,12 +111,18 @@ void board_init(void)
     // Initialise the Screen
     // Needs: power, spi, fpga
     ecx335af_init();
-    fpga_disp_bars();
+    fpga_disp_live();
 
     // Initialise the Camera: startup sequence then I2C config.
     // Needs: power, fpga, i2c
+    ov5640_init();
     ov5640_pwr_on();
-    ov5640_focus_init();
+    ov5640_light_mode(0);
+    ov5640_color_saturation(3);
+    ov5640_brightness(4);
+    ov5640_contrast(3);
+    ov5640_sharpness(33);
+    ov5640_flip(1);
 
     // Initialise the SPI conection to the flash.
     // Needs: power

@@ -1,5 +1,5 @@
-Getting Started with the Firmware
-=================================
+Getting Started
+===============
 
 Building
 --------

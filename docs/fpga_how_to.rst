@@ -1,5 +1,5 @@
-Get Started with FPGA development
-=================================
+Getting  Started
+================
 
 Steps
 -----

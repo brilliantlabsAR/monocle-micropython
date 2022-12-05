@@ -1,5 +1,5 @@
-Hardware Specification
-======================
+Hardware Architecture
+=====================
 
 Evolutions of Monocle hardware:
 

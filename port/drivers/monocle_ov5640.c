@@ -116,7 +116,6 @@ void ov5640_init(void)
 {
     ov5640_pin_pwdn(true);
     ov5640_pin_nresetb(false);
-    LOG("OV5640: OV5640_CHIPIDH = 0x%02X\n", ov5640_read_reg(OV5640_CHIPIDH));
 }
 /**
  * Revert the configuration of the camera module.
@@ -134,7 +133,7 @@ void ov5640_deinit(void)
  * - ov5640_rgb565_tbl in ov5640_yuv422_mode()
  * - ov5640_rgb565_1x_tbl in ov5640_mode_1x()
  */
-void ov5640_yuv422_direct(void)
+static void ov5640_yuv422_direct(void)
 {
     for (size_t i = 0; i < LEN(ov5640_yuv422_direct_tbl); i++)
         ov5640_write_reg(ov5640_yuv422_direct_tbl[i].addr, ov5640_yuv422_direct_tbl[i].value);
@@ -172,7 +171,6 @@ void ov5640_pwr_on(void)
 
     // Check the chip ID
     uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
-    LOG("id=%04x", id);
     assert(id == OV5640_ID);
 
     ov5640_write_reg(0x3103, 0x11);    // system clock from pad, bit[1]

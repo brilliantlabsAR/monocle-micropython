@@ -1,5 +1,5 @@
-Get Started with Monocle Mobile App
-===================================
+Getting Started
+===============
 
 Configuration
 -------------

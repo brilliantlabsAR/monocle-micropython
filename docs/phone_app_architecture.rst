@@ -1,5 +1,5 @@
-Phone Application Architecture
-==============================
+Phone App Architecture
+======================
 
 Source Code
 
