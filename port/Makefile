@@ -83,6 +83,7 @@ INC += -I../nrfx/drivers
 INC += -I../nrfx/drivers/include
 INC += -I../nrfx/drivers/src
 INC += -I../nrfx/hal
+INC += -I../nrfx/helpers
 INC += -I../nrfx/mdk
 INC += -I../$(SD)/include
 INC += -I../$(SD)/include/nrf52
@@ -129,6 +130,7 @@ SRC += modules/machine_fpga.c
 SRC += modules/machine_rtcounter.c
 SRC += modules/machine_timer.c
 SRC += modules/machine_touch.c
+SRC += modules/machine_power.c
 
 SRC += ../micropython/lib/libm/acoshf.c
 SRC += ../micropython/lib/libm/asinfacosf.c
@@ -192,7 +194,7 @@ flash_openocd_jlink:
 	$(OPENOCD) $(OPENOCD_JLINK) $(OPENOCD_FLASH)
 
 flash_nrfjprog_jlink:
-	$(NRFJPROG) --sectorerase --verify --family nrf52 --program ${FIRMWARE_HEX}
+	$(NRFJPROG) --recover --verify --family nrf52 --program ${FIRMWARE_HEX}
 
 gdb_openocd_stlink:
 	$(OPENOCD) $(OPENOCD_STLINK) -c "gdb_port 2331"
