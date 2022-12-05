@@ -194,7 +194,8 @@ flash_openocd_jlink:
 	$(OPENOCD) $(OPENOCD_JLINK) $(OPENOCD_FLASH)
 
 flash_nrfjprog_jlink:
-	$(NRFJPROG) --recover --verify --family nrf52 --program ${FIRMWARE_HEX}
+	$(NRFJPROG) --family nrf52 --recover
+	$(NRFJPROG) --family nrf52 --verify --program ${FIRMWARE_HEX}
 
 gdb_openocd_stlink:
 	$(OPENOCD) $(OPENOCD_STLINK) -c "gdb_port 2331"
@@ -207,9 +208,9 @@ gdb_segger_jlink:
 
 gdb:
 	$(GDB) \
-	    -ex "target extended-remote :2331" \
-	    -ex "monitor reset halt" \
-	    -ex "continue" build/application.elf
+	    -ex "target extended-remote :2331"
+#	    -ex "continue" build/application.elf
+#	    -ex "monitor reset halt" \
 
 build/application.elf: $(OBJ)
 	$(ECHO) "LINK $@"
