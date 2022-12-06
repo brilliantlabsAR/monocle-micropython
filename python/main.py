@@ -1,7 +1,4 @@
 import board
 
-r = board.LED(1)
-#r.on()
-
-g = board.LED(2)
-#g.on()
+green_led = board.LED(2)
+green_led.on()

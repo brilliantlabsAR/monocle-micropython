@@ -190,7 +190,7 @@ void fpga_init(void)
     nrf_gpio_pin_write(SPIM0_FPGA_CS_PIN, true);
 
     // Set all registers to a known state.
-    //fpga_reset();
+    fpga_reset();
 
     // Give the FPGA some further time.
     nrfx_systick_delay_ms(10);

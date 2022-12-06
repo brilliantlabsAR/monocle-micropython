@@ -139,6 +139,7 @@ void __assert_func(const char *file, int line, const char *func, const char *exp
     (void)file;
     (void)line;
     NRFX_ASSERT(false);
+    for (;;); // makes the compiler happy about noreturn
 }
 
 /**
