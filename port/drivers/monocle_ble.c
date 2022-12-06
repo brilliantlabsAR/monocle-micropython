@@ -418,11 +418,11 @@ void ble_configure_softdevice(void)
 }
 
 /**
- * Softdevice NRFX_ASSERT handler. Called whenever softdevice crashes.
+ * Softdevice assert handler. Called whenever softdevice crashes.
  */
-static void softdevice_NRFX_ASSERT_handler(uint32_t id, uint32_t pc, uint32_t info)
+static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
 {
-    NRFX_ASSERT(id == 0);
+    assert(id == 0);
 }
 
 /**
@@ -444,7 +444,7 @@ void ble_init(void)
     };
 
     // Enable the softdevice
-    err = sd_softdevice_enable(&clock_config, softdevice_NRFX_ASSERT_handler);
+    err = sd_softdevice_enable(&clock_config, softdevice_assert_handler);
     NRFX_ASSERT(!err);
 
     // Enable softdevice interrupt

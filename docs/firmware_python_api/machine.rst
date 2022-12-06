@@ -7,11 +7,11 @@
 .. py:module:: machine
 
 
-.. py:class:: Battery() 🟠
+.. py:class:: Battery
 
    Sensing battery power.
 
-   .. py:method:: level() 🟠
+   .. py:method:: level
 
       :return: the current battery level as a percentage
    

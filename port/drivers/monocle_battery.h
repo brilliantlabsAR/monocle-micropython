@@ -16,8 +16,6 @@
  */
 
 void battery_init(void);
-void battery_start_sample(void);
-float battery_get_voltage(void);
 uint8_t battery_get_percent(void);
 
 /** @} */

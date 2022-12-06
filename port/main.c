@@ -26,6 +26,7 @@
 
 #include "monocle_ble.h"
 #include "monocle_board.h"
+#include "monocle_battery.h" // debug
 #include "nrf_sdm.h"
 #include "nrfx_systick.h"
 #include "py/compile.h"
@@ -112,6 +113,7 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
+            battery_init();
         } else {
             stop = pyexec_friendly_repl();
         }

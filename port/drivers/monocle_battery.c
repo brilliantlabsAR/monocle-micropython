@@ -39,7 +39,7 @@ static float battery_percent_table[] = {
 const uint8_t battery_points = sizeof battery_voltage_table / sizeof *battery_voltage_table;
 
 /** Input resistor divider, high value resistance in kOhm, from MK9B R2 */
-#define R_HI (4.8-1.25)
+#define R_HI (4.8 - 1.25)
 
 /** Input resistor divider, low value resistance in kOhm, from MK9B R3 */
 #define R_LO 1.25
@@ -53,7 +53,7 @@ const uint8_t battery_points = sizeof battery_voltage_table / sizeof *battery_vo
 
 /** Gain 1/4, so input range = VDD (full range). */
 #define BATTERY_ADC_GAIN NRF_SAADC_GAIN1_4
-#define BATTERY_GAIN (1.0/4.0)
+#define BATTERY_GAIN (1.0 / 4.0)
 
 /** Resolution of the ADC: for a 10-bit ADC, the resolution is 1 << 10 = 1024. */
 #define BATTERY_ADC_RESOLUTION NRF_SAADC_RESOLUTION_10BIT
@@ -169,9 +169,20 @@ static float battery_saadc_to_voltage(nrf_saadc_value_t reading)
     float voltage = 0;
     float factor = 0;
 
-    if (reading < 0) reading = 0; // observe -1 to -4 raw ADC readings when input grounded
-    factor = ((R_HI + R_LO)/(R_LO)) * (BATTERY_REFERENCE / (BATTERY_GAIN * BATTERY_ADC_RESOLUTION));
-    voltage = (float) reading * factor;
+    // observe -1 to -4 raw ADC readings when input grounded
+    if (reading < 0)
+        reading = 0;
+
+    LOG(
+        "R_HI=%d R_LO=%d R_EQ=%d ADJ=%d",
+        (double)R_HI,
+        (double)R_LO,
+        (double)((R_HI + R_LO) / (R_LO)),
+        (double)(BATTERY_REFERENCE / (BATTERY_GAIN * BATTERY_ADC_RESOLUTION))
+    );
+    factor = ((R_HI + R_LO) / (R_LO)) * (BATTERY_REFERENCE / (BATTERY_GAIN * BATTERY_ADC_RESOLUTION));
+
+    voltage = reading * factor;
     return voltage;
 }
 
@@ -179,36 +190,30 @@ static void saadc_callback(nrfx_saadc_evt_t const *p_event)
 {
     nrf_saadc_value_t average_level = 0;
 
-    switch (p_event->type) {
+    switch (NRFX_SAADC_EVT_DONE) {
         case NRFX_SAADC_EVT_BUF_REQ:
             CHECK(nrfx_saadc_buffer_set(adc_buffer, SAMPLES_IN_BUFFER));
             break;
         case NRFX_SAADC_EVT_DONE:
             for (int i = 0; i < SAMPLES_IN_BUFFER; i++) {
-                LOG("%d", p_event->data.done.p_buffer[i]);
                 average_level += p_event->data.done.p_buffer[i];
+                LOG("buffer[%d]=%ud average_level=%ud", i, p_event->data.done.p_buffer[i], average_level);
             }
             // This truncates, doesn't round up:
-            average_level = average_level / (nrf_saadc_value_t)SAMPLES_IN_BUFFER;
+            average_level = average_level / SAMPLES_IN_BUFFER;
             battery_voltage = battery_saadc_to_voltage(average_level);
             battery_percent = round(battery_voltage_to_percent(battery_voltage));
-            LOG("Batt average (ADC raw): %d", average_level);
+            LOG("Batt average (ADC raw): %u", average_level);
             LOG("Batt average (voltage): %f", (double)battery_voltage);
             LOG("Batt percent: %d%%", battery_percent);
+
+            // Enqueue another sampling
+            CHECK(nrfx_saadc_mode_trigger());
             break;
         default:
+            assert(!"unhandled event");
             break;
     }
-}
-
-/**
- * Get current, precomputed voltage of the battery.
- * @return Voltage value updated by the ADC.
- */
-float battery_get_voltage(void)
-{
-    // Everything is handled by the ADC callback above.
-    return battery_voltage;
 }
 
 /**
@@ -234,10 +239,12 @@ void battery_init(void)
 
     CHECK(nrfx_saadc_init(0));
     CHECK(nrfx_saadc_channels_config(&channel, 1));
-    CHECK(nrfx_saadc_simple_mode_set(
-        1 << 0,                     // Mask for the first ADC channel.
-        BATTERY_ADC_RESOLUTION,     // Configured resolution bit number.
-        NRF_SAADC_OVERSAMPLE_DISABLED, // Enough for an estimation of battery.
-        saadc_callback              // For when the conversion is finished.
-    ));
+
+    // Configure first ADC channel with low setup (enough for battery sensing)
+    CHECK(nrfx_saadc_simple_mode_set(1 << 0, BATTERY_ADC_RESOLUTION,
+        NRF_SAADC_OVERSAMPLE_DISABLED, NULL));
+    saadc_callback(NULL);
+
+    // Start the trigger chain: the callback will trigger another callback.
+    CHECK(nrfx_saadc_mode_trigger());
 }

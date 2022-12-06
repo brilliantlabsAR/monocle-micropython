@@ -98,7 +98,7 @@ void board_init(void)
     iqs620_init();
 
     // Initialise the battery level sensing with the ADC.
-    battery_init();
+    //battery_init();
 
     // Custom wrapper around SPI used by the other drivers.
     spi_init();
