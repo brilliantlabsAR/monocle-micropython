@@ -187,6 +187,9 @@ OBJ += $(addprefix build/, $(SRC:.c=.o))
 
 all: ${FIRMWARE_HEX} ${DFU_PACKAGE_ZIP}
 
+release:
+	DEF=-DNDEBUG exec $(MAKE) clean all
+
 flash_openocd_stlink:
 	$(OPENOCD) $(OPENOCD_STLINK) $(OPENOCD_FLASH)
 

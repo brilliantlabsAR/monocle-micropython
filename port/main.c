@@ -133,12 +133,12 @@ int main(void)
     NVIC_SystemReset();
 }
 
-void MP_WEAK __assert_func(const char *file, int line, const char *func, const char *expr) {
+void __assert_func(const char *file, int line, const char *func, const char *expr)
+{
     (void)expr;
     (void)file;
     (void)line;
-    //NRFX_ASSERT(false);
-    //for (;;); // Make the compiler happy.
+    NRFX_ASSERT(false);
 }
 
 /**
