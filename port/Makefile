@@ -25,12 +25,6 @@ PYTHON = python3
 # Complete firmware containing everything.
 FIRMWARE_HEX = build/firmware.hex
 
-# Hex file with everything to include into a DFU package.
-DFU_PACKAGE_HEX = build/dfu_package.hex
-
-# Signed Zip archive of the merged dfu package hex file.
-DFU_PACKAGE_ZIP = build/dfu_package.zip
-
 # Softdevice binary placed to the flash, imported from the nRF5-SDK
 SOFTDEVICE_HEX = ../$(SD)/$(SD)_nrf52_$(SOFTDEVICE_VERSION)_softdevice.hex
 
@@ -46,6 +40,9 @@ BOOTLOADER_HEX := ../bootloader/build/nrf52832_xxaa_s132.hex
 
 # Key used by the Swaralink bootloader
 BOOTLOADER_KEY := ../bootloader/published_privkey.pem
+
+# Signed Zip archive of the merged dfu package hex file.
+DFU_PACKAGE_ZIP = build/dfu_package.zip
 
 CFLAGS += $(DEF) $(INC) $(CFLAGS_EXTRA) $(CFLAGS_MOD) $(CFLAGS_MCU_m4)
 CFLAGS += -mthumb
@@ -227,11 +224,8 @@ ${FIRMWARE_HEX}: $(SOFTDEVICE_HEX) $(BOOTLOADER_HEX) ${APPLICATION_HEX} $(BLSETT
 $(BLSETTINGS_HEX): $(APPLICATION_HEX)
 	$(NRFUTIL) settings generate --family NRF52 --application ${APPLICATION_HEX} --application-version 0 --bootloader-version 0 --bl-settings-version 2 $@
 
-$(DFU_PACKAGE_HEX): $(APPLICATION_HEX) $(BLSETTINGS_HEX)
-	$(HEXMERGE) $(APPLICATION_HEX) $(BLSETTINGS_HEX) -o $@
-
-$(DFU_PACKAGE_ZIP): $(BOOTLOADER_KEY) $(DFU_PACKAGE_HEX)
-	$(NRFUTIL) pkg generate --hw-version 52 --application-version 1 --application $(DFU_PACKAGE_HEX) --sd-req 0xB6 --key-file $(BOOTLOADER_KEY) $@
+$(DFU_PACKAGE_ZIP): $(BOOTLOADER_KEY) $(APPLICATION_HEX)
+	$(NRFUTIL) pkg generate --hw-version 52 --application-version 1 --application $(APPLICATION_HEX) --sd-req 0x0124 --key-file $(BOOTLOADER_KEY) $@
 
 .SUFFIXES: .elf .hex
 
