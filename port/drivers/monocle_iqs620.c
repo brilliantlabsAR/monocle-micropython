@@ -11,16 +11,17 @@
  * @author Georgi Beloev (2021-07-20)
  */
 
-#include "monocle_iqs620.h"
-#include "monocle_i2c.h"
-#include "monocle_config.h"
-
 #include "nrfx_gpiote.h"
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
+#include "monocle_board.h"
+#include "monocle_iqs620.h"
+#include "monocle_i2c.h"
+#include "monocle_config.h"
+
 #define LOG NRFX_LOG_WARNING
-#define CHECK(err) check(__func__, err)
+#define ASSERT BOARD_ASSERT
 
 // registers
 
@@ -172,7 +173,7 @@ static void iqs620_write_reg(uint8_t addr, uint8_t data)
     bool ok;
 
     ok = i2c_write(IQS620_I2C, IQS620_ADDR, buf, sizeof(buf));
-    assert(ok);
+    ASSERT(ok);
 }
 
 /**
@@ -188,11 +189,11 @@ static void iqs620_read_reg(uint8_t addr, uint8_t *buf, unsigned len)
 
     // I2C write for the register address (without stop)
     ok = i2c_write_no_stop(IQS620_I2C, IQS620_ADDR, &addr, 1);
-    assert(ok);
+    ASSERT(ok);
 
     // I2C read the data after the write.
     ok = i2c_read(IQS620_I2C, IQS620_ADDR, buf, len);
-    assert(ok);
+    ASSERT(ok);
 }
 
 /**
@@ -334,7 +335,7 @@ static void iqs620_process_state(uint8_t button, iqs620_state_t *old, iqs620_sta
  */
 static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
-    assert(pin == IQS620_TOUCH_RDY_PIN);
+    ASSERT(pin == IQS620_TOUCH_RDY_PIN);
 
     uint8_t events;
     iqs620_read_reg(IQS620_GLOBAL_EVENTS, &events, 1);
@@ -378,6 +379,7 @@ uint32_t iqs620_get_id(void)
  */
 void iqs620_init(void)
 {
+    uint32_t err;
     // Setup the GPIO pin for touch state interrupts.
     nrf_gpio_cfg(
         IQS620_TOUCH_RDY_PIN,
@@ -391,7 +393,8 @@ void iqs620_init(void)
     // Configure the TOUCH_RDY pin for high-to-low edge GPIOTE event
     nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_HITOLO(true);
     config.pull = NRF_GPIO_PIN_PULLUP;
-    CHECK(nrfx_gpiote_in_init(IQS620_TOUCH_RDY_PIN, &config, iqs620_touch_rdy_handler));
+    err = nrfx_gpiote_in_init(IQS620_TOUCH_RDY_PIN, &config, iqs620_touch_rdy_handler);
+    ASSERT(err == NRFX_SUCCESS);
 
     // Disable the TOUCH_RDY event during reset.
     nrfx_gpiote_in_event_disable(IQS620_TOUCH_RDY_PIN);
@@ -403,7 +406,7 @@ void iqs620_init(void)
     nrfx_systick_delay_ms(10);
 
     // Check that the chip responds correctly.
-    assert(iqs620_get_id() == IQS620_ID_VALUE);
+    ASSERT(iqs620_get_id() == IQS620_ID_VALUE);
 
     // Enable the TOUCH_RDY event after the reset.
     nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);

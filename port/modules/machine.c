@@ -44,6 +44,7 @@
 #if MICROPY_PY_MACHINE_RTCOUNTER
 #include "machine_rtcounter.h"
 #endif
+#include "ble_gap.h"
 
 #if MICROPY_PY_MACHINE
 
@@ -57,6 +58,8 @@
 #define PYB_RESET_NFC       (19)
 
 STATIC uint32_t reset_cause;
+
+char m_mac_address[sizeof "XX:XX:XX:XX:XX:XX"];
 
 void machine_init(void)
 {
@@ -110,6 +113,27 @@ NORETURN mp_obj_t machine_bootloader(size_t n_args, const mp_obj_t *args)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_bootloader_obj, 0, 1, machine_bootloader);
 
+NORETURN mp_obj_t machine_mac_address(size_t n_args, const mp_obj_t *args)
+{
+    uint32_t err;
+    ble_gap_addr_t addr = {0};
+    char *str = m_mac_address;
+    size_t sz = sizeof m_mac_address;
+    int n;
+
+    err = sd_ble_gap_addr_get(&addr);
+    assert(err == 0);
+
+    assert((sizeof addr.addr) < (sizeof m_mac_address / 3));
+
+    for (uint8_t i = 0; i < 6; i++) {
+        n = snprintf(str, sz, i == 0 ? "%02X" : ":%02X", m_mac_address[i]);
+        str += n;
+        sz -= n;
+    }
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_mac_address_obj, 0, 1, machine_mac_address);
+
 STATIC mp_obj_t machine_lightsleep(void)
 {
     __WFE();
@@ -147,15 +171,15 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),           MP_ROM_QSTR(MP_QSTR_umachine) },
     { MP_ROM_QSTR(MP_QSTR_reset),              MP_ROM_PTR(&machine_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_soft_reset),         MP_ROM_PTR(&machine_soft_reset_obj) },
+    { MP_ROM_QSTR(MP_QSTR_reset_cause),        MP_ROM_PTR(&machine_reset_cause_obj) },
     { MP_ROM_QSTR(MP_QSTR_bootloader),         MP_ROM_PTR(&machine_bootloader_obj) },
+    { MP_ROM_QSTR(MP_QSTR_mac_address),        MP_ROM_PTR(&machine_mac_address_obj) },
     { MP_ROM_QSTR(MP_QSTR_enable_irq),         MP_ROM_PTR(&machine_enable_irq_obj) },
     { MP_ROM_QSTR(MP_QSTR_disable_irq),        MP_ROM_PTR(&machine_disable_irq_obj) },
     { MP_ROM_QSTR(MP_QSTR_idle),               MP_ROM_PTR(&machine_lightsleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_sleep),              MP_ROM_PTR(&machine_lightsleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_lightsleep),         MP_ROM_PTR(&machine_lightsleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_deepsleep),          MP_ROM_PTR(&machine_deepsleep_obj) },
-    { MP_ROM_QSTR(MP_QSTR_reset_cause),        MP_ROM_PTR(&machine_reset_cause_obj) },
-    { MP_ROM_QSTR(MP_QSTR_bootloader),         MP_ROM_PTR(&machine_bootloader_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem8),               MP_ROM_PTR(&machine_mem8_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem16),              MP_ROM_PTR(&machine_mem16_obj) },
     { MP_ROM_QSTR(MP_QSTR_mem32),              MP_ROM_PTR(&machine_mem32_obj) },

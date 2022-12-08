@@ -12,13 +12,14 @@
  */
 
 #include <math.h>
+#include "monocle_board.h"
 #include "monocle_battery.h"
 #include "monocle_config.h"
 #include "nrfx_saadc.h"
 #include "nrfx_log.h"
 
 #define LOG NRFX_LOG_ERROR
-#define CHECK(err) check(__func__, err)
+#define ASSERT BOARD_ASSERT
 
 /*
  * Lithium battery discharge curve, modeled from Grepow data for 1C discharge rate
@@ -60,7 +61,7 @@ const uint8_t battery_points = sizeof battery_voltage_table / sizeof *battery_vo
 
 /*
  * These values are averages, taken over time determined by sampling time
- * (in main code) and SAMPLES_IN_BUFFER. They will only be valid after an
+ * (in main code) and p_event->data.done.size. They will only be valid after an
  * initial time (currently 5 seconds).
  */
 
@@ -70,11 +71,8 @@ static float battery_voltage = 0;
 /* Stores battery state-of-charge, expressed in percent (0-100) */
 static uint8_t battery_percent = 0;
 
-/* number of ADC samples to average */
-#define SAMPLES_IN_BUFFER 5
-
 /** Used by the sampling callback. */
-nrf_saadc_value_t adc_buffer[SAMPLES_IN_BUFFER];
+nrf_saadc_value_t adc_buffer;
 
 struct table_1d {
     uint8_t x_length;
@@ -90,12 +88,6 @@ static struct table_1d battery_table = {
     battery_voltage_table,  /* Array of x-coordinates */
     battery_percent_table   /* Array of y-coordinates */
 };
-
-static inline void check(char const *func, nrfx_err_t err)
-{
-    if (err != NRFX_SUCCESS)
-        LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
-}
 
 /**
  * Interpolate a value at the middle of a segment.
@@ -188,19 +180,21 @@ static float battery_saadc_to_voltage(nrf_saadc_value_t reading)
 
 static void saadc_callback(nrfx_saadc_evt_t const *p_event)
 {
+    uint32_t err;
     nrf_saadc_value_t average_level = 0;
 
     switch (NRFX_SAADC_EVT_DONE) {
         case NRFX_SAADC_EVT_BUF_REQ:
-            CHECK(nrfx_saadc_buffer_set(adc_buffer, SAMPLES_IN_BUFFER));
+            err = nrfx_saadc_buffer_set(&adc_buffer, 1);
+            ASSERT(err == NRFX_SUCCESS);
             break;
         case NRFX_SAADC_EVT_DONE:
-            for (int i = 0; i < SAMPLES_IN_BUFFER; i++) {
+            for (int i = 0; i < p_event->data.done.size; i++) {
                 average_level += p_event->data.done.p_buffer[i];
                 LOG("buffer[%d]=%ud average_level=%ud", i, p_event->data.done.p_buffer[i], average_level);
             }
             // This truncates, doesn't round up:
-            average_level = average_level / SAMPLES_IN_BUFFER;
+            average_level = average_level / p_event->data.done.size;
             battery_voltage = battery_saadc_to_voltage(average_level);
             battery_percent = round(battery_voltage_to_percent(battery_voltage));
             LOG("Batt average (ADC raw): %u", average_level);
@@ -208,7 +202,8 @@ static void saadc_callback(nrfx_saadc_evt_t const *p_event)
             LOG("Batt percent: %d%%", battery_percent);
 
             // Enqueue another sampling
-            CHECK(nrfx_saadc_mode_trigger());
+            err = nrfx_saadc_mode_trigger();
+            ASSERT(err == NRFX_SUCCESS);
             break;
         default:
             assert(!"unhandled event");
@@ -232,19 +227,28 @@ uint8_t battery_get_percent(void)
  */
 void battery_init(void)
 {
+    uint32_t err;
     nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(IO_ADC_VBATT, 0);
 
     channel.channel_config.reference = BATTERY_ADC_REFERENCE;
     channel.channel_config.gain = BATTERY_ADC_GAIN;
 
-    CHECK(nrfx_saadc_init(0));
-    CHECK(nrfx_saadc_channels_config(&channel, 1));
+    err = nrfx_saadc_init(0);
+    ASSERT(err == NRFX_SUCCESS);
+
+    err = nrfx_saadc_channels_config(&channel, 1);
+    ASSERT(err == NRFX_SUCCESS);
 
     // Configure first ADC channel with low setup (enough for battery sensing)
-    CHECK(nrfx_saadc_simple_mode_set(1 << 0, BATTERY_ADC_RESOLUTION,
-        NRF_SAADC_OVERSAMPLE_DISABLED, NULL));
-    saadc_callback(NULL);
+    err = nrfx_saadc_simple_mode_set(1u << 0, BATTERY_ADC_RESOLUTION,
+        NRF_SAADC_OVERSAMPLE_DISABLED, saadc_callback);
+    ASSERT(err == NRFX_SUCCESS);
 
-    // Start the trigger chain: the callback will trigger another callback.
-    CHECK(nrfx_saadc_mode_trigger());
+    // Provide a buffer used internally by the NRFX driver
+    err = nrfx_saadc_buffer_set(&adc_buffer, 1);
+    NRFX_ASSERT(err == NRFX_SUCCESS);
+
+    // Start the trigger chain: the callback will trigger another callback
+    err = nrfx_saadc_mode_trigger();
+    NRFX_ASSERT(err == NRFX_SUCCESS);
 }

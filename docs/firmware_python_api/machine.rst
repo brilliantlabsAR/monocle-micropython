@@ -151,7 +151,6 @@
 
    :return: the 48bit MAC address of the device as a 17 character string. Each byte is delimited with a colon
 
-.. py:function:: update(start) 🟠
+.. py:function:: bootloader()
 
-   Checks for firmware updates and returns True if it is available.
-   If start is set to True, the update process is begun, and the device will enter the bootloader state
+   Reboot the monocle into bootloader mode.

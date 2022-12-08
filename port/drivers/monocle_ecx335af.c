@@ -10,16 +10,20 @@
  * @author Nathan Ashelman
  */
 
-#include "monocle_ecx335af.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
-#include "monocle_board.h"
-#include "monocle_config.h"
-#include "monocle_spi.h"
+
 #include "nrf_gpio.h"
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
+
+#include "monocle_board.h"
+#include "monocle_config.h"
+#include "monocle_ecx335af.h"
+#include "monocle_spi.h"
+
+#define ASSERT BOARD_ASSERT
 
 static inline const void ecx335af_write_byte(uint8_t addr, uint8_t data)
 {
@@ -210,8 +214,8 @@ void ecx335af_init(void)
 
     // check that 0x29 changed from default 0x0A to 0x0B
     // and that 0x2A has been restored
-    assert(ecx335af_read_byte(0x29) == 0x0B);
-    assert(ecx335af_read_byte(0x2A) == 0xBE);
+    ASSERT(ecx335af_read_byte(0x29) == 0x0B);
+    ASSERT(ecx335af_read_byte(0x2A) == 0xBE);
 }
 
 void ecx335af_deinit(void)
@@ -237,7 +241,7 @@ void ecx335af_set_luminance(ecx335af_luminance_t level)
     // write new value
     ecx335af_write_byte(0x05, new_0x05);
     check_0x05 = ecx335af_read_byte(0x05);
-    assert(check_0x05 == new_0x05);
+    ASSERT(check_0x05 == new_0x05);
 }
 
 /**

@@ -9,12 +9,15 @@
  * @author Nathan Ashelman
  */
 
+#include "nrfx_log.h"
+
+#include "monocle_board.h"
 #include "monocle_max77654.h"
 #include "monocle_i2c.h"
 #include "monocle_config.h"
-#include "nrfx_log.h"
 
 #define LOG(...) NRFX_LOG_WARNING(__VA_ARGS__)
+#define ASSERT BOARD_ASSERT
 
 /** Allowable charge current in mA; to protect battery, disallow any higher setting (even if configurable). */
 #define MAX77654_CHG_CC_MAX             140  
@@ -478,7 +481,7 @@ void max77654_write(uint8_t reg, uint8_t data)
     write_buffer[1] = data;
 
     if (!i2c_write(MAX77654_I2C, MAX77654_ADDR, write_buffer, 2))
-        NRFX_ASSERT(!"I2C write failed");
+        ASSERT(!"I2C write failed");
     LOG("MAX77654 Write 0x%02X to register 0x%02X", data, reg);
 }
 
@@ -491,9 +494,9 @@ void max77654_write(uint8_t reg, uint8_t data)
 void max77654_read(uint8_t reg, uint8_t *value)
 {
     if (!i2c_write(MAX77654_I2C, MAX77654_ADDR, &reg, 1))
-        NRFX_ASSERT(!"I2C write failed");
+        ASSERT(!"I2C write failed");
     if (!i2c_read(MAX77654_I2C, MAX77654_ADDR, value, 1))
-        NRFX_ASSERT(!"I2C read failed");
+        ASSERT(!"I2C read failed");
     LOG("MAX77654 Read register 0x%02X = 0x%02X", reg, *value);
 }
 
@@ -597,7 +600,7 @@ void max77654_init(void)
 
     // verify MAX77654 on I2C bus by attempting to read Chip ID register
     cid = max77654_read_cid();
-    NRFX_ASSERT(cid == MAX77654_CID_EXPECTED);
+    ASSERT(cid == MAX77654_CID_EXPECTED);
 
     // Power Rail Configuration
 
@@ -760,6 +763,10 @@ void max77654_init(void)
     // battery when stand-alone)
     update_register_bits(MAX77654_CNFG_CHG_I_REG, MAX77654_MUX_SYS_V,
             MAX77654_MUX_SEL, MAX77654_MUX_SEL_SHIFT);
+
+    // Reset LED state
+    max77654_led_red(false);
+    max77654_led_green(false);
 }
 
 /**
@@ -770,7 +777,7 @@ void max77654_init(void)
 void max77654_rail_1v8(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
-    NRFX_ASSERT(max77654_initialized);
+    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_LDO0_B_REG, MAX77654_CNFG_LDO_B_MD
             | MAX77654_CNFG_LDO_B_ADE | en);
 }
@@ -783,7 +790,7 @@ void max77654_rail_1v8(bool on)
 void max77654_rail_2v7(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
-    NRFX_ASSERT(max77654_initialized);
+    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_SBB0_B_REG, MAX77654_CNFG_SBB_B_MD
             | (MAX77654_CNFG_SBB_B_IP_333 << MAX77654_CNFG_SBB_B_IP_SHIFT)
             | MAX77654_CNFG_SBB_B_ADE | en);
@@ -797,7 +804,7 @@ void max77654_rail_2v7(bool on)
 void max77654_rail_1v2(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
-    NRFX_ASSERT(max77654_initialized);
+    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_SBB2_B_REG, MAX77654_CNFG_SBB_B_MD
             | (MAX77654_CNFG_SBB_B_IP_333 << MAX77654_CNFG_SBB_B_IP_SHIFT)
             | MAX77654_CNFG_SBB_B_ADE | en);
@@ -812,7 +819,7 @@ void max77654_rail_10v(bool on)
 {
     // push-pull high for on, push-pull low for off
     uint8_t en = on ? MAX77654_DO : 0;
-    NRFX_ASSERT(max77654_initialized);
+    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_GPIO2_REG, MAX77654_DRV | en); 
 }
 
@@ -823,7 +830,7 @@ void max77654_rail_10v(bool on)
 void max77654_rail_vled(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
-    NRFX_ASSERT(max77654_initialized);
+    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_LDO1_B_REG, MAX77654_CNFG_LDO_B_ADE | en);
 }
 
@@ -840,7 +847,7 @@ void max77654_rail_vled(bool on)
  */
 void max77654_led_red(bool on)
 {
-    NRFX_ASSERT(max77654_initialized);
+    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_GPIO0_REG, on ? LED_ON : LED_OFF);
 }
 
@@ -851,7 +858,7 @@ void max77654_led_red(bool on)
  */
 void max77654_led_green(bool on)
 {
-    NRFX_ASSERT(max77654_initialized);
+    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_GPIO1_REG, on ? LED_ON : LED_OFF);
 }
 
@@ -917,10 +924,10 @@ void max77654_set_charge_current(uint16_t current)
 {
     uint8_t charge_bits = 0;
 
-    NRFX_ASSERT(max77654_initialized);
+    ASSERT(max77654_initialized);
 
     // MAX77654 Charge Current cannot be set above MAX77654_CHG_CC_MAX mA to protect the battery.
-    NRFX_ASSERT(current <= MAX77654_CHG_CC_MAX);
+    ASSERT(current <= MAX77654_CHG_CC_MAX);
 
     charge_bits = cc_to_hw(current*10);
     update_register_bits(MAX77654_CNFG_CHG_E_REG, charge_bits, MAX77654_CHG_CC, MAX77654_CHG_CC_SHIFT);
@@ -936,9 +943,9 @@ void max77654_set_charge_voltage(uint16_t millivolts)
 {
     uint8_t charge_bits = 0;
 
-    NRFX_ASSERT(max77654_initialized);
+    ASSERT(max77654_initialized);
     // MAX77654 Charge Voltage cannot be set above MAX77654_CHG_CV_MAX mV to protect the battery.
-    NRFX_ASSERT(millivolts <= MAX77654_CHG_CV_MAX);
+    ASSERT(millivolts <= MAX77654_CHG_CV_MAX);
     if (millivolts < 3600)
         millivolts = 3600;
     if (millivolts > 4600)
@@ -957,7 +964,7 @@ void max77654_set_current_limit(uint16_t current)
 {
     uint8_t charge_bits = 0;
 
-    NRFX_ASSERT(max77654_initialized);
+    ASSERT(max77654_initialized);
     if (current <= 95) {
         charge_bits = MAX77654_ICHGIN_LIM_95MA;
     } else if (current <= 190) {
@@ -969,7 +976,7 @@ void max77654_set_current_limit(uint16_t current)
     } else {
         charge_bits = MAX77654_ICHGIN_LIM_475MA;
     }
-    NRFX_ASSERT(charge_bits == (charge_bits & MAX77654_ICHGIN_LIM_MASK));
+    ASSERT(charge_bits == (charge_bits & MAX77654_ICHGIN_LIM_MASK));
     update_register_bits(MAX77654_CNFG_CHG_B_REG, charge_bits, MAX77654_ICHGIN_LIM, MAX77654_ICHGIN_LIM_SHIFT);
     LOG("MAX77654 Input Current Limit set to %d mA.", (charge_bits*95)+95);
 }

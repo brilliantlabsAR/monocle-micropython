@@ -17,16 +17,7 @@
 #include "nrfx_systick.h"
 
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
-#define CHECK(err) check(__func__, err)
-
-/**
- * Workaround the fact taht nordic returns an ENUM instead of a simple integer.
- */
-static inline void check(char const *func, nrfx_err_t err)
-{
-    if (err != NRFX_SUCCESS)
-        LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
-}
+#define ASSERT NRFX_ASSERT
 
 // SPI instance
 static const nrfx_spim_t m_spi = NRFX_SPIM_INSTANCE(SPI_INSTANCE);
@@ -52,6 +43,7 @@ void spim_event_handler(nrfx_spim_evt_t const * p_event, void *p_context)
  */
 void spi_init(void)
 {
+    uint32_t err;
     nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
         SPIM0_SCK_PIN, SPIM0_MOSI_PIN, SPIM0_MISO_PIN, NRFX_SPIM_PIN_NOT_USED
     );
@@ -60,7 +52,8 @@ void spi_init(void)
     config.mode      = NRF_SPIM_MODE_3;
     config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
 
-    CHECK(nrfx_spim_init(&m_spi, &config, spim_event_handler, NULL));
+    err = nrfx_spim_init(&m_spi, &config, spim_event_handler, NULL);
+    ASSERT(err == NRFX_SUCCESS);
 
     // configure CS pin for the Display (for active low)
     nrf_gpio_pin_set(SPIM0_DISP_CS_PIN);
@@ -90,7 +83,7 @@ void spi_uninit(void)
     nrfx_spim_uninit(&m_spi);
 
     // errata 89, see https://infocenter.nordicsemi.com/index.jsp?topic=%2Ferrata_nRF52832_Rev3%2FERR%2FnRF52832%2FRev3%2Flatest%2Fanomaly_832_89.html&cp=4_2_1_0_1_26
-    assert(SPI_INSTANCE == 2);
+    ASSERT(SPI_INSTANCE == 2);
     *(volatile uint32_t *)0x40023FFC = 0;
     *(volatile uint32_t *)0x40023FFC;
     *(volatile uint32_t *)0x40023FFC = 1;
@@ -123,6 +116,7 @@ void spi_chip_deselect(uint8_t cs_pin)
  */
 void spi_xfer(uint8_t *buf, size_t len)
 {
+    uint32_t err;
     nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TRX(buf, len, buf, len);
 
     // wait for any pending SPI operation to complete
@@ -131,7 +125,8 @@ void spi_xfer(uint8_t *buf, size_t len)
 
     // Start the transaction and wait for the interrupt handler to warn us it is done.
     m_xfer_done = false;
-    CHECK(nrfx_spim_xfer(&m_spi, &xfer, 0));
+    err = nrfx_spim_xfer(&m_spi, &xfer, 0);
+    ASSERT(err == NRFX_SUCCESS);
     while (!m_xfer_done)
         __WFE();
 }

@@ -3,15 +3,24 @@
  * Licensed under the MIT License
  */
 
+/**
+ * FPGA Communication driver
+ * @file monocle_fpga.c
+ */
+
 #include <assert.h>
+
+#include "nrfx_systick.h"
+#include "nrfx_log.h"
+
+#include "monocle_board.h"
 #include "monocle_fpga.h"
 #include "monocle_ov5640.h"
 #include "monocle_spi.h"
 #include "monocle_config.h"
-#include "nrfx_systick.h"
-#include "nrfx_log.h"
 
 #define LOG NRFX_LOG_ERROR
+#define ASSERT BOARD_ASSERT
 
 /**
  * Write a byte to the FPGA over SPI using a bridge protocol.
@@ -34,7 +43,7 @@ void fpga_write_register(uint8_t addr, uint8_t byte)
  */
 uint8_t fpga_read_register(uint8_t addr)
 {
-    assert(FPGA_REGISTER_EXISTS(addr));
+    ASSERT(FPGA_REGISTER_EXISTS(addr));
     uint8_t buf[2] = { 0x81, 0x00 };
 
     fpga_write_register(0x80, 0x01);
@@ -88,7 +97,7 @@ void fpga_read_burst(uint8_t *buf, uint16_t len)
 
 uint32_t fpga_get_capture_size(void)
 {
-    assert(fpga_capture_done());
+    ASSERT(fpga_capture_done());
     return (fpga_read_register(FPGA_CAPTURE_SIZE_0) << 24
           | fpga_read_register(FPGA_CAPTURE_SIZE_1) << 16
           | fpga_read_register(FPGA_CAPTURE_SIZE_2) << 8
@@ -205,7 +214,7 @@ void fpga_deinit(void)
 void fpga_xclk_on(void)
 {
     fpga_write_register(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK);
-    assert(fpga_read_register(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
+    ASSERT(fpga_read_register(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
 }
 
 /**
@@ -220,7 +229,7 @@ void fpga_camera_on(void)
     fpga_write_register(FPGA_CAMERA_CONTROL, (FPGA_EN_XCLK | FPGA_EN_CAM));
 
     LOG("waited 4 frames, sent FPGA_EN_XCLK, FPGA_EN_CAM");
-    assert(fpga_read_register(FPGA_CAMERA_CONTROL) == (FPGA_EN_XCLK | FPGA_EN_CAM));
+    ASSERT(fpga_read_register(FPGA_CAMERA_CONTROL) == (FPGA_EN_XCLK | FPGA_EN_CAM));
 }
 
 /**
@@ -235,7 +244,7 @@ void fpga_camera_off(void)
     nrfx_systick_delay_ms(1*(1000/OV5640_FPS) + 1);
 
     LOG("sent FPGA_EN_XCLK, waited 1 frame");
-    assert(fpga_read_register(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
+    ASSERT(fpga_read_register(FPGA_CAMERA_CONTROL) == FPGA_EN_XCLK);
 }
 
 /**
@@ -245,7 +254,7 @@ void fpga_camera_off(void)
 void fpga_mic_on(void)
 {
     fpga_write_register(FPGA_MIC_CONTROL, FPGA_EN_MIC);
-    assert(fpga_read_register(FPGA_MIC_CONTROL) == FPGA_EN_MIC);
+    ASSERT(fpga_read_register(FPGA_MIC_CONTROL) == FPGA_EN_MIC);
 }
 
 /**
@@ -255,7 +264,7 @@ void fpga_mic_on(void)
 void fpga_mic_off(void)
 {
     fpga_write_register(FPGA_MIC_CONTROL, 0x00);
-    assert(fpga_read_register(FPGA_MIC_CONTROL) == 0x00);
+    ASSERT(fpga_read_register(FPGA_MIC_CONTROL) == 0x00);
 }
 
 /**
@@ -339,8 +348,8 @@ void fpga_prep_read_audio(void)
 void fpga_replay_rate(uint8_t repeat)
 {
     // cannot be zero, max 5 bits
-    assert(repeat > 0);
-    assert(repeat <= FPGA_REP_RATE_MASK);
+    ASSERT(repeat > 0);
+    ASSERT(repeat <= FPGA_REP_RATE_MASK);
 
     fpga_write_register(FPGA_REPLAY_RATE_CONTROL, repeat);
     LOG("replay rate set to %d", repeat);
@@ -356,12 +365,11 @@ bool fpga_capture_done(void)
 // Precondition: len must be a multiple of 2 (bytes)
 uint16_t fpga_calc_checksum(uint8_t *bytearray, uint32_t len)
 {
-
     uint32_t checksum = 0;
 
-    assert(bytearray != NULL);
-    assert(len == 0);
-    assert((len % 2) == 0);
+    ASSERT(bytearray != NULL);
+    ASSERT(len == 0);
+    ASSERT((len % 2) == 0);
     for (uint32_t i = 0; i < len; i = i + 2)
         checksum = fpga_checksum_add(checksum, ((bytearray[i + 1] << 8) + bytearray[i]));
     return ((uint16_t)checksum);
@@ -381,10 +389,10 @@ uint16_t fpga_checksum_add(uint16_t checksum1, uint16_t checksum2)
         carry = carry >> 16;
 
         // this should always be true, if so we can simplify the above
-        assert(carry == 1);
+        ASSERT(carry == 1);
 
         checksum = (checksum & 0x0000FFFF) + carry;
-        assert(checksum <= 0x0000FFFF);
+        ASSERT(checksum <= 0x0000FFFF);
     }
     return ((uint16_t)checksum);
 }
@@ -408,7 +416,7 @@ void fpga_set_zoom(uint8_t level)
             fpga_write_register(FPGA_CAMERA_CONTROL, FPGA_EN_XCLK | FPGA_EN_CAM | zoom_bits | FPGA_EN_ZOOM | FPGA_EN_LUMA_COR);
             break;
         default:
-            assert(!"invalid zoom level");
+            ASSERT(!"invalid zoom level");
     }
 }
 
@@ -469,7 +477,7 @@ void fpga_set_display(uint8_t mode)
             LOG("display mode = color bars.");
             break;
         default:
-            assert(!"display mode invalid.");
+            ASSERT(!"display mode invalid.");
     }
 }
 

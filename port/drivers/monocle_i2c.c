@@ -17,6 +17,7 @@
 
 #define LOG NRFX_LOG_ERROR
 #define CHECK(err) check(__func__, err)
+#define ASSERT NRFX_ASSERT
 
 const nrfx_twi_t i2c0 = NRFX_TWI_INSTANCE(0);
 const nrfx_twi_t i2c1 = NRFX_TWI_INSTANCE(1);
@@ -49,20 +50,27 @@ static inline bool check(char const *func, nrfx_err_t err)
 // TODO: validate that 400kH speed works & increase to that
 void i2c_init(void)
 {
+    uint32_t err;
     nrfx_twi_config_t config = {0};
 
     config.scl                = I2C0_SCL_PIN;
     config.sda                = I2C0_SDA_PIN;
     config.frequency          = NRF_TWI_FREQ_100K;
     config.interrupt_priority = NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY;
-    CHECK(nrfx_twi_init(&i2c0, &config, NULL, NULL));
+
+    err = nrfx_twi_init(&i2c0, &config, NULL, NULL);
+    ASSERT(err == NRFX_SUCCESS);
+
     nrfx_twi_enable(&i2c0);
 
     config.scl                = I2C1_SCL_PIN;
     config.sda                = I2C1_SDA_PIN;
     config.frequency          = NRF_TWI_FREQ_100K;
     config.interrupt_priority = NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY;
-    CHECK(nrfx_twi_init(&i2c1, &config, NULL, NULL));
+
+    err = nrfx_twi_init(&i2c1, &config, NULL, NULL);
+    ASSERT(err == NRFX_SUCCESS);
+
     nrfx_twi_enable(&i2c1);
 }
 

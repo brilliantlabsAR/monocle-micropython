@@ -3,15 +3,22 @@
  * Licensed under the MIT License
  */
 
-#include "monocle_config.h"
-#include "monocle_flash.h"
+/**
+ * Flash chip driver.
+ * @file monocle_ecx335af.c
+ */
+
 #include "nrf_gpio.h"
 #include "nrfx_log.h"
 #include "nrfx_spim.h"
 #include "nrfx_systick.h"
 
+#include "monocle_board.h"
+#include "monocle_config.h"
+#include "monocle_flash.h"
+
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
-#define CHECK(err) check(__func__, err)
+#define ASSERT BOARD_ASSERT
 
 #define FLASH_CMD_PROGRAM_PAGE      0x02
 #define FLASH_CMD_READ              0x03
@@ -61,16 +68,19 @@ void flash_prepare(void)
  */
 void flash_init(void)
 {
+    uint32_t err;
     nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
         SPIM0_SCK_PIN,
         SPIM0_MOSI_PIN,
         SPIM0_MISO_PIN,
         NRFX_SPIM_PIN_NOT_USED
     );
+
     config.frequency    = NRF_SPIM_FREQ_125K;
     config.mode         = NRF_SPIM_MODE_0;
     config.bit_order    = NRF_SPIM_BIT_ORDER_MSB_FIRST;
-    CHECK(nrfx_spim_init(&m_spi, &config, &flash_event_handler, NULL));
+    err = nrfx_spim_init(&m_spi, &config, &flash_event_handler, NULL);
+    ASSERT(err == NRFX_SUCCESS);
 }
 
 /**
@@ -80,13 +90,15 @@ void flash_init(void)
  */
 static void flash_spi_write_chunk(const uint8_t *buf, size_t len)
 {
+    uint32_t err;
     nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, len);
 
     // Reset rx buffer and transfer done flag
     m_xfer_done = false;
 
     // Submit the buffer for transfer.
-    CHECK(nrfx_spim_xfer(&m_spi, &xfer, 0));
+    err = nrfx_spim_xfer(&m_spi, &xfer, 0);
+    ASSERT(err == NRFX_SUCCESS);
 
     // Wait until the event handler tells us that the transfer is over.
     while (!m_xfer_done)
@@ -115,13 +127,15 @@ static void flash_spi_write(const uint8_t *buf, size_t len)
  */
 static void flash_spi_read_chunk(uint8_t *buf, size_t len)
 {
+    uint32_t err;
     nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, len);
 
     // Reset rx buffer and transfer done flag
     m_xfer_done = false;
 
     // Submit the buffer for transfer.
-    CHECK(nrfx_spim_xfer(&m_spi, &xfer, 0));
+    err = nrfx_spim_xfer(&m_spi, &xfer, 0);
+    ASSERT(err == NRFX_SUCCESS);
 
     // Wait until the event handler tells us that the transfer is over.
     while (!m_xfer_done)
@@ -214,7 +228,7 @@ void flash_program_page(uint32_t addr, uint8_t const page[FLASH_PAGE_SIZE])
 {
     uint8_t const cmds[] = { FLASH_CMD_PROGRAM_PAGE, addr >> 16, addr >> 8, addr >> 0 };
 
-    assert(addr % FLASH_PAGE_SIZE == 0);
+    ASSERT(addr % FLASH_PAGE_SIZE == 0);
 
     flash_enable_write();
 

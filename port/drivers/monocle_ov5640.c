@@ -12,15 +12,19 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "nrfx_systick.h"
+#include "nrfx_log.h"
+
+#include "monocle_board.h"
 #include "monocle_ov5640.h"
 #include "monocle_ov5640_data.h"
 #include "monocle_i2c.h"
 #include "monocle_config.h"
-#include "nrfx_systick.h"
-#include "nrfx_log.h"
 
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 #define LEN(x) (sizeof (x) / sizeof *(x))
+#define ASSERT BOARD_ASSERT
 
 static inline void ov5640_delay_ms(uint32_t ms)
 {
@@ -171,7 +175,7 @@ void ov5640_pwr_on(void)
 
     // Check the chip ID
     uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
-    assert(id == OV5640_ID);
+    ASSERT(id == OV5640_ID);
 
     ov5640_write_reg(0x3103, 0x11);    // system clock from pad, bit[1]
     ov5640_write_reg(0x3008, 0x82);
@@ -499,6 +503,6 @@ void ov5640_focus_init(void)
     do {
         state = ov5640_read_reg(0x3029);
         ov5640_delay_ms(5);
-        assert(++i <= 1000);
+        ASSERT(++i <= 1000);
     } while (state != 0x70);
 }

@@ -20,7 +20,7 @@
 #include "nrfx_log.h"
 
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
-#define CHECK(err) check(__func__, err)
+#define ASSERT NRFX_ASSERT
 
 /** Timeout for button press (ticks) = 0.5 s */
 #define TOUCH_DELAY_SHORT_MS        500000
@@ -197,6 +197,7 @@ touch_event_t touch_timer_event;
 
 static void touch_set_timer(touch_event_t event)
 {
+    uint32_t err;
     static bool init = false;
 
     // Choose the apropriate duration depending on the event triggered.
@@ -228,8 +229,9 @@ static void touch_set_timer(touch_event_t event)
     touch_timer_config.bit_width = NRF_TIMER_BIT_WIDTH_8;
 
     // Submit the configuration.
-    CHECK(nrfx_timer_init(&touch_timer, &touch_timer_config, touch_timer_handler));
-    init = 1;
+    err = nrfx_timer_init(&touch_timer, &touch_timer_config, touch_timer_handler);
+    ASSERT(err == NRFX_SUCCESS);
+    init = true;
 
     // Do not raise an interrupt on every MHz, but on every 100 MHz.
     nrfx_timer_extended_compare(&touch_timer, NRF_TIMER_CC_CHANNEL0, 100, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
@@ -242,7 +244,7 @@ static void touch_next_state(touch_event_t event)
 {
     // Update the state using the state machine encoded above.
     touch_state = touch_state_machine[touch_state][event];
-    assert(touch_state != TOUCH_STATE_INVALID);
+    ASSERT(touch_state != TOUCH_STATE_INVALID);
 
     // Handle the multiple states.
     if (touch_trigger_is_on[touch_state])
