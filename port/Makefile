@@ -83,6 +83,7 @@ INC += -I../nrfx/drivers/src
 INC += -I../nrfx/hal
 INC += -I../nrfx/helpers
 INC += -I../nrfx/mdk
+INC += -I../nrfx/soc
 INC += -I../$(SD)/include
 INC += -I../$(SD)/include/nrf52
 
