@@ -56,6 +56,7 @@
       Not implemented, see spi_write() below.
 
    .. py:method:: spi_write(buf)
+
       :param bytearray buf: Buffer holding the data to write.
 
       Writes all bytes from the bytearray buffer to the FPGA in a single SPI transaction (CS pin going down then up).

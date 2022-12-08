@@ -153,6 +153,11 @@ Troubleshooting
 ---------------
 The community chat is present at `MONOCLE/#support <https://discord.com/channels/963222352534048818/976634834879385621>`_ on Discord.
 
+See also :doc:`Hardware Getting Started <hardware_how_to>` for troubleshooting the hardware.
+
+See also :py:meth:`~machine.bootloader` for how to manually jump to the bootloader.
+
+
 Future development
 ------------------
 
