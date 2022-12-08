@@ -72,6 +72,7 @@ INC += -I.
 INC += -Ibuild
 INC += -Idrivers
 INC += -Imodules
+INC += -Isegger_rtt
 INC += -I../micropython
 INC += -I../micropython/lib/cmsis/inc
 INC += -I../micropython/shared/readline
@@ -118,6 +119,10 @@ SRC += drivers/monocle_max77654.c
 SRC += drivers/monocle_ov5640.c
 SRC += drivers/monocle_spi.c
 SRC += drivers/monocle_touch.c
+
+SRC += segger_rtt/SEGGER_RTT.c
+SRC += segger_rtt/SEGGER_RTT_Syscalls_GCC.c
+SRC += segger_rtt/SEGGER_RTT_printf.c
 
 SRC += modules/board.c
 SRC += modules/board_led.c
