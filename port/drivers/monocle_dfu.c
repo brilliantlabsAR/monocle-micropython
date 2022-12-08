@@ -33,7 +33,7 @@
  */
 #define BOOTLOADER_DFU_START            (BOOTLOADER_DFU_GPREGRET | BOOTLOADER_DFU_START_BIT_MASK)
 
-void dfu_reboot_bootloader(void)
+_Noreturn void dfu_reboot_bootloader(void)
 {
     sd_power_gpregret_set(0, BOOTLOADER_DFU_START);
     NVIC_SystemReset();

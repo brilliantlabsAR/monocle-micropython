@@ -70,10 +70,10 @@ const char help_text[] = {
 /**
  * Called if an exception is raised outside all C exception-catching handlers.
  */
-void nlr_jump_fail(void *val)
+_Noreturn void nlr_jump_fail(void *val)
 {
-    NRFX_ASSERT((uint32_t)val);
-    for (;;);
+    (void)val;
+    NRFX_ASSERT_FUNC();
 }
 
 #include "nrfx_log.h"
@@ -134,13 +134,12 @@ int main(void)
     NVIC_SystemReset();
 }
 
-void __assert_func(const char *file, int line, const char *func, const char *expr)
+_Noreturn void __assert_func(const char *file, int line, const char *func, const char *expr)
 {
     (void)expr;
     (void)file;
     (void)line;
     NRFX_ASSERT(false);
-    for (;;); // makes the compiler happy about noreturn
 }
 
 /**

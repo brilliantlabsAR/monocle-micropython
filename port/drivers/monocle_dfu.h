@@ -5,11 +5,10 @@
 #ifndef MONOCLE_DFU_H
 #define MONOCLE_DFU_H
 /**
+ * Device Firmware Upgrade module for rebooting into bootloader mode.
  * @defgroup dfu
- * @{
  */
 
-void dfu_reboot_bootloader(void);
+_Noreturn void dfu_reboot_bootloader(void);
 
-/* @} */
 #endif
