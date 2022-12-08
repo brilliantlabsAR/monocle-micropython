@@ -410,6 +410,8 @@ void iqs620_init(void)
 
     // Enable the TOUCH_RDY event after the reset.
     nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);
+
+    LOG("ready buttons=b0,b1");
 }
 
 /**

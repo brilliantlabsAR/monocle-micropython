@@ -32,6 +32,7 @@
 #include "py/mpprint.h"
 #include "mphalport.h"
 #include "nrfx_config.h"
+#include "SEGGER_RTT.h"
 
 #define TEST_MODULE_IMPL(x, y) LOG_TEST_##x == LOG_TEST_##y
 #define TEST_MODULE(x, y) TEST_MODULE_IMPL(x, y)
@@ -43,7 +44,9 @@ static inline void LOG_PRINTF_OFF(char const *fmt, ...) { (void)fmt; }
 
 #define NRFX_LOG_ERROR_STRING_GET(error_code) nrfx_error_code_lookup(error_code)
 #define LOG_PRINTF(fmt, ...) \
-    mp_printf(MP_PYTHON_PRINTER, "%s: " fmt "\n", __func__, ## __VA_ARGS__)
+    SEGGER_RTT_printf(0, "%s: " fmt "\n", __func__, ## __VA_ARGS__)
+
+//    mp_printf(MP_PYTHON_PRINTER, "%s: " fmt "\n", __func__, ## __VA_ARGS__)
 
 #define NRFX_LOG_DEBUG   LOG_PRINTF_OFF
 #define NRFX_LOG_INFO    LOG_PRINTF_OFF

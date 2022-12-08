@@ -14,6 +14,7 @@ SOFTDEVICE_VERSION = 7.3.0
 HEXMERGE = hexmerge.py --overlap=ignore
 OPENOCD = openocd
 OPENOCD_FLASH = -c "init; nrf52_recover; program build/firmware.hex verify; reset run; exit"
+OPENOCD_RTT = -c "init; rtt setup 0x20000000 800000 \"SEGGER RTT\"; rtt start"
 OPENOCD_STLINK = -f interface/stlink-dap.cfg -f target/nrf52.cfg
 OPENOCD_JLINK = -f interface/jlink.cfg -c "transport select swd" -f target/nrf52.cfg
 NRFJPROG = nrfjprog
@@ -111,7 +112,7 @@ SRC += drivers/monocle_ble.c
 SRC += drivers/monocle_board.c
 SRC += drivers/monocle_checksum.c
 SRC += drivers/monocle_dfu.c
-SRC += drivers/monocle_ecx335af.c
+SRC += drivers/monocle_ecx336cn.c
 SRC += drivers/monocle_flash.c
 SRC += drivers/monocle_fpga.c
 SRC += drivers/monocle_i2c.c
@@ -198,6 +199,12 @@ flash_openocd_stlink:
 
 flash_openocd_jlink:
 	$(OPENOCD) $(OPENOCD_JLINK) $(OPENOCD_FLASH)
+
+rtt_openocd_stlink:
+	$(OPENOCD) $(OPENOCD_STLINK) $(OPENOCD_RTT)
+
+rtt_openocd_jlink:
+	$(OPENOCD) $(OPENOCD_JLINK) $(OPENOCD_RTT)
 
 flash_nrfjprog_jlink:
 	$(NRFJPROG) --family nrf52 --recover

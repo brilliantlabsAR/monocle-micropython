@@ -203,6 +203,8 @@ void fpga_init(void)
 
     // Give the FPGA some further time.
     nrfx_systick_delay_ms(10);
+
+    LOG("ready model=GW1N-LV9MG100");
 }
 
 void fpga_deinit(void)

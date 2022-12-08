@@ -10,7 +10,7 @@
 #include "nrf_soc.h"
 #include "monocle_board.h"
 #include "monocle_ov5640.h"
-#include "monocle_ecx335af.h"
+#include "monocle_ecx336cn.h"
 #include "monocle_max77654.h"
 #include "machine_power.h"
 #include "nrfx_reset_reason.h"
@@ -71,14 +71,14 @@ MP_DEFINE_CONST_FUN_OBJ_0(machine_power_camera_off_obj, &machine_power_camera_of
 STATIC mp_obj_t machine_power_display_on(void)
 {
     max77654_rail_10v(true);
-    ecx335af_awake(); 
+    ecx336cn_awake(); 
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(machine_power_display_on_obj, &machine_power_display_on);
 
 STATIC mp_obj_t machine_power_display_off(void)
 {
-    ecx335af_sleep();
+    ecx336cn_sleep();
     max77654_rail_10v(false);
     return mp_const_none;
 }

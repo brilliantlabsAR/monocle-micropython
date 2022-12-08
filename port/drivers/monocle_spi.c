@@ -69,6 +69,8 @@ void spi_init(void)
 
     // initialze xfer state (needed for init/uninit cycles)
     m_xfer_done = true;
+
+    LOG("ready nrfx=spim");
 }
 
 /**

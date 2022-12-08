@@ -13,20 +13,25 @@
 
 #include <stdint.h>
 #include <string.h>
+
+#include "nrfx.h"
+#include "nrfx_glue.h"
+#include "nrfx_log.h"
+
+// from the SoftDevice include dir:
+#include "ble.h"
+#include "nrf_sdm.h"
+
 #include "monocle_board.h"
 #include "monocle_ble.h"
 #include "monocle_config.h"
-#include "nrfx.h"
-#include "nrfx_glue.h"
-// From the SoftDevice include dir:
-#include "ble.h"
-#include "nrf_sdm.h"
 
 #define BLE_ADV_MAX_SIZE 31
 #define BLE_MAX_MTU_LENGTH          128
 #define BLE_UUID_COUNT              2
 
 #define ASSERT NRFX_ASSERT
+#define LOG NRFX_LOG_ERROR
 
 /** Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go. */
 #define RING_BUFFER_LENGTH (1024 + 45)
@@ -500,6 +505,8 @@ void ble_init(void)
 
     // Submit the adv now that it is complete.
     ble_adv_start();
+
+    LOG("ready services=uart,data");
 }
 
 /**

@@ -505,4 +505,6 @@ void ov5640_focus_init(void)
         ov5640_delay_ms(5);
         ASSERT(++i <= 1000);
     } while (state != 0x70);
+
+    LOG("ready max_resolution=2592x1944");
 }

@@ -74,16 +74,16 @@ static uint8_t battery_percent = 0;
 /** Used by the sampling callback. */
 nrf_saadc_value_t adc_buffer;
 
-struct table_1d {
+typedef struct {
     uint8_t x_length;
     float *x_values;
     float *y_values;
-};
+} table_1d_t;
 
 /*
  * Declare variable using above structure and the battery discharge function datapoints
  */
-static struct table_1d battery_table = {
+static table_1d_t battery_table = {
     battery_points,       /* Number of data points */
     battery_voltage_table,  /* Array of x-coordinates */
     battery_percent_table   /* Array of y-coordinates */
@@ -114,7 +114,7 @@ static float interpolate_segment(float x0, float y0, float x1, float y1, float x
 /*
  * 1D Table lookup with interpolation
  */
-static float interpolate_table_1d(struct table_1d *table, float x)
+static float interpolate_table_1d(table_1d_t *table, float x)
 {
     uint8_t segment;
 
@@ -251,4 +251,6 @@ void battery_init(void)
     // Start the trigger chain: the callback will trigger another callback
     err = nrfx_saadc_mode_trigger();
     NRFX_ASSERT(err == NRFX_SUCCESS);
+
+    LOG("ready: nrfx=saadc r_hi=%f r_lo=%f", (double)R_HI, (double)R_LO);
 }

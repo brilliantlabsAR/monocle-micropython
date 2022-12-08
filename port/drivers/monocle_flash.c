@@ -81,6 +81,8 @@ void flash_init(void)
     config.bit_order    = NRF_SPIM_BIT_ORDER_MSB_FIRST;
     err = nrfx_spim_init(&m_spi, &config, &flash_event_handler, NULL);
     ASSERT(err == NRFX_SUCCESS);
+
+    LOG("ready");
 }
 
 /**

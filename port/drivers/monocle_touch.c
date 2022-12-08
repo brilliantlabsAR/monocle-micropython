@@ -238,6 +238,8 @@ static void touch_set_timer(touch_event_t event)
 
     // Start the timer.
     nrfx_timer_enable(&touch_timer);
+
+    LOG("ready nrfx=timer dep=iqs620");
 }
 
 static void touch_next_state(touch_event_t event)

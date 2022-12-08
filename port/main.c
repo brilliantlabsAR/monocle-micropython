@@ -84,6 +84,9 @@ _Noreturn void nlr_jump_fail(void *val)
  */
 int main(void)
 {
+    // All logging through SEGGER RTT interface
+    SEGGER_RTT_Init();
+
     // Initialise BLE, also used for logging
     ble_init();
 
@@ -113,6 +116,11 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
+            SEGGER_RTT_printf(0, ".\r\n");
+            SEGGER_RTT_printf(1, ".\r\n");
+            SEGGER_RTT_printf(2, ".\r\n");
+            SEGGER_RTT_printf(3, ".\r\n");
+            SEGGER_RTT_printf(4, ".\r\n");
         } else {
             stop = pyexec_friendly_repl();
         }

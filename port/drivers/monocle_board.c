@@ -13,7 +13,7 @@
 #include "monocle_ble.h"
 #include "monocle_board.h"
 #include "monocle_config.h"
-#include "monocle_ecx335af.h"
+#include "monocle_ecx336cn.h"
 #include "monocle_flash.h"
 #include "monocle_fpga.h"
 #include "monocle_i2c.h"
@@ -29,7 +29,7 @@
 #define LOG NRFX_LOG_ERROR
 
 static bool board_halt_on_error;
-static uint32_t board_failures;
+static uint32_t board_errors;
 static uint32_t board_test_num;
 
 static inline void board_blink_num(uint8_t num)
@@ -48,10 +48,10 @@ static inline void board_blink_num(uint8_t num)
  */
 static void board_check_errors(void)
 {
-    if (board_failures) {
+    if (board_errors) {
         max77654_led_red(true);
         for (uint8_t i = 0; i <= board_test_num; i++)
-            if (board_failures & (1u << i))
+            if (board_errors & (1u << i))
                 board_blink_num(i);
         assert(!"hardware could not be entirely initialized");
     }
@@ -64,7 +64,7 @@ void board_assert_func(char const *file, int line, char const *func, char const 
     if (board_halt_on_error) {
         __assert_func(file, line, func, expr);
     } else {
-        board_failures |= 1u << board_test_num;
+        board_errors |= 1u << board_test_num;
     }
 }
 
@@ -77,6 +77,8 @@ void board_power_on(void)
     // Camera requires 1.8V before 2.7V.
     max77654_rail_1v8(true);
     nrfx_systick_delay_ms(20);
+
+    return;
 
     max77654_rail_2v7(true);
     nrfx_systick_delay_ms(20);
@@ -139,20 +141,22 @@ void board_init(void)
     board_power_off();
 
     // Initialise GPIO before the chips are powered on.
-    ecx335af_prepare();
-    fpga_prepare();
-    ov5640_prepare();
-    flash_prepare();
+    //ecx336cn_prepare();
+    //fpga_prepare();
+    //ov5640_prepare();
+    //flash_prepare();
 
     // I2C calls to setup power rails of the MAX77654.
     // Needs: max77654
-    board_power_on();
+    //board_power_on();
+    max77654_rail_1v8(true);
 
     board_test_num = 2;
 
     // Initialise the Capacitive Touch Button controller over I2C.
     // Needs: i2c, gpiote
     iqs620_init();
+    return;
 
     board_test_num = 3;
 
@@ -165,7 +169,7 @@ void board_init(void)
 
     // Initialise the Screen
     // Needs: power, spi, fpga
-    ecx335af_init();
+    ecx336cn_init();
     fpga_disp_bars();
 
     board_test_num = 5;
@@ -187,14 +191,17 @@ void board_init(void)
     // Needs: power
     //flash_init();
 
+    LOG("ready errors=0x%02X test_num=%d", board_errors, board_test_num);
+
     max77654_led_green(false);
     board_check_errors();
+
 }
 
 void board_deinit(void)
 {
     // Call deinit() hook of each driver.
-    ecx335af_deinit();
+    ecx336cn_deinit();
     fpga_deinit();
     ov5640_deinit();
 

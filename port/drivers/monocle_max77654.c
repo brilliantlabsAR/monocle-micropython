@@ -767,6 +767,8 @@ void max77654_init(void)
     // Reset LED state
     max77654_led_red(false);
     max77654_led_green(false);
+
+    LOG("ready rails=1.2v,1.8v,2.7v,10v");
 }
 
 /**

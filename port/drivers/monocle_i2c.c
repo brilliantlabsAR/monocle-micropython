@@ -72,6 +72,8 @@ void i2c_init(void)
     ASSERT(err == NRFX_SUCCESS);
 
     nrfx_twi_enable(&i2c1);
+
+    LOG("ready nrfx=twi");
 }
 
 /**
