@@ -164,6 +164,12 @@ See also :py:meth:`~machine.bootloader` for how to manually jump to the bootload
    When using ``nrfjprog``, it is required to use the ``--recover`` option to bypass Nordic flash protection,
    which will erase the whole flash, and allow programming new firmware from a hex file.
 
+   An alternative comand that might work better in some cases:
+
+   .. code::
+
+      nrfjprog --program firmware_file.hex --chiperase --family nrf52 --verify --reset
+
 
 Future development
 ------------------
