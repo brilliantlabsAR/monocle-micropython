@@ -70,24 +70,23 @@ void board_assert_func(char const *file, int line, char const *func, char const 
 
 void board_power_on(void)
 {
-    // FPGA requires VCC(1.2V) before VCCX(2.7V) or VCCO(1.8V).
+    // Used by: fpga
     max77654_rail_1v2(true);
     nrfx_systick_delay_ms(20);
 
-    // Camera requires 1.8V before 2.7V.
+    // Used by: fpga, ov5640, nrf52832, ecx336cn, iqs620
     max77654_rail_1v8(true);
     nrfx_systick_delay_ms(20);
 
-    return;
-
+    // Used by: fpga, ov5640
     max77654_rail_2v7(true);
     nrfx_systick_delay_ms(20);
 
-    // Used by the display.
+    // Used by: ecx336cn
     max77654_rail_10v(true);
     nrfx_systick_delay_ms(20);
 
-    // Used by the red and green LEDs.
+    // Used by: led
     max77654_rail_vled(true);
     nrfx_systick_delay_ms(20);
 }
@@ -148,8 +147,7 @@ void board_init(void)
 
     // I2C calls to setup power rails of the MAX77654.
     // Needs: max77654
-    //board_power_on();
-    max77654_rail_1v8(true);
+    board_power_on();
 
     board_test_num = 2;
 

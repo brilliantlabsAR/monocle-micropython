@@ -252,5 +252,5 @@ void battery_init(void)
     err = nrfx_saadc_mode_trigger();
     NRFX_ASSERT(err == NRFX_SUCCESS);
 
-    LOG("ready: nrfx=saadc r_hi=%f r_lo=%f", (double)R_HI, (double)R_LO);
+    LOG("ready: nrfx=saadc");
 }
