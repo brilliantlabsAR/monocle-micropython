@@ -9,7 +9,7 @@ Firmware Driver API
    checksum.rst
    config.rst
    dfu.rst
-   ecx335af.rst
+   ecx336cn.rst
    flash.rst
    fpga.rst
    i2c.rst

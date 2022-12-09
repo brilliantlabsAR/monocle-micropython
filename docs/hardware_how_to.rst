@@ -53,6 +53,6 @@ Here is the reference for the green led blink report:
 1. Init of ``Maxim Integrated MAX77654`` PMIC and other GPIO signals.
 2. Init of ``Azotec IQS620`` capacitive touch buttons controller.
 3. Init of ``GoWin GW1N`` FPGA and its Verilog RTL circuit.
-4. Init of ``Sony ECX335AF`` microdisplay.
+4. Init of ``Sony ECX336CN`` microdisplay.
 5. Init of ``OmniVision OV5640`` camera module.
 6. Init of ``OV5640`` Flash chip.
