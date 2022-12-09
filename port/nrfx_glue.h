@@ -38,10 +38,7 @@
 #define ARRAY_SIZE MP_ARRAY_SIZE
 #endif
 
-// If an assert is triggered, the firmware reboots into bootloader mode
-// pending for a bugfix to be flashed, then finally booting to firmware.
-#define NRFX_ASSERT_FUNC() dfu_reboot_bootloader()
-#define NRFX_ASSERT(exp) do { if (!(exp)) NRFX_ASSERT_FUNC(); } while (0)
+#define NRFX_ASSERT(exp) assert(exp)
 #define NRFX_STATIC_ASSERT(exp) _Static_assert(exp, #exp)
 
 void mp_hal_delay_us(mp_uint_t us);

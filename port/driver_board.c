@@ -30,6 +30,7 @@
 #include "nrfx_systick.h"
 
 #define LOG NRFX_LOG_ERROR
+#define ASSERT NRFX_ASSERT
 
 static bool board_halt_on_error;
 static uint32_t board_errors;
@@ -56,7 +57,7 @@ static void board_check_errors(void)
         for (uint8_t i = 0; i <= board_test_num; i++)
             if (board_errors & (1u << i))
                 board_blink_num(i);
-        assert(!"hardware could not be entirely initialized");
+        ASSERT(!"hardware could not be entirely initialized");
     }
 }
 
@@ -146,10 +147,10 @@ void board_init(void)
     board_power_off();
 
     // Initialise GPIO before the chips are powered on.
-    //ecx336cn_prepare();
-    //fpga_prepare();
-    //ov5640_prepare();
-    //flash_prepare();
+    ecx336cn_prepare();
+    fpga_prepare();
+    ov5640_prepare();
+    flash_prepare();
 
     // I2C calls to setup power rails of the MAX77654.
     // Needs: max77654
@@ -160,7 +161,6 @@ void board_init(void)
     // Initialise the Capacitive Touch Button controller over I2C.
     // Needs: i2c, gpiote
     iqs620_init();
-    return;
 
     board_test_num = 3;
 

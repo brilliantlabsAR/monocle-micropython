@@ -22,6 +22,8 @@ NRFUTIL = nrfutil
 JLINKGDBSERVERCL = JLinkGDBServerCLExe
 GDB = gdb-multiarch
 PYTHON = python3
+GIT_COMMIT = $(shell git rev-parse HEAD | cut -c 1-6)
+VERSION = $(shell git tag -l 'v[0-9]*' | tail -n 1)
 
 # Complete firmware containing everything.
 FIRMWARE_HEX = build/firmware.hex
@@ -98,6 +100,8 @@ DEF += -DBLUETOOTH_SD_DEBUG=1
 DEF += -DMICROPY_QSTR_EXTRA_POOL=mp_qstr_frozen_const_pool
 DEF += -DMICROPY_MODULE_FROZEN_MPY
 DEF += -DMICROPY_MODULE_FROZEN_STR
+DEF += -DGIT_COMMIT='"$(GIT_COMMIT)"'
+DEF += -DVERSION='"$(VERSION)"'
 
 # https://github.com/sandeepmistry/arduino-nRF5/issues/206
 DEF += -DCONFIG_NFCT_PINS_AS_GPIOS

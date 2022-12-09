@@ -61,20 +61,28 @@ void timer_del_handler(timer_handler_t *ptr)
     slot = timer_get_handler_slot(ptr);
     assert(slot != NULL); // should have been added first
 
+    LOG("0x%p", ptr);
+
     __disable_irq();
     *slot = NULL;
     __enable_irq();
 }
 
-void timer_add_handler(timer_handler_t *handler)
+void timer_add_handler(timer_handler_t *ptr)
 {
     timer_handler_t **slot;
+
+    // Check if the timer is already configured.
+    if (timer_get_handler_slot(ptr) != NULL)
+        return;
 
     slot = timer_get_handler_slot(NULL);
     assert(slot != NULL); // misconfiguration of TIMER_MAX_HANDLERS
 
+    LOG("0x%p", ptr);
+
     __disable_irq();
-    *slot = handler;
+    *slot = ptr;
     __enable_irq();
 }
 
@@ -84,16 +92,18 @@ void timer_init(void)
 
     // Prepare the configuration structure.
     timer_config.mode = NRF_TIMER_MODE_TIMER;
-    timer_config.frequency = NRF_TIMER_FREQ_1MHz;
+    timer_config.frequency = NRF_TIMER_FREQ_31250Hz;
     timer_config.bit_width = NRF_TIMER_BIT_WIDTH_8;
 
     err = nrfx_timer_init(&timer, &timer_config, timer_event_handler);
     ASSERT(err == NRFX_SUCCESS);
 
-    // Do not raise an interrupt on every MHz, but on every 100 MHz.
+    // Do not raise an interrupt every time, but on every 100 times -> 31.25 Hz.
     nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 100,
             NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
 
-    // Start the timer.
+    // Start the timer, letting timer_add_handler() append more of them while running.
     nrfx_timer_enable(&timer);
+
+    LOG("ready max_handlers=%d", TIMER_MAX_HANDLERS);
 }

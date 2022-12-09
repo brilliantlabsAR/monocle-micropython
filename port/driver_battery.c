@@ -41,7 +41,10 @@ static float battery_percent_table[] = {
 };
 
 /** Number of points derived from the battery_voltage_table and battery_percent_table */
-const uint8_t battery_points = sizeof battery_voltage_table / sizeof *battery_voltage_table;
+static const uint8_t battery_points = sizeof battery_voltage_table / sizeof *battery_voltage_table;
+
+/** Shared flag between the SAADC interrupt and timer interrupt. */
+static volatile bool battery_adc_ready;
 
 /** Input resistor divider, high value resistance in kOhm, from MK9B R2 */
 #define R_HI (4.8 - 1.25)
@@ -121,35 +124,30 @@ static float interpolate_segment(float x0, float y0, float x1, float y1, float x
 static float interpolate_table_1d(table_1d_t *table, float x)
 {
     uint8_t segment;
+    float *xval = table->x_values;
+    float *yval = table->y_values;
+    size_t len = table->x_length;
 
     // Check input bounds and saturate if out-of-bounds
-    if (x > (table->x_values[table->x_length-1])) {
+    if (x > (xval[len - 1]))
         // x-value too large, saturate to max y-value
-        return table->y_values[table->x_length-1];
-    }
-    else if (x < (table->x_values[0])) {
+        return yval[len - 1];
+    else if (x < (xval[0]))
         // x-value too small, saturate to min y-value
-        return table->y_values[0];
-    }
+        return yval[0];
 
     // Find the segment that holds x
-    for (segment = 0; segment<(table->x_length-1); segment++)
-    {
-        if ((table->x_values[segment]   <= x) &&
-            (table->x_values[segment+1] >= x))
-        {
+    for (segment = 0; segment < len - 1; segment++)
+        if ((xval[segment + 0] <= x) && (xval[segment + 1] >= x))
             // Found the correct segment, interpolate
-            return interpolate_segment(table->x_values[segment],   // x0
-                                       table->y_values[segment],   // y0
-                                       table->x_values[segment+1], // x1
-                                       table->y_values[segment+1], // y1
-                                       x);                         // x
-        }
-    }
+            return interpolate_segment(
+                    xval[segment + 0], yval[segment + 0],
+                    xval[segment + 1], yval[segment + 1],
+                    x);
 
     // Something with the data was wrong if we get here
     // Saturate to the max value
-    return table->y_values[table->x_length-1];
+    return yval[len - 1];
 }
 
 static float battery_voltage_to_percent(float voltage)
@@ -189,26 +187,28 @@ static void saadc_callback(nrfx_saadc_evt_t const *p_event)
 
     switch (NRFX_SAADC_EVT_DONE) {
         case NRFX_SAADC_EVT_BUF_REQ:
+        LOG("NRFX_SAADC_EVT_BUF_REQ");
             err = nrfx_saadc_buffer_set(&adc_buffer, 1);
             ASSERT(err == NRFX_SUCCESS);
             break;
         case NRFX_SAADC_EVT_DONE:
+        LOG("NRFX_SAADC_EVT_DONE");
+            // Compute the average
             for (int i = 0; i < p_event->data.done.size; i++) {
                 average_level += p_event->data.done.p_buffer[i];
                 LOG("buffer[%d]=%ud average_level=%ud", i, p_event->data.done.p_buffer[i], average_level);
             }
+
             // This truncates, doesn't round up:
             average_level = average_level / p_event->data.done.size;
             battery_voltage = battery_saadc_to_voltage(average_level);
             battery_percent = round(battery_voltage_to_percent(battery_voltage));
-            LOG("Batt average (ADC raw): %u", average_level);
-            LOG("Batt average (voltage): %f", (double)battery_voltage);
-            LOG("Batt percent: %d%%", battery_percent);
+            LOG("battery_average=%u battery_percent=%d%%", average_level, battery_percent);
 
-            // Enqueue another sampling
-            err = nrfx_saadc_mode_trigger();
-            ASSERT(err == NRFX_SUCCESS);
-
+            // The timer handler can now enqueue another conversion. No
+            // need to disable interrupts: it is already done as we are in
+            // an interrupt.
+            battery_adc_ready = true;
             break;
         default:
             ASSERT(!"unhandled event");
@@ -230,8 +230,17 @@ void battery_timer_handler(void)
 {
     uint32_t err;
 
+    // Only trigger a new conversion if the previous one is completed.
+    if (!battery_adc_ready)
+        return;
+
+    // Prevent overlapping conversions.
+    battery_adc_ready = false;
+
     // Start the trigger chain: the callback will trigger another callback
     err = nrfx_saadc_mode_trigger();
+    if (err != NRFX_SUCCESS)
+        __asm__("bkpt");
     NRFX_ASSERT(err == NRFX_SUCCESS);
 }
 
@@ -262,7 +271,12 @@ void battery_init(void)
     err = nrfx_saadc_buffer_set(&adc_buffer, 1);
     NRFX_ASSERT(err == NRFX_SUCCESS);
 
+    // Ready to perform an ADC conversion
+    battery_adc_ready = true;
+
+    // Add a low-frequency house-cleaning timer
+    LOG("timer_add_handler");
     timer_add_handler(&battery_timer_handler);
 
-    LOG("ready: nrfx=saadc dep=timer");
+    LOG("ready nrfx=saadc dep=timer");
 }

@@ -73,7 +73,7 @@ const char help_text[] = {
 _Noreturn void nlr_jump_fail(void *val)
 {
     (void)val;
-    NRFX_ASSERT_FUNC();
+    assert(!"exception raised without any handlers for it");
 }
 
 #include "nrfx_log.h"
@@ -86,6 +86,7 @@ int main(void)
 {
     // All logging through SEGGER RTT interface
     SEGGER_RTT_Init();
+    LOG("Monocle firmware "VERSION" "GIT_COMMIT);
 
     // Initialise BLE, also used for logging
     ble_init();
@@ -116,11 +117,6 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-            SEGGER_RTT_printf(0, ".\r\n");
-            SEGGER_RTT_printf(1, ".\r\n");
-            SEGGER_RTT_printf(2, ".\r\n");
-            SEGGER_RTT_printf(3, ".\r\n");
-            SEGGER_RTT_printf(4, ".\r\n");
         } else {
             stop = pyexec_friendly_repl();
         }
@@ -142,10 +138,14 @@ int main(void)
     NVIC_SystemReset();
 }
 
+/**
+ * If an assert is triggered, the firmware reboots into bootloader mode
+ * pending for a bugfix to be flashed, then finally booting to firmware.
+ */
 _Noreturn void __assert_func(const char *file, int line, const char *func, const char *expr)
 {
     LOG("%s:%d: %s: %s", file, line, func, expr);
-    NRFX_ASSERT(false);
+    dfu_reboot_bootloader();
 }
 
 /**

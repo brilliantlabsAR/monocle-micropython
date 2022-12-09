@@ -217,7 +217,7 @@ void ecx336cn_init(void)
     ASSERT(ecx336cn_read_byte(0x29) == 0x0B);
     ASSERT(ecx336cn_read_byte(0x2A) == 0xBE);
 
-    LOG("ready resolution=");
+    LOG("ready resolution=640x400");
 }
 
 void ecx336cn_deinit(void)

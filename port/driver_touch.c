@@ -185,19 +185,22 @@ touch_event_t touch_timer_event;
 
 static void touch_set_timer(touch_event_t event)
 {
+
     // Choose the apropriate duration depending on the event triggered.
-    switch (event)
-    {
+    switch (event) {
         case TOUCH_EVENT_LONG:
+            LOG("TOUCH_EVENT_LONG");
             // No timer to configure.
             timer_del_handler(&touch_timer_handler);
             return;
         case TOUCH_EVENT_SHORT:
+            LOG("TOUCH_EVENT_SHORT");
             // After a short timer, extend to a long timer.
             touch_timer_ticks = TOUCH_DELAY_LONG_MS;
             touch_timer_event = TOUCH_EVENT_LONG;
             break;
         default:
+            LOG("default event");
             // After a button event, setup a short timer.
             touch_timer_ticks = TOUCH_DELAY_SHORT_MS;
             touch_timer_event = TOUCH_EVENT_SHORT;
@@ -205,9 +208,8 @@ static void touch_set_timer(touch_event_t event)
     }
 
     // Submit the configuration.
+    LOG("timer_add_handler");
     timer_add_handler(&touch_timer_handler);
-
-    LOG("ready dep=timer,iqs620");
 }
 
 static void touch_next_state(touch_event_t event)
@@ -217,8 +219,7 @@ static void touch_next_state(touch_event_t event)
     ASSERT(touch_state != TOUCH_STATE_INVALID);
 
     // Handle the multiple states.
-    if (touch_trigger_is_on[touch_state])
-    {
+    if (touch_trigger_is_on[touch_state]) {
         // When there is a handler associated with the state, run it.
         touch_callback(touch_state);
 
@@ -227,13 +228,9 @@ static void touch_next_state(touch_event_t event)
 
         // And then disable the timer.
         timer_del_handler(&touch_timer_handler);
-    }
-    else if (touch_state == TOUCH_STATE_IDLE)
-    {
+    } else if (touch_state == TOUCH_STATE_IDLE) {
             // Idle, do not setup a timer.
-    }
-    else
-    {
+    } else {
             // Intermediate states, do not go back to TOUCH_STATE_IDLE.
             touch_set_timer(event);
     }
@@ -242,8 +239,7 @@ static void touch_next_state(touch_event_t event)
 static void touch_timer_handler(void)
 { 
     // If the timer's counter reaches 0
-    if (touch_timer_ticks == 0)
-    {
+    if (touch_timer_ticks == 0) {
         // Disable the timer for now.
         timer_del_handler(&touch_timer_handler);
 
@@ -253,9 +249,7 @@ static void touch_timer_handler(void)
                 touch_timer_event == TOUCH_EVENT_LONG ? "LONG" :
                 "?");
         touch_next_state(touch_timer_event);
-    }
-    else
-    {
+    } else {
         // Not triggering yet.
         touch_timer_ticks -= 100;
     }
@@ -264,8 +258,7 @@ static void touch_timer_handler(void)
 void iqs620_callback_button_pressed(uint8_t button)
 {
     LOG("button=%d", button);
-    switch (button)
-    {
+    switch (button) {
         case 0:
             touch_next_state(TOUCH_EVENT_0_ON);
             break;
@@ -278,8 +271,7 @@ void iqs620_callback_button_pressed(uint8_t button)
 void iqs620_callback_button_released(uint8_t button)
 {
     LOG("button=%d", button);
-    switch (button)
-    {
+    switch (button) {
         case 0:
             touch_next_state(TOUCH_EVENT_0_OFF);
             break;
