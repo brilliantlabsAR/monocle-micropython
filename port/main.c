@@ -24,9 +24,9 @@
  * THE SOFTWARE.
  */
 
-#include "monocle_ble.h"
-#include "monocle_board.h"
-#include "monocle_battery.h" // debug
+#include "driver_ble.h"
+#include "driver_board.h"
+#include "driver_battery.h" // debug
 #include "nrf_sdm.h"
 #include "nrfx_systick.h"
 #include "py/compile.h"

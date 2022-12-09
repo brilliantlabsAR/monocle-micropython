@@ -34,7 +34,7 @@
 #include "shared/runtime/pyexec.h"
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
-#include "monocle_dfu.h"
+#include "driver_dfu.h"
 #include "machine.h"
 #include "machine_timer.h"
 #include "machine_battery.h"

@@ -1,7 +1,7 @@
 MICROPY_ROM_TEXT_COMPRESSION ?= 1
 MICROPY_VFS_LFS2 = 1
 MICROPY_VFS_FAT = 0
-FROZEN_MANIFEST = ../python/manifest.py
+FROZEN_MANIFEST = manifest.py
 CROSS_COMPILE = arm-none-eabi-
 
 include ../micropython/py/mkenv.mk
@@ -107,21 +107,21 @@ SRC += main.c
 SRC += mphalport.c
 SRC += nrf$(NRF).c
 
-SRC += drivers/monocle_battery.c
-SRC += drivers/monocle_ble.c
-SRC += drivers/monocle_board.c
-SRC += drivers/monocle_checksum.c
-SRC += drivers/monocle_dfu.c
-SRC += drivers/monocle_ecx336cn.c
-SRC += drivers/monocle_flash.c
-SRC += drivers/monocle_fpga.c
-SRC += drivers/monocle_i2c.c
-SRC += drivers/monocle_iqs620.c
-SRC += drivers/monocle_max77654.c
-SRC += drivers/monocle_ov5640.c
-SRC += drivers/monocle_spi.c
-SRC += drivers/monocle_timer.c
-SRC += drivers/monocle_touch.c
+SRC += driver_battery.c
+SRC += driver_ble.c
+SRC += driver_board.c
+SRC += driver_checksum.c
+SRC += driver_dfu.c
+SRC += driver_ecx336cn.c
+SRC += driver_flash.c
+SRC += driver_fpga.c
+SRC += driver_i2c.c
+SRC += driver_iqs620.c
+SRC += driver_max77654.c
+SRC += driver_ov5640.c
+SRC += driver_spi.c
+SRC += driver_timer.c
+SRC += driver_touch.c
 
 SRC += modules/board.c
 SRC += modules/board_led.c
@@ -191,6 +191,11 @@ OBJ += $(PY_O)
 OBJ += $(addprefix build/, $(SRC:.c=.o))
 
 all: ${FIRMWARE_HEX} ${DFU_PACKAGE_ZIP}
+
+clean: clean_extra
+
+clean_extra:
+	rm -rf micropython segger_rtt nrfx
 
 release:
 	DEF=-DRELEASE exec $(MAKE) clean all

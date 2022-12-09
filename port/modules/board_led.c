@@ -30,7 +30,7 @@
 #include "mphalport.h"
 #include "board_led.h"
 #include "mpconfigport.h"
-#include "monocle_max77654.h"
+#include "driver_max77654.h"
 
 typedef struct {
     mp_obj_base_t base;

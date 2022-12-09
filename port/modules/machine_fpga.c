@@ -7,9 +7,9 @@
 #include "py/objarray.h"
 #include "py/runtime.h"
 #include "nrfx_log.h"
-#include "monocle_fpga.h"
-#include "monocle_spi.h"
-#include "monocle_config.h"
+#include "driver_fpga.h"
+#include "driver_spi.h"
+#include "driver_config.h"
 #include "machine_fpga.h"
 
 typedef struct {

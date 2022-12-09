@@ -29,7 +29,7 @@
 
 #include "py/mpconfig.h"
 #include "py/misc.h"
-#include "monocle_dfu.h"
+#include "driver_dfu.h"
 #include <assert.h>
 
 #include <soc/nrfx_irqs.h>

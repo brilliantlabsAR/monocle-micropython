@@ -1,5 +1,5 @@
-#include "monocle_iqs620.h"
-#include "monocle_battery.h"
+#include "driver_iqs620.h"
+#include "driver_battery.h"
 #include "nrfx_log.h"
 #include "py/obj.h"
 #include "py/qstr.h"
