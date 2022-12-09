@@ -2,14 +2,16 @@
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
+
 #ifndef MONOCLE_CONFIG_H
 #define MONOCLE_CONFIG_H
+
 #include "nrf_gpio.h"
+
 /**
  * Configuratin file for the drivers.
  * GPIO pins used, I2C addresses, peripheral instances in use...
  * @defgroup config
- * @{
  */
 
 // Bluetooth params
@@ -43,6 +45,12 @@
 
 #define SPI_INSTANCE                2
 
+// TIMER
+
+// 0 is reserved for SoftDevice
+#define TIMER_INSTANCE              2
+#define TIMER_MAX_CALLBACKS         2
+
 // I2C
 
 #define IQS620_I2C                  i2c0
@@ -54,5 +62,4 @@
 #define OV5640_I2C                  i2c1
 #define OV5640_ADDR                 0x3C
 
-/** @} */
 #endif

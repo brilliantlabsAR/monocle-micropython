@@ -2,15 +2,18 @@
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
+
 #ifndef SPI_H
 #define SPI_H
+
 #include <stdint.h>
 #include <stdbool.h>
+
 #include "nrfx_spim.h"
+
 /**
  * Wrapper over the NRFX driver to include a leading address sent first.
  * @defgroup spi
- * @{
  */
 
 // Current FPGA FIFO max length is 1024
@@ -40,5 +43,4 @@ static inline uint8_t *spi_write_burst(uint8_t addr, uint8_t *buf, size_t len)
     return buf - 1;
 }
 
-/** @} */
 #endif

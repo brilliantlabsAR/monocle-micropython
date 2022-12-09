@@ -2,10 +2,13 @@
  * Copyright (c) 2021 Brilliant Labs Limited
  * Licensed under the MIT License
  */
+
 #ifndef FPGA_H
 #define FPGA_H
+
 #include <stdint.h>
 #include <stdbool.h>
+
 /**
  * Driver for configuring the SPI-controlled FPGA.
  * It controls the low-level read/write with the registers and bulk data transfer.
@@ -16,7 +19,6 @@
  * - the Microphone data,
  * - the Checksum calculation,
  * @defgroup fpga
- * @{
  */
 
 #define fpga_check_reg(reg) NRFX_LOG_ERROR("[0x%02X] %-s=%d", reg, #reg, fpga_read_register(reg))
@@ -204,5 +206,4 @@ void fpga_discard_buffer(void);
 // debug
 void fpga_check_pins(char const *msg);
 
-/** @} */
 #endif

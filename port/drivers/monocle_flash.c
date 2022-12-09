@@ -5,7 +5,7 @@
 
 /**
  * Flash chip driver.
- * @file monocle_ecx335af.c
+ * @file monocle_flash.c
  */
 
 #include "nrf_gpio.h"

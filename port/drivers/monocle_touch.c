@@ -178,7 +178,7 @@ static bool touch_trigger_is_on[TOUCH_STATE_NUM] = {
     // TODO
 };
 
-static void touch_timer_handler(nrf_timer_event_t event, void *ctx);
+static void touch_timer_handler(void);
 
 /**
  * Workaround the fact that nordic returns an ENUM instead of a simple integer.
@@ -189,23 +189,19 @@ static inline void check(char const *func, nrfx_err_t err)
         LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
 }
 
-// 0 is reserved for SoftDevice, 1 does not work for an unknown reason
-nrfx_timer_t touch_timer = NRFX_TIMER_INSTANCE(2);
 uint32_t touch_timer_ticks;
-nrfx_timer_config_t touch_timer_config = NRFX_TIMER_DEFAULT_CONFIG;
 touch_event_t touch_timer_event;
 
 static void touch_set_timer(touch_event_t event)
 {
     uint32_t err;
-    static bool init = false;
 
     // Choose the apropriate duration depending on the event triggered.
     switch (event)
     {
         case TOUCH_EVENT_LONG:
             // No timer to configure.
-            nrfx_timer_disable(&touch_timer);
+            timer_del_callback(&touch_timer);
             return;
         case TOUCH_EVENT_SHORT:
             // After a short timer, extend to a long timer.
@@ -219,25 +215,8 @@ static void touch_set_timer(touch_event_t event)
             break;
     }
 
-    // Reset the timer if already configured.
-    if (init)
-        nrfx_timer_uninit(&touch_timer);
-
-    // Prepare the configuration structure.
-    touch_timer_config.mode = NRF_TIMER_MODE_TIMER;
-    touch_timer_config.frequency = NRF_TIMER_FREQ_1MHz;
-    touch_timer_config.bit_width = NRF_TIMER_BIT_WIDTH_8;
-
     // Submit the configuration.
-    err = nrfx_timer_init(&touch_timer, &touch_timer_config, touch_timer_handler);
-    ASSERT(err == NRFX_SUCCESS);
-    init = true;
-
-    // Do not raise an interrupt on every MHz, but on every 100 MHz.
-    nrfx_timer_extended_compare(&touch_timer, NRF_TIMER_CC_CHANNEL0, 100, NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
-
-    // Start the timer.
-    nrfx_timer_enable(&touch_timer);
+    timer_add_callback(&touch_timer_handler);
 
     LOG("ready nrfx=timer dep=iqs620");
 }
@@ -271,11 +250,8 @@ static void touch_next_state(touch_event_t event)
     }
 }
 
-static void touch_timer_handler(nrf_timer_event_t event, void *ctx)
+static void touch_timer_handler(void)
 { 
-    (void)event;
-    (void)ctx;
-
     // If the timer's counter reaches 0
     if (touch_timer_ticks == 0)
     {

@@ -12,7 +12,6 @@
 /**
  * Touch interface application logics.
  * @defgroup touch
- * @{
  */
 
 typedef enum {
@@ -83,5 +82,4 @@ typedef enum {
 
 void touch_callback(touch_state_t trigger);
 
-/** @} */
 #endif

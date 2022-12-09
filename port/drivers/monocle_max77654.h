@@ -2,10 +2,13 @@
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
+
 #ifndef MAX77654_H
 #define MAX77654_H
+
 #include <stdbool.h>
 #include <stdint.h>
+
 /**
  * Driver for the MAX77654 I²C driven battery charge controller (PMIC).
  * https://datasheets.maximintegrated.com/en/ds/MAX77654.pdf
@@ -20,7 +23,6 @@
  * @bug Right now a little underpowered: there is a 18 sec delay after turning the power for every module.
  * @bug Occassionally boot failure is also noticed right now.
  * @defgroup max77654
- * @{
  */
 
 /** return values of max77654_charging_status() */
@@ -54,5 +56,4 @@ void max77654_set_charge_voltage(uint16_t voltage);
 void max77654_set_current_limit(uint16_t current);
 void max77564_factory_ship_mode(void);
 
-/** @} */
 #endif

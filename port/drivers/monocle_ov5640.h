@@ -2,19 +2,21 @@
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
+
 #ifndef MONOCLE_OV5640_H
 #define MONOCLE_OV5640_H
+
 #include <stdint.h>
 #include <stdbool.h>
+
 /**
  * Driver for the I²C OV5640 camera sensor.
  * https://cdn.sparkfun.com/datasheets/Sensors/LightImaging/
  * The parallel data path is connected to FPGA. The MCU only has access to the I²C configuration interface.
  * - 5MP max resolutiono
- * - Recording happens at 15 FPS, and the FPGA triple every frame to match the 50 FPS of the ECX335AF display.
+ * - Recording happens at 15 FPS, and the FPGA triple every frame to match the 50 FPS of the ECX334CN display.
  * - When using the 4x digital zoom, the camera outputs 640x400 video.
  * @defgroup ov5640
- * @{
  */
 
 #define OV5640_CHIPIDH          0x300A ///< OV5640 Chip ID Register address, high byte
@@ -70,5 +72,4 @@ void ov5640_flip(bool on);
 void ov5640_outsize_set(uint16_t offx, uint16_t offy, uint16_t width, uint16_t height);
 void ov5640_focus_init(void);
 
-/* @} */
 #endif

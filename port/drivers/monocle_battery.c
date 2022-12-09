@@ -12,10 +12,14 @@
  */
 
 #include <math.h>
+
 #include "monocle_board.h"
 #include "monocle_battery.h"
+#include "monocle_timer.h"
 #include "monocle_config.h"
+
 #include "nrfx_saadc.h"
+#include "nrfx_systick.h"
 #include "nrfx_log.h"
 
 #define LOG NRFX_LOG_ERROR
@@ -204,9 +208,10 @@ static void saadc_callback(nrfx_saadc_evt_t const *p_event)
             // Enqueue another sampling
             err = nrfx_saadc_mode_trigger();
             ASSERT(err == NRFX_SUCCESS);
+
             break;
         default:
-            assert(!"unhandled event");
+            ASSERT(!"unhandled event");
             break;
     }
 }
@@ -219,6 +224,15 @@ uint8_t battery_get_percent(void)
 {
     // Everything is handled by the ADC callback above.
     return battery_percent;
+}
+
+void battery_timer_handler(void)
+{
+    uint32_t err;
+
+    // Start the trigger chain: the callback will trigger another callback
+    err = nrfx_saadc_mode_trigger();
+    NRFX_ASSERT(err == NRFX_SUCCESS);
 }
 
 /**
@@ -248,9 +262,7 @@ void battery_init(void)
     err = nrfx_saadc_buffer_set(&adc_buffer, 1);
     NRFX_ASSERT(err == NRFX_SUCCESS);
 
-    // Start the trigger chain: the callback will trigger another callback
-    err = nrfx_saadc_mode_trigger();
-    NRFX_ASSERT(err == NRFX_SUCCESS);
+    timer_add_callback(&battery_timer_handler);
 
     LOG("ready: nrfx=saadc");
 }

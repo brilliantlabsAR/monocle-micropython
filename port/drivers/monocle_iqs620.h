@@ -2,11 +2,15 @@
  * Copyright (c) 2022 Brilliant Labs Limited
  * Licensed under the MIT License
  */
+
 #ifndef IQS620_H
 #define IQS620_H
+
 #include <stdint.h>
 #include <stdbool.h>
+
 #include "nrfx_twi.h"
+
 /**
  * Driver for the IQS620 hall effect, proximity sensor.
  * https://www.azoteq.com/images/stories/pdf/iqs620_datasheet.pdf
@@ -18,7 +22,6 @@
  * - TOUCH_GESTURE_LONGPRESS  : 9.5s
  * - TOUCH_GESTURE_LONGBOTH   : 9.5s (Both Pressed)
  * @defgroup iqs620
- * @{
  */
 
 void iqs620_init(void);
@@ -28,6 +31,4 @@ void iqs620_callback_button_released(uint8_t button);
 uint32_t iqs620_get_id(void);
 uint16_t iqs620_get_count(uint8_t channel);
 
-/** @} */
 #endif
-

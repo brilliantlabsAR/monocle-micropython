@@ -63,7 +63,7 @@ STATIC int timer_find(mp_obj_t id) {
     if (timer_id >= 0 && timer_id < MP_ARRAY_SIZE(machine_timer_obj)) {
         return timer_id;
     }
-    mp_raise_ValueError(MP_ERROR_TEXT("Timer doesn't exist"));
+    mp_raise_ValueError(MP_ERROR_TEXT("Timer(0) and Timer(1) only"));
 }
 
 STATIC void timer_print(const mp_print_t *print, mp_obj_t o, mp_print_kind_t kind) {
