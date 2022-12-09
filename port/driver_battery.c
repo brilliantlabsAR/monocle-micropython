@@ -43,9 +43,6 @@ static float battery_percent_table[] = {
 /** Number of points derived from the battery_voltage_table and battery_percent_table */
 static const uint8_t battery_points = sizeof battery_voltage_table / sizeof *battery_voltage_table;
 
-/** Shared flag between the SAADC interrupt and timer interrupt. */
-static volatile bool battery_adc_ready;
-
 /** Input resistor divider, high value resistance in kOhm, from MK9B R2 */
 #define R_HI (4.8 - 1.25)
 
@@ -64,7 +61,7 @@ static volatile bool battery_adc_ready;
 #define BATTERY_GAIN (1.0 / 4.0)
 
 /** Resolution of the ADC: for a 10-bit ADC, the resolution is 1 << 10 = 1024. */
-#define BATTERY_ADC_RESOLUTION NRF_SAADC_RESOLUTION_10BIT
+#define BATTERY_ADC_RESOLUTION NRF_SAADC_RESOLUTION_12BIT
 
 /*
  * These values are averages, taken over time determined by sampling time
@@ -77,9 +74,6 @@ static float battery_voltage = 0;
 
 /* Stores battery state-of-charge, expressed in percent (0-100) */
 static uint8_t battery_percent = 0;
-
-/** Used by the sampling callback. */
-nrf_saadc_value_t adc_buffer;
 
 typedef struct {
     uint8_t x_length;
@@ -180,42 +174,6 @@ static float battery_saadc_to_voltage(nrf_saadc_value_t reading)
     return voltage;
 }
 
-static void saadc_callback(nrfx_saadc_evt_t const *p_event)
-{
-    uint32_t err;
-    nrf_saadc_value_t average_level = 0;
-
-    switch (NRFX_SAADC_EVT_DONE) {
-        case NRFX_SAADC_EVT_BUF_REQ:
-        LOG("NRFX_SAADC_EVT_BUF_REQ");
-            err = nrfx_saadc_buffer_set(&adc_buffer, 1);
-            ASSERT(err == NRFX_SUCCESS);
-            break;
-        case NRFX_SAADC_EVT_DONE:
-        LOG("NRFX_SAADC_EVT_DONE");
-            // Compute the average
-            for (int i = 0; i < p_event->data.done.size; i++) {
-                average_level += p_event->data.done.p_buffer[i];
-                LOG("buffer[%d]=%ud average_level=%ud", i, p_event->data.done.p_buffer[i], average_level);
-            }
-
-            // This truncates, doesn't round up:
-            average_level = average_level / p_event->data.done.size;
-            battery_voltage = battery_saadc_to_voltage(average_level);
-            battery_percent = round(battery_voltage_to_percent(battery_voltage));
-            LOG("battery_average=%u battery_percent=%d%%", average_level, battery_percent);
-
-            // The timer handler can now enqueue another conversion. No
-            // need to disable interrupts: it is already done as we are in
-            // an interrupt.
-            battery_adc_ready = true;
-            break;
-        default:
-            ASSERT(!"unhandled event");
-            break;
-    }
-}
-
 /**
  * Get current, precomputed state-of-charge of the battery.
  * @return Remaining percentage of the battery.
@@ -229,19 +187,25 @@ uint8_t battery_get_percent(void)
 void battery_timer_handler(void)
 {
     uint32_t err;
+    nrf_saadc_value_t value;
 
-    // Only trigger a new conversion if the previous one is completed.
-    if (!battery_adc_ready)
-        return;
+    // Configure first ADC channel with low setup (enough for battery sensing)
+    err = nrfx_saadc_simple_mode_set(1u << 0, BATTERY_ADC_RESOLUTION,
+        NRF_SAADC_OVERSAMPLE_DISABLED, NULL);
+    ASSERT(err == NRFX_SUCCESS);
 
-    // Prevent overlapping conversions.
-    battery_adc_ready = false;
+    // Add a buffer for the NRFX SDK to fill
+    err = nrfx_saadc_buffer_set(&value, 1);
+    ASSERT(err == NRFX_SUCCESS);
 
     // Start the trigger chain: the callback will trigger another callback
     err = nrfx_saadc_mode_trigger();
-    if (err != NRFX_SUCCESS)
-        __asm__("bkpt");
     NRFX_ASSERT(err == NRFX_SUCCESS);
+
+    // Compute the voltage, then percentage
+    battery_voltage = battery_saadc_to_voltage(value);
+    battery_percent = round(battery_voltage_to_percent(battery_voltage));
+    LOG("battery_value=%u battery_percent=%d%%", value, battery_percent);
 }
 
 /**
@@ -251,28 +215,18 @@ void battery_timer_handler(void)
 void battery_init(void)
 {
     uint32_t err;
-    nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(IO_ADC_VBATT, 0);
+    nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(BATTERY_ADC_PIN, 0);
 
     channel.channel_config.reference = BATTERY_ADC_REFERENCE;
     channel.channel_config.gain = BATTERY_ADC_GAIN;
 
-    err = nrfx_saadc_init(0);
+    nrf_gpio_cfg_input(BATTERY_ADC_PIN, NRF_GPIO_PIN_NOPULL);
+
+    err = nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
     ASSERT(err == NRFX_SUCCESS);
 
-    err = nrfx_saadc_channels_config(&channel, 1);
+    err = nrfx_saadc_channel_config(&channel);
     ASSERT(err == NRFX_SUCCESS);
-
-    // Configure first ADC channel with low setup (enough for battery sensing)
-    err = nrfx_saadc_simple_mode_set(1u << 0, BATTERY_ADC_RESOLUTION,
-        NRF_SAADC_OVERSAMPLE_DISABLED, saadc_callback);
-    ASSERT(err == NRFX_SUCCESS);
-
-    // Provide a buffer used internally by the NRFX driver
-    err = nrfx_saadc_buffer_set(&adc_buffer, 1);
-    NRFX_ASSERT(err == NRFX_SUCCESS);
-
-    // Ready to perform an ADC conversion
-    battery_adc_ready = true;
 
     // Add a low-frequency house-cleaning timer
     LOG("timer_add_handler");

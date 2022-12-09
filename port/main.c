@@ -120,6 +120,7 @@ int main(void)
         } else {
             stop = pyexec_friendly_repl();
         }
+        LOG("switching the interpreter mode");
     }
 
     // Deinitialize the board and power things off early

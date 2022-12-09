@@ -80,5 +80,6 @@
 
 // Used by driver_battery.c
 #define NRFX_SAADC_ENABLED 1
+#define NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY 7
 
 #endif
