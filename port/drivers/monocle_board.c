@@ -9,6 +9,8 @@
  * @author Nathan Ashelman
  */
 
+#include <stdbool.h>
+
 #include "monocle_battery.h"
 #include "monocle_ble.h"
 #include "monocle_board.h"
@@ -21,10 +23,11 @@
 #include "monocle_max77654.h"
 #include "monocle_ov5640.h"
 #include "monocle_spi.h"
+#include "monocle_timer.h"
+
 #include "nrfx_gpiote.h"
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
-#include <stdbool.h>
 
 #define LOG NRFX_LOG_ERROR
 
@@ -123,6 +126,9 @@ void board_init(void)
 
     // Custom wrapper around SPI used by the other drivers.
     spi_init();
+
+    // Periodic timer
+    timer_init();
 
     // Initialise the battery level sensing with the ADC.
     battery_init();

@@ -12,11 +12,11 @@ NRF = 52832
 SD = s132
 SOFTDEVICE_VERSION = 7.3.0
 HEXMERGE = hexmerge.py --overlap=ignore
-OPENOCD = openocd
-OPENOCD_FLASH = -c "init; nrf52_recover; program build/firmware.hex verify; reset run; exit"
-OPENOCD_RTT = -c "init; rtt setup 0x20000000 800000 \"SEGGER RTT\"; rtt start"
+OPENOCD = openocd -c 'gdb_port 2331'
+OPENOCD_FLASH = -c 'init; nrf52_recover; program build/firmware.hex verify; reset run; exit'
+OPENOCD_RTT = -c 'init; rtt setup 0x20000000 0x8000 "SEGGER RTT"; rtt start; rtt server start 9090 0'
 OPENOCD_STLINK = -f interface/stlink-dap.cfg -f target/nrf52.cfg
-OPENOCD_JLINK = -f interface/jlink.cfg -c "transport select swd" -f target/nrf52.cfg
+OPENOCD_JLINK = -f interface/jlink.cfg -c 'transport select swd' -f target/nrf52.cfg
 NRFJPROG = nrfjprog
 NRFUTIL = nrfutil
 JLINKGDBSERVERCL = JLinkGDBServerCLExe
@@ -73,7 +73,7 @@ INC += -I.
 INC += -Ibuild
 INC += -Idrivers
 INC += -Imodules
-INC += -Isegger_rtt
+INC += -I../segger_rtt
 INC += -I../micropython
 INC += -I../micropython/lib/cmsis/inc
 INC += -I../micropython/shared/readline
@@ -91,7 +91,7 @@ INC += -I../$(SD)/include/nrf52
 DEF += -DNRF$(NRF)_XXAA
 DEF += -DNRF$(NRF)
 DEF += -DCONFIG_GPIO_AS_PINRESET
-DEF += -DNRF5_HAL_H="<nrf$(NRF)_hal.h>"
+DEF += -DNRF5_HAL_H='<nrf$(NRF)_hal.h>'
 DEF += -DSOFTDEVICE_PRESENT
 DEF += -DBLUETOOTH_SD=132
 DEF += -DBLUETOOTH_SD_DEBUG=1
@@ -123,10 +123,6 @@ SRC += drivers/monocle_spi.c
 SRC += drivers/monocle_timer.c
 SRC += drivers/monocle_touch.c
 
-SRC += segger_rtt/SEGGER_RTT.c
-SRC += segger_rtt/SEGGER_RTT_Syscalls_GCC.c
-SRC += segger_rtt/SEGGER_RTT_printf.c
-
 SRC += modules/board.c
 SRC += modules/board_led.c
 SRC += modules/machine.c
@@ -136,6 +132,10 @@ SRC += modules/machine_rtcounter.c
 SRC += modules/machine_timer.c
 SRC += modules/machine_touch.c
 SRC += modules/machine_power.c
+
+SRC += ../segger_rtt/SEGGER_RTT.c
+SRC += ../segger_rtt/SEGGER_RTT_Syscalls_GCC.c
+SRC += ../segger_rtt/SEGGER_RTT_printf.c
 
 SRC += ../micropython/lib/libm/acoshf.c
 SRC += ../micropython/lib/libm/asinfacosf.c
@@ -212,23 +212,23 @@ flash_nrfjprog_jlink:
 	$(NRFJPROG) --family nrf52 --verify --program ${FIRMWARE_HEX} --debugreset
 
 gdb_openocd_stlink:
-	$(OPENOCD) $(OPENOCD_STLINK) -c "gdb_port 2331"
+	$(OPENOCD) $(OPENOCD_STLINK)
 
 gdb_openocd_jlink:
-	$(OPENOCD) $(OPENOCD_JLINK) -c "gdb_port 2331"
+	$(OPENOCD) $(OPENOCD_JLINK)
 
 gdb_segger_jlink:
 	$(JLINKGDBSERVERCL) -device nrf$(NRF)_XXAA -if SWD
 
 gdb:
 	$(GDB) \
-	    -ex "target extended-remote :2331" \
-	    -ex "monitor reset" \
-	    -ex "continue" \
+	    -ex 'target extended-remote :2331' \
+	    -ex 'monitor reset' \
+	    -ex 'continue' \
 	    $(APPLICATION_ELF)
 
 $(APPLICATION_ELF): $(OBJ)
-	$(ECHO) "LINK $@"
+	$(ECHO) 'LINK $@'
 	$(Q)$(CC) $(LDFLAGS) -o $@ $(OBJ) $(LDFLAGS_MOD) $(LIBS)
 	$(Q)$(SIZE) $@
 

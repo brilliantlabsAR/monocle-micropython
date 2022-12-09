@@ -144,9 +144,7 @@ int main(void)
 
 _Noreturn void __assert_func(const char *file, int line, const char *func, const char *expr)
 {
-    (void)expr;
-    (void)file;
-    (void)line;
+    LOG("%s:%d: %s: %s", file, line, func, expr);
     NRFX_ASSERT(false);
 }
 

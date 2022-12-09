@@ -264,5 +264,5 @@ void battery_init(void)
 
     timer_add_handler(&battery_timer_handler);
 
-    LOG("ready: nrfx=saadc");
+    LOG("ready: nrfx=saadc dep=timer");
 }

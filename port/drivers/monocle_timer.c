@@ -11,8 +11,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "nrfx_timer.h"
+#include "nrf_soc.h"
 #include "nrfx_log.h"
+#include "nrfx_timer.h"
 
 #include "monocle_timer.h"
 #include "monocle_config.h"
@@ -60,7 +61,9 @@ void timer_del_handler(timer_handler_t *ptr)
     slot = timer_get_handler_slot(ptr);
     assert(slot != NULL); // should have been added first
 
+    __disable_irq();
     *slot = NULL;
+    __enable_irq();
 }
 
 void timer_add_handler(timer_handler_t *handler)
@@ -70,7 +73,9 @@ void timer_add_handler(timer_handler_t *handler)
     slot = timer_get_handler_slot(NULL);
     assert(slot != NULL); // misconfiguration of TIMER_MAX_HANDLERS
 
+    __disable_irq();
     *slot = handler;
+    __enable_irq();
 }
 
 void timer_init(void)
