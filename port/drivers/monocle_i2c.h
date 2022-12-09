@@ -3,8 +3,8 @@
  * Licensed under the MIT License
  */
 
-#ifndef I2C_H
-#define I2C_H
+#ifndef MONOCLE_I2C_H
+#define MONOCLE_I2C_H
 
 #include <stdint.h>
 #include <stdbool.h>

@@ -3,8 +3,8 @@
  * Licensed under the MIT License
  */
 
-#ifndef TOUCH_H
-#define TOUCH_H
+#ifndef MONOCLE_TIMER_H
+#define MONOCLE_TIMER_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -16,11 +16,10 @@
  * @defgroup timer
  */
 
-typedef void timer_callback_t(void);
-
-extern timer_callback_t timer_callbacks[TIMER_MAX_CALLBACKS];
+typedef void timer_handler_t(void);
 
 void timer_init(void);
-void timer_add_callback(timer_callback_t cb);
+void timer_add_handler(timer_handler_t *handler);
+void timer_del_handler(timer_handler_t *handler);
 
 #endif

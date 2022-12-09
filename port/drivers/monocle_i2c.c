@@ -16,7 +16,6 @@
 #include "nrfx_log.h"
 
 #define LOG NRFX_LOG_ERROR
-#define CHECK(err) check(__func__, err)
 #define ASSERT NRFX_ASSERT
 
 const nrfx_twi_t i2c0 = NRFX_TWI_INSTANCE(0);
@@ -31,7 +30,7 @@ static volatile bool m_xfer_nack = false;
 /**
  * Workaround the fact taht nordic returns an ENUM instead of a simple integer.
  */
-static inline bool check(char const *func, nrfx_err_t err)
+static inline bool i2c_filter_error(char const *func, nrfx_err_t err)
 {
     switch (err) {
         case NRFX_SUCCESS:
@@ -86,7 +85,7 @@ void i2c_init(void)
 bool i2c_write(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz)
 {
     nrfx_twi_xfer_desc_t xfer = NRFX_TWI_XFER_DESC_TX(addr, buf, sz);
-    return CHECK(nrfx_twi_xfer(&twi, &xfer, 0));
+    return i2c_filter_error(__func__, nrfx_twi_xfer(&twi, &xfer, 0));
 }
 
 /**
@@ -100,7 +99,7 @@ bool i2c_write(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz)
 bool i2c_write_no_stop(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz)
 {
     nrfx_twi_xfer_desc_t xfer = NRFX_TWI_XFER_DESC_TX(addr, buf, sz);
-    return CHECK(nrfx_twi_xfer(&twi, &xfer, NRFX_TWI_FLAG_TX_NO_STOP));
+    return i2c_filter_error(__func__, nrfx_twi_xfer(&twi, &xfer, NRFX_TWI_FLAG_TX_NO_STOP));
 }
 
 /**
@@ -113,7 +112,7 @@ bool i2c_write_no_stop(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz)
 bool i2c_read(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz)
 {
     nrfx_twi_xfer_desc_t xfer = NRFX_TWI_XFER_DESC_RX(addr, buf, sz);;
-    return CHECK(nrfx_twi_xfer(&twi, &xfer, 0));
+    return i2c_filter_error(__func__, nrfx_twi_xfer(&twi, &xfer, 0));
 }
 
 /**

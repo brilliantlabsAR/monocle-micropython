@@ -3,8 +3,8 @@
  * Licensed under the MIT License
  */
 
-#ifndef TOUCH_H
-#define TOUCH_H
+#ifndef MONOCLE_TOUCH_H
+#define MONOCLE_TOUCH_H
 
 #include <stdint.h>
 #include <stdbool.h>

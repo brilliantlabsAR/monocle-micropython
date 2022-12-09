@@ -262,7 +262,7 @@ void battery_init(void)
     err = nrfx_saadc_buffer_set(&adc_buffer, 1);
     NRFX_ASSERT(err == NRFX_SUCCESS);
 
-    timer_add_callback(&battery_timer_handler);
+    timer_add_handler(&battery_timer_handler);
 
     LOG("ready: nrfx=saadc");
 }

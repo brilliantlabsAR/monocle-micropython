@@ -49,7 +49,7 @@
 
 // 0 is reserved for SoftDevice
 #define TIMER_INSTANCE              2
-#define TIMER_MAX_CALLBACKS         2
+#define TIMER_MAX_HANDLERS          2
 
 // I2C
 

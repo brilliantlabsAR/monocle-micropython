@@ -3,8 +3,8 @@
  * Licensed under the MIT License
  */
 
-#ifndef FPGA_H
-#define FPGA_H
+#ifndef MONOCLE_FPGA_H
+#define MONOCLE_FPGA_H
 
 #include <stdint.h>
 #include <stdbool.h>

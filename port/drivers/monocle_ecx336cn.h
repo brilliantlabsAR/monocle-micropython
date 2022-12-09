@@ -3,8 +3,8 @@
  * Licensed under the MIT License
  */
 
-#ifndef ECX336CN_H
-#define ECX336CN_H
+#ifndef MONOCLE_ECX336CN_H
+#define MONOCLE_ECX336CN_H
 
 #include <stdint.h>
 #include <stdbool.h>

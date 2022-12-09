@@ -3,8 +3,8 @@
  * Licensed under the MIT License
  */
 
-#ifndef MAX77654_H
-#define MAX77654_H
+#ifndef MONOCLE_MAX77654_H
+#define MONOCLE_MAX77654_H
 
 #include <stdbool.h>
 #include <stdint.h>

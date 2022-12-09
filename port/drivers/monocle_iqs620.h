@@ -3,8 +3,8 @@
  * Licensed under the MIT License
  */
 
-#ifndef IQS620_H
-#define IQS620_H
+#ifndef MONOCLE_IQS620_H
+#define MONOCLE_IQS620_H
 
 #include <stdint.h>
 #include <stdbool.h>

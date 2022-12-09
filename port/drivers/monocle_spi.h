@@ -3,8 +3,8 @@
  * Licensed under the MIT License
  */
 
-#ifndef SPI_H
-#define SPI_H
+#ifndef MONOCLE_SPI_H
+#define MONOCLE_SPI_H
 
 #include <stdint.h>
 #include <stdbool.h>

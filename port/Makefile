@@ -120,6 +120,7 @@ SRC += drivers/monocle_iqs620.c
 SRC += drivers/monocle_max77654.c
 SRC += drivers/monocle_ov5640.c
 SRC += drivers/monocle_spi.c
+SRC += drivers/monocle_timer.c
 SRC += drivers/monocle_touch.c
 
 SRC += segger_rtt/SEGGER_RTT.c

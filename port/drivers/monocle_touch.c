@@ -13,10 +13,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "monocle_touch.h"
+#include "monocle_timer.h"
 #include "monocle_iqs620.h"
 #include "monocle_i2c.h"
 #include "monocle_config.h"
-#include "nrfx_timer.h"
 #include "nrfx_log.h"
 
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
@@ -180,28 +180,17 @@ static bool touch_trigger_is_on[TOUCH_STATE_NUM] = {
 
 static void touch_timer_handler(void);
 
-/**
- * Workaround the fact that nordic returns an ENUM instead of a simple integer.
- */
-static inline void check(char const *func, nrfx_err_t err)
-{
-    if (err != NRFX_SUCCESS)
-        LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
-}
-
 uint32_t touch_timer_ticks;
 touch_event_t touch_timer_event;
 
 static void touch_set_timer(touch_event_t event)
 {
-    uint32_t err;
-
     // Choose the apropriate duration depending on the event triggered.
     switch (event)
     {
         case TOUCH_EVENT_LONG:
             // No timer to configure.
-            timer_del_callback(&touch_timer);
+            timer_del_handler(&touch_timer_handler);
             return;
         case TOUCH_EVENT_SHORT:
             // After a short timer, extend to a long timer.
@@ -216,9 +205,9 @@ static void touch_set_timer(touch_event_t event)
     }
 
     // Submit the configuration.
-    timer_add_callback(&touch_timer_handler);
+    timer_add_handler(&touch_timer_handler);
 
-    LOG("ready nrfx=timer dep=iqs620");
+    LOG("ready dep=timer,iqs620");
 }
 
 static void touch_next_state(touch_event_t event)
@@ -230,14 +219,14 @@ static void touch_next_state(touch_event_t event)
     // Handle the multiple states.
     if (touch_trigger_is_on[touch_state])
     {
-        // When there is a callback associated with the state, run it.
+        // When there is a handler associated with the state, run it.
         touch_callback(touch_state);
 
         // If something was triggered, come back to the "IDLE" state.
         touch_state = TOUCH_STATE_IDLE;
 
         // And then disable the timer.
-        nrfx_timer_disable(&touch_timer);
+        timer_del_handler(&touch_timer_handler);
     }
     else if (touch_state == TOUCH_STATE_IDLE)
     {
@@ -256,7 +245,7 @@ static void touch_timer_handler(void)
     if (touch_timer_ticks == 0)
     {
         // Disable the timer for now.
-        nrfx_timer_disable(&touch_timer);
+        timer_del_handler(&touch_timer_handler);
 
         // Submit the event to the state machine.
         LOG("touch_timer_event=%s",

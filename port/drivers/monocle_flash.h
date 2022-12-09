@@ -3,8 +3,8 @@
  * Licensed under the MIT License
  */
 
-#ifndef FLASH_H
-#define FLASH_H
+#ifndef MONOCLE_FLASH_H
+#define MONOCLE_FLASH_H
 
 #include <stdint.h>
 #include <stdbool.h>
