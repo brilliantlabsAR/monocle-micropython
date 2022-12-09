@@ -80,12 +80,15 @@ Once everything is connected:
 
    # If using OpenOCD with an st-link/v2/v3:
    make flash_openocd_stlink
-   
+   openocd -f interface/stlink-dap.cfg -f target/nrf52.cfg -c "init; nrf52_recover; program build/firmware.hex verify; reset run; exit"
+
    # If using OpenOCD with a J-Link:
    make flash_openocd_jlink
-   
+   openocd -f interface/jlink.cfg -c "transport select swd" -f target/nrf52.cfg -c "init; nrf52_recover; program build/firmware.hex verify; reset run; exit"
+
    # If using nrfjprog with a J-Link:
    make flash_nrfjprog_jlink
+   nrfjprog --family nrf52 --recover --program build/firmware.hex --verify --debugreset
 
 
 Debugging the firmware with GDB
@@ -156,6 +159,10 @@ The community chat is present at `MONOCLE/#support <https://discord.com/channels
 See also :doc:`Hardware Getting Started <hardware_how_to>` for troubleshooting the hardware.
 
 See also :py:meth:`~machine.bootloader` for how to manually jump to the bootloader.
+
+``[error] [  nRF52] - Data does not match in address range [0x00000000-0x00000b00] (Flash)```
+   When using ``nrfjprog``, it is required to use the ``--recover`` option to bypass Nordic flash protection,
+   which will erase the whole flash, and allow programming new firmware from a hex file.
 
 
 Future development
