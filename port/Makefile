@@ -63,6 +63,7 @@ CFLAGS += -ansi
 CFLAGS += -std=c11
 CFLAGS += -nostdlib
 CFLAGS += -fno-strict-aliasing
+CFLAGS += -fno-tree-loop-distribute-patterns
 CFLAGS += -g -Os
 
 LDFLAGS = $(CFLAGS)
