@@ -181,6 +181,8 @@ static void fpga_reset(void)
  */
 void fpga_init(void)
 {
+    uint8_t major = 0, minor = 0;
+
     // Set the FPGA to boot from its internal flash.
     nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
     nrfx_systick_delay_ms(1);
@@ -190,6 +192,9 @@ void fpga_init(void)
     nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, false);
     nrfx_systick_delay_ms(100); // 1000 times more than needed
     nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
+
+    // Make sure the FPGA is properly initialised
+    ASSERT(fpga_read_register(FPGA_MEMORY_CONTROL) == FPGA_MEMORY_CONTROL_DEFAULT);
 
     // Give the FPGA some time to boot.
     // Datasheet UG290E: T_recfgtdonel
@@ -204,7 +209,10 @@ void fpga_init(void)
     // Give the FPGA some further time.
     nrfx_systick_delay_ms(10);
 
-    LOG("ready model=GW1N-LV9MG100");
+    // Get the version
+    fpga_get_version(&major, &minor);
+
+    LOG("ready model=GW1N-LV9MG100 major=0x%02X minor=0x%02X", major, minor);
 }
 
 void fpga_deinit(void)
