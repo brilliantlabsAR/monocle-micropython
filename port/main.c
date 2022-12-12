@@ -111,7 +111,7 @@ int main(void)
 
     // If main.py exits, fallback to a REPL.
     // TODO: add an #ifdef to reboot instead of running the REPL.
-    //pyexec_frozen_module("main.py");
+    pyexec_frozen_module("main.py");
 
     // REPL mode can change, or it can request a soft reset
     for (int stop = false; !stop;) {
