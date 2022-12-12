@@ -24,9 +24,7 @@ GDB = gdb-multiarch
 PYTHON = python3
 GIT_COMMIT = $(shell git rev-parse HEAD | cut -c 1-6)
 VERSION = $(shell git tag -l 'v[0-9]*' | tail -n 1)
-
-# Complete firmware containing everything.
-FIRMWARE_HEX = build/firmware.hex
+RELEASE = $(shell TZ= date +v%y.%j.%H%M)
 
 # Softdevice binary placed to the flash, imported from the nRF5-SDK
 SOFTDEVICE_HEX = ../$(SD)/$(SD)_nrf52_$(SOFTDEVICE_VERSION)_softdevice.hex
@@ -44,8 +42,11 @@ BOOTLOADER_HEX := ../bootloader/build/nrf52832_xxaa_s132.hex
 # Key used by the Swaralink bootloader
 BOOTLOADER_KEY := ../bootloader/published_privkey.pem
 
+# Complete firmware containing everything.
+FIRMWARE_HEX = build/firmware.hex
+
 # Signed Zip archive of the merged dfu package hex file.
-DFU_PACKAGE_ZIP = build/dfu_package.zip
+FIRMWARE_ZIP = build/firmware.zip
 
 CFLAGS += $(DEF) $(INC) $(CFLAGS_EXTRA) $(CFLAGS_MOD) $(CFLAGS_MCU_m4)
 CFLAGS += -mthumb
@@ -194,7 +195,7 @@ SRC_QSTR += $(SRC) $(SRC_MOD)
 OBJ += $(PY_O)
 OBJ += $(addprefix build/, $(SRC:.c=.o))
 
-all: ${FIRMWARE_HEX} ${DFU_PACKAGE_ZIP}
+all: ${FIRMWARE_HEX} ${FIRMWARE_ZIP}
 
 clean: clean_extra
 
@@ -202,7 +203,9 @@ clean_extra:
 	rm -rf micropython segger_rtt nrfx
 
 release:
-	DEF=-DRELEASE exec $(MAKE) clean all
+	git add .
+	git commit -m "Release $(RELEASE)"
+	git tag $(RELEASE)
 
 flash_openocd_stlink:
 	$(OPENOCD) $(OPENOCD_STLINK) $(OPENOCD_FLASH)
@@ -247,7 +250,7 @@ ${FIRMWARE_HEX}: $(SOFTDEVICE_HEX) $(BOOTLOADER_HEX) ${APPLICATION_HEX} $(BLSETT
 $(BLSETTINGS_HEX): $(APPLICATION_HEX)
 	$(NRFUTIL) settings generate --family NRF52 --application ${APPLICATION_HEX} --application-version 0 --bootloader-version 0 --bl-settings-version 2 $@
 
-$(DFU_PACKAGE_ZIP): $(BOOTLOADER_KEY) $(APPLICATION_HEX)
+$(FIRMWARE_ZIP): $(BOOTLOADER_KEY) $(APPLICATION_HEX)
 	$(NRFUTIL) pkg generate --hw-version 52 --application-version 1 --application $(APPLICATION_HEX) --sd-req 0x0124 --key-file $(BOOTLOADER_KEY) $@
 
 .SUFFIXES: .elf .hex

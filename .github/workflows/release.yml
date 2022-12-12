@@ -11,8 +11,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
       - name: Install dependencies
         run: |
@@ -30,41 +28,56 @@ jobs:
         run: |
           make -C port
 
-      - name: Bump the "latest" version tag
-        run: |
-          git config --global user.name "Release Script"
-          git config --global user.email "<github/workflows/release.yml>"
-          git tag --force latest
-          git push --force --tags
-
       - name: Create a release
         id: create_release
         uses: actions/create-release@latest
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref }}
           body: |
-          draft: false
-          prerelease: false
+            You can flash the zip file with the [nRF Device Firmware Update](https://www.nordicsemi.com/Products/Development-tools/nRF-Device-Firmware-Update) phone app after running this Micropython code:
+            ```
+            import machine;  machine.bootloader()
+            ```
+
+            You can flash the hex file with [nrfjprog](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools) and [JLink](https://www.segger.com/products/debug-probes/j-link/):
+            ```
+            nrfjprog --family nrf52 --recover --program brilliant-monocle-${{ github.ref }}.hex --verify --debugreset
+            ```
+
+            See the [documentation](https://monocle-docs.readthedocs.io/en/latest/firmware_how_to.html) for more.
+
+          draft: true
+          prerelease: true
 
       - name: Upload firmware.hex
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: port/build/firmware.hex
-          asset_name: firmware.hex
+          asset_name: brilliant-monocle-${{ github.ref }}.hex
           asset_content_type: text/plain
 
-      - name: Upload dfu_package.zip
+      - name: Upload firmware.zip
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: port/build/dfu_package.zip
-          asset_name: dfu_package.zip
+          asset_path: port/build/firmware.zip
+          asset_name: brilliant-monocle-${{ github.ref }}.zip
           asset_content_type: application/zip
+
+      - name: Upload firmware.elf
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: port/build/application.elf
+          asset_name: brilliant-monocle-${{ github.ref }}.elf
+          asset_content_type: text/plain

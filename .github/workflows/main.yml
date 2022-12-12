@@ -37,11 +37,11 @@ jobs:
           path: port/build/firmware.hex
           retention-days: 5
 
-      - name: Upload dfu_package.zip
+      - name: Upload firmware.zip
         uses: actions/upload-artifact@v3
         with:
-          name: dfu_package.zip
-          path: port/build/dfu_package.zip
+          name: firmware.zip
+          path: port/build/firmware.zip
           retention-days: 5
 
       - name: Upload application.map
