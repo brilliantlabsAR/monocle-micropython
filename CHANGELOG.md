@@ -1,6 +1,18 @@
 Changelog
 =========
 
+v22.346.2141
+-------
+FPGA: `MK11_FPGA_V0.12.fs`
+
+- Initial pre-release of the new Micropython-based firmware
+- Micropython REPL over Bluetooth
+- Imported drivers from the previous release
+- Partial python interface for controlling the device
+- None of the features of the previous releases insofar
+- Start sequence with diagnostic for factory testing
+- Logs available through RTT
+
 v1.8
 ----
 FPGA: `MK11_FPGA_V0.12.fs`

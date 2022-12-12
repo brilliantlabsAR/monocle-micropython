@@ -204,8 +204,8 @@ clean_extra:
 	rm -rf micropython segger_rtt nrfx
 
 release:
-	git add .
-	git commit -m "Release $(RELEASE)"
+	sed -i 's/RELEASE/$(RELEASE)/' ../CHANGELOG.md
+	git commit -am "Release $(RELEASE)"
 	git tag $(RELEASE)
 
 flash_openocd_stlink:
