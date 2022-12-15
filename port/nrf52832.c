@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#include <stdint.h>
 #include <assert.h>
+#include <stdint.h>
 
 extern uint32_t _estack;
 extern uint32_t _sidata;

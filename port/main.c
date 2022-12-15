@@ -24,19 +24,26 @@
  * THE SOFTWARE.
  */
 
-#include "driver_ble.h"
-#include "driver_board.h"
-#include "driver_battery.h" // debug
-#include "nrf_sdm.h"
-#include "nrfx_systick.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
 #include "py/compile.h"
 #include "py/gc.h"
 #include "py/mperrno.h"
 #include "py/repl.h"
 #include "py/runtime.h"
 #include "py/stackctrl.h"
+
 #include "shared/readline/readline.h"
 #include "shared/runtime/pyexec.h"
+
+#include "nrf_sdm.h"
+#include "nrfx_systick.h"
+
+#include "driver_ble.h"
+#include "driver_board.h"
+#include "driver_battery.h" // debug
 
 /** Variable that holds the Softdevice NVIC state.  */
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};

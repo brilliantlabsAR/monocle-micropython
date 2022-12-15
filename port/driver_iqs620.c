@@ -1,19 +1,41 @@
 /*
- * Copyright (c) 2022 Brilliant Labs Limited
- * Licensed under the MIT License
+ * This file is part of the MicroPython for Monocle:
+ *      https://github.com/Itsbrilliantlabs/monocle-micropython
+ *
+ * Authored by: Nathan Ashelman
+ * Authored by: Shreyas Hemachandra
+ * Authored by: Georgi Beloev - 2021-07-20
+ * Authored by: Josuah Demangeon (name@email.com)
+ *
+ * ISC Licence
+ *
+ * Copyright © 2022 Brilliant Labs Inc.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
  */
 
 /**
  * IQS620 touch controller driver.
- * @file driver_iqs620_c
- * @author Nathan Ashelman
- * @author Shreyas Hemachandra
- * @author Georgi Beloev (2021-07-20)
  */
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include "nrfx_gpiote.h"
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
+#include "nrfx_twi.h"
 
 #include "driver_board.h"
 #include "driver_iqs620.h"

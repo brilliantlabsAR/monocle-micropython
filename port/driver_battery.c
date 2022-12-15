@@ -1,24 +1,40 @@
 /*
- * Copyright (c) 2022 Brilliant Labs Limited
- * Licensed under the MIT License
+ * This file is part of the MicroPython for Monocle:
+ *      https://github.com/Itsbrilliantlabs/monocle-micropython
+ *
+ * Authored by: Josuah Demangeon (name@email.com)
+ * Authored by: Nathan Ashelman
+ *
+ * ISC Licence
+ *
+ * Copyright © 2022 Brilliant Labs Inc.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/**
- * @file driver_battery.c
- * @author Nathan Ashelman
- * @author Josuah Demangeon
- */
-
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
 #include <math.h>
 
+#include "nrfx_saadc.h"
+#include "nrf_gpio.h"
+#include "nrfx_log.h"
+
 #include "driver_board.h"
-#include "driver_battery.h"
 #include "driver_timer.h"
 #include "driver_config.h"
-
-#include "nrfx_saadc.h"
-#include "nrfx_systick.h"
-#include "nrfx_log.h"
+#include "driver_battery.h"
 
 #define LOG NRFX_LOG_ERROR
 #define ASSERT BOARD_ASSERT
