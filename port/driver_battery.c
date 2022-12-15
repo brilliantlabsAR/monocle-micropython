@@ -2,8 +2,8 @@
  * This file is part of the MicroPython for Monocle:
  *      https://github.com/Itsbrilliantlabs/monocle-micropython
  *
- * Authored by: Josuah Demangeon (name@email.com)
- * Authored by: Nathan Ashelman
+ * Authored by: Josuah Demangeon <me@josuah.net>
+ * Authored by: Nathan Ashelman <nathan@itsbrilliant.co>
  *
  * ISC Licence
  *

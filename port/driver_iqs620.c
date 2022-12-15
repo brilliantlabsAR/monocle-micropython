@@ -2,10 +2,10 @@
  * This file is part of the MicroPython for Monocle:
  *      https://github.com/Itsbrilliantlabs/monocle-micropython
  *
- * Authored by: Nathan Ashelman
- * Authored by: Shreyas Hemachandra
+ * Authored by: Nathan Ashelman <nathan@itsbrilliant.co>
+ * Authored by: Shreyas Hemachandra <shreyas.hemachandran@gmail.com>
  * Authored by: Georgi Beloev - 2021-07-20
- * Authored by: Josuah Demangeon (name@email.com)
+ * Authored by: Josuah Demangeon <me@josuah.net>
  *
  * ISC Licence
  *

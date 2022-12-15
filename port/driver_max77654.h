@@ -2,7 +2,7 @@
  * This file is part of the MicroPython for Monocle:
  *      https://github.com/Itsbrilliantlabs/monocle-micropython
  *
- * Authored by: Josuah Demangeon (name@email.com)
+ * Authored by: Josuah Demangeon <me@josuah.net>
  *
  * ISC Licence
  *

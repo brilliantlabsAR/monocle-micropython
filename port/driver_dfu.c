@@ -3,7 +3,7 @@
  *      https://github.com/Itsbrilliantlabs/monocle-micropython
  *
  * Authored by: Raj Nakarja - Silicon Witchery AB
- * Authored by: Josuah Demangeon (name@email.com)
+ * Authored by: Josuah Demangeon <me@josuah.net>
  *
  * ISC Licence
  *
