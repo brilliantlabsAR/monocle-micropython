@@ -42,8 +42,8 @@
 #include "driver_i2c.h"
 #include "driver_config.h"
 
-#define LOG NRFX_LOG_WARNING
-#define ASSERT BOARD_ASSERT
+#define LOG     NRFX_LOG
+#define ASSERT  BOARD_ASSERT
 
 // registers
 

@@ -36,8 +36,8 @@
 #include "driver_timer.h"
 #include "driver_config.h"
 
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
-#define ASSERT NRFX_ASSERT
+#define LOG     NRFX_LOG
+#define ASSERT  NRFX_ASSERT
 
 static nrfx_timer_t timer = NRFX_TIMER_INSTANCE(TIMER_INSTANCE);
 static nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG;

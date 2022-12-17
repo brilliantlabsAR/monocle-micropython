@@ -42,8 +42,8 @@
 #include "driver_config.h"
 #include "driver_i2c.h"
 
-#define LOG NRFX_LOG_ERROR
-#define ASSERT NRFX_ASSERT
+#define LOG     NRFX_LOG
+#define ASSERT  NRFX_ASSERT
 
 const nrfx_twi_t i2c0 = NRFX_TWI_INSTANCE(0);
 const nrfx_twi_t i2c1 = NRFX_TWI_INSTANCE(1);

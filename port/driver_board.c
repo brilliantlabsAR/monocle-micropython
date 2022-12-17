@@ -49,8 +49,8 @@
 #include "driver_spi.h"
 #include "driver_timer.h"
 
-#define LOG NRFX_LOG_ERROR
-#define ASSERT NRFX_ASSERT
+#define LOG     NRFX_LOG
+#define ASSERT  NRFX_ASSERT
 
 static bool board_halt_on_error;
 static uint32_t board_errors;
@@ -194,7 +194,6 @@ void board_init(void)
     // Initialise the Screen
     // Needs: power, spi, fpga
     ecx336cn_init();
-    fpga_disp_bars();
 
     board_test_num = 5;
 

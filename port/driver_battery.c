@@ -36,8 +36,8 @@
 #include "driver_config.h"
 #include "driver_battery.h"
 
-#define LOG NRFX_LOG_ERROR
-#define ASSERT BOARD_ASSERT
+#define LOG     NRFX_LOG
+#define ASSERT  BOARD_ASSERT
 
 /*
  * Lithium battery discharge curve, modeled from Grepow data for 1C discharge rate

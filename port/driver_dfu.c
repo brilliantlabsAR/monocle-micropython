@@ -35,7 +35,7 @@
 
 #include "driver_dfu.h"
 
-#define LOG NRFX_LOG_ERROR
+#define LOG     NRFX_LOG
 
 /**
  * Magic pattern written to GPREGRET register to signal between main

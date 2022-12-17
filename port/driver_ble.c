@@ -43,8 +43,8 @@
 #define BLE_MAX_MTU_LENGTH          128
 #define BLE_UUID_COUNT              2
 
-#define ASSERT NRFX_ASSERT
-#define LOG NRFX_LOG_ERROR
+#define LOG     NRFX_LOG
+#define ASSERT  NRFX_ASSERT
 
 /** Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go. */
 #define RING_BUFFER_LENGTH (1024 + 45)

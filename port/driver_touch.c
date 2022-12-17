@@ -40,8 +40,8 @@
 #include "driver_i2c.h"
 #include "driver_config.h"
 
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
-#define ASSERT NRFX_ASSERT
+#define LOG     NRFX_LOG
+#define ASSERT  NRFX_ASSERT
 
 /** Timeout for button press (ticks) = 0.5 s */
 #define TOUCH_DELAY_SHORT_MS        500000

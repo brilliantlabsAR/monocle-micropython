@@ -37,8 +37,8 @@
 #include "nrfx_spim.h"
 #include "nrfx_systick.h"
 
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
-#define ASSERT NRFX_ASSERT
+#define LOG     NRFX_LOG
+#define ASSERT  NRFX_ASSERT
 
 // SPI instance
 static const nrfx_spim_t m_spi = NRFX_SPIM_INSTANCE(SPI_INSTANCE);

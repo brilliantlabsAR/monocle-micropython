@@ -41,9 +41,9 @@
 #include "driver_i2c.h"
 #include "driver_config.h"
 
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
-#define LEN(x) (sizeof (x) / sizeof *(x))
+#define LOG     NRFX_LOG
 #define ASSERT BOARD_ASSERT
+#define LEN(x) (sizeof (x) / sizeof *(x))
 
 static inline void ov5640_delay_ms(uint32_t ms)
 {

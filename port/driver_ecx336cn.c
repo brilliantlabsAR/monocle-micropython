@@ -40,7 +40,8 @@
 #include "driver_ecx336cn.h"
 #include "driver_spi.h"
 
-#define ASSERT BOARD_ASSERT
+#define LOG     NRFX_LOG
+#define ASSERT  BOARD_ASSERT
 
 static inline const void ecx336cn_write_byte(uint8_t addr, uint8_t data)
 {
@@ -64,8 +65,6 @@ static inline uint8_t ecx336cn_read_byte(uint8_t addr)
 
     return buf[1];
 }
-
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 
 /**
  * Prepare GPIO pins before the chip receives power.

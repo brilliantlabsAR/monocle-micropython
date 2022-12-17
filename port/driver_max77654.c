@@ -38,7 +38,7 @@
 #include "driver_i2c.h"
 #include "driver_config.h"
 
-#define LOG     NRFX_LOG_WARNING
+#define LOG     NRFX_LOG
 #define ASSERT  BOARD_ASSERT
 #define LEN(x)  (sizeof x / sizeof *x)
 
