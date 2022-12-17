@@ -45,6 +45,7 @@
 #define MAX77654_CHG_CC_MAX             140  
 
 /** Allowable charge voltage in mV; to protect battery, disallow any higher setting (even if configurable). */
+#define MAX77654_CHG_CV_MIN             3600
 #define MAX77654_CHG_CV_MAX             4300 
 
 #define MAX77654_CID_EXPECTED           0x02
@@ -304,25 +305,20 @@
 
 /**
  * Configure a register value over I2C.
- * @param reg Address of the register.
+ * @param addr Address of the register.
  * @param data Value to write.
  */
-void max77654_write(uint8_t reg, uint8_t data)
+void max77654_write(uint8_t addr, uint8_t data)
 {
-    uint8_t write_buffer[(2u)];
+    uint8_t buf[] = { addr, data };
 
-    // Initialize buffer with packet
-    write_buffer[0] = reg;
-    write_buffer[1] = data;
-
-    if (!i2c_write(MAX77654_I2C, MAX77654_ADDR, write_buffer, 2))
+    if (!i2c_write(MAX77654_I2C, MAX77654_ADDR, buf, sizeof buf))
         ASSERT(!"I2C write failed");
-    LOG("MAX77654 Write 0x%02X to register 0x%02X", data, reg);
 }
 
 /**
  * Read a register value over I2C.
- * @param reg Address of the register.
+ * @param addr Address of the register.
  * @return The value returned.
  */
 uint8_t max77654_read(uint8_t addr)
@@ -388,13 +384,13 @@ static uint8_t cv_to_hw(uint32_t mV)
 /**
  * Configure only a few bits out of a register of the chip.
  *  Done by reading the old value, masking, writing back over I2C.
- * @param reg Address of the register.
+ * @param addr Address of the register.
  * @param newbits Value to put, not yet shifted.
- * @param bits_to_update Bitmask with all bits to be modified set to 1.
+ * @param mask Bitmask with all bits to be modified set to 1.
  */
-static void max77654_update(uint8_t addr, uint8_t newbits, uint8_t bits_to_update)
+static void max77654_update(uint8_t addr, uint8_t newbits, uint8_t mask)
 {
-    max77654_write(addr, (max77654_read(addr) & ~bits_to_update) | newbits);
+    max77654_write(addr, (max77654_read(addr) & ~mask) | newbits);
 }
 
 /**
@@ -516,9 +512,9 @@ void max77654_init(void)
     max77654_update(MAX77654_CNFG_CHG_F, cc_to_hw(70*10), MAX77654_CHG_CC_JEITA_Msk);
 
     // MAX77654_CNFG_CHG_G: charge voltage 4.3V, not in USB suspend mode
-    max77654_set_charge_voltage(4300);
-    //uint8_t reg;
-    //reg = max77654_read(MAX77654_CNFG_CHG_G); // debug
+    ASSERT(4300 >= MAX77654_CHG_CV_MIN);
+    ASSERT(4300 <= MAX77654_CHG_CV_MAX);
+    max77654_update(MAX77654_CNFG_CHG_G, cv_to_hw(4300), MAX77654_CHG_CV_Msk);
 
     // MAX77654_CNFG_CHG_H: JEITA charge voltage = 4.3V, Thermistor enabled
     max77654_update(MAX77654_CNFG_CHG_H, cv_to_hw(4300), MAX77654_CHG_CV_JEITA_Msk);
@@ -666,25 +662,6 @@ max77654_fault max77654_faults_status(void)
         default:
             return MAX77654_NORMAL;
     }
-}
-
-/**
- * Set charge voltage (in mV)
- * @param millivolts Range is 3600 to 4600 (3.6V to 4.6V).
- */
-void max77654_set_charge_voltage(uint16_t millivolts)
-{
-    uint8_t charge_bits = 0;
-
-    // MAX77654 Charge Voltage cannot be set above MAX77654_CHG_CV_MAX mV to protect the battery.
-    ASSERT(millivolts <= MAX77654_CHG_CV_MAX);
-    if (millivolts < 3600)
-        millivolts = 3600;
-    if (millivolts > 4600)
-        millivolts = 4600;
-    charge_bits = ((millivolts-3600)/25) & MAX77654_CHG_CV_Msk;
-    max77654_update(MAX77654_CNFG_CHG_G, charge_bits, MAX77654_CHG_CV_Msk);
-    LOG("MAX77654 Charge Voltage set to %d mV.", millivolts);
 }
 
 /**
