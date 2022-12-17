@@ -70,7 +70,6 @@
 #define MAX77654_GPI_F             (0x01u << 0) ///< RC GPI Falling Interrupt
 
 #define MAX77654_INT_GLBL1          0x04 ///< RC
-// Reserved                        bit 7
 #define MAX77654_LDO1_F            (0x01u << 6) ///< LDO1 Fault Interrupt
 #define MAX77654_LDO0_F            (0x01u << 5) ///< LDO0 Fault Interrupt
 #define MAX77654_SBB_TO            (0x01u << 4) ///< SBB Timeout
@@ -97,7 +96,6 @@
 #define MAX77654_CNFG_GPIO0         0x11 ///< RW (except bit 1 is RO)
 #define MAX77654_CNFG_GPIO1         0x12 ///< RW (except bit 1 is RO)
 #define MAX77654_CNFG_GPIO2         0x13 ///< RW (except bit 1 is RO)
-// Reserved                        bits 7:6
 #define MAX77654_ALT_GPIO          (0x01u << 5) ///< RW Alternate mode (meaning depends on GPIO #)
 #define MAX77654_DBEN_GPIO         (0x01u << 4) ///< RW GPI Debounce Timer Enable: 0=no debouce, 1=30ms debounce
 #define MAX77654_DO                (0x01u << 3) ///< RW GPO Data Output: 0=logic low, 1=logic high (DRV=1) or hiZ (DRV=0) (if DIR=1, has no effect)
@@ -107,7 +105,6 @@
 
 #define MAX77654_CID                0x14 ///< RO
 #define MAX77654_CID4              (0x01u << 7) // RO Chip Identification Code, bit 4
-// Reserved                        bits 6:4
 #define MAX77654_CID_SHIFT         0x00
 #define MAX77654_CID_MASK          0x0F
 
@@ -248,20 +245,17 @@
 #define MAX77654_CHG_CC_JEITA_SHIFT 0x02
 #define MAX77654_CHG_CC_JEITA_MASK 0x3F
 #define MAX77654_THM_EN            (0x01u << 1)
-// Reserved                        bit 0
 
 #define MAX77654_CNFG_CHG_G         0x26 ///< RW
 #define MAX77654_CHG_CV            ((0x01u << 7) | (0x01u << 6) | (0x01u << 5) | (0x01u << 4) | (0x01u << 3) | (0x01u << 2)) ///< fast-charge battery regulation voltage V_FAST-CHG
 #define MAX77654_CHG_CV_SHIFT      0x02
 #define MAX77654_CHG_CV_MASK       0x3F
 #define MAX77654_USBS              (0x01u << 1) ///< USB suspend mode: 0=not suspended, draw current from adapter; 1=suspended, draw no current (charge off)
-// Reserved                        bit 0
 
 #define MAX77654_CNFG_CHG_H         0x27 ///< RW
 #define MAX77654_CHG_CV_JEITA      ((0x01u << 7) | (0x01u << 6) | (0x01u << 5) | (0x01u << 4) | (0x01u << 3) | (0x01u << 2)) // /<fast-charge battery regulation voltage V_FAST-CHG
 #define MAX77654_CHG_CV_JEITA_SHIFT 0x02
 #define MAX77654_CHG_CV_JEITA_MASK 0x3F
-// Reserved                        bits 1, 0
 
 #define MAX77654_CNFG_CHG_I         0x28 ///< RW
 #define MAX77654_IMON_DISCHG_SCALE ((0x01u << 7) | (0x01u << 6) | (0x01u << 5) | (0x01u << 4)) ///< battery discharge current full-scale current; default 300mA
@@ -289,7 +283,6 @@
 #define MAX77654_CNFG_SBB1_A        0x2B ///< RW
 #define MAX77654_CNFG_SBB2_A        0x2D ///< RW
 // directly write these values to the register to set voltage (other voltages available, see datasheet)
-// Reserved                        bit 7
 #define MAX77654_CNFG_SBB_A_TV_1V2 0x08   // 800 mV + 0x08 * 50 mV = 1.2 V
 #define MAX77654_CNFG_SBB_A_TV_1V8 0x14   // 800 mV + 0x14 * 50 mV = 1.8 V
 #define MAX77654_CNFG_SBB_A_TV_2V7 0x26   // 800 mV + 0x26 * 50 mV = 2.7 V
@@ -298,7 +291,6 @@
 #define MAX77654_CNFG_SBB0_B        0x2A ///< RW
 #define MAX77654_CNFG_SBB1_B        0x2C ///< RW
 #define MAX77654_CNFG_SBB2_B        0x2E ///< RW
-// Reserved                        bit 7
 #define MAX77654_CNFG_SBB_B_MD     (0x01u << 6) // Operation Mode: 0=buck-boost, 1=buck
 #define MAX77654_CNFG_SBB_B_IP     ((0x01u << 5) | (0x01u << 4)) // Peak Current Limit
 #define MAX77654_CNFG_SBB_B_IP_SHIFT 0x04
@@ -329,7 +321,6 @@
 #define MAX77654_CNFG_LDO0_A        0x38 ///< RW
 #define MAX77654_CNFG_LDO1_A        0x3A ///< RW
 // directly write these values to the register to set voltage (other voltages available, see datasheet)
-// Reserved                        bit 7
 #define MAX77654_CNFG_LDO_A_TV_1V2 0x10   ///< 800 mV + 0x10 * 25 mV = 1.2V
 #define MAX77654_CNFG_LDO_A_TV_1V8 0x28   ///< 800 mV + 0x28 * 25 mV = 1.8V
 #define MAX77654_CNFG_LDO_A_TV_2V7 0x4C   ///< 800 mV + 0x4C * 25 mV = 2.7V
