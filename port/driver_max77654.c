@@ -58,52 +58,52 @@
 // Register Definitions
 
 /* Global Registers */
-#define MAX77654_INT_GLBL0_REG          0x00 ///< RC
-#define MAX77654_INT_GLBL1_REG          0x04 ///< RC
-#define MAX77654_ERCFLAG_REG            0x05 ///< RC
-#define MAX77654_STAT_GLBL_REG          0x06
-#define MAX77654_INTM_GLBL0_REG         0x09
-#define MAX77654_INTM_GLBL1_REG         0x08
-#define MAX77654_CNFG_GLBL_REG          0x10
-#define MAX77654_CNFG_GPIO0_REG         0x11 ///< RW (except bit 1 is RO)
-#define MAX77654_CNFG_GPIO1_REG         0x12 ///< RW (except bit 1 is RO)
-#define MAX77654_CNFG_GPIO2_REG         0x13 ///< RW (except bit 1 is RO)
-#define MAX77654_CID_REG                0x14 ///< RO
-#define MAX77654_CNFG_WDT_REG           0x17 ///< RW (except bit 0 is RO)
+#define MAX77654_INT_GLBL0          0x00 ///< RC
+#define MAX77654_INT_GLBL1          0x04 ///< RC
+#define MAX77654_ERCFLAG            0x05 ///< RC
+#define MAX77654_STAT_GLBL          0x06
+#define MAX77654_INTM_GLBL0         0x09
+#define MAX77654_INTM_GLBL1         0x08
+#define MAX77654_CNFG_GLBL          0x10
+#define MAX77654_CNFG_GPIO0         0x11 ///< RW (except bit 1 is RO)
+#define MAX77654_CNFG_GPIO1         0x12 ///< RW (except bit 1 is RO)
+#define MAX77654_CNFG_GPIO2         0x13 ///< RW (except bit 1 is RO)
+#define MAX77654_CID                0x14 ///< RO
+#define MAX77654_CNFG_WDT           0x17 ///< RW (except bit 0 is RO)
 
 /* Charger Registers */
-#define MAX77654_INT_CHG_REG            0x01 ///< RC
-#define MAX77654_STAT_CHG_A_REG         0x02 ///< RO
-#define MAX77654_STAT_CHG_B_REG         0x03 ///< RO
-#define MAX77654_INT_M_CHG_REG          0x07 ///< RW
-#define MAX77654_CNFG_CHG_A_REG         0x20 ///< RW
-#define MAX77654_CNFG_CHG_B_REG         0x21 ///< RW
-#define MAX77654_CNFG_CHG_C_REG         0x22 ///< RW
-#define MAX77654_CNFG_CHG_D_REG         0x23 ///< RW
-#define MAX77654_CNFG_CHG_E_REG         0x24 ///< RW
-#define MAX77654_CNFG_CHG_F_REG         0x25 ///< RW
-#define MAX77654_CNFG_CHG_G_REG         0x26 ///< RW
-#define MAX77654_CNFG_CHG_H_REG         0x27 ///< RW
-#define MAX77654_CNFG_CHG_I_REG         0x28 ///< RW
+#define MAX77654_INT_CHG            0x01 ///< RC
+#define MAX77654_STAT_CHG_A         0x02 ///< RO
+#define MAX77654_STAT_CHG_B         0x03 ///< RO
+#define MAX77654_INT_M_CHG          0x07 ///< RW
+#define MAX77654_CNFG_CHG_A         0x20 ///< RW
+#define MAX77654_CNFG_CHG_B         0x21 ///< RW
+#define MAX77654_CNFG_CHG_C         0x22 ///< RW
+#define MAX77654_CNFG_CHG_D         0x23 ///< RW
+#define MAX77654_CNFG_CHG_E         0x24 ///< RW
+#define MAX77654_CNFG_CHG_F         0x25 ///< RW
+#define MAX77654_CNFG_CHG_G         0x26 ///< RW
+#define MAX77654_CNFG_CHG_H         0x27 ///< RW
+#define MAX77654_CNFG_CHG_I         0x28 ///< RW
 
 /* SBB Registers */
-#define MAX77654_CNFG_SBB0_A_REG        0x29 ///< RW
-#define MAX77654_CNFG_SBB0_B_REG        0x2A ///< RW
-#define MAX77654_CNFG_SBB1_A_REG        0x2B ///< RW
-#define MAX77654_CNFG_SBB1_B_REG        0x2C ///< RW
-#define MAX77654_CNFG_SBB2_A_REG        0x2D ///< RW
-#define MAX77654_CNFG_SBB2_B_REG        0x2E ///< RW
-#define MAX77654_CNFG_SBB_TOP_REG       0x2F ///< RW
+#define MAX77654_CNFG_SBB0_A        0x29 ///< RW
+#define MAX77654_CNFG_SBB0_B        0x2A ///< RW
+#define MAX77654_CNFG_SBB1_A        0x2B ///< RW
+#define MAX77654_CNFG_SBB1_B        0x2C ///< RW
+#define MAX77654_CNFG_SBB2_A        0x2D ///< RW
+#define MAX77654_CNFG_SBB2_B        0x2E ///< RW
+#define MAX77654_CNFG_SBB_TOP       0x2F ///< RW
 
 /* LDO Registers */
-#define MAX77654_CNFG_LDO0_A_REG        0x38 ///< RW
-#define MAX77654_CNFG_LDO0_B_REG        0x39 ///< RW
-#define MAX77654_CNFG_LDO1_A_REG        0x3A ///< RW
-#define MAX77654_CNFG_LDO1_B_REG        0x3B ///< RW
+#define MAX77654_CNFG_LDO0_A        0x38 ///< RW
+#define MAX77654_CNFG_LDO0_B        0x39 ///< RW
+#define MAX77654_CNFG_LDO1_A        0x3A ///< RW
+#define MAX77654_CNFG_LDO1_B        0x3B ///< RW
 
 // Global Registers
 
-/* MAX77654_INT_GLBL0_REG          0x0 */
+/* MAX77654_INT_GLBL0          0x0 */
 #define MAX77654_DOD0_R            (0x01u << 7) ///< RC LDO Dropout Detector Rising Interrupt
 #define MAX77654_DOD1_R            (0x01u << 6) ///< RC LDO Dropout Detector Rising Interrupt
 #define MAX77654_TJAL2_R           (0x01u << 5) ///< RC Thermal Alarm 2 Rising Interrupt
@@ -113,7 +113,7 @@
 #define MAX77654_GPI_R             (0x01u << 1) ///< RC GPI Rising Interrupt
 #define MAX77654_GPI_F             (0x01u << 0) ///< RC GPI Falling Interrupt
 
-/* MAX77654_INT_GLBL1_REG          0x04 */
+/* MAX77654_INT_GLBL1          0x04 */
 // Reserved                        bit 7
 #define MAX77654_LDO1_F            (0x01u << 6) ///< LDO1 Fault Interrupt
 #define MAX77654_LDO0_F            (0x01u << 5) ///< LDO0 Fault Interrupt
@@ -123,7 +123,7 @@
 #define MAX77654_GPI1_R            (0x01u << 1) ///< GPI Rising Interrupt
 #define MAX77654_GPI1_F            (0x01u << 0) ///< GPI Fallint Interrupt
 
-/* MAX77654_ERCFLAG_REG            0x05 */
+/* MAX77654_ERCFLAG            0x05 */
 #define MAX77654_WDT_RST           (0x01u << 7) ///< Watchdog Timer Reset Flag, watchdog timer expired & caused power-reset
 #define MAX77654_WDT_OFF           (0x01u << 6) ///< Watchdog Timer OFF Flag, watchdog timer expired & caused power-off
 #define MAX77654_SFT_CRST_F        (0x01u << 5) ///< Software Cold Reset Flag
@@ -133,14 +133,14 @@
 #define MAX77654_SYSOVLO           (0x01u << 1) ///< SYS Domain Overvoltage lockout
 #define MAX77654_TOVLD             (0x01u << 0) ///< Thermal overload, temperature > 165C
 
-/* MAX77654_STAT_GLBL_REG          0x06 */
-/* MAX77654_INTM_GLBL0_REG         0x09 */
-/* MAX77654_INTM_GLBL1_REG         0x08 */
-/* MAX77654_CNFG_GLBL_REG          0x10 */
+/* MAX77654_STAT_GLBL          0x06 */
+/* MAX77654_INTM_GLBL0         0x09 */
+/* MAX77654_INTM_GLBL1         0x08 */
+/* MAX77654_CNFG_GLBL          0x10 */
 
-/* MAX77654_CNFG_GPIO0_REG         0x11 */
-/* MAX77654_CNFG_GPIO1_REG         0x12 */
-/* MAX77654_CNFG_GPIO2_REG         0x13 */
+/* MAX77654_CNFG_GPIO0         0x11 */
+/* MAX77654_CNFG_GPIO1         0x12 */
+/* MAX77654_CNFG_GPIO2         0x13 */
 // Reserved                        bits 7:6
 #define MAX77654_ALT_GPIO          (0x01u << 5) ///< RW Alternate mode (meaning depends on GPIO #)
 #define MAX77654_DBEN_GPIO         (0x01u << 4) ///< RW GPI Debounce Timer Enable: 0=no debouce, 1=30ms debounce
@@ -149,19 +149,18 @@
 #define MAX77654_DI                (0x01u << 1) ///< RO GPIO Digital Input Value: reflects state of the GPIO (irrespective of GPI or GPO)
 #define MAX77654_DIR               (0x01u << 0) ///< RW GPIO Direction: 0=outupt (GPO), 1=input (GPI)
 
-/* MAX77654_CID_REG                0x14 */
+/* MAX77654_CID                0x14 */
 #define MAX77654_CID4              (0x01u << 7) // RO Chip Identification Code, bit 4
 // Reserved                        bits 6:4
-#define MAX77654_CID               ((0x01u << 3) | (0x01u << 2)| (0x01u << 1) | (0x01u << 0))
 #define MAX77654_CID_SHIFT         0x00
 #define MAX77654_CID_MASK          0x0F
 
 // Charger Registers
 
-/* MAX77654_INT_CHG_REG            0x01 */
-/* MAX77654_STAT_CHG_A_REG         0x02 */
+/* MAX77654_INT_CHG            0x01 */
+/* MAX77654_STAT_CHG_A         0x02 */
 
-/* MAX77654_STAT_CHG_B_REG         0x03 */
+/* MAX77654_STAT_CHG_B         0x03 */
 #define MAX77654_CHG_DTLS          ((0x01u << 7) | (0x01u << 6) | (0x01u << 5) | (0x01u << 4)) // Charger details (charge state)
 #define MAX77654_CHG_DTLS_SHIFT    0x04
 #define MAX77654_CHG_DTLS_MASK     0x0F
@@ -185,9 +184,9 @@
 #define MAX77654_CHG_DTLS_FAULT_TIME  0x0B ///< Fast-charge timer fault
 #define MAX77654_CHG_DTLS_FAULT_TEMP  0x0C ///< Battery temperature fault
 
-/* MAX77654_INT_M_CHG_REG          0x07 */
+/* MAX77654_INT_M_CHG          0x07 */
 
-/* MAX77654_CNFG_CHG_A_REG         0x20 */
+/* MAX77654_CNFG_CHG_A         0x20 */
 #define MAX77654_THM_HOT           ((0x01u << 7) | (0x01u << 6) ///< JEITA Temperature Threshold: HOT
 #define MAX77654_THM_HOT_SHIFT     0x06
 #define MAX77654_THM_WARM          ((0x01u << 5) | (0x01u << 4) ///< JEITA Temperature Threshold: WARM
@@ -214,7 +213,7 @@
 #define MAX77654_THM_COLD_00C      0x02
 #define MAX77654_THM_COLD_05C      0x03
 
-/* MAX77654_CNFG_CHG_B_REG         0x21 */
+/* MAX77654_CNFG_CHG_B         0x21 */
 #define MAX77654_VCHGIN_MIN        ((0x01u << 7) | (0x01u << 6) | (0x01u << 5)) ///< Minimum CHGIN Regulation Voltage
 #define MAX77654_VCHGIN_MIN_SHIFT  0x05
 #define MAX77654_ICHGIN_LIM        ((0x01u << 4) | (0x01u << 3) | (0x01u << 2)) ///< CHGIN Input Current Limit
@@ -238,7 +237,7 @@
 #define MAX77654_ICHGIN_LIM_380MA  0x03 ///< 380mA
 #define MAX77654_ICHGIN_LIM_475MA  0x04 ///< 475mA
 
-/* MAX77654_CNFG_CHG_C_REG         0x22 */
+/* MAX77654_CNFG_CHG_C         0x22 */
 #define MAX77654_CHG_PQ            ((0x01u << 7) | (0x01u << 6) | (0x01u << 5)) ///< Battery Prequalification Voltage Threshold (VPQ)
 #define MAX77654_CHG_PQ_SHIFT      0x05
 #define MAX77654_I_TERM            ((0x01u << 4) | (0x01u << 3)) ///< Termination current
@@ -269,14 +268,14 @@
 #define MAX77654_T_TOPOFF_30M      0x06 ///< 30 minutes
 #define MAX77654_T_TOPOFF_35M      0x07 ///< 35 minutes
 
-/* MAX77654_CNFG_CHG_D_REG         0x23 */
-#define MAX77654_TJ_REG            ((0x01u << 7) | (0x01u << 6) | (0x01u << 5)) ///< Die junction temperature regulation point>
-#define MAX77654_TJ_REG_SHIFT      0x05
-#define MAX77654_VSYS_REG          ((0x01u << 4) | (0x01u << 3) | (0x01u << 2) | (0x01u << 1) | (0x01u << 0)) ///< System Voltage Regulation (VSYS-REG)>
-#define MAX77654_VSYS_REG_SHIFT    0x00
+/* MAX77654_CNFG_CHG_D         0x23 */
+#define MAX77654_TJ            ((0x01u << 7) | (0x01u << 6) | (0x01u << 5)) ///< Die junction temperature regulation point>
+#define MAX77654_TJ_SHIFT      0x05
+#define MAX77654_VSYS          ((0x01u << 4) | (0x01u << 3) | (0x01u << 2) | (0x01u << 1) | (0x01u << 0)) ///< System Voltage Regulation (VSYS-REG)>
+#define MAX77654_VSYS_SHIFT    0x00
 // default values are fine
 
-/* MAX77654_CNFG_CHG_E_REG         0x24 */
+/* MAX77654_CNFG_CHG_E         0x24 */
 #define MAX77654_CHG_CC            ((0x01u << 7) | (0x01u << 6) | (0x01u << 5) | (0x01u << 4) | (0x01u << 3) | (0x01u << 2)) ///< Fast-charge constant current value, I_FAST-CHG.
 #define MAX77654_CHG_CC_SHIFT      0x02
 #define MAX77654_CHG_CC_MASK       0x3F
@@ -288,27 +287,27 @@
 #define MAX77654_T_FAST_CHG_5H     0x02 ///< 5 hours
 #define MAX77654_T_FAST_CHG_7H     0x03 ///< 7 hours
 
-/* MAX77654_CNFG_CHG_F_REG         0x25 */
+/* MAX77654_CNFG_CHG_F         0x25 */
 #define MAX77654_CHG_CC_JEITA      ((0x01u << 7) | (0x01u << 6) | (0x01u << 5) | (0x01u << 4) | (0x01u << 3) | (0x01u << 2)) ///< fast-charge JEITA constant current value, if COOL or WARM
 #define MAX77654_CHG_CC_JEITA_SHIFT 0x02
 #define MAX77654_CHG_CC_JEITA_MASK 0x3F
 #define MAX77654_THM_EN            (0x01u << 1)
 // Reserved                        bit 0
 
-/* MAX77654_CNFG_CHG_G_REG         0x26 */
+/* MAX77654_CNFG_CHG_G         0x26 */
 #define MAX77654_CHG_CV            ((0x01u << 7) | (0x01u << 6) | (0x01u << 5) | (0x01u << 4) | (0x01u << 3) | (0x01u << 2)) ///< fast-charge battery regulation voltage V_FAST-CHG
 #define MAX77654_CHG_CV_SHIFT      0x02
 #define MAX77654_CHG_CV_MASK       0x3F
 #define MAX77654_USBS              (0x01u << 1) ///< USB suspend mode: 0=not suspended, draw current from adapter; 1=suspended, draw no current (charge off)
 // Reserved                        bit 0
 
-/* MAX77654_CNFG_CHG_H_REG         0x27 */
+/* MAX77654_CNFG_CHG_H         0x27 */
 #define MAX77654_CHG_CV_JEITA      ((0x01u << 7) | (0x01u << 6) | (0x01u << 5) | (0x01u << 4) | (0x01u << 3) | (0x01u << 2)) // /<fast-charge battery regulation voltage V_FAST-CHG
 #define MAX77654_CHG_CV_JEITA_SHIFT 0x02
 #define MAX77654_CHG_CV_JEITA_MASK 0x3F
 // Reserved                        bits 1, 0
 
-/* MAX77654_CNFG_CHG_I_REG         0x28 */
+/* MAX77654_CNFG_CHG_I         0x28 */
 #define MAX77654_IMON_DISCHG_SCALE ((0x01u << 7) | (0x01u << 6) | (0x01u << 5) | (0x01u << 4)) ///< battery discharge current full-scale current; default 300mA
 #define MAX77654_IMON_DISCHG_SCALE_SHIFT 0x04
 #define MAX77654_IMON_DISCHG_SCALE_MASK 0x0F
@@ -330,9 +329,9 @@
 
 // SBB Registers
 
-/* MAX77654_CNFG_SBB0_A_REG        0x29 */
-/* MAX77654_CNFG_SBB1_A_REG        0x2B */
-/* MAX77654_CNFG_SBB2_A_REG        0x2D */
+/* MAX77654_CNFG_SBB0_A        0x29 */
+/* MAX77654_CNFG_SBB1_A        0x2B */
+/* MAX77654_CNFG_SBB2_A        0x2D */
 // directly write these values to the register to set voltage (other voltages available, see datasheet)
 // Reserved                        bit 7
 #define MAX77654_CNFG_SBB_A_TV_1V2 0x08   // 800 mV + 0x08 * 50 mV = 1.2 V
@@ -340,9 +339,9 @@
 #define MAX77654_CNFG_SBB_A_TV_2V7 0x26   // 800 mV + 0x26 * 50 mV = 2.7 V
 #define MAX77654_CNFG_SBB_A_TV_2V8 0x28   // 800 mV + 0x28 * 50 mV = 2.8 V
 
-/* MAX77654_CNFG_SBB0_B_REG        0x2A */
-/* MAX77654_CNFG_SBB1_B_REG        0x2C */
-/* MAX77654_CNFG_SBB2_B_REG        0x2E */
+/* MAX77654_CNFG_SBB0_B        0x2A */
+/* MAX77654_CNFG_SBB1_B        0x2C */
+/* MAX77654_CNFG_SBB2_B        0x2E */
 // Reserved                        bit 7
 #define MAX77654_CNFG_SBB_B_MD     (0x01u << 6) // Operation Mode: 0=buck-boost, 1=buck
 #define MAX77654_CNFG_SBB_B_IP     ((0x01u << 5) | (0x01u << 4)) // Peak Current Limit
@@ -365,14 +364,14 @@
 #define MAX77654_CNFG_SBB_B_EN_OFF   0x4  // Off irrespective of FPS
 #define MAX77654_CNFG_SBB_B_EN_ON    0x6  // On irrespective of FPS
 
-/* MAX77654_CNFG_SBB_TOP_REG       0x2F */
+/* MAX77654_CNFG_SBB_TOP       0x2F */
 // ICHGIN_LIM_DEF                    bit 7 // Don't use, we always set to 0 for standard definitions
 #define MAX77654_CNFG_SBB_TOP_DRV  ((0x01u << 1) | (0x01u << 0)) // Drive strength
 
 // LDO Registers
 
-/* MAX77654_CNFG_LDO0_A_REG        0x38 */
-/* MAX77654_CNFG_LDO1_A_REG        0x3A */
+/* MAX77654_CNFG_LDO0_A        0x38 */
+/* MAX77654_CNFG_LDO1_A        0x3A */
 // directly write these values to the register to set voltage (other voltages available, see datasheet)
 // Reserved                        bit 7
 #define MAX77654_CNFG_LDO_A_TV_1V2 0x10   ///< 800 mV + 0x10 * 25 mV = 1.2V
@@ -380,8 +379,8 @@
 #define MAX77654_CNFG_LDO_A_TV_2V7 0x4C   ///< 800 mV + 0x4C * 25 mV = 2.7V
 #define MAX77654_CNFG_LDO_A_TV_2V8 0x50   ///< 800 mV + 0x50 * 25 mV = 2.8V
 
-/* MAX77654_CNFG_LDO0_B_REG        0x39 */
-/* MAX77654_CNFG_LDO1_B_REG        0x3B */
+/* MAX77654_CNFG_LDO0_B        0x39 */
+/* MAX77654_CNFG_LDO1_B        0x3B */
 #define MAX77654_CNFG_LDO_B_MD     (0x01u << 4) ///< RW Mode: 0=LDO, 1=Load Switch
 #define MAX77654_CNFG_LDO_B_ADE    (0x01u << 3) ///< RW Active Discharge Enable: 0=disabled, 1=enabled
 #define MAX77654_CNFG_LDO_B_EN     ((0x01u << 2)| (0x01u << 1) | (0x01u << 0)) ///< RW Enable
@@ -532,7 +531,7 @@ uint8_t max77654_read_cid(void)
     uint8_t bit4 = 0;
     uint8_t cid = 0;
 
-    max77654_read(MAX77654_CID_REG, &reg);
+    max77654_read(MAX77654_CID, &reg);
     bit4 = (reg & MAX77654_CID4) >> 3;
     cid = bit4 | (reg & MAX77654_CID_MASK);
     LOG("MAX77654 CID = 0x%02X.", cid);
@@ -627,12 +626,12 @@ void max77654_init(void)
     // Power Rail Configuration
 
     // Works best for MK12! 
-    max77654_write(MAX77654_CNFG_SBB_TOP_REG, 0x0);
+    max77654_write(MAX77654_CNFG_SBB_TOP, 0x0);
 
     // Power Rail: 2.7V
     // set SBB0 to 2.7V, buck, 333mA, active discharge, OFF
-    max77654_write(MAX77654_CNFG_SBB0_A_REG, MAX77654_CNFG_SBB_A_TV_2V7);
-    max77654_write(MAX77654_CNFG_SBB0_B_REG,
+    max77654_write(MAX77654_CNFG_SBB0_A, MAX77654_CNFG_SBB_A_TV_2V7);
+    max77654_write(MAX77654_CNFG_SBB0_B,
             MAX77654_CNFG_SBB_B_MD
             | (MAX77654_CNFG_SBB_B_IP_333 << MAX77654_CNFG_SBB_B_IP_SHIFT)
             | MAX77654_CNFG_SBB_B_ADE
@@ -640,7 +639,7 @@ void max77654_init(void)
 
     // Power Rail: 1.8V always on
     // set SBB1 to 1.8V, buck, 333mA, active discharge, ON
-    max77654_write(MAX77654_CNFG_SBB1_B_REG,
+    max77654_write(MAX77654_CNFG_SBB1_B,
             MAX77654_CNFG_SBB_B_MD
             | (MAX77654_CNFG_SBB_B_IP_333 << MAX77654_CNFG_SBB_B_IP_SHIFT)
             | MAX77654_CNFG_SBB_B_ADE
@@ -648,8 +647,8 @@ void max77654_init(void)
 
     // Power Rail: 1.2V
     // set SBB2 to 1.2V, buck, 333mA, active discharge, OFF
-    max77654_write(MAX77654_CNFG_SBB2_A_REG, MAX77654_CNFG_SBB_A_TV_1V2);
-    max77654_write(MAX77654_CNFG_SBB2_B_REG,
+    max77654_write(MAX77654_CNFG_SBB2_A, MAX77654_CNFG_SBB_A_TV_1V2);
+    max77654_write(MAX77654_CNFG_SBB2_B,
             MAX77654_CNFG_SBB_B_MD
             | (MAX77654_CNFG_SBB_B_IP_333 << MAX77654_CNFG_SBB_B_IP_SHIFT)
             | MAX77654_CNFG_SBB_B_ADE
@@ -658,41 +657,41 @@ void max77654_init(void)
     // Power Rail: 1.8VDC_SW, 1.8V switched set LDO0 as load switch,
     // Active Discharge, OFF
     // Not needed; just in case mode set to LDO by mistake.
-    max77654_write(MAX77654_CNFG_LDO0_A_REG, MAX77654_CNFG_LDO_A_TV_1V8);
-    max77654_write(MAX77654_CNFG_LDO0_B_REG,
+    max77654_write(MAX77654_CNFG_LDO0_A, MAX77654_CNFG_LDO_A_TV_1V8);
+    max77654_write(MAX77654_CNFG_LDO0_B,
             MAX77654_CNFG_LDO_B_MD
             | MAX77654_CNFG_LDO_B_ADE
             | MAX77654_CNFG_LDO_B_EN_OFF);
 
     // Power Rail: VLED, 2.7V
     // set LDO1 to LDO at 2.7V, Active Discharge, OFF
-    max77654_write(MAX77654_CNFG_LDO1_A_REG, MAX77654_CNFG_LDO_A_TV_2V7);
-    max77654_write(MAX77654_CNFG_LDO1_B_REG,
+    max77654_write(MAX77654_CNFG_LDO1_A, MAX77654_CNFG_LDO_A_TV_2V7);
+    max77654_write(MAX77654_CNFG_LDO1_B,
             MAX77654_CNFG_LDO_B_ADE
             | MAX77654_CNFG_LDO_B_EN_OFF);
 
     // ICHGIN_LIM_DEF=0: clear this bit so dev brd "M" OTP matches "B" OTP of 0, that is ICHGIN_LIM scale starts at 95mA
     // Drive strength, slow down to reduce EMI (but reduces efficiency)
     // Second slowest.
-    max77654_write(MAX77654_CNFG_SBB_TOP_REG, 0x00);
+    max77654_write(MAX77654_CNFG_SBB_TOP, 0x00);
 
     // GPIO configuration
 
     // Note: OTP "B" version defaults to Alternate functions, not GPO, so must be reconfigured
     // GPIO0 (Red LED) : GPO, open-drain, logic low
     // set to hi-Z, LED off
-    max77654_write(MAX77654_CNFG_GPIO0_REG, MAX77654_DO);
+    max77654_write(MAX77654_CNFG_GPIO0, MAX77654_DO);
 
     // GPIO1 (Green LED) : GPO, open-drain, logic low
     // set to hi-Z, LED off
-    max77654_write(MAX77654_CNFG_GPIO1_REG, MAX77654_DO);
+    max77654_write(MAX77654_CNFG_GPIO1, MAX77654_DO);
 
     // GPIO2 (DISP_PWR_EN): GPO, push-pull, logic low -> 10V off
-    max77654_write(MAX77654_CNFG_GPIO2_REG, MAX77654_DRV);
+    max77654_write(MAX77654_CNFG_GPIO2, MAX77654_DRV);
 
     // TODO: GPIO2 is broken on our Dev Board: read of bit 1 always returns 0 (even if bit 3 set high)
     //uint8_t reg;
-    //max77654_read(MAX77654_CNFG_GPIO2_REG, &reg); 
+    //max77654_read(MAX77654_CNFG_GPIO2, &reg); 
 
     // Charging configuration
 
@@ -722,7 +721,7 @@ void max77654_init(void)
 
     // JEITA Temperatures: COLD=0C, HOT=45C, COOL=20C (not avail, use
     // 15C), WARM=45C (MK11 NTC B is 3380K)
-    max77654_write(MAX77654_CNFG_CHG_A_REG,
+    max77654_write(MAX77654_CNFG_CHG_A,
             (MAX77654_THM_HOT_45C << MAX77654_THM_HOT_SHIFT)
             | (MAX77654_THM_WARM_45C << MAX77654_THM_WARM_SHIFT)
             | (MAX77654_THM_COOL_15C << MAX77654_THM_COOL_SHIFT)
@@ -731,7 +730,7 @@ void max77654_init(void)
     // "B" version input current limit is 95mA; increase to allow charging
     // + operation (at least during testing) V_CHGIN_MIN=4.3V,
     // I_CHGIN-LIM=190mA, I_pre-charge = 20% of I_fast, charge enable
-    max77654_write(MAX77654_CNFG_CHG_B_REG,
+    max77654_write(MAX77654_CNFG_CHG_B,
             (MAX77654_VCHGIN_MIN_4V3 << MAX77654_VCHGIN_MIN_SHIFT)
             | (MAX77654_ICHGIN_LIM_190MA << MAX77654_ICHGIN_LIM_SHIFT)
             | MAX77654_I_PQ
@@ -740,39 +739,39 @@ void max77654_init(void)
     // pre-charge to 2.5V, termination current = 10% = 6.8mA (so CC6
     // green LED will turn off), top-off 5 mins (unknown how long before
     // reach 1.4mA, should be safe)
-    max77654_write(MAX77654_CNFG_CHG_C_REG,
+    max77654_write(MAX77654_CNFG_CHG_C,
             (MAX77654_CHG_PQ_2V5 << MAX77654_CHG_PQ_SHIFT)
             | (MAX77654_I_TERM_10P << MAX77654_I_TERM_SHIFT)
             | (MAX77654_T_TOPOFF_5M << MAX77654_T_TOPOFF_SHIFT));
 
-    // MAX77654_CNFG_CHG_D_REG: use defaults: die temperature regulation =
+    // MAX77654_CNFG_CHG_D: use defaults: die temperature regulation =
     // 60C, V_SYS-REG = 4.5V.
     // place here to allow successful calls to _set_charge_current()
     // and _set_charge_voltage()
     max77654_initialized = true;
 
-    // MAX77654_CNFG_CHG_E_REG: fast/rapid charge current = 67.5mA,
+    // MAX77654_CNFG_CHG_E: fast/rapid charge current = 67.5mA,
     // safety timer = 3 hours (default)
     // will result in 67.5mA, since next highest value is 75mA
     max77654_set_charge_current(70);
     //uint8_t reg;
-    //max77654_read(MAX77654_CNFG_CHG_E_REG, &reg); // debug
+    //max77654_read(MAX77654_CNFG_CHG_E, &reg); // debug
 
-    // MAX77654_CNFG_CHG_F_REG: JEITA charge current = 70mA (=67.5mA), Thermistor enabled
-    max77654_write(MAX77654_CNFG_CHG_F_REG, MAX77654_THM_EN);
-    update_register_bits(MAX77654_CNFG_CHG_F_REG, cc_to_hw(70*10),
+    // MAX77654_CNFG_CHG_F: JEITA charge current = 70mA (=67.5mA), Thermistor enabled
+    max77654_write(MAX77654_CNFG_CHG_F, MAX77654_THM_EN);
+    update_register_bits(MAX77654_CNFG_CHG_F, cc_to_hw(70*10),
             MAX77654_CHG_CC_JEITA, MAX77654_CHG_CC_JEITA_SHIFT);
 
-    // MAX77654_CNFG_CHG_G_REG: charge voltage 4.3V, not in USB suspend mode
+    // MAX77654_CNFG_CHG_G: charge voltage 4.3V, not in USB suspend mode
     max77654_set_charge_voltage(4300);
     //uint8_t reg;
-    //max77654_read(MAX77654_CNFG_CHG_G_REG, &reg); // debug
+    //max77654_read(MAX77654_CNFG_CHG_G, &reg); // debug
 
-    // MAX77654_CNFG_CHG_H_REG: JEITA charge voltage = 4.3V, Thermistor enabled
-    update_register_bits(MAX77654_CNFG_CHG_H_REG, cv_to_hw(4300),
+    // MAX77654_CNFG_CHG_H: JEITA charge voltage = 4.3V, Thermistor enabled
+    update_register_bits(MAX77654_CNFG_CHG_H, cv_to_hw(4300),
             MAX77654_CHG_CV_JEITA, MAX77654_CHG_CV_JEITA_SHIFT);
 
-    // MAX77654_CNFG_CHG_I_REG: use defaults: AMUX BATT discharge 300mA
+    // MAX77654_CNFG_CHG_I: use defaults: AMUX BATT discharge 300mA
     // scale, AMUX disabled (hi-Z)
 
     // AMUX configuration
@@ -782,7 +781,7 @@ void max77654_init(void)
     // TODO: implement turning on only when measurements are needed
     // monitor VSYS voltage (=input from CC when plugged in, or from
     // battery when stand-alone)
-    update_register_bits(MAX77654_CNFG_CHG_I_REG, MAX77654_MUX_SYS_V,
+    update_register_bits(MAX77654_CNFG_CHG_I, MAX77654_MUX_SYS_V,
             MAX77654_MUX_SEL, MAX77654_MUX_SEL_SHIFT);
 
     // Reset LED state
@@ -801,7 +800,7 @@ void max77654_rail_1v8(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
     ASSERT(max77654_initialized);
-    max77654_write(MAX77654_CNFG_LDO0_B_REG, MAX77654_CNFG_LDO_B_MD
+    max77654_write(MAX77654_CNFG_LDO0_B, MAX77654_CNFG_LDO_B_MD
             | MAX77654_CNFG_LDO_B_ADE | en);
 }
 
@@ -814,7 +813,7 @@ void max77654_rail_2v7(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
     ASSERT(max77654_initialized);
-    max77654_write(MAX77654_CNFG_SBB0_B_REG, MAX77654_CNFG_SBB_B_MD
+    max77654_write(MAX77654_CNFG_SBB0_B, MAX77654_CNFG_SBB_B_MD
             | (MAX77654_CNFG_SBB_B_IP_333 << MAX77654_CNFG_SBB_B_IP_SHIFT)
             | MAX77654_CNFG_SBB_B_ADE | en);
 }
@@ -828,7 +827,7 @@ void max77654_rail_1v2(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
     ASSERT(max77654_initialized);
-    max77654_write(MAX77654_CNFG_SBB2_B_REG, MAX77654_CNFG_SBB_B_MD
+    max77654_write(MAX77654_CNFG_SBB2_B, MAX77654_CNFG_SBB_B_MD
             | (MAX77654_CNFG_SBB_B_IP_333 << MAX77654_CNFG_SBB_B_IP_SHIFT)
             | MAX77654_CNFG_SBB_B_ADE | en);
 }
@@ -843,7 +842,7 @@ void max77654_rail_10v(bool on)
     // push-pull high for on, push-pull low for off
     uint8_t en = on ? MAX77654_DO : 0;
     ASSERT(max77654_initialized);
-    max77654_write(MAX77654_CNFG_GPIO2_REG, MAX77654_DRV | en); 
+    max77654_write(MAX77654_CNFG_GPIO2, MAX77654_DRV | en); 
 }
 
 /**
@@ -854,7 +853,7 @@ void max77654_rail_vled(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
     ASSERT(max77654_initialized);
-    max77654_write(MAX77654_CNFG_LDO1_B_REG, MAX77654_CNFG_LDO_B_ADE | en);
+    max77654_write(MAX77654_CNFG_LDO1_B, MAX77654_CNFG_LDO_B_ADE | en);
 }
 
 // open-drain, set low, LED on
@@ -871,7 +870,7 @@ void max77654_rail_vled(bool on)
 void max77654_led_red(bool on)
 {
     ASSERT(max77654_initialized);
-    max77654_write(MAX77654_CNFG_GPIO0_REG, on ? LED_ON : LED_OFF);
+    max77654_write(MAX77654_CNFG_GPIO0, on ? LED_ON : LED_OFF);
 }
 
 /**
@@ -882,7 +881,7 @@ void max77654_led_red(bool on)
 void max77654_led_green(bool on)
 {
     ASSERT(max77654_initialized);
-    max77654_write(MAX77654_CNFG_GPIO1_REG, on ? LED_ON : LED_OFF);
+    max77654_write(MAX77654_CNFG_GPIO1, on ? LED_ON : LED_OFF);
 }
 
 /**
@@ -893,7 +892,7 @@ max77654_status max77654_charging_status(void)
 {
     uint8_t val;
 
-    get_register_bits(MAX77654_STAT_CHG_B_REG, &val, MAX77654_CHG_DTLS, MAX77654_CHG_DTLS_SHIFT);
+    get_register_bits(MAX77654_STAT_CHG_B, &val, MAX77654_CHG_DTLS, MAX77654_CHG_DTLS_SHIFT);
     LOG("MAX77654 Status = 0x%02X.", val);
 
     switch (val) {
@@ -919,7 +918,7 @@ max77654_fault max77654_faults_status(void)
 {
     uint8_t val;
 
-    get_register_bits(MAX77654_STAT_CHG_B_REG, &val, MAX77654_CHG_DTLS, MAX77654_CHG_DTLS_SHIFT);
+    get_register_bits(MAX77654_STAT_CHG_B, &val, MAX77654_CHG_DTLS, MAX77654_CHG_DTLS_SHIFT);
     LOG("MAX77654 Fault = 0x%02X.", val);
 
     switch (val) {
@@ -953,7 +952,7 @@ void max77654_set_charge_current(uint16_t current)
     ASSERT(current <= MAX77654_CHG_CC_MAX);
 
     charge_bits = cc_to_hw(current*10);
-    update_register_bits(MAX77654_CNFG_CHG_E_REG, charge_bits, MAX77654_CHG_CC, MAX77654_CHG_CC_SHIFT);
+    update_register_bits(MAX77654_CNFG_CHG_E, charge_bits, MAX77654_CHG_CC, MAX77654_CHG_CC_SHIFT);
     LOG("MAX77654 Charge Current set to %d mA.", cc_tbl[charge_bits]/10);
 }
 
@@ -974,13 +973,13 @@ void max77654_set_charge_voltage(uint16_t millivolts)
     if (millivolts > 4600)
         millivolts = 4600;
     charge_bits = ((millivolts-3600)/25) & MAX77654_CHG_CV_MASK;
-    update_register_bits(MAX77654_CNFG_CHG_G_REG, charge_bits, MAX77654_CHG_CV, MAX77654_CHG_CV_SHIFT);
+    update_register_bits(MAX77654_CNFG_CHG_G, charge_bits, MAX77654_CHG_CV, MAX77654_CHG_CV_SHIFT);
     LOG("MAX77654 Charge Voltage set to %d mV.", millivolts);
 }
 
 /**
  * Set input current upper limit (in mA).
- * @param current Range is 95 to 475 in increments of 95mA, see MAX77654_CNFG_CHG_B_REG definitions.
+ * @param current Range is 95 to 475 in increments of 95mA, see MAX77654_CNFG_CHG_B definitions.
  * @return True if I2C succeeds.
  */
 void max77654_set_current_limit(uint16_t current)
@@ -1000,7 +999,7 @@ void max77654_set_current_limit(uint16_t current)
         charge_bits = MAX77654_ICHGIN_LIM_475MA;
     }
     ASSERT(charge_bits == (charge_bits & MAX77654_ICHGIN_LIM_MASK));
-    update_register_bits(MAX77654_CNFG_CHG_B_REG, charge_bits, MAX77654_ICHGIN_LIM, MAX77654_ICHGIN_LIM_SHIFT);
+    update_register_bits(MAX77654_CNFG_CHG_B, charge_bits, MAX77654_ICHGIN_LIM, MAX77654_ICHGIN_LIM_SHIFT);
     LOG("MAX77654 Input Current Limit set to %d mA.", (charge_bits*95)+95);
 }
 
@@ -1011,5 +1010,5 @@ void max77654_set_current_limit(uint16_t current)
  */
 void max77564_factory_ship_mode(void) 
 {
-    max77654_write(MAX77654_CNFG_GLBL_REG, 0xA3);
+    max77654_write(MAX77654_CNFG_GLBL, 0xA3);
 }
