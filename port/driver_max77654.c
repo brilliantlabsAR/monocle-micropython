@@ -302,96 +302,6 @@
 #define MAX77654_CNFG_LDO_B_EN_OFF      (0x04u << 0)
 #define MAX77654_CNFG_LDO_B_EN_ON       (0x06u << 0)
 
-/** Charge current in mA*10 */
-static const unsigned int cc_tbl[] = {
-	75,  //[0] = 7.5mA
-	150, //[1] = 15mA
-	225,
-	300,
-	375,
-	450,
-	525,
-	600,
-	675,
-	750,
-	825, //[10]
-	900,
-	975,
-	1050,
-	1125,
-	1200,
-	1275,
-	1350,
-	1425,
-	1500,
-	1575, //[20] = 157.5mA
-	1650,
-	1725,
-	1800,
-	1875,
-	1950,
-	2025,
-	2100,
-	2175,
-	2250,
-	2325, //[30 = 011110] = 232.5mA
-        2400, //[31 = 011111]
-        2475, //[32 = 100000]
-	2550,
-	2625,
-	2700,
-	2775,
-	2850,
-	2925,
-	3000  //[39 = 0x27] 300mA
-	// [0x28 to 0x3F] also 300mA
-};
-
-/** Charge voltage in mV */
-static const unsigned int cv_tbl[] = {
-	3600, //[0] = 3600mV = 3.6V
-	3625, //[1] = 3.625V
-	3650,
-	3675,
-	3700,
-	3725,
-	3750,
-	3775,
-	3800,
-	3825,
-	3850, //[10]
-	3875,
-	3900,
-	3925,
-	3950,
-	3975,
-	4000,
-	4025,
-	4050,
-	4075,
-	4100, //[20] = 4.1V
-	4125,
-	4150,
-        4175,
-        4200,
-	4225,
-	4250,
-	4275,
-	4300,
-	4325,
-	4350, //[30 = 011110] = 4.35V
-	4375,
-	4400, //[32 = 100000] = 4.4V
-        4425,
-        4450,
-        4475,
-        4500,
-        4525,
-        4550,
-        4575, //[39 = 0x27]
-        4600  //[40 = 0x28] = 4.6V
-};
-
 /**
  * Configure a register value over I2C.
  * @param reg Address of the register.
@@ -444,35 +354,35 @@ uint8_t max77654_get_cid(void)
 }
 
 /**
- * Convert charge current to register value using lookup table
- * @param val Value read from the register.
- * @return The equivalent current in mA.
+ * Convert charge current to register value.
+ * @param mA Value read from the register in milliamps.
+ * @return The value to write in the register.
  */
-static uint8_t cc_to_hw(unsigned int val)
+static inline uint8_t cc_to_hw(uint32_t mA)
 {
-	int i;
-        int size = sizeof(cc_tbl) / sizeof(cc_tbl[0]);
+    // Datasheet:
+    // This 6-bit configuration is a linear transfer function that
+    // starts at 7.5mA and ends at 300mA, with 7.5mA increments.
 
-	for (i = 0; i < size; i++)
-		if (val < cc_tbl[i])
-			break;
-	return (i > 0 ? i-1 : 0) << 2;
+    if (mA >= 300)
+        return 0x27 << 2;
+    if (mA <= 7)
+        return 0x00 << 2;
+    return (mA * 2 / 15 - 1) << 2;
 }
 
 /**
- * Convert charge voltage to register value using lookup table
- * @param val Value read from the register.
- * @return The equivalent voltage in V.
+ * Convert charge voltage to register value.
+ * @param mV Voltage in mV.
+ * @return Value to write into the register.
  */
-static uint8_t cv_to_hw(unsigned int val)
+static uint8_t cv_to_hw(uint32_t mV)
 {
-	int i;
-        int size = sizeof(cv_tbl) / sizeof(cv_tbl[0]);
-
-	for (i = 0; i < size; i++)
-		if (val < cv_tbl[i])
-			break;
-	return (i > 0 ? i-1 : 0) << 2;
+    if (mV >= 4600)
+        return 0x28 << 2;
+    if (mV <= 3600)
+        return 0x00 << 2;
+    return ((mV - 3600) / 25) << 2;
 }
 
 /**
@@ -597,7 +507,7 @@ void max77654_init(void)
     // MAX77654_CNFG_CHG_E: fast/rapid charge current = 67.5mA,
     // safety timer = 3 hours (default)
     // will result in 67.5mA, since next highest value is 75mA
-    max77654_set_charge_current(70);
+    max77654_update(MAX77654_CNFG_CHG_E, cc_to_hw(70), MAX77654_CHG_CC_Msk);
     //uint8_t reg;
     //reg = max77654_read(MAX77654_CNFG_CHG_E); // debug
 
@@ -756,25 +666,6 @@ max77654_fault max77654_faults_status(void)
         default:
             return MAX77654_NORMAL;
     }
-}
-
-/**
- * Set the battery charge current.
- * @warning Setting this too high could damage the battery
- * @param current Range is 7mA to 300mA. Input values <7 will be rounded up to 7.5, >300 down to 300,
- *  and intermediate values rounded down
- *  to the nearest supported config value (increments of 7.5mA).
- */
-void max77654_set_charge_current(uint16_t current)
-{
-    uint8_t charge_bits = 0;
-
-    // MAX77654 Charge Current cannot be set above MAX77654_CHG_CC_MAX mA to protect the battery.
-    ASSERT(current <= MAX77654_CHG_CC_MAX);
-
-    charge_bits = cc_to_hw(current*10);
-    max77654_update(MAX77654_CNFG_CHG_E, charge_bits, MAX77654_CHG_CC_Msk);
-    LOG("MAX77654 Charge Current set to %d mA.", cc_tbl[charge_bits]/10);
 }
 
 /**
