@@ -467,7 +467,7 @@ void max77654_read(uint8_t reg, uint8_t *value)
  * Read the Chip ID (CID).
  * @return 0 on read failure or CID value (6-bits) on read success
  */
-uint8_t max77654_read_cid(void)
+uint8_t max77654_get_cid(void)
 {
     uint8_t reg = 0;
     uint8_t bit4 = 0;
@@ -559,11 +559,8 @@ static void get_register_bits(uint8_t reg, uint8_t *gotbits, uint8_t bits_to_get
  */
 void max77654_init(void)
 {
-    uint8_t cid = 0;
-
     // verify MAX77654 on I2C bus by attempting to read Chip ID register
-    cid = max77654_read_cid();
-    ASSERT(cid == MAX77654_CID_EXPECTED);
+    ASSERT(max77654_get_cid() == MAX77654_CID_EXPECTED);
 
     // Power Rail Configuration
 
