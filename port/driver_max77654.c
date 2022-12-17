@@ -392,9 +392,6 @@ static const unsigned int cv_tbl[] = {
         4600  //[40 = 0x28] = 4.6V
 };
 
-/** Flag that PMIC has been successfully initialized. */
-static bool max77654_initialized = false;
-
 /**
  * Configure a register value over I2C.
  * @param reg Address of the register.
@@ -601,12 +598,6 @@ void max77654_init(void)
     max77654_write(MAX77654_CNFG_CHG_C,
       MAX77654_CHG_PQ_2V5 | MAX77654_I_TERM_10P | MAX77654_T_TOPOFF_5M);
 
-    // MAX77654_CNFG_CHG_D: use defaults: die temperature regulation =
-    // 60C, V_SYS-REG = 4.5V.
-    // place here to allow successful calls to _set_charge_current()
-    // and _set_charge_voltage()
-    max77654_initialized = true;
-
     // MAX77654_CNFG_CHG_E: fast/rapid charge current = 67.5mA,
     // safety timer = 3 hours (default)
     // will result in 67.5mA, since next highest value is 75mA
@@ -653,7 +644,6 @@ void max77654_init(void)
 void max77654_rail_1v8(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
-    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_LDO0_B,
       MAX77654_CNFG_LDO_B_MD | MAX77654_CNFG_LDO_B_ADE | en);
 }
@@ -666,7 +656,6 @@ void max77654_rail_1v8(bool on)
 void max77654_rail_2v7(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
-    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_SBB0_B,
       MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | en);
 }
@@ -679,7 +668,6 @@ void max77654_rail_2v7(bool on)
 void max77654_rail_1v2(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
-    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_SBB2_B,
       MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | en);
 }
@@ -693,7 +681,6 @@ void max77654_rail_10v(bool on)
 {
     // push-pull high for on, push-pull low for off
     uint8_t en = on ? MAX77654_DO : 0;
-    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_GPIO2, MAX77654_DRV | en); 
 }
 
@@ -704,7 +691,6 @@ void max77654_rail_10v(bool on)
 void max77654_rail_vled(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
-    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_LDO1_B, MAX77654_CNFG_LDO_B_ADE | en);
 }
 
@@ -721,7 +707,6 @@ void max77654_rail_vled(bool on)
  */
 void max77654_led_red(bool on)
 {
-    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_GPIO0, on ? LED_ON : LED_OFF);
 }
 
@@ -732,7 +717,6 @@ void max77654_led_red(bool on)
  */
 void max77654_led_green(bool on)
 {
-    ASSERT(max77654_initialized);
     max77654_write(MAX77654_CNFG_GPIO1, on ? LED_ON : LED_OFF);
 }
 
@@ -797,8 +781,6 @@ void max77654_set_charge_current(uint16_t current)
 {
     uint8_t charge_bits = 0;
 
-    ASSERT(max77654_initialized);
-
     // MAX77654 Charge Current cannot be set above MAX77654_CHG_CC_MAX mA to protect the battery.
     ASSERT(current <= MAX77654_CHG_CC_MAX);
 
@@ -816,7 +798,6 @@ void max77654_set_charge_voltage(uint16_t millivolts)
 {
     uint8_t charge_bits = 0;
 
-    ASSERT(max77654_initialized);
     // MAX77654 Charge Voltage cannot be set above MAX77654_CHG_CV_MAX mV to protect the battery.
     ASSERT(millivolts <= MAX77654_CHG_CV_MAX);
     if (millivolts < 3600)
@@ -837,7 +818,6 @@ void max77654_set_current_limit(uint16_t current)
 {
     uint8_t charge_bits = 0;
 
-    ASSERT(max77654_initialized);
     if (current <= 95) {
         charge_bits = MAX77654_ICHGIN_LIM_95MA;
     } else if (current <= 190) {
