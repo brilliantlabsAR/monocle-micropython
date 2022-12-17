@@ -117,12 +117,6 @@
 #define MAX77654_CHG_DTLS               ((0x01u << 7) | (0x01u << 6) | (0x01u << 5) | (0x01u << 4)) // Charger details (charge state)
 #define MAX77654_CHG_DTLS_Pos           4
 #define MAX77654_CHG_DTLS_Msk           0x0F
-#define MAX77654_CHGIN_DTLS             ((0x01u << 3) | (0x01u << 2)) // CHGIN Status Detail
-#define MAX77654_CHGIN_DTLS_Pos         2
-#define MAX77654_CHGIN_DTLS_Msk         0x03
-#define MAX77654_CHG                    (0x01u << 1) ///< Quick Charger Status: 0=not charging, 1=charging
-#define MAX77654_TIME_SUS               (0x01u << 0) ///< Time Suspend Indicator: 0=not active or not suspended, 1=suspended (for any of 3 given reasons)
-// CHG_DTLS bits
 #define MAX77654_CHG_DTLS_OFF           0x00 ///< Off
 #define MAX77654_CHG_DTLS_PRE_Q         0x01 ///< Prequalification mode
 #define MAX77654_CHG_DTLS_FAST_CC       0x02 ///< Fast-charge constant-current (CC) mode
@@ -136,31 +130,35 @@
 #define MAX77654_CHG_DTLS_FAULT_PRE_Q   0x0A ///< Prequalification timer fault
 #define MAX77654_CHG_DTLS_FAULT_TIME    0x0B ///< Fast-charge timer fault
 #define MAX77654_CHG_DTLS_FAULT_TEMP    0x0C ///< Battery temperature fault
+#define MAX77654_CHGIN_DTLS             ((0x01u << 3) | (0x01u << 2)) // CHGIN Status Detail
+#define MAX77654_CHGIN_DTLS_Pos         2
+#define MAX77654_CHGIN_DTLS_Msk         0x03
+#define MAX77654_CHG                    (0x01u << 1) ///< Quick Charger Status: 0=not charging, 1=charging
+#define MAX77654_TIME_SUS               (0x01u << 0) ///< Time Suspend Indicator: 0=not active or not suspended, 1=suspended (for any of 3 given reasons)
 
 #define MAX77654_INT_M_CHG              0x07 ///< RW
 
 #define MAX77654_CNFG_CHG_A             0x20 ///< RW
 #define MAX77654_THM_HOT                ((0x01u << 7) | (0x01u << 6) ///< JEITA Temperature Threshold: HOT
 #define MAX77654_THM_HOT_Pos            6
-#define MAX77654_THM_WARM               ((0x01u << 5) | (0x01u << 4) ///< JEITA Temperature Threshold: WARM
-#define MAX77654_THM_WARM_Pos           4
-#define MAX77654_THM_COOL               ((0x01u << 3) | (0x01u << 2) ///< JEITA Temperature Threshold: COOL
-#define MAX77654_THM_COOL_Pos           2
-#define MAX77654_THM_COLD               ((0x01u << 1) | (0x01u << 0) ///< JEITA Temperature Threshold: COLD
-#define MAX77654_THM_COLD_Pos           0
-// values to write to temp bits
 #define MAX77654_THM_HOT_45C            0x00
 #define MAX77654_THM_HOT_50C            0x01
 #define MAX77654_THM_HOT_55C            0x02
 #define MAX77654_THM_HOT_60C            0x03
+#define MAX77654_THM_WARM               ((0x01u << 5) | (0x01u << 4) ///< JEITA Temperature Threshold: WARM
+#define MAX77654_THM_WARM_Pos           4
 #define MAX77654_THM_WARM_35C           0x00
 #define MAX77654_THM_WARM_40C           0x01
 #define MAX77654_THM_WARM_45C           0x02
 #define MAX77654_THM_WARM_50C           0x03
+#define MAX77654_THM_COOL               ((0x01u << 3) | (0x01u << 2) ///< JEITA Temperature Threshold: COOL
+#define MAX77654_THM_COOL_Pos           2
 #define MAX77654_THM_COOL_00C           0x00
 #define MAX77654_THM_COOL_05C           0x01
 #define MAX77654_THM_COOL_10C           0x02
 #define MAX77654_THM_COOL_15C           0x03
+#define MAX77654_THM_COLD               ((0x01u << 1) | (0x01u << 0) ///< JEITA Temperature Threshold: COLD
+#define MAX77654_THM_COLD_Pos           0
 #define MAX77654_THM_COLD_N10C          0x00
 #define MAX77654_THM_COLD_N05C          0x01
 #define MAX77654_THM_COLD_00C           0x02
@@ -295,16 +293,14 @@
 #define MAX77654_CNFG_SBB_B_IP          ((0x01u << 5) | (0x01u << 4)) // Peak Current Limit
 #define MAX77654_CNFG_SBB_B_IP_Pos      4
 #define MAX77654_CNFG_SBB_B_IP_Msk      0x03
-#define MAX77654_CNFG_SBB_B_ADE         (0x01u << 3) // Active Discharge Enable: 0=disabled, 1=enabled
-#define MAX77654_CNFG_SBB_B_EN          ((0x01u << 2)| (0x01u << 1) | (0x01u << 0)) // RW Enable
-#define MAX77654_CNFG_SBB_B_EN_Pos      0
-#define MAX77654_CNFG_SBB_B_EN_Msk      0x07
-// values to write to IP bits
 #define MAX77654_CNFG_SBB_B_IP_1000     0x00  // 1000mA output current limit
 #define MAX77654_CNFG_SBB_B_IP_750      0x01   // 750mA output current limit
 #define MAX77654_CNFG_SBB_B_IP_500      0x02   // 500mA output current limit
 #define MAX77654_CNFG_SBB_B_IP_333      0x03   // 333mA output current limit
-// values to write to EN bits
+#define MAX77654_CNFG_SBB_B_ADE         (0x01u << 3) // Active Discharge Enable: 0=disabled, 1=enabled
+#define MAX77654_CNFG_SBB_B_EN          ((0x01u << 2)| (0x01u << 1) | (0x01u << 0)) // RW Enable
+#define MAX77654_CNFG_SBB_B_EN_Pos      0
+#define MAX77654_CNFG_SBB_B_EN_Msk      0x07
 #define MAX77654_CNFG_SBB_B_EN_SLOT0    0x0  // FPS slot 0
 #define MAX77654_CNFG_SBB_B_EN_SLOT1    0x1  // FPS slot 1
 #define MAX77654_CNFG_SBB_B_EN_SLOT2    0x2  // FPS slot 2
@@ -333,7 +329,6 @@
 #define MAX77654_CNFG_LDO_B_EN          ((0x01u << 2)| (0x01u << 1) | (0x01u << 0)) ///< RW Enable
 #define MAX77654_CNFG_LDO_B_EN_Pos      0
 #define MAX77654_CNFG_LDO_B_EN_Msk      0x07
-// values to write to EN bits
 #define MAX77654_CNFG_LDO_B_EN_SLOT0    0x0
 #define MAX77654_CNFG_LDO_B_EN_SLOT1    0x1
 #define MAX77654_CNFG_LDO_B_EN_SLOT2    0x2
