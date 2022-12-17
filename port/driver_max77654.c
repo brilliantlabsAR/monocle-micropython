@@ -451,16 +451,18 @@ void max77654_write(uint8_t reg, uint8_t data)
 /**
  * Read a register value over I2C.
  * @param reg Address of the register.
- * @param value Pointer filled with the value.
+ * @param val Pointer filled with the value.
  * @return True if I2C succeeds.
  */
-void max77654_read(uint8_t reg, uint8_t *value)
+uint8_t max77654_read(uint8_t addr)
 {
-    if (!i2c_write(MAX77654_I2C, MAX77654_ADDR, &reg, 1))
+    uint8_t val;
+
+    if (!i2c_write(MAX77654_I2C, MAX77654_ADDR, &addr, 1))
         ASSERT(!"I2C write failed");
-    if (!i2c_read(MAX77654_I2C, MAX77654_ADDR, value, 1))
+    if (!i2c_read(MAX77654_I2C, MAX77654_ADDR, &val, 1))
         ASSERT(!"I2C read failed");
-    LOG("MAX77654 Read register 0x%02X = 0x%02X", reg, *value);
+    return val;
 }
 
 /**
@@ -473,7 +475,7 @@ uint8_t max77654_get_cid(void)
     uint8_t bit4 = 0;
     uint8_t cid = 0;
 
-    max77654_read(MAX77654_CID, &reg);
+    reg = max77654_read(MAX77654_CID);
     bit4 = (reg & MAX77654_CID4) >> 3;
     cid = bit4 | (reg & MAX77654_CID_Msk);
     LOG("MAX77654 CID = 0x%02X.", cid);
@@ -521,16 +523,16 @@ static int cv_to_hw(unsigned int val)
  * @param shift Applied as a shift operation to newbits but not bits_to_update.
  * @return True if I2C succeeds.
  */
-static void update_register_bits(uint8_t reg, uint8_t newbits, uint8_t bits_to_update, uint8_t shift)
+static void update_register_bits(uint8_t addr, uint8_t newbits, uint8_t bits_to_update, uint8_t shift)
 {
-    uint8_t reg_val = 0;
+    uint8_t val = 0;
 
-    max77654_read(reg, &reg_val);
-    LOG("MAX77654 update_register_bits() original register value read: 0x%02X.", reg_val);
+    val = max77654_read(addr);
+    LOG("MAX77654 update_register_bits() original register value read: 0x%02X.", val);
     LOG("MAX77654 update_register_bits() bits to write: 0x%02X, shifted <<%d.", newbits, shift);
-    reg_val = (reg_val & ~bits_to_update) | (newbits << shift);
-    max77654_write(reg, reg_val);
-    LOG("MAX77654 update_register_bits() wrote: 0x%02X to register 0x%02X.", reg_val, reg);
+    val = (val & ~bits_to_update) | (newbits << shift);
+    max77654_write(addr, val);
+    LOG("MAX77654 update_register_bits() wrote: 0x%02X to register 0x%02X.", val, addr);
 }
 
 /**
@@ -542,12 +544,12 @@ static void update_register_bits(uint8_t reg, uint8_t newbits, uint8_t bits_to_u
  * @param shift Applied as a shift operation to gotbits but not bits_to_update.
  * @return True if I2C succeeds.
  */
-static void get_register_bits(uint8_t reg, uint8_t *gotbits, uint8_t bits_to_get, uint8_t shift)
+static void get_register_bits(uint8_t addr, uint8_t *gotbits, uint8_t bits_to_get, uint8_t shift)
 {
-    uint8_t reg_val = 0;
+    uint8_t val = 0;
 
-    max77654_read(reg, &reg_val);
-    *gotbits = (reg_val & bits_to_get) >> shift;
+    val = max77654_read(addr);
+    *gotbits = (val & bits_to_get) >> shift;
     LOG("MAX77654 get_register_bits() got 0x%02X.", *gotbits);
 }
 
@@ -630,7 +632,7 @@ void max77654_init(void)
 
     // TODO: GPIO2 is broken on our Dev Board: read of bit 1 always returns 0 (even if bit 3 set high)
     //uint8_t reg;
-    //max77654_read(MAX77654_CNFG_GPIO2, &reg); 
+    //reg = max77654_read(MAX77654_CNFG_GPIO2); 
 
     // Charging configuration
 
@@ -694,7 +696,7 @@ void max77654_init(void)
     // will result in 67.5mA, since next highest value is 75mA
     max77654_set_charge_current(70);
     //uint8_t reg;
-    //max77654_read(MAX77654_CNFG_CHG_E, &reg); // debug
+    //reg = max77654_read(MAX77654_CNFG_CHG_E); // debug
 
     // MAX77654_CNFG_CHG_F: JEITA charge current = 70mA (=67.5mA), Thermistor enabled
     max77654_write(MAX77654_CNFG_CHG_F, MAX77654_THM_EN);
@@ -704,7 +706,7 @@ void max77654_init(void)
     // MAX77654_CNFG_CHG_G: charge voltage 4.3V, not in USB suspend mode
     max77654_set_charge_voltage(4300);
     //uint8_t reg;
-    //max77654_read(MAX77654_CNFG_CHG_G, &reg); // debug
+    //reg = max77654_read(MAX77654_CNFG_CHG_G); // debug
 
     // MAX77654_CNFG_CHG_H: JEITA charge voltage = 4.3V, Thermistor enabled
     update_register_bits(MAX77654_CNFG_CHG_H, cv_to_hw(4300),
