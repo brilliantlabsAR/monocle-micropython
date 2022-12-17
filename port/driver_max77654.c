@@ -40,6 +40,7 @@
 
 #define LOG     NRFX_LOG_WARNING
 #define ASSERT  BOARD_ASSERT
+#define LEN(x)  (sizeof x / sizeof *x)
 
 /** Allowable charge current in mA; to protect battery, disallow any higher setting (even if configurable). */
 #define MAX77654_CHG_CC_MAX             140  
@@ -384,69 +385,54 @@ static void max77654_update(uint8_t addr, uint8_t newbits, uint8_t mask)
     max77654_write(addr, (max77654_read(addr) & ~mask) | newbits);
 }
 
-/**
- * Initialize the MAX77654 chip.
- *  Test results: (using resistors to simulate bulk & constant voltage charging)
- *  bulk charging current: 67.4mA, constant voltage: 4.28V
- */
-void max77654_init(void)
-{
-    // verify MAX77654 on I2C bus by attempting to read Chip ID register
-    ASSERT(max77654_get_cid() == MAX77654_CID_EXPECTED);
-
-    // Power Rail Configuration
-
+struct { uint8_t addr, data; } max77654_conf[] = {
     // Works best for MK12! 
-    max77654_write(MAX77654_CNFG_SBB_TOP, 0x0);
+    { MAX77654_CNFG_SBB_TOP, 0x0 },
 
     // Power Rail: 2.7V
     // set SBB0 to 2.7V, buck, 333mA, active discharge, OFF
-    max77654_write(MAX77654_CNFG_SBB0_A, MAX77654_CNFG_SBB_A_TV_2V7);
-    max77654_write(MAX77654_CNFG_SBB0_B, MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_OFF);
+    { MAX77654_CNFG_SBB0_A, MAX77654_CNFG_SBB_A_TV_2V7 },
+    { MAX77654_CNFG_SBB0_B, MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_OFF },
 
     // Power Rail: 1.8V always on
     // set SBB1 to 1.8V, buck, 333mA, active discharge, ON
-    max77654_write(MAX77654_CNFG_SBB1_B, MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_ON);
+    { MAX77654_CNFG_SBB1_B, MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_ON },
 
     // Power Rail: 1.2V
     // set SBB2 to 1.2V, buck, 333mA, active discharge, OFF
-    max77654_write(MAX77654_CNFG_SBB2_A, MAX77654_CNFG_SBB_A_TV_1V2);
-    max77654_write(MAX77654_CNFG_SBB2_B, MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_OFF);
+    { MAX77654_CNFG_SBB2_A, MAX77654_CNFG_SBB_A_TV_1V2 },
+    { MAX77654_CNFG_SBB2_B, MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_OFF },
 
     // Power Rail: 1.8VDC_SW, 1.8V switched set LDO0 as load switch,
     // Active Discharge, OFF
     // Not needed; just in case mode set to LDO by mistake.
-    max77654_write(MAX77654_CNFG_LDO0_A, MAX77654_CNFG_LDO_A_TV_1V8);
-    max77654_write(MAX77654_CNFG_LDO0_B, MAX77654_CNFG_LDO_B_MD | MAX77654_CNFG_LDO_B_ADE | MAX77654_CNFG_LDO_B_EN_OFF);
+    { MAX77654_CNFG_LDO0_A, MAX77654_CNFG_LDO_A_TV_1V8 },
+    { MAX77654_CNFG_LDO0_B, MAX77654_CNFG_LDO_B_MD | MAX77654_CNFG_LDO_B_ADE | MAX77654_CNFG_LDO_B_EN_OFF },
 
     // Power Rail: VLED, 2.7V
     // set LDO1 to LDO at 2.7V, Active Discharge, OFF
-    max77654_write(MAX77654_CNFG_LDO1_A, MAX77654_CNFG_LDO_A_TV_2V7);
-    max77654_write(MAX77654_CNFG_LDO1_B, MAX77654_CNFG_LDO_B_ADE | MAX77654_CNFG_LDO_B_EN_OFF);
+    { MAX77654_CNFG_LDO1_A, MAX77654_CNFG_LDO_A_TV_2V7 },
+    { MAX77654_CNFG_LDO1_B, MAX77654_CNFG_LDO_B_ADE | MAX77654_CNFG_LDO_B_EN_OFF },
 
     // ICHGIN_LIM_DEF=0: clear this bit so dev brd "M" OTP matches "B" OTP of 0, that is ICHGIN_LIM scale starts at 95mA
     // ICHGIN_LIM assumes CNFG_SBB_TOP.ICHGIN_LIM_DEF = 0
     // Drive strength, slow down to reduce EMI (but reduces efficiency)
     // Second slowest.
-    max77654_write(MAX77654_CNFG_SBB_TOP, 0x00);
+    { MAX77654_CNFG_SBB_TOP, 0x00 },
 
     // GPIO configuration
 
     // Note: OTP "B" version defaults to Alternate functions, not GPO, so must be reconfigured
     // GPIO0 (Red LED) : GPO, open-drain, logic low
     // set to hi-Z, LED off
-    max77654_write(MAX77654_CNFG_GPIO0, MAX77654_DO);
+    { MAX77654_CNFG_GPIO0, MAX77654_DO },
 
     // GPIO1 (Green LED) : GPO, open-drain, logic low
     // set to hi-Z, LED off
-    max77654_write(MAX77654_CNFG_GPIO1, MAX77654_DO);
+    { MAX77654_CNFG_GPIO1, MAX77654_DO },
 
     // GPIO2 (DISP_PWR_EN): GPO, push-pull, logic low -> 10V off
-    max77654_write(MAX77654_CNFG_GPIO2, MAX77654_DRV);
-
-    // TODO: GPIO2 is broken on our Dev Board: read of bit 1 always returns 0 (even if bit 3 set high)
-    //uint8_t reg;
-    //reg = max77654_read(MAX77654_CNFG_GPIO2); 
+    { MAX77654_CNFG_GPIO2, MAX77654_DRV },
 
     // Charging configuration
 
@@ -476,27 +462,38 @@ void max77654_init(void)
 
     // JEITA Temperatures: COLD=0C, HOT=45C, COOL=20C (not avail, use
     // 15C), WARM=45C (MK11 NTC B is 3380K)
-    max77654_write(MAX77654_CNFG_CHG_A,
-      MAX77654_THM_HOT_45C | MAX77654_THM_WARM_45C | MAX77654_THM_COOL_15C | MAX77654_THM_COLD_00C);
+    { MAX77654_CNFG_CHG_A, MAX77654_THM_HOT_45C | MAX77654_THM_WARM_45C | MAX77654_THM_COOL_15C | MAX77654_THM_COLD_00C },
 
     // "B" version input current limit is 95mA; increase to allow charging
     // + operation (at least during testing) V_CHGIN_MIN=4.3V,
     // I_CHGIN-LIM=190mA, I_pre-charge = 20% of I_fast, charge enable
-    max77654_write(MAX77654_CNFG_CHG_B,
-      MAX77654_VCHGIN_MIN_4V3 | MAX77654_ICHGIN_LIM_190MA | MAX77654_I_PQ | MAX77654_CHG_EN);
+    { MAX77654_CNFG_CHG_B, MAX77654_VCHGIN_MIN_4V3 | MAX77654_ICHGIN_LIM_190MA | MAX77654_I_PQ | MAX77654_CHG_EN },
 
     // pre-charge to 2.5V, termination current = 10% = 6.8mA (so CC6
     // green LED will turn off), top-off 5 mins (unknown how long before
     // reach 1.4mA, should be safe)
-    max77654_write(MAX77654_CNFG_CHG_C,
-      MAX77654_CHG_PQ_2V5 | MAX77654_I_TERM_10P | MAX77654_T_TOPOFF_5M);
+    { MAX77654_CNFG_CHG_C, MAX77654_CHG_PQ_2V5 | MAX77654_I_TERM_10P | MAX77654_T_TOPOFF_5M },
+};
+
+/**
+ * Initialize the MAX77654 chip.
+ *  Test results: (using resistors to simulate bulk & constant voltage charging)
+ *  bulk charging current: 67.4mA, constant voltage: 4.28V
+ */
+void max77654_init(void)
+{
+    // verify MAX77654 on I2C bus by attempting to read Chip ID register
+    ASSERT(max77654_get_cid() == MAX77654_CID_EXPECTED);
+
+    // Power Rail Configuration
+
+    for (size_t i = 0; i < LEN(max77654_conf); i++)
+        max77654_write(max77654_conf[i].addr, max77654_conf[i].data);
 
     // MAX77654_CNFG_CHG_E: fast/rapid charge current = 67.5mA,
     // safety timer = 3 hours (default)
     // will result in 67.5mA, since next highest value is 75mA
     max77654_update(MAX77654_CNFG_CHG_E, cc_to_hw(70), MAX77654_CHG_CC_Msk);
-    //uint8_t reg;
-    //reg = max77654_read(MAX77654_CNFG_CHG_E); // debug
 
     // MAX77654_CNFG_CHG_F: JEITA charge current = 70mA (=67.5mA), Thermistor enabled
     max77654_write(MAX77654_CNFG_CHG_F, MAX77654_THM_EN);
