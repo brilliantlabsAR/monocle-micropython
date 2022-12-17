@@ -187,7 +187,6 @@ void board_init(void)
     // Initialise the FPGA: providing the clock for the display and screen.
     // Needs: power, spi
     fpga_init();
-    fpga_xclk_on();
 
     board_test_num = 4;
 
