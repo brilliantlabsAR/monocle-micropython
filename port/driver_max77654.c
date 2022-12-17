@@ -396,7 +396,6 @@ static const unsigned int cv_tbl[] = {
  * Configure a register value over I2C.
  * @param reg Address of the register.
  * @param data Value to write.
- * @return True if I2C succeeds.
  */
 void max77654_write(uint8_t reg, uint8_t data)
 {
@@ -482,11 +481,9 @@ static uint8_t cv_to_hw(unsigned int val)
  * @param reg Address of the register.
  * @param newbits Value to put, not yet shifted.
  * @param bits_to_update Bitmask with all bits to be modified set to 1.
- * @return True if I2C succeeds.
  */
 static void max77654_update(uint8_t addr, uint8_t newbits, uint8_t bits_to_update)
 {
-    
     max77654_write(addr, (max77654_read(addr) & ~bits_to_update) | newbits);
 }
 
@@ -494,7 +491,6 @@ static void max77654_update(uint8_t addr, uint8_t newbits, uint8_t bits_to_updat
  * Initialize the MAX77654 chip.
  *  Test results: (using resistors to simulate bulk & constant voltage charging)
  *  bulk charging current: 67.4mA, constant voltage: 4.28V
- * @return True if I2C succeeds.
  */
 void max77654_init(void)
 {
@@ -639,7 +635,6 @@ void max77654_init(void)
 /**
  * Turn the 1.8V rail on/off powering all 1.8V components of the circuit.
  * @param on True for power on.
- * @return True if I2C succeeds.
  */
 void max77654_rail_1v8(bool on)
 {
@@ -651,7 +646,6 @@ void max77654_rail_1v8(bool on)
 /**
  * Turn the 2.7V rail on/off powering all 2.7V components of the circuit.
  * @param on True for power on.
- * @return True if I2C succeeds.
  */
 void max77654_rail_2v7(bool on)
 {
@@ -663,7 +657,6 @@ void max77654_rail_2v7(bool on)
 /**
  * Turn the 1.2V rail on/off powering all 1.2V components of the circuit.
  * @param on True for power on.
- * @return True if I2C succeeds.
  */
 void max77654_rail_1v2(bool on)
 {
@@ -675,7 +668,6 @@ void max77654_rail_1v2(bool on)
 /**
  * Turn the 10V rail on/off powering all 10V components of the circuit.
  * @param on True for power on.
- * @return True if I2C succeeds.
  */
 void max77654_rail_10v(bool on)
 {
@@ -686,7 +678,6 @@ void max77654_rail_10v(bool on)
 
 /**
  * Enable the power rail used to power the LEDs.
- * @return True if I2C succeeds.
  */
 void max77654_rail_vled(bool on)
 {
@@ -703,7 +694,6 @@ void max77654_rail_vled(bool on)
 /**
  * Turn the red led connected to the max77654 on or off.
  * @param on Desired state of the led.
- * @return True if I2C succeeds.
  */
 void max77654_led_red(bool on)
 {
@@ -713,7 +703,6 @@ void max77654_led_red(bool on)
 /**
  * Turn the green led connected to the max77654 on or off.
  * @param on Desired state of the led.
- * @return True if I2C succeeds.
  */
 void max77654_led_green(bool on)
 {
@@ -775,7 +764,6 @@ max77654_fault max77654_faults_status(void)
  * @param current Range is 7mA to 300mA. Input values <7 will be rounded up to 7.5, >300 down to 300,
  *  and intermediate values rounded down
  *  to the nearest supported config value (increments of 7.5mA).
- * @return True if I2C succeeds.
  */
 void max77654_set_charge_current(uint16_t current)
 {
@@ -792,7 +780,6 @@ void max77654_set_charge_current(uint16_t current)
 /**
  * Set charge voltage (in mV)
  * @param millivolts Range is 3600 to 4600 (3.6V to 4.6V).
- * @return True if I2C succeeds.
  */
 void max77654_set_charge_voltage(uint16_t millivolts)
 {
@@ -812,7 +799,6 @@ void max77654_set_charge_voltage(uint16_t millivolts)
 /**
  * Set input current upper limit (in mA).
  * @param current Range is 95 to 475 in increments of 95mA, see MAX77654_CNFG_CHG_B definitions.
- * @return True if I2C succeeds.
  */
 void max77654_set_current_limit(uint16_t current)
 {
@@ -837,7 +823,6 @@ void max77654_set_current_limit(uint16_t current)
 /**
  * Set the device in extreme low power mode.
  *  This disconnects the battery from the system, not powered anymore.
- * @return True if I2C succeeds.
  */
 void max77564_factory_ship_mode(void) 
 {
