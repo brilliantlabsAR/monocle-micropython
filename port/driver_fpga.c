@@ -41,6 +41,28 @@
 #define LOG NRFX_LOG_ERROR
 #define ASSERT BOARD_ASSERT
 
+void fpga_check_pins(char const *msg)
+{
+    static bool first = true;
+
+    if (first) {
+        LOG("| INT   |       | MODE1 |       |       |");
+        LOG("| RECFG | SCK   | CSN   | MOSI  | MISO  |");
+        LOG("+-------+-------+-------+-------+-------+");
+        LOG("| P0.05 | P0.07 | P0.08 | P0.09 | P0.10 |");
+        LOG("+=======+=======+=======+=======+=======+");
+        first = false;
+    }
+    LOG("|  %3d  |  %3d  |  %3d  |  %3d  |  %3d  | %s",
+        nrf_gpio_pin_read(5),
+        nrf_gpio_pin_read(7),
+        nrf_gpio_pin_read(8),
+        nrf_gpio_pin_read(9),
+        nrf_gpio_pin_read(10),
+        msg
+    );
+}
+
 /**
  * Write a byte to the FPGA over SPI using a bridge protocol.
  * @param addr The address of the FPGA to write to.
@@ -212,11 +234,8 @@ void fpga_init(void)
     nrfx_systick_delay_ms(100); // 1000 times more than needed
     nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
 
-    // Make sure the FPGA is properly initialised
-    ASSERT(fpga_read_register(FPGA_MEMORY_CONTROL) == FPGA_MEMORY_CONTROL_DEFAULT);
-
     // Give the FPGA some time to boot.
-    // Datasheet UG290E: T_recfgtdonel
+    // Datasheet UG290E: T_recfgtdonel <= 
     nrfx_systick_delay_ms(100);
 
     // Reset the CSN pin, changed as it is also MODE1.
@@ -227,6 +246,9 @@ void fpga_init(void)
 
     // Give the FPGA some further time.
     nrfx_systick_delay_ms(10);
+
+    // Make sure the FPGA is properly initialised
+    ASSERT(fpga_read_register(FPGA_MEMORY_CONTROL) == FPGA_MEMORY_CONTROL_DEFAULT);
 
     // Get the version
     fpga_get_version(&major, &minor);
@@ -427,7 +449,7 @@ uint16_t fpga_checksum_add(uint16_t checksum1, uint16_t checksum2)
 }
 
 // valid input zoom levels: 1, 2, 4, 8
-void fpga_set_zoom(uint8_t level)
+void fpga_write_zoom(uint8_t level)
 {
     uint8_t zoom_bits = 0;
     //NOTE For zoom to work, it should always be true that XCLK is on, EN_CAM is on
@@ -454,7 +476,7 @@ void fpga_set_zoom(uint8_t level)
  * Convenient for testing.
  * @param turn_on Whether to activate or disable the luma correction.
  */
-void fpga_set_luma(bool turn_on)
+void fpga_write_luma(bool turn_on)
 {
     uint8_t reg =0;
     bool luma_on = false;
@@ -486,7 +508,7 @@ void fpga_set_luma(bool turn_on)
  * @param mode 0=off, 1=disp_cam, 2=disp_busy, 3=disp_bars.
  */
 // TODO: Convert mode to enum.
-void fpga_set_display(uint8_t mode)
+void fpga_write_display(uint8_t mode)
 {
     switch(mode) {
         case 0:

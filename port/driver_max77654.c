@@ -335,10 +335,10 @@
 /* MAX77654_CNFG_SBB2_A_REG        0x2D */
 // directly write these values to the register to set voltage (other voltages available, see datasheet)
 // Reserved                        bit 7
-#define MAX77654_CNFG_SBB_A_TV_1V2 0x08   // 0.8V +  8*50mV = 1.2V
-#define MAX77654_CNFG_SBB_A_TV_1V8 0x14   // 0.8V + 20*50mV = 1.8V
-#define MAX77654_CNFG_SBB_A_TV_2V7 0x26   // 0.8V + 38*50mV = 2.7V
-#define MAX77654_CNFG_SBB_A_TV_2V8 0x28   // 0.8V + 40*50mV = 2.8V
+#define MAX77654_CNFG_SBB_A_TV_1V2 0x08   // 800 mV + 0x08 * 50 mV = 1.2 V
+#define MAX77654_CNFG_SBB_A_TV_1V8 0x14   // 800 mV + 0x14 * 50 mV = 1.8 V
+#define MAX77654_CNFG_SBB_A_TV_2V7 0x26   // 800 mV + 0x26 * 50 mV = 2.7 V
+#define MAX77654_CNFG_SBB_A_TV_2V8 0x28   // 800 mV + 0x28 * 50 mV = 2.8 V
 
 /* MAX77654_CNFG_SBB0_B_REG        0x2A */
 /* MAX77654_CNFG_SBB1_B_REG        0x2C */
@@ -375,10 +375,10 @@
 /* MAX77654_CNFG_LDO1_A_REG        0x3A */
 // directly write these values to the register to set voltage (other voltages available, see datasheet)
 // Reserved                        bit 7
-#define MAX77654_CNFG_LDO_A_TV_1V2 0x10   ///< 0.8V + 16*25mV = 1.2V
-#define MAX77654_CNFG_LDO_A_TV_1V8 0x28   ///< 0.8V + 40*25mV = 1.8V
-#define MAX77654_CNFG_LDO_A_TV_2V7 0x4C   ///< 0.8V + 76*25mV = 2.7V
-#define MAX77654_CNFG_LDO_A_TV_2V8 0x50   ///< 0.8V + 80*25mV = 2.8V
+#define MAX77654_CNFG_LDO_A_TV_1V2 0x10   ///< 800 mV + 0x10 * 25 mV = 1.2V
+#define MAX77654_CNFG_LDO_A_TV_1V8 0x28   ///< 800 mV + 0x28 * 25 mV = 1.8V
+#define MAX77654_CNFG_LDO_A_TV_2V7 0x4C   ///< 800 mV + 0x4C * 25 mV = 2.7V
+#define MAX77654_CNFG_LDO_A_TV_2V8 0x50   ///< 800 mV + 0x50 * 25 mV = 2.8V
 
 /* MAX77654_CNFG_LDO0_B_REG        0x39 */
 /* MAX77654_CNFG_LDO1_B_REG        0x3B */
@@ -659,7 +659,6 @@ void max77654_init(void)
     // Active Discharge, OFF
     // Not needed; just in case mode set to LDO by mistake.
     max77654_write(MAX77654_CNFG_LDO0_A_REG, MAX77654_CNFG_LDO_A_TV_1V8);
-
     max77654_write(MAX77654_CNFG_LDO0_B_REG,
             MAX77654_CNFG_LDO_B_MD
             | MAX77654_CNFG_LDO_B_ADE
