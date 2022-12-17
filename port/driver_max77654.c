@@ -386,8 +386,7 @@ static void max77654_update(uint8_t addr, uint8_t newbits, uint8_t mask)
 }
 
 struct { uint8_t addr, data; } max77654_conf[] = {
-    // Works best for MK12! 
-    { MAX77654_CNFG_SBB_TOP, 0x0 },
+    // Power Rail Configuration
 
     // Power Rail: 2.7V
     // set SBB0 to 2.7V, buck, 333mA, active discharge, OFF
@@ -418,7 +417,7 @@ struct { uint8_t addr, data; } max77654_conf[] = {
     // ICHGIN_LIM assumes CNFG_SBB_TOP.ICHGIN_LIM_DEF = 0
     // Drive strength, slow down to reduce EMI (but reduces efficiency)
     // Second slowest.
-    { MAX77654_CNFG_SBB_TOP, 0x00 },
+    { MAX77654_CNFG_SBB_TOP, 0x00 }, // 0x00 works best for MK12
 
     // GPIO configuration
 
@@ -484,8 +483,6 @@ void max77654_init(void)
 {
     // verify MAX77654 on I2C bus by attempting to read Chip ID register
     ASSERT(max77654_get_cid() == MAX77654_CID_EXPECTED);
-
-    // Power Rail Configuration
 
     for (size_t i = 0; i < LEN(max77654_conf); i++)
         max77654_write(max77654_conf[i].addr, max77654_conf[i].data);
