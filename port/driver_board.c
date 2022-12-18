@@ -187,6 +187,8 @@ void board_init(void)
     // Initialise the FPGA: providing the clock for the display and screen.
     // Needs: power, spi
     fpga_init();
+    fpga_graphics_on();
+    fpga_camera_on();
 
     board_test_num = 4;
 
@@ -197,15 +199,8 @@ void board_init(void)
     board_test_num = 5;
 
     // Initialise the Camera: startup sequence then I2C config.
-    // Needs: power, fpga, i2c
+    // Needs: power, i2c, fpga
     ov5640_init();
-    ov5640_pwr_on();
-    ov5640_light_mode(0);
-    ov5640_color_saturation(3);
-    ov5640_brightness(4);
-    ov5640_contrast(3);
-    ov5640_sharpness(33);
-    ov5640_flip(true);
 
     board_test_num = 6;
 
@@ -217,7 +212,6 @@ void board_init(void)
 
     max77654_led_green(false);
     board_check_errors();
-
 }
 
 void board_deinit(void)

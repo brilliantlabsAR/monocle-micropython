@@ -153,7 +153,7 @@ int main(void)
 _Noreturn void __assert_func(const char *file, int line, const char *func, const char *expr)
 {
     LOG("%s:%d: %s: %s", file, line, func, expr);
-    dfu_reboot_bootloader();
+    for (;;) __asm__("bkpt");
 }
 
 /**

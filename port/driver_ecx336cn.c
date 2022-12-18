@@ -83,7 +83,7 @@ void ecx336cn_init(void)
 {
     // power-on sequence, see Datasheet section 9
     // 1ms after 1.8V on, device has finished initializing
-    nrfx_systick_delay_ms(1);
+    nrfx_systick_delay_ms(100);
 
     // set XCLR to high (1.8V to take it) to change to power-saving mode
     nrf_gpio_pin_set(ECX336CN_XCLR_PIN);
@@ -230,6 +230,7 @@ void ecx336cn_init(void)
 
     // check that 0x29 changed from default 0x0A to 0x0B
     // and that 0x2A has been restored
+    LOG("[0x29]=0x%02X [0x2A]=0x%02X", ecx336cn_read_byte(0x29), ecx336cn_read_byte(0x2A));
     ASSERT(ecx336cn_read_byte(0x29) == 0x0B);
     ASSERT(ecx336cn_read_byte(0x2A) == 0xBE);
 

@@ -51,7 +51,7 @@ static inline void nrfx_log_off(char const *fmt, ...) { (void)fmt; }
 
 #define NRFX_LOG_DEBUG      NRFX_LOG_OFF
 #define NRFX_LOG_INFO       NRFX_LOG_OFF
-#define NRFX_LOG_WARNING    NRFX_LOG
+#define NRFX_LOG_WARNING    NRFX_LOG_OFF
 #define NRFX_LOG_ERROR      NRFX_LOG
 
 #define NRFX_LOG_HEXDUMP_ERROR(p_memory, length)

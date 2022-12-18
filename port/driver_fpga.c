@@ -107,16 +107,16 @@ void fpga_init(void)
     nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
 
     // Give the FPGA some time to boot.
-    // Datasheet UG290E: T_recfgtdonel <= 
+    // Datasheet UG290E: T_recfgtdonel <=
     nrfx_systick_delay_ms(100);
 
     // Reset the CSN pin, changed as it is also MODE1.
     nrf_gpio_pin_write(SPIM0_FPGA_CS_PIN, true);
 
     // Give the FPGA some further time.
-    nrfx_systick_delay_ms(10);
+    nrfx_systick_delay_ms(100);
 
-    LOG("ready model=GW1N-LV9MG100");
+    LOG("ready model=GW1N-LV9MG100 id=0x%X version=0x%X", fpga_system_id(), fpga_system_version());
 }
 
 void fpga_deinit(void)
@@ -138,7 +138,7 @@ static inline void fpga_cmd(uint8_t cmd1, uint8_t cmd2, uint8_t *buf, size_t len
     spi_chip_deselect(SPIM0_FPGA_CS_PIN);
 }
 
-uint32_t fpga_cmd_system_id(void) 
+uint32_t fpga_system_id(void)
 {
     uint8_t buf[] = { 0x00, 0x00 };
 
@@ -146,86 +146,86 @@ uint32_t fpga_cmd_system_id(void)
     return buf[0] << 8 | buf[1] << 0;
 }
 
-uint32_t fpga_cmd_system_version(void) 
+uint32_t fpga_system_version(void)
 {
     uint8_t buf[] = { 0x00, 0x00, 0x00 };
 
     fpga_cmd(FPGA_CMD_SYSTEM, 0x02, buf, sizeof buf);
-    return buf[0] << 16 | buf[1] << 8 | buf[1] << 0;
+    return buf[0] << 16 | buf[1] << 8 | buf[2] << 0;
 }
 
 #define FPGA_CMD_CAMERA 0x10
 
-void fpga_cmd_camera_zoom(uint8_t zoom_level) 
+void fpga_set_camera_zoom(uint8_t zoom_level)
 {
     fpga_cmd(FPGA_CMD_CAMERA, 0x02, &zoom_level, 1);
 }
 
-void fpga_cmd_camera_stop(void) 
+void fpga_camera_stop(void)
 {
     fpga_cmd(FPGA_CMD_CAMERA, 0x04, NULL, 0);
 }
 
-void fpga_cmd_camera_start(void) 
+void fpga_camera_start(void)
 {
     fpga_cmd(FPGA_CMD_CAMERA, 0x05, NULL, 0);
 }
 
-void fpga_cmd_camera_capture(void) 
+void fpga_camera_capture(void)
 {
     fpga_cmd(FPGA_CMD_CAMERA, 0x06, NULL, 0);
 }
 
-void fpga_cmd_camera_off(void)           
+void fpga_camera_off(void)
 {
     fpga_cmd(FPGA_CMD_CAMERA, 0x08, NULL, 0);
 }
 
-void fpga_cmd_camera_on(void)            
+void fpga_camera_on(void)
 {
     fpga_cmd(FPGA_CMD_CAMERA, 0x09, NULL, 0);
 }
 
 #define FPGA_CMD_LIVE_VIDEO 0x30
 
-void fpga_cmd_live_video_start(void)     
+void fpga_live_video_start(void)
 {
     fpga_cmd(FPGA_CMD_LIVE_VIDEO, 0x05, NULL, 0);
 }
 
-void fpga_cmd_live_video_stop(void)      
+void fpga_live_video_stop(void)
 {
     fpga_cmd(FPGA_CMD_LIVE_VIDEO, 0x04, NULL, 0);
 }
 
-void fpga_cmd_live_video_replay(void)    
+void fpga_live_video_replay(void)
 {
     fpga_cmd(FPGA_CMD_LIVE_VIDEO, 0x07, NULL, 0);
 }
 
 #define FPGA_CMD_GRAPHICS 0x40
 
-void fpga_cmd_graphics_off(void)         
+void fpga_graphics_off(void)
 {
     fpga_cmd(FPGA_CMD_GRAPHICS, 0x04, NULL, 0);
 }
 
-void fpga_cmd_graphics_on(void)          
+void fpga_graphics_on(void)
 {
     fpga_cmd(FPGA_CMD_GRAPHICS, 0x05, NULL, 0);
 }
 
-void fpga_cmd_graphics_clear(void)       
+void fpga_graphics_clear(void)
 {
     fpga_cmd(FPGA_CMD_GRAPHICS, 0x06, NULL, 0);
 }
 
-void fpga_cmd_graphics_swap_buffer(void) 
+void fpga_graphics_swap_buffer(void)
 {
     fpga_cmd(FPGA_CMD_GRAPHICS, 0x07, NULL, 0);
 }
 
-void fpga_cmd_graphics_write_base(uint32_t base)  
+void fpga_graphics_set_write_base(uint32_t base)
 {
     uint8_t buf[] = {
         (base & 0xFF000000) >> 24,
@@ -237,14 +237,14 @@ void fpga_cmd_graphics_write_base(uint32_t base)
     fpga_cmd(FPGA_CMD_GRAPHICS, 0x10, buf, sizeof buf);
 }
 
-void fpga_cmd_graphics_write_data(uint8_t *buf, size_t len)
+void fpga_graphics_write_data(uint8_t *buf, size_t len)
 {
     fpga_cmd(FPGA_CMD_GRAPHICS, 0x11, buf, len);
 }
 
 #define FPGA_CMD_CAPTURE 0x50
 
-uint16_t fpga_cmd_capture_read_status(void)
+uint16_t fpga_capture_read_status(void)
 {
     uint8_t buf[] = { 0x00, 0x00 };
 
@@ -252,7 +252,7 @@ uint16_t fpga_cmd_capture_read_status(void)
     return (buf[0] & 0xFF00) >> 8 | (buf[1] & 0x00FF) >> 0;
 }
 
-void fpga_cmd_capture_read_data(uint8_t *buf, size_t len)
+void fpga_capture_read_data(uint8_t *buf, size_t len)
 {
     fpga_cmd(FPGA_CMD_CAPTURE, 0x10, buf, len);
 }

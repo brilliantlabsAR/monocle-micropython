@@ -163,7 +163,7 @@ void battery_timer_handler(void)
     float v_mean = battery_travelling_mean(v_inst);
     battery_percent = battery_voltage_to_percent(v_mean);
     //LOG("%d", (int)(v_inst * 1000)); // for battery_discharge_curve.awk
-    LOG("v_inst=%d v_mean=%d %d%%", (int)(v_inst * 1000), (int)(v_mean * 1000), battery_percent);
+    //LOG("v_inst=%d v_mean=%d %d%%", (int)(v_inst * 1000), (int)(v_mean * 1000), battery_percent);
 }
 
 /**

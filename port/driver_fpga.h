@@ -34,26 +34,27 @@
 void fpga_prepare(void);
 void fpga_init(void);
 void fpga_deinit(void);
-uint32_t fpga_cmd_system_id(void);
-uint32_t fpga_cmd_system_version(void);
-void fpga_cmd_camera_zoom(uint8_t zoom_level);
-void fpga_cmd_camera_stop(void);
-void fpga_cmd_camera_start(void);
-void fpga_cmd_camera_capture(void);
-void fpga_cmd_camera_off(void);
-void fpga_cmd_camera_on(void);
-void fpga_cmd_live_video_start(void);
-void fpga_cmd_live_video_stop(void);
-void fpga_cmd_live_video_replay(void);
-void fpga_cmd_graphics_off(void);
-void fpga_cmd_graphics_on(void);
-void fpga_cmd_graphics_clear(void);
-void fpga_cmd_graphics_swap_buffer(void);
-void fpga_cmd_graphics_write_base(uint32_t base);
-void fpga_cmd_graphics_write_data(uint8_t *data, size_t len);
-uint16_t fpga_cmd_capture_read_status(void);
-void fpga_cmd_capture_read_data(uint8_t *buf, size_t len);
+uint32_t fpga_system_id(void);
+uint32_t fpga_system_version(void);
+void fpga_set_camera_zoom(uint8_t zoom_level);
+void fpga_camera_stop(void);
+void fpga_camera_start(void);
+void fpga_camera_capture(void);
+void fpga_camera_off(void);
+void fpga_camera_on(void);
+void fpga_live_video_start(void);
+void fpga_live_video_stop(void);
+void fpga_live_video_replay(void);
+void fpga_graphics_off(void);
+void fpga_graphics_on(void);
+void fpga_graphics_clear(void);
+void fpga_graphics_swap_buffer(void);
+void fpga_graphics_set_write_base(uint32_t base);
+void fpga_graphics_write_data(uint8_t *buf, size_t len);
+uint16_t fpga_capture_read_status(void);
+void fpga_capture_read_data(uint8_t *buf, size_t len);
 
 // debug
 void fpga_check_pins(char const *msg);
 #define fpga_check_reg(reg) NRFX_LOG("[0x%02X] %-s=%d", reg, #reg, fpga_read_register(reg))
+

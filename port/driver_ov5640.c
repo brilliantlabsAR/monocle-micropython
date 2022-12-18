@@ -139,7 +139,23 @@ void ov5640_init(void)
 {
     ov5640_pin_pwdn(true);
     ov5640_pin_nresetb(false);
+
+    ov5640_pwr_on();
+    ov5640_light_mode(0);
+    ov5640_color_saturation(3);
+    ov5640_brightness(4);
+    ov5640_contrast(3);
+    ov5640_sharpness(33);
+    ov5640_flip(true);
+    ov5640_focus_init();
+
+    // Check the chip ID
+    uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
+    ASSERT(id == OV5640_ID);
+
+    LOG("ready max_resolution=2592x1944 id=0x%04X", id);
 }
+
 /**
  * Revert the configuration of the camera module.
  */
@@ -191,10 +207,6 @@ void ov5640_pwr_on(void)
     ov5640_pin_nresetb(1);
     // step (6)
     ov5640_delay_ms(20);
-
-    // Check the chip ID
-    uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
-    ASSERT(id == OV5640_ID);
 
     ov5640_write_reg(0x3103, 0x11);    // system clock from pad, bit[1]
     ov5640_write_reg(0x3008, 0x82);
@@ -524,6 +536,4 @@ void ov5640_focus_init(void)
         ov5640_delay_ms(5);
         ASSERT(++i <= 1000);
     } while (state != 0x70);
-
-    LOG("ready max_resolution=2592x1944");
 }
