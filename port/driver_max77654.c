@@ -494,7 +494,7 @@ void max77654_init(void)
 
     // MAX77654_CNFG_CHG_F: JEITA charge current = 70mA (=67.5mA), Thermistor enabled
     max77654_write(MAX77654_CNFG_CHG_F, MAX77654_THM_EN);
-    max77654_update(MAX77654_CNFG_CHG_F, cc_to_hw(70*10), MAX77654_CHG_CC_JEITA_Msk);
+    max77654_update(MAX77654_CNFG_CHG_F, cc_to_hw(70), MAX77654_CHG_CC_JEITA_Msk);
 
     // MAX77654_CNFG_CHG_G: charge voltage 4.3V, not in USB suspend mode
     ASSERT(4300 >= MAX77654_CHG_CV_MIN);
