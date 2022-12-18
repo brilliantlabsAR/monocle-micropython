@@ -46,9 +46,6 @@ static const nrfx_spim_t m_spi = NRFX_SPIM_INSTANCE(SPI_INSTANCE);
 // Indicate that SPI completed the transfer from the interrupt handler to main loop.
 static volatile bool m_xfer_done = true;
 
-// Compatibility with the previous API.
-static uint8_t m_cs_pin;
-
 /**
  * SPI event handler
  */
