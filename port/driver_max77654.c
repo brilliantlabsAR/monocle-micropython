@@ -62,33 +62,33 @@
 // Global Registers
 
 #define MAX77654_INT_GLBL0              0x00 // RC
-#define MAX77654_DOD0_R                 (0x01u << 7) // RC LDO Dropout Detector Rising Interrupt
-#define MAX77654_DOD1_R                 (0x01u << 6) // RC LDO Dropout Detector Rising Interrupt
-#define MAX77654_TJAL2_R                (0x01u << 5) // RC Thermal Alarm 2 Rising Interrupt
-#define MAX77654_TJAL1_R                (0x01u << 4) // RC Thermal Alarm 1 Rising Interrupt
-#define MAX77654_nEN_R                  (0x01u << 3) // RC nEN Rising Interrupt
-#define MAX77654_nEN_F                  (0x01u << 2) // RC nEN Falling Interrupt
-#define MAX77654_GPI_R                  (0x01u << 1) // RC GPI Rising Interrupt
-#define MAX77654_GPI_F                  (0x01u << 0) // RC GPI Falling Interrupt
+#define MAX77654_DOD0_R                 (0x01 << 7) // RC LDO Dropout Detector Rising Interrupt
+#define MAX77654_DOD1_R                 (0x01 << 6) // RC LDO Dropout Detector Rising Interrupt
+#define MAX77654_TJAL2_R                (0x01 << 5) // RC Thermal Alarm 2 Rising Interrupt
+#define MAX77654_TJAL1_R                (0x01 << 4) // RC Thermal Alarm 1 Rising Interrupt
+#define MAX77654_nEN_R                  (0x01 << 3) // RC nEN Rising Interrupt
+#define MAX77654_nEN_F                  (0x01 << 2) // RC nEN Falling Interrupt
+#define MAX77654_GPI_R                  (0x01 << 1) // RC GPI Rising Interrupt
+#define MAX77654_GPI_F                  (0x01 << 0) // RC GPI Falling Interrupt
 
 #define MAX77654_INT_GLBL1              0x04 // RC
-#define MAX77654_LDO1_F                 (0x01u << 6) // LDO1 Fault Interrupt
-#define MAX77654_LDO0_F                 (0x01u << 5) // LDO0 Fault Interrupt
-#define MAX77654_SBB_TO                 (0x01u << 4) // SBB Timeout
-#define MAX77654_GPI2_R                 (0x01u << 3) // GPI Rising Interrupt
-#define MAX77654_GPI2_F                 (0x01u << 2) // GPI Fallint Interrupt
-#define MAX77654_GPI1_R                 (0x01u << 1) // GPI Rising Interrupt
-#define MAX77654_GPI1_F                 (0x01u << 0) // GPI Fallint Interrupt
+#define MAX77654_LDO1_F                 (0x01 << 6) // LDO1 Fault Interrupt
+#define MAX77654_LDO0_F                 (0x01 << 5) // LDO0 Fault Interrupt
+#define MAX77654_SBB_TO                 (0x01 << 4) // SBB Timeout
+#define MAX77654_GPI2_R                 (0x01 << 3) // GPI Rising Interrupt
+#define MAX77654_GPI2_F                 (0x01 << 2) // GPI Fallint Interrupt
+#define MAX77654_GPI1_R                 (0x01 << 1) // GPI Rising Interrupt
+#define MAX77654_GPI1_F                 (0x01 << 0) // GPI Fallint Interrupt
 
 #define MAX77654_ERCFLAG                0x05 // RC
-#define MAX77654_WDT_RST                (0x01u << 7) // Watchdog Timer Reset Flag, watchdog timer expired & caused power-reset
-#define MAX77654_WDT_OFF                (0x01u << 6) // Watchdog Timer OFF Flag, watchdog timer expired & caused power-off
-#define MAX77654_SFT_CRST_F             (0x01u << 5) // Software Cold Reset Flag
-#define MAX77654_SFT_OFF_F              (0x01u << 4) // Software OFF Flag
-#define MAX77654_MRST                   (0x01u << 3) // Manual Reset Timer, a manual reset has occurred
-#define MAX77654_SYSUVLO                (0x01u << 2) // SYS Domain Undervoltage lockout
-#define MAX77654_SYSOVLO                (0x01u << 1) // SYS Domain Overvoltage lockout
-#define MAX77654_TOVLD                  (0x01u << 0) // Thermal overload, temperature > 165C
+#define MAX77654_WDT_RST                (0x01 << 7) // Watchdog Timer Reset Flag, watchdog timer expired & caused power-reset
+#define MAX77654_WDT_OFF                (0x01 << 6) // Watchdog Timer OFF Flag, watchdog timer expired & caused power-off
+#define MAX77654_SFT_CRST_F             (0x01 << 5) // Software Cold Reset Flag
+#define MAX77654_SFT_OFF_F              (0x01 << 4) // Software OFF Flag
+#define MAX77654_MRST                   (0x01 << 3) // Manual Reset Timer, a manual reset has occurred
+#define MAX77654_SYSUVLO                (0x01 << 2) // SYS Domain Undervoltage lockout
+#define MAX77654_SYSOVLO                (0x01 << 1) // SYS Domain Overvoltage lockout
+#define MAX77654_TOVLD                  (0x01 << 0) // Thermal overload, temperature > 165C
 
 #define MAX77654_STAT_GLBL              0x06
 #define MAX77654_INTM_GLBL0             0x09
@@ -98,16 +98,16 @@
 #define MAX77654_CNFG_GPIO0             0x11 // RW (except bit 1 is RO)
 #define MAX77654_CNFG_GPIO1             0x12 // RW (except bit 1 is RO)
 #define MAX77654_CNFG_GPIO2             0x13 // RW (except bit 1 is RO)
-#define MAX77654_ALT_GPIO               (0x01u << 5) // RW Alternate mode (meaning depends on GPIO #)
-#define MAX77654_DBEN_GPIO              (0x01u << 4) // RW GPI Debounce Timer Enable: 0=no debouce, 1=30ms debounce
-#define MAX77654_DO                     (0x01u << 3) // RW GPO Data Output: 0=logic low, 1=logic high (DRV=1) or hiZ (DRV=0) (if DIR=1, has no effect)
-#define MAX77654_DRV                    (0x01u << 2) // RW GPO Driver Type: 0=open-drain, 1=push-pull
-#define MAX77654_DI                     (0x01u << 1) // RO GPIO Digital Input Value: reflects state of the GPIO (irrespective of GPI or GPO)
-#define MAX77654_DIR                    (0x01u << 0) // RW GPIO Direction: 0=outupt (GPO), 1=input (GPI)
+#define MAX77654_ALT_GPIO               (0x01 << 5) // RW Alternate mode (meaning depends on GPIO #)
+#define MAX77654_DBEN_GPIO              (0x01 << 4) // RW GPI Debounce Timer Enable: 0=no debouce, 1=30ms debounce
+#define MAX77654_DO                     (0x01 << 3) // RW GPO Data Output: 0=logic low, 1=logic high (DRV=1) or hiZ (DRV=0) (if DIR=1, has no effect)
+#define MAX77654_DRV                    (0x01 << 2) // RW GPO Driver Type: 0=open-drain, 1=push-pull
+#define MAX77654_DI                     (0x01 << 1) // RO GPIO Digital Input Value: reflects state of the GPIO (irrespective of GPI or GPO)
+#define MAX77654_DIR                    (0x01 << 0) // RW GPIO Direction: 0=outupt (GPO), 1=input (GPI)
 
 #define MAX77654_CID                    0x14 // RO
-#define MAX77654_CID4                   (0x01u << 7) // RO Chip Identification Code, bit 4
-#define MAX77654_CID_Msk                (0x0Fu << 0)
+#define MAX77654_CID4                   (0x01 << 7) // RO Chip Identification Code, bit 4
+#define MAX77654_CID_Msk                (0x0F << 0)
 
 // Charger Registers
 
@@ -115,118 +115,118 @@
 #define MAX77654_STAT_CHG_A             0x02 // RO
 
 #define MAX77654_STAT_CHG_B             0x03 // RO
-#define MAX77654_CHG_DTLS_Msk           (0x0Fu << 4)
-#define MAX77654_CHG_DTLS_OFF           (0x00u << 4) // Off
-#define MAX77654_CHG_DTLS_PRE_Q         (0x01u << 4) // Prequalification mode
-#define MAX77654_CHG_DTLS_FAST_CC       (0x02u << 4) // Fast-charge constant-current (CC) mode
-#define MAX77654_CHG_DTLS_FAST_CC_J     (0x03u << 4) // JEITA modified fast-charge constant-current (CC) mode
-#define MAX77654_CHG_DTLS_FAST_CV       (0x04u << 4) // Fast-charge constant-voltage (CV) mode
-#define MAX77654_CHG_DTLS_FAST_CV_J     (0x05u << 4) // JEITA modified fast-charge constant-voltage (CV) mode
-#define MAX77654_CHG_DTLS_TOP_OFF       (0x06u << 4) // Top-off mode
-#define MAX77654_CHG_DTLS_TOP_OFF_J     (0x07u << 4) // JEITA modified top-off mode
-#define MAX77654_CHG_DTLS_DONE          (0x08u << 4) // Done
-#define MAX77654_CHG_DTLS_DONE_J        (0x09u << 4) // JEITA modified done
-#define MAX77654_CHG_DTLS_FAULT_PRE_Q   (0x0Au << 4) // Prequalification timer fault
-#define MAX77654_CHG_DTLS_FAULT_TIME    (0x0Bu << 4) // Fast-charge timer fault
-#define MAX77654_CHG_DTLS_FAULT_TEMP    (0x0Cu << 4) // Battery temperature fault
-#define MAX77654_CHGIN_DTLS_Msk         (0x03u << 2)
-#define MAX77654_CHG                    (0x01u << 1) // Quick Charger Status: 0=not charging, 1=charging
-#define MAX77654_TIME_SUS               (0x01u << 0) // Time Suspend Indicator: 0=not active or not suspended, 1=suspended (for any of 3 given reasons)
+#define MAX77654_CHG_DTLS_Msk           (0x0F << 4)
+#define MAX77654_CHG_DTLS_OFF           (0x00 << 4) // Off
+#define MAX77654_CHG_DTLS_PRE_Q         (0x01 << 4) // Prequalification mode
+#define MAX77654_CHG_DTLS_FAST_CC       (0x02 << 4) // Fast-charge constant-current (CC) mode
+#define MAX77654_CHG_DTLS_FAST_CC_J     (0x03 << 4) // JEITA modified fast-charge constant-current (CC) mode
+#define MAX77654_CHG_DTLS_FAST_CV       (0x04 << 4) // Fast-charge constant-voltage (CV) mode
+#define MAX77654_CHG_DTLS_FAST_CV_J     (0x05 << 4) // JEITA modified fast-charge constant-voltage (CV) mode
+#define MAX77654_CHG_DTLS_TOP_OFF       (0x06 << 4) // Top-off mode
+#define MAX77654_CHG_DTLS_TOP_OFF_J     (0x07 << 4) // JEITA modified top-off mode
+#define MAX77654_CHG_DTLS_DONE          (0x08 << 4) // Done
+#define MAX77654_CHG_DTLS_DONE_J        (0x09 << 4) // JEITA modified done
+#define MAX77654_CHG_DTLS_FAULT_PRE_Q   (0x0A << 4) // Prequalification timer fault
+#define MAX77654_CHG_DTLS_FAULT_TIME    (0x0B << 4) // Fast-charge timer fault
+#define MAX77654_CHG_DTLS_FAULT_TEMP    (0x0C << 4) // Battery temperature fault
+#define MAX77654_CHGIN_DTLS_Msk         (0x03 << 2)
+#define MAX77654_CHG                    (0x01 << 1) // Quick Charger Status: 0=not charging, 1=charging
+#define MAX77654_TIME_SUS               (0x01 << 0) // Time Suspend Indicator: 0=not active or not suspended, 1=suspended (for any of 3 given reasons)
 
 #define MAX77654_INT_M_CHG              0x07 // RW
 
 #define MAX77654_CNFG_CHG_A             0x20 // RW
-#define MAX77654_THM_HOT_Msk            (0x03u << 6) // JEITA Temperature Threshold: HOT
-#define MAX77654_THM_HOT_45C            (0x00u << 6)
-#define MAX77654_THM_HOT_50C            (0x01u << 6)
-#define MAX77654_THM_HOT_55C            (0x02u << 6)
-#define MAX77654_THM_HOT_60C            (0x03u << 6)
-#define MAX77654_THM_WARM_Msk           (0x02u << 4)
-#define MAX77654_THM_WARM_35C           (0x00u << 4)
-#define MAX77654_THM_WARM_40C           (0x01u << 4)
-#define MAX77654_THM_WARM_45C           (0x02u << 4)
-#define MAX77654_THM_WARM_50C           (0x03u << 4)
-#define MAX77654_THM_COOL_Msk           (0x03u << 2
-#define MAX77654_THM_COOL_00C           (0x00u << 2)
-#define MAX77654_THM_COOL_05C           (0x01u << 2)
-#define MAX77654_THM_COOL_10C           (0x02u << 2)
-#define MAX77654_THM_COOL_15C           (0x03u << 2)
-#define MAX77654_THM_COLD_Msk           (0x03u << 0)
-#define MAX77654_THM_COLD_N10C          (0x00u << 0)
-#define MAX77654_THM_COLD_N05C          (0x01u << 0)
-#define MAX77654_THM_COLD_00C           (0x02u << 0)
-#define MAX77654_THM_COLD_05C           (0x03u << 0)
+#define MAX77654_THM_HOT_Msk            (0x03 << 6) // JEITA Temperature Threshold: HOT
+#define MAX77654_THM_HOT_45C            (0x00 << 6)
+#define MAX77654_THM_HOT_50C            (0x01 << 6)
+#define MAX77654_THM_HOT_55C            (0x02 << 6)
+#define MAX77654_THM_HOT_60C            (0x03 << 6)
+#define MAX77654_THM_WARM_Msk           (0x02 << 4)
+#define MAX77654_THM_WARM_35C           (0x00 << 4)
+#define MAX77654_THM_WARM_40C           (0x01 << 4)
+#define MAX77654_THM_WARM_45C           (0x02 << 4)
+#define MAX77654_THM_WARM_50C           (0x03 << 4)
+#define MAX77654_THM_COOL_Msk           (0x03 << 2
+#define MAX77654_THM_COOL_00C           (0x00 << 2)
+#define MAX77654_THM_COOL_05C           (0x01 << 2)
+#define MAX77654_THM_COOL_10C           (0x02 << 2)
+#define MAX77654_THM_COOL_15C           (0x03 << 2)
+#define MAX77654_THM_COLD_Msk           (0x03 << 0)
+#define MAX77654_THM_COLD_N10C          (0x00 << 0)
+#define MAX77654_THM_COLD_N05C          (0x01 << 0)
+#define MAX77654_THM_COLD_00C           (0x02 << 0)
+#define MAX77654_THM_COLD_05C           (0x03 << 0)
 
 #define MAX77654_CNFG_CHG_B             0x21 // RW
-#define MAX77654_VCHGIN_MIN_Msk         (0x07u << 5)
-#define MAX77654_VCHGIN_MIN_4V0         (0x00u << 5) // 4.0V
-#define MAX77654_VCHGIN_MIN_4V1         (0x01u << 5) // 4.1V
-#define MAX77654_VCHGIN_MIN_4V2         (0x02u << 5) // 4.2V
-#define MAX77654_VCHGIN_MIN_4V3         (0x03u << 5) // 4.3V
-#define MAX77654_VCHGIN_MIN_4V4         (0x04u << 5) // 4.4V
-#define MAX77654_VCHGIN_MIN_4V5         (0x05u << 5) // 4.5V
-#define MAX77654_VCHGIN_MIN_4V6         (0x06u << 5) // 4.6V
-#define MAX77654_VCHGIN_MIN_4V7         (0x07u << 5) // 4.7V
-#define MAX77654_ICHGIN_LIM_Msk         (0x07u << 2)
-#define MAX77654_ICHGIN_LIM_95MA        (0x00u << 2) // 95mA
-#define MAX77654_ICHGIN_LIM_190MA       (0x01u << 2) // 190mA
-#define MAX77654_ICHGIN_LIM_285MA       (0x02u << 2) // 285mA
-#define MAX77654_ICHGIN_LIM_380MA       (0x03u << 2) // 380mA
-#define MAX77654_ICHGIN_LIM_475MA       (0x04u << 2) // 475mA
-#define MAX77654_I_PQ                   (0x01u << 1) // Prequalification charge current as % of I_FAST-CHG: 0=10%, 1=20%
-#define MAX77654_CHG_EN                 (0x01u << 0) // Battery Charger Enable: 0=disable, 1=enable
+#define MAX77654_VCHGIN_MIN_Msk         (0x07 << 5)
+#define MAX77654_VCHGIN_MIN_4V0         (0x00 << 5) // 4.0V
+#define MAX77654_VCHGIN_MIN_4V1         (0x01 << 5) // 4.1V
+#define MAX77654_VCHGIN_MIN_4V2         (0x02 << 5) // 4.2V
+#define MAX77654_VCHGIN_MIN_4V3         (0x03 << 5) // 4.3V
+#define MAX77654_VCHGIN_MIN_4V4         (0x04 << 5) // 4.4V
+#define MAX77654_VCHGIN_MIN_4V5         (0x05 << 5) // 4.5V
+#define MAX77654_VCHGIN_MIN_4V6         (0x06 << 5) // 4.6V
+#define MAX77654_VCHGIN_MIN_4V7         (0x07 << 5) // 4.7V
+#define MAX77654_ICHGIN_LIM_Msk         (0x07 << 2)
+#define MAX77654_ICHGIN_LIM_95MA        (0x00 << 2) // 95mA
+#define MAX77654_ICHGIN_LIM_190MA       (0x01 << 2) // 190mA
+#define MAX77654_ICHGIN_LIM_285MA       (0x02 << 2) // 285mA
+#define MAX77654_ICHGIN_LIM_380MA       (0x03 << 2) // 380mA
+#define MAX77654_ICHGIN_LIM_475MA       (0x04 << 2) // 475mA
+#define MAX77654_I_PQ                   (0x01 << 1) // Prequalification charge current as % of I_FAST-CHG: 0=10%, 1=20%
+#define MAX77654_CHG_EN                 (0x01 << 0) // Battery Charger Enable: 0=disable, 1=enable
 
 #define MAX77654_CNFG_CHG_C             0x22 // RW
-#define MAX77654_CHG_PQ_Msk             (0x07u << 5)
-#define MAX77654_CHG_PQ_2V3             (0x00u << 5) // 2.3V
-#define MAX77654_CHG_PQ_2V4             (0x01u << 5) // 2.4V
-#define MAX77654_CHG_PQ_2V5             (0x02u << 5) // 2.5V
-#define MAX77654_CHG_PQ_2V6             (0x03u << 5) // 2.6V
-#define MAX77654_CHG_PQ_2V7             (0x04u << 5) // 2.7V
-#define MAX77654_CHG_PQ_2V8             (0x05u << 5) // 2.8V
-#define MAX77654_CHG_PQ_2V9             (0x06u << 5) // 2.9V
-#define MAX77654_CHG_PQ_3V0             (0x07u << 5) // 3.0V
-#define MAX77654_I_TERM_Msk             (0x03u << 3)
-#define MAX77654_I_TERM_5P              (0x00u << 3) // 5% of I_FAST-CHG
-#define MAX77654_I_TERM_7P5             (0x01u << 3) // 7.5% of I_FAST-CHG
-#define MAX77654_I_TERM_10P             (0x02u << 3) // 10% of I_FAST-CHG
-#define MAX77654_I_TERM_15P             (0x03u << 3) // 15% of I_FAST-CHG
-#define MAX77654_T_TOPOFF_Msk           (0x07u << 0)
-#define MAX77654_T_TOPOFF_0M            (0x00u << 0) // 0 minutes
-#define MAX77654_T_TOPOFF_5M            (0x01u << 0) // 5 minutes
-#define MAX77654_T_TOPOFF_10M           (0x02u << 0) // 10 minutes
-#define MAX77654_T_TOPOFF_15M           (0x03u << 0) // 15 minutes
-#define MAX77654_T_TOPOFF_20M           (0x04u << 0) // 20 minutes
-#define MAX77654_T_TOPOFF_25M           (0x05u << 0) // 25 minutes
-#define MAX77654_T_TOPOFF_30M           (0x06u << 0) // 30 minutes
-#define MAX77654_T_TOPOFF_35M           (0x07u << 0) // 35 minutes
+#define MAX77654_CHG_PQ_Msk             (0x07 << 5)
+#define MAX77654_CHG_PQ_2V3             (0x00 << 5) // 2.3V
+#define MAX77654_CHG_PQ_2V4             (0x01 << 5) // 2.4V
+#define MAX77654_CHG_PQ_2V5             (0x02 << 5) // 2.5V
+#define MAX77654_CHG_PQ_2V6             (0x03 << 5) // 2.6V
+#define MAX77654_CHG_PQ_2V7             (0x04 << 5) // 2.7V
+#define MAX77654_CHG_PQ_2V8             (0x05 << 5) // 2.8V
+#define MAX77654_CHG_PQ_2V9             (0x06 << 5) // 2.9V
+#define MAX77654_CHG_PQ_3V0             (0x07 << 5) // 3.0V
+#define MAX77654_I_TERM_Msk             (0x03 << 3)
+#define MAX77654_I_TERM_5P              (0x00 << 3) // 5% of I_FAST-CHG
+#define MAX77654_I_TERM_7P5             (0x01 << 3) // 7.5% of I_FAST-CHG
+#define MAX77654_I_TERM_10P             (0x02 << 3) // 10% of I_FAST-CHG
+#define MAX77654_I_TERM_15P             (0x03 << 3) // 15% of I_FAST-CHG
+#define MAX77654_T_TOPOFF_Msk           (0x07 << 0)
+#define MAX77654_T_TOPOFF_0M            (0x00 << 0) // 0 minutes
+#define MAX77654_T_TOPOFF_5M            (0x01 << 0) // 5 minutes
+#define MAX77654_T_TOPOFF_10M           (0x02 << 0) // 10 minutes
+#define MAX77654_T_TOPOFF_15M           (0x03 << 0) // 15 minutes
+#define MAX77654_T_TOPOFF_20M           (0x04 << 0) // 20 minutes
+#define MAX77654_T_TOPOFF_25M           (0x05 << 0) // 25 minutes
+#define MAX77654_T_TOPOFF_30M           (0x06 << 0) // 30 minutes
+#define MAX77654_T_TOPOFF_35M           (0x07 << 0) // 35 minutes
 
 #define MAX77654_CNFG_CHG_D             0x23 // RW
-#define MAX77654_TJ_Msk                 (0x07u << 5)
-#define MAX77654_VSYS_Msk               (0x1Fu << 0)
+#define MAX77654_TJ_Msk                 (0x07 << 5)
+#define MAX77654_VSYS_Msk               (0x1F << 0)
 
 #define MAX77654_CNFG_CHG_E             0x24 // RW
-#define MAX77654_CHG_CC_Msk             (0x3Fu << 2)
-#define MAX77654_T_FAST_CHG_Msk         (0x03u << 0)
-#define MAX77654_T_FAST_CHG_3H          (0x01u << 0) // 3 hours
-#define MAX77654_T_FAST_CHG_5H          (0x02u << 0) // 5 hours
-#define MAX77654_T_FAST_CHG_7H          (0x03u << 0) // 7 hours
+#define MAX77654_CHG_CC_Msk             (0x3F << 2)
+#define MAX77654_T_FAST_CHG_Msk         (0x03 << 0)
+#define MAX77654_T_FAST_CHG_3H          (0x01 << 0) // 3 hours
+#define MAX77654_T_FAST_CHG_5H          (0x02 << 0) // 5 hours
+#define MAX77654_T_FAST_CHG_7H          (0x03 << 0) // 7 hours
 
 #define MAX77654_CNFG_CHG_F             0x25 // RW
 #define MAX77654_CHG_CC_JEITA_Pos       2
-#define MAX77654_CHG_CC_JEITA_Msk       (0x3Fu << 2)
-#define MAX77654_THM_EN                 (0x01u << 1)
+#define MAX77654_CHG_CC_JEITA_Msk       (0x3F << 2)
+#define MAX77654_THM_EN                 (0x01 << 1)
 
 #define MAX77654_CNFG_CHG_G             0x26 // RW
-#define MAX77654_CHG_CV_Msk             (0x3Fu << 2)
-#define MAX77654_USBS                   (0x01u << 1) // USB suspend mode: 0=not suspended, draw current from adapter; 1=suspended, draw no current (charge off)
+#define MAX77654_CHG_CV_Msk             (0x3F << 2)
+#define MAX77654_USBS                   (0x01 << 1) // USB suspend mode: 0=not suspended, draw current from adapter; 1=suspended, draw no current (charge off)
 
 #define MAX77654_CNFG_CHG_H             0x27 // RW
-#define MAX77654_CHG_CV_JEITA_Msk       (0x3Fu << 2)
+#define MAX77654_CHG_CV_JEITA_Msk       (0x3F << 2)
 
 #define MAX77654_CNFG_CHG_I             0x28 // RW
-#define MAX77654_IMON_DISCHG_SCALE_Msk  (0x0Fu << 4)
-#define MAX77654_MUX_SEL_Msk            (0x0Fu << 0)
+#define MAX77654_IMON_DISCHG_SCALE_Msk  (0x0F << 4)
+#define MAX77654_MUX_SEL_Msk            (0x0F << 0)
 // values for MUX_SEL
 #define MAX77654_MUX_DISABLE            0x0 // disabled, AMUX is hi-Z
 #define MAX77654_MUX_CHGIN_V            0x1 // CHGIN voltage monitor
@@ -254,24 +254,24 @@
 #define MAX77654_CNFG_SBB0_B            0x2A // RW
 #define MAX77654_CNFG_SBB1_B            0x2C // RW
 #define MAX77654_CNFG_SBB2_B            0x2E // RW
-#define MAX77654_CNFG_SBB_B_MD          (0x01u << 6) // Operation Mode: 0=buck-boost, 1=buck
-#define MAX77654_CNFG_SBB_B_IP_Msk      (0x03u << 4)
-#define MAX77654_CNFG_SBB_B_IP_1000     (0x00u << 4)  // 1000mA output current limit
-#define MAX77654_CNFG_SBB_B_IP_750      (0x01u << 4)   // 750mA output current limit
-#define MAX77654_CNFG_SBB_B_IP_500      (0x02u << 4)   // 500mA output current limit
-#define MAX77654_CNFG_SBB_B_IP_333      (0x03u << 4)   // 333mA output current limit
-#define MAX77654_CNFG_SBB_B_ADE         (0x01u << 3) // Active Discharge Enable: 0=disabled, 1=enabled
-#define MAX77654_CNFG_SBB_B_EN_Msk      (0x07u << 0)
-#define MAX77654_CNFG_SBB_B_EN_SLOT0    (0x00u << 0)  // FPS slot 0
-#define MAX77654_CNFG_SBB_B_EN_SLOT1    (0x01u << 0)  // FPS slot 1
-#define MAX77654_CNFG_SBB_B_EN_SLOT2    (0x02u << 0)  // FPS slot 2
-#define MAX77654_CNFG_SBB_B_EN_SLOT3    (0x03u << 0)  // FPS slot 3
-#define MAX77654_CNFG_SBB_B_EN_OFF      (0x04u << 0)  // Off irrespective of FPS
-#define MAX77654_CNFG_SBB_B_EN_ON       (0x06u << 0)  // On irrespective of FPS
+#define MAX77654_CNFG_SBB_B_MD          (0x01 << 6) // Operation Mode: 0=buck-boost, 1=buck
+#define MAX77654_CNFG_SBB_B_IP_Msk      (0x03 << 4)
+#define MAX77654_CNFG_SBB_B_IP_1000     (0x00 << 4)  // 1000mA output current limit
+#define MAX77654_CNFG_SBB_B_IP_750      (0x01 << 4)   // 750mA output current limit
+#define MAX77654_CNFG_SBB_B_IP_500      (0x02 << 4)   // 500mA output current limit
+#define MAX77654_CNFG_SBB_B_IP_333      (0x03 << 4)   // 333mA output current limit
+#define MAX77654_CNFG_SBB_B_ADE         (0x01 << 3) // Active Discharge Enable: 0=disabled, 1=enabled
+#define MAX77654_CNFG_SBB_B_EN_Msk      (0x07 << 0)
+#define MAX77654_CNFG_SBB_B_EN_SLOT0    (0x00 << 0)  // FPS slot 0
+#define MAX77654_CNFG_SBB_B_EN_SLOT1    (0x01 << 0)  // FPS slot 1
+#define MAX77654_CNFG_SBB_B_EN_SLOT2    (0x02 << 0)  // FPS slot 2
+#define MAX77654_CNFG_SBB_B_EN_SLOT3    (0x03 << 0)  // FPS slot 3
+#define MAX77654_CNFG_SBB_B_EN_OFF      (0x04 << 0)  // Off irrespective of FPS
+#define MAX77654_CNFG_SBB_B_EN_ON       (0x06 << 0)  // On irrespective of FPS
 
 #define MAX77654_CNFG_SBB_TOP           0x2F // RW
 // ICHGIN_LIM_DEF                    bit 7 // Don't use, we always set to 0 for standard definitions
-#define MAX77654_CNFG_SBB_TOP_DRV       (0x03u << 0)
+#define MAX77654_CNFG_SBB_TOP_DRV       (0x03 << 0)
 
 // LDO Registers
 
@@ -285,15 +285,15 @@
 
 #define MAX77654_CNFG_LDO0_B            0x39 // RW
 #define MAX77654_CNFG_LDO1_B            0x3B // RW
-#define MAX77654_CNFG_LDO_B_MD          (0x01u << 4) // RW Mode: 0=LDO, 1=Load Switch
-#define MAX77654_CNFG_LDO_B_ADE         (0x01u << 3) // RW Active Discharge Enable: 0=disabled, 1=enabled
-#define MAX77654_CNFG_LDO_B_EN_Msk      (0x07u << 0)
-#define MAX77654_CNFG_LDO_B_EN_SLOT0    (0x00u << 0)
-#define MAX77654_CNFG_LDO_B_EN_SLOT1    (0x01u << 0)
-#define MAX77654_CNFG_LDO_B_EN_SLOT2    (0x02u << 0)
-#define MAX77654_CNFG_LDO_B_EN_SLOT3    (0x03u << 0)
-#define MAX77654_CNFG_LDO_B_EN_OFF      (0x04u << 0)
-#define MAX77654_CNFG_LDO_B_EN_ON       (0x06u << 0)
+#define MAX77654_CNFG_LDO_B_MD          (0x01 << 4) // RW Mode: 0=LDO, 1=Load Switch
+#define MAX77654_CNFG_LDO_B_ADE         (0x01 << 3) // RW Active Discharge Enable: 0=disabled, 1=enabled
+#define MAX77654_CNFG_LDO_B_EN_Msk      (0x07 << 0)
+#define MAX77654_CNFG_LDO_B_EN_SLOT0    (0x00 << 0)
+#define MAX77654_CNFG_LDO_B_EN_SLOT1    (0x01 << 0)
+#define MAX77654_CNFG_LDO_B_EN_SLOT2    (0x02 << 0)
+#define MAX77654_CNFG_LDO_B_EN_SLOT3    (0x03 << 0)
+#define MAX77654_CNFG_LDO_B_EN_OFF      (0x04 << 0)
+#define MAX77654_CNFG_LDO_B_EN_ON       (0x06 << 0)
 
 /**
  * Configure a register value over I2C.
