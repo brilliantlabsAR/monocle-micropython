@@ -156,7 +156,7 @@ uint32_t fpga_system_version(void)
 
 #define FPGA_CMD_CAMERA 0x10
 
-void fpga_set_camera_zoom(uint8_t zoom_level)
+void fpga_camera_zoom(uint8_t zoom_level)
 {
     fpga_cmd(FPGA_CMD_CAMERA, 0x02, &zoom_level, 1);
 }

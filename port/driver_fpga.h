@@ -36,7 +36,7 @@ void fpga_init(void);
 void fpga_deinit(void);
 uint32_t fpga_system_id(void);
 uint32_t fpga_system_version(void);
-void fpga_set_camera_zoom(uint8_t zoom_level);
+void fpga_camera_zoom(uint8_t zoom_level);
 void fpga_camera_stop(void);
 void fpga_camera_start(void);
 void fpga_camera_capture(void);

@@ -226,15 +226,17 @@ void ecx336cn_init(void)
     //ecx336cn_write_byte(0x00, 0x0F); // exit power saving mode, RGB
     ecx336cn_write_byte(0x00, 0x9F); // exit power saving mode, YUV
 
-    nrfx_systick_delay_ms(1);
+    nrfx_systick_delay_ms(100);
 
     // check that 0x29 changed from default 0x0A to 0x0B
     // and that 0x2A has been restored
-    LOG("[0x29]=0x%02X [0x2A]=0x%02X", ecx336cn_read_byte(0x29), ecx336cn_read_byte(0x2A));
+    uint8_t x29 = ecx336cn_read_byte(0x29);
+    nrfx_systick_delay_ms(100);
+    uint8_t x2A = ecx336cn_read_byte(0x2A);
     ASSERT(ecx336cn_read_byte(0x29) == 0x0B);
     ASSERT(ecx336cn_read_byte(0x2A) == 0xBE);
 
-    LOG("ready resolution=640x400");
+    LOG("ready resolution=640x400 [0x29]=0x%02X [0x2A]=0x%02X", x29, x2A);
 }
 
 void ecx336cn_deinit(void)
