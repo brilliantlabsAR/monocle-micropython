@@ -4,6 +4,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2015 - 2018 Glenn Ruben Bakke
+ * Copyright (c) 2022 Brilliant Labs Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,17 +26,16 @@
  */
 
 #include "py/builtin.h"
-#include "shared/runtime/pyexec.h"
-#include "py/runtime.h"
 #include "py/obj.h"
-#include "board_led.h"
-#include "nrf.h" // TODO: figure out where to put this import
+#include "py/runtime.h"
+#include "shared/runtime/pyexec.h"
+
+#include "board.h"
+//#include "nrf.h"
 
 STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_board) },
-    #if MICROPY_REPL_INFO
     { MP_ROM_QSTR(MP_QSTR_repl_info), MP_ROM_PTR(&pyb_set_repl_info_obj) },
-    #endif
     { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&board_led_type) }
 };
 

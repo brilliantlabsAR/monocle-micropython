@@ -28,15 +28,20 @@
 #include "py/runtime.h"
 
 #include "mphalport.h"
-#include "board_led.h"
 #include "mpconfigport.h"
 #include "driver_max77654.h"
+#include "board.h"
 
 typedef struct {
     mp_obj_base_t base;
     mp_uint_t id;
     bool bright;
 } board_led_obj_t;
+
+enum {
+    BOARD_LED_RED,
+    BOARD_LED_GREEN
+};
 
 static board_led_obj_t board_led_obj[] = {
     {{&board_led_type}, BOARD_LED_RED, false},

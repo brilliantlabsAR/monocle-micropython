@@ -5,6 +5,7 @@
  *
  * Copyright (c) 2016 Glenn Ruben Bakke
  * Copyright (c) 2018 Ayke van Laethem
+ * Copyright (c) 2022 Brilliant Labs Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,9 +32,7 @@
 #include "nrfx_rtc.h"
 #include "nrf_clock.h"
 
-#include "machine_rtcounter.h"
-
-#if MICROPY_PY_MACHINE_RTCOUNTER
+#include "machine.h"
 
 // Count every 125ms (~maximum prescaler setting)
 #define RTC_FREQUENCY (8UL)
@@ -60,25 +59,19 @@ typedef struct _machine_rtc_obj_t {
 STATIC const nrfx_rtc_t machine_rtc_instances[] = {
     NRFX_RTC_INSTANCE(0),
     NRFX_RTC_INSTANCE(1),
-#if defined(NRF52_SERIES)
     NRFX_RTC_INSTANCE(2),
-#endif
 };
 
 STATIC machine_rtc_config_t configs[MP_ARRAY_SIZE(machine_rtc_instances)];
 
 STATIC void interrupt_handler0(nrfx_rtc_int_type_t int_type);
 STATIC void interrupt_handler1(nrfx_rtc_int_type_t int_type);
-#if defined(NRF52_SERIES)
 STATIC void interrupt_handler2(nrfx_rtc_int_type_t int_type);
-#endif
 
 STATIC const machine_rtc_obj_t machine_rtc_obj[] = {
     {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[0], .handler=interrupt_handler0, .config=&configs[0]},
     {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[1], .handler=interrupt_handler1, .config=&configs[1]},
-#if defined(NRF52_SERIES)
     {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[2], .handler=interrupt_handler2, .config=&configs[2]},
-#endif
 };
 
 STATIC void interrupt_handler(size_t instance_id) {
@@ -103,11 +96,9 @@ STATIC void interrupt_handler1(nrfx_rtc_int_type_t int_type) {
     interrupt_handler(1);
 }
 
-#if defined(NRF52_SERIES)
 STATIC void interrupt_handler2(nrfx_rtc_int_type_t int_type) {
     interrupt_handler(2);
 }
-#endif
 
 void rtc_init0(void) {
 }
@@ -133,11 +124,7 @@ const nrfx_rtc_config_t machine_rtc_config = {
     .prescaler    = RTC_FREQ_TO_PRESCALER(RTC_FREQUENCY),
     .reliable     = 0,
     .tick_latency = 0, // ignored when reliable == 0
-    #ifdef NRF51
-    .interrupt_priority = 3,
-    #else
-    .interrupt_priority = 6,
-    #endif
+    .interrupt_priority = 7,
 };
 
 STATIC mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
@@ -155,12 +142,10 @@ STATIC mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, s
 
     int rtc_id = rtc_find(args[ARG_id].u_obj);
 
-    #if MICROPY_PY_TIME_TICKS
     if (rtc_id == 1) {
         // time module uses RTC1, prevent using it
         mp_raise_ValueError(MP_ERROR_TEXT("RTC1 reserved by time module"));
     }
-    #endif
 
     // const and non-const part of the RTC object.
     const machine_rtc_obj_t * self = &machine_rtc_obj[rtc_id];
@@ -271,6 +256,4 @@ MP_DEFINE_CONST_OBJ_TYPE(
     make_new, machine_rtc_make_new,
     print, rtc_print,
     locals_dict, &machine_rtc_locals_dict
-    );
-
-#endif // MICROPY_PY_MACHINE_RTCOUNTER
+);

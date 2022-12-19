@@ -5,6 +5,7 @@
  *
  * Copyright (c) 2013-2015 Damien P. George
  * Copyright (c) 2016 Glenn Ruben Bakke
+ * Copyright (c) 2022 Brilliant Labs Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,19 +35,10 @@
 #include "shared/runtime/pyexec.h"
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
-#include "driver_dfu.h"
-#include "machine.h"
-#include "machine_timer.h"
-#include "machine_battery.h"
-#include "machine_fpga.h"
-#include "machine_touch.h"
-#include "machine_power.h"
-#if MICROPY_PY_MACHINE_RTCOUNTER
-#include "machine_rtcounter.h"
-#endif
-#include "ble_gap.h"
 
-#if MICROPY_PY_MACHINE
+#include "driver_dfu.h"
+#include "ble_gap.h"
+#include "machine.h"
 
 #define PYB_RESET_HARD      (0)
 #define PYB_RESET_WDT       (1)
@@ -74,16 +66,8 @@ void machine_init(void)
         reset_cause = PYB_RESET_LOCKUP;
     } else if (state & POWER_RESETREAS_OFF_Msk) {
         reset_cause = PYB_RESET_POWER_ON;
-#if !defined(NRF9160_XXAA)
-    } else if (state & POWER_RESETREAS_LPCOMP_Msk) {
-        reset_cause = PYB_RESET_LPCOMP;
-#endif
     } else if (state & POWER_RESETREAS_DIF_Msk) {
         reset_cause = PYB_RESET_DIF;
-#if defined(NRF52_SERIES)
-    } else if (state & POWER_RESETREAS_NFC_Msk) {
-        reset_cause = PYB_RESET_NFC;
-#endif
     }
 
     // clear reset reason
@@ -187,13 +171,8 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_Battery),            MP_ROM_PTR(&machine_battery_type) },
     { MP_ROM_QSTR(MP_QSTR_FPGA),               MP_ROM_PTR(&machine_fpga_type) },
     { MP_ROM_QSTR(MP_QSTR_Power),              MP_ROM_PTR(&machine_power_type) },
-    
-#if MICROPY_PY_MACHINE_RTCOUNTER
     { MP_ROM_QSTR(MP_QSTR_RTCounter),          MP_ROM_PTR(&machine_rtcounter_type) },
-#endif
-#if MICROPY_PY_MACHINE_TIMER
     { MP_ROM_QSTR(MP_QSTR_Timer),              MP_ROM_PTR(&machine_timer_type) },
-#endif
     { MP_ROM_QSTR(MP_QSTR_HARD_RESET),         MP_ROM_INT(PYB_RESET_HARD) },
     { MP_ROM_QSTR(MP_QSTR_WDT_RESET),          MP_ROM_INT(PYB_RESET_WDT) },
     { MP_ROM_QSTR(MP_QSTR_SOFT_RESET),         MP_ROM_INT(PYB_RESET_SOFT) },
@@ -201,9 +180,6 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_PWRON_RESET),        MP_ROM_INT(PYB_RESET_POWER_ON) },
     { MP_ROM_QSTR(MP_QSTR_LPCOMP_RESET),       MP_ROM_INT(PYB_RESET_LPCOMP) },
     { MP_ROM_QSTR(MP_QSTR_DEBUG_IF_RESET),     MP_ROM_INT(PYB_RESET_DIF) },
-#if defined(NRF52_SERIES)
-    { MP_ROM_QSTR(MP_QSTR_NFC_RESET),          MP_ROM_INT(PYB_RESET_NFC) },
-#endif
 };
 
 STATIC MP_DEFINE_CONST_DICT(machine_module_globals, machine_module_globals_table);
@@ -214,5 +190,3 @@ const mp_obj_module_t mp_module_machine = {
 };
 
 MP_REGISTER_MODULE(MP_QSTR_umachine, mp_module_machine);
-
-#endif // MICROPY_PY_MACHINE

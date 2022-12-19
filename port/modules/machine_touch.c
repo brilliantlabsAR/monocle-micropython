@@ -29,7 +29,7 @@
 
 #include "driver_touch.h"
 
-#include "machine_touch.h"
+#include "machine.h"
 
 #define LOG NRFX_LOG_ERROR
 

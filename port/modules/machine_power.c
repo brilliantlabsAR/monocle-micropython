@@ -35,8 +35,7 @@
 #include "driver_ov5640.h"
 #include "driver_ecx336cn.h"
 #include "driver_max77654.h"
-
-#include "machine_power.h"
+#include "machine.h"
 
 enum {
     RESET_BOOTUP,

@@ -32,8 +32,7 @@
 #include "driver_fpga.h"
 #include "driver_spi.h"
 #include "driver_config.h"
-
-#include "machine_fpga.h"
+#include "machine.h"
 
 typedef struct {
     mp_obj_base_t base;

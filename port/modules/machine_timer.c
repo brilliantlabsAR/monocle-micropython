@@ -4,6 +4,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016 Glenn Ruben Bakke
+ * Copyright (c) 2022 Brilliant Labs Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,9 +30,7 @@
 
 #include "nrfx_timer.h"
 
-#include "machine_timer.h"
-
-#if MICROPY_PY_MACHINE_TIMER
+#include "machine.h"
 
 enum {
     TIMER_MODE_ONESHOT,
@@ -100,11 +99,9 @@ STATIC mp_obj_t machine_timer_make_new(const mp_obj_type_t *type, size_t n_args,
     // get static peripheral object
     int timer_id = timer_find(args[ARG_id].u_obj);
 
-#if BLUETOOTH_SD
     if (timer_id == 0) {
         mp_raise_ValueError(MP_ERROR_TEXT("Timer reserved by Bluetooth LE stack"));
     }
-#endif
 
     machine_timer_obj_t *self = (machine_timer_obj_t*)&machine_timer_obj[timer_id];
 
@@ -128,11 +125,7 @@ STATIC mp_obj_t machine_timer_make_new(const mp_obj_type_t *type, size_t n_args,
         .frequency = NRF_TIMER_FREQ_1MHz,
         .mode = NRF_TIMER_MODE_TIMER,
         .bit_width = NRF_TIMER_BIT_WIDTH_24,
-        #ifdef NRF51
-        .interrupt_priority = 3,
-        #else
-        .interrupt_priority = 6,
-        #endif
+        .interrupt_priority = 7,
         .p_context = self,
     };
 
@@ -223,6 +216,4 @@ MP_DEFINE_CONST_OBJ_TYPE(
     make_new, machine_timer_make_new,
     print, timer_print,
     locals_dict, &machine_timer_locals_dict
-    );
-
-#endif // MICROPY_PY_MACHINE_TIMER
+);

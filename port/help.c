@@ -32,11 +32,6 @@ const char nrf5_help_text[] =
     "\n"
     "For online help please visit http://micropython.org/help/.\n"
     "\n"
-    "Quick overview of commands for the board:\n"
-#if MICROPY_HW_HAS_LED
-    "  board.LED(n)    -- create an LED object for LED n (n=" HELP_TEXT_BOARD_LED ")\n"
-    "\n"
-#endif
     "Control commands:\n"
     "  CTRL-A        -- on a blank line, enter raw REPL mode\n"
     "  CTRL-B        -- on a blank line, enter normal REPL mode\n"

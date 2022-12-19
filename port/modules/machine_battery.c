@@ -33,6 +33,8 @@
 #include "driver_iqs620.h"
 #include "driver_battery.h"
 
+#include "machine.h"
+
 #define LOG NRFX_LOG_ERROR
 
 STATIC mp_obj_t machine_battery_level(void) {

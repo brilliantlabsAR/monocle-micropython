@@ -3,7 +3,8 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Glenn Ruben Bakke
+ * Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2015 - 2018 Glenn Ruben Bakke
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,11 +25,9 @@
  * THE SOFTWARE.
  */
 
-#ifndef RTCOUNTER_H__
-#define RTCOUNTER_H__
+#ifndef BOARD_H
+#define BOARD_H
 
-extern const mp_obj_type_t machine_rtcounter_type;
+extern const mp_obj_type_t board_led_type;
 
-void rtc_init0(void);
-
-#endif // RTCOUNTER_H__
+#endif

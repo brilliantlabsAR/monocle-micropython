@@ -28,58 +28,57 @@
 
 #include <alloca.h>
 
-#define MICROPY_HW_BOARD_NAME       "MK12"
-#define MICROPY_HW_MCU_NAME         "NRF52832"
-#define MICROPY_PY_SYS_PLATFORM     "BrilliantMonocle"
+#define MICROPY_HW_BOARD_NAME                   "MK12"
+#define MICROPY_HW_MCU_NAME                     "NRF52832"
+#define MICROPY_PY_SYS_PLATFORM                 "BrilliantMonocle"
 
-#define MICROPY_HW_ENABLE_RNG       1
-#define MICROPY_HW_HAS_LED          0
-#define MICROPY_HW_LED_COUNT        0
-#define MICROPY_HW_LED_PULLUP       0
-#define HELP_TEXT_BOARD_LED         "1,2,3,4"
+#define MICROPY_HW_ENABLE_RNG                   1
+#define MICROPY_HW_HAS_LED                      0
+#define MICROPY_HW_LED_COUNT                    0
+#define MICROPY_HW_LED_PULLUP                   0
 
 // Set default feature levels
-#define MICROPY_CONFIG_ROM_LEVEL (MICROPY_CONFIG_ROM_LEVEL_EXTRA_FEATURES)
+#define MICROPY_CONFIG_ROM_LEVEL                (MICROPY_CONFIG_ROM_LEVEL_EXTRA_FEATURES)
 
 // pre-defined shortcuts to use below in #if queries or define values
-#define CORE_FEAT (MICROPY_CONFIG_ROM_LEVEL >= MICROPY_CONFIG_ROM_LEVEL_CORE_FEATURES)
-#define EXTRA_FEAT (MICROPY_CONFIG_ROM_LEVEL >= MICROPY_CONFIG_ROM_LEVEL_EXTRA_FEATURES)
+#define CORE_FEAT   (MICROPY_CONFIG_ROM_LEVEL >= MICROPY_CONFIG_ROM_LEVEL_CORE_FEATURES)
+#define EXTRA_FEAT  (MICROPY_CONFIG_ROM_LEVEL >= MICROPY_CONFIG_ROM_LEVEL_EXTRA_FEATURES)
 
 // options to control how MicroPython is built
 
-#define MICROPY_VFS                        CORE_FEAT
-#define MICROPY_ENABLE_SOURCE_LINE         CORE_FEAT
-#define MICROPY_PY_ARRAY_SLICE_ASSIGN      CORE_FEAT
-#define MICROPY_PY_SYS_STDFILES            CORE_FEAT
-#define MICROPY_PY_UBINASCII               CORE_FEAT
-#define MICROPY_PY_NRF                     CORE_FEAT
+#define MICROPY_VFS                             CORE_FEAT
+#define MICROPY_ENABLE_SOURCE_LINE              CORE_FEAT
+#define MICROPY_PY_ARRAY_SLICE_ASSIGN           CORE_FEAT
+#define MICROPY_PY_SYS_STDFILES                 CORE_FEAT
+#define MICROPY_PY_UBINASCII                    CORE_FEAT
+#define MICROPY_PY_NRF                          CORE_FEAT
 #define MICROPY_HW_ENABLE_INTERNAL_FLASH_STORAGE CORE_FEAT
-#define MICROPY_EMIT_THUMB          EXTRA_FEAT
-#define MICROPY_EMIT_INLINE_THUMB   EXTRA_FEAT
-#define MICROPY_ALLOC_PATH_MAX      512
-#define MICROPY_PERSISTENT_CODE_LOAD 1
-#define MICROPY_READER_VFS          MICROPY_VFS
-#define MICROPY_ENABLE_GC           1
-#define MICROPY_ENABLE_FINALISER    1
-#define MICROPY_STACK_CHECK         1
-#define MICROPY_HELPER_REPL         1
-#define MICROPY_REPL_INFO           1
-#define MICROPY_REPL_AUTO_INDENT    1
-#define MICROPY_KBD_EXCEPTION       1
-#define MICROPY_LONGINT_IMPL        MICROPY_LONGINT_IMPL_MPZ
-#define MICROPY_FLOAT_IMPL          MICROPY_FLOAT_IMPL_FLOAT
+#define MICROPY_EMIT_THUMB                      EXTRA_FEAT
+#define MICROPY_EMIT_INLINE_THUMB               EXTRA_FEAT
+#define MICROPY_ALLOC_PATH_MAX                  512
+#define MICROPY_PERSISTENT_CODE_LOAD            1
+#define MICROPY_READER_VFS                      MICROPY_VFS
+#define MICROPY_ENABLE_GC                       1
+#define MICROPY_ENABLE_FINALISER                1
+#define MICROPY_STACK_CHECK                     1
+#define MICROPY_HELPER_REPL                     1
+#define MICROPY_REPL_INFO                       1
+#define MICROPY_REPL_AUTO_INDENT                1
+#define MICROPY_KBD_EXCEPTION                   1
+#define MICROPY_LONGINT_IMPL                    MICROPY_LONGINT_IMPL_MPZ
+#define MICROPY_FLOAT_IMPL                      MICROPY_FLOAT_IMPL_FLOAT
 
 // fatfs configuration used in ffconf.h
-#define MICROPY_FATFS_ENABLE_LFN       1
-#define MICROPY_FATFS_LFN_CODE_PAGE    437 /* 1=SFN/ANSI 437=LFN/U.S.OEM */
-#define MICROPY_FATFS_USE_LABEL        1
-#define MICROPY_FATFS_RPATH            2
-#define MICROPY_FATFS_MULTI_PARTITION  0
+#define MICROPY_FATFS_ENABLE_LFN                1
+#define MICROPY_FATFS_LFN_CODE_PAGE             437 /* 1=SFN/ANSI 437=LFN/U.S.OEM */
+#define MICROPY_FATFS_USE_LABEL                 1
+#define MICROPY_FATFS_RPATH                     2
+#define MICROPY_FATFS_MULTI_PARTITION           0
 
-#define MICROPY_FATFS_MAX_SS       4096
+#define MICROPY_FATFS_MAX_SS                    4096
 
 // Use port specific uos module rather than extmod variant.
-#define MICROPY_PY_UOS              0
+#define MICROPY_PY_UOS                          0
 
 #define MICROPY_STREAMS_NON_BLOCK               1
 #define MICROPY_MODULE_WEAK_LINKS               1
@@ -101,25 +100,9 @@
 #define MICROPY_PY_UTIME_MP_HAL                 1
 #define MICROPY_PY_MUSIC                        0
 #define MICROPY_PY_MACHINE                      1
-#define MICROPY_PY_MACHINE_ADC                  0
-#define MICROPY_PY_MACHINE_I2C                  0 // used by drivers
-#define MICROPY_PY_MACHINE_HW_SPI               0 // used by drivers
-#define MICROPY_PY_MACHINE_HW_PWM               0
-#define MICROPY_PY_MACHINE_SOFT_PWM             0
-#define MICROPY_PY_MACHINE_TIMER                1
-#define MICROPY_PY_MACHINE_RTCOUNTER            0
-#define MICROPY_PY_TIME_TICKS                   1
 
 #define MICROPY_ENABLE_EMERGENCY_EXCEPTION_BUF  1
 #define MICROPY_EMERGENCY_EXCEPTION_BUF_SIZE    0
-
-// Bluetooth SoftDevice specific configurations.
-#define MICROPY_PY_BLE                          1
-#define MICROPY_PY_BLE_NUS                      1
-#define BLUETOOTH_WEBBLUETOOTH_REPL             1
-#define MICROPY_PY_UBLUEPY                      1
-#define MICROPY_PY_UBLUEPY_PERIPHERAL           1
-#define MICROPY_PY_UBLUEPY_CENTRAL              0
 
 #define MICROPY_BUILTIN_METHOD_CHECK_SELF_ARG   1
 #define MICROPY_COMP_CONST                      1
