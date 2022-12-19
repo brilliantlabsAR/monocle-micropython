@@ -34,45 +34,16 @@
 #include "driver_config.h"
 #include "machine.h"
 
-typedef struct {
-    mp_obj_base_t base;
-} machine_fpga_obj_t;
-
-static machine_fpga_obj_t fpga_obj = {{&machine_fpga_type}};
-
-STATIC mp_obj_t machine_fpga_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args)
+STATIC mp_obj_t machine_fpga_spi_read(mp_obj_t addr_in)
 {
-    machine_fpga_obj_t *self = &fpga_obj;
-    (void)type;
-    (void)all_args;
-
-    // Parse args.
-    mp_arg_check_num(n_args, n_kw, 0, 0, false);
-
-    // Return the newly created object.
-    return MP_OBJ_FROM_PTR(self);
-}
-
-STATIC void machine_fpga_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
-{
-    (void)self_in;
-    (void)kind;
-
-    mp_printf(print, "FPGA()");
-}
-
-STATIC mp_obj_t machine_fpga_spi_read(mp_obj_t self_in, mp_obj_t addr_in)
-{
-    (void)self_in;
     (void)addr_in;
     // use spi_write instead, which fills the bytearray with the value read.
     return mp_const_notimplemented;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(machine_fpga_spi_read_obj, machine_fpga_spi_read);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_fpga_spi_read_obj, machine_fpga_spi_read);
 
-STATIC mp_obj_t machine_fpga_spi_write(mp_obj_t self_in, mp_obj_t bytearray_in)
+STATIC mp_obj_t machine_fpga_spi_write(mp_obj_t bytearray_in)
 {
-    (void)self_in;
     mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
 
     spi_chip_select(SPIM0_FPGA_CS_PIN);
@@ -80,11 +51,18 @@ STATIC mp_obj_t machine_fpga_spi_write(mp_obj_t self_in, mp_obj_t bytearray_in)
     spi_chip_deselect(SPIM0_FPGA_CS_PIN);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_2(machine_fpga_spi_write_obj, &machine_fpga_spi_write);
+MP_DEFINE_CONST_FUN_OBJ_1(machine_fpga_spi_write_obj, &machine_fpga_spi_write);
+
+STATIC mp_obj_t machine_fpga_status(void)
+{
+    return MP_OBJ_NEW_SMALL_INT(fpga_system_id());
+}
+MP_DEFINE_CONST_FUN_OBJ_0(machine_fpga_status_obj, &machine_fpga_status);
 
 STATIC const mp_rom_map_elem_t machine_fpga_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_spi_write),  MP_ROM_PTR(&machine_fpga_spi_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_spi_read),   MP_ROM_PTR(&machine_fpga_spi_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_status),     MP_ROM_PTR(&machine_fpga_status_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(machine_fpga_locals_dict, machine_fpga_locals_dict_table);
 
@@ -92,7 +70,5 @@ MP_DEFINE_CONST_OBJ_TYPE(
     machine_fpga_type,
     MP_QSTR_FPGA,
     MP_TYPE_FLAG_NONE,
-    make_new, machine_fpga_make_new,
-    print, machine_fpga_print,
     locals_dict, &machine_fpga_locals_dict
 );

@@ -190,6 +190,10 @@ void board_init(void)
     fpga_graphics_on();
     fpga_graphics_clear();;
     fpga_camera_on();
+    fpga_graphics_set_write_base(0x0000);
+    uint8_t buf[16] = {0};
+    fpga_graphics_write_data(buf, sizeof buf);
+    fpga_graphics_swap_buffer();
 
     board_test_num = 4;
 

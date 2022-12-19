@@ -93,7 +93,7 @@ int main(void)
 {
     // All logging through SEGGER RTT interface
     SEGGER_RTT_Init();
-    LOG("Monocle firmware "VERSION" "GIT_COMMIT);
+    LOG("Monocle firmware "BUILD_VERSION" "GIT_COMMIT);
 
     // Initialise BLE, also used for logging
     ble_init();
@@ -124,6 +124,7 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
+            fpga_graphics_swap_buffer();
         } else {
             stop = pyexec_friendly_repl();
         }

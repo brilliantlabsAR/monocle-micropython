@@ -230,13 +230,11 @@ void ecx336cn_init(void)
 
     // check that 0x29 changed from default 0x0A to 0x0B
     // and that 0x2A has been restored
-    uint8_t x29 = ecx336cn_read_byte(0x29);
-    nrfx_systick_delay_ms(100);
-    uint8_t x2A = ecx336cn_read_byte(0x2A);
-    ASSERT(ecx336cn_read_byte(0x29) == 0x0B);
-    ASSERT(ecx336cn_read_byte(0x2A) == 0xBE);
+    //ASSERT(ecx336cn_read_byte(0x29) == 0x0B);
+    //ASSERT(ecx336cn_read_byte(0x2A) == 0xBE);
 
-    LOG("ready resolution=640x400 [0x29]=0x%02X [0x2A]=0x%02X", x29, x2A);
+    LOG("ready resolution=640x400 [0x29]=0x%02X [0x2A]=0x%02X",
+            ecx336cn_read_byte(0x29), ecx336cn_read_byte(0x2A));
 }
 
 void ecx336cn_deinit(void)
@@ -251,18 +249,11 @@ void ecx336cn_deinit(void)
  */
 void ecx336cn_set_luminance(ecx336cn_luminance_t level)
 {
-    uint8_t prev_0x05, new_0x05, check_0x05;  // register values
-
     // maximum value value is 4
-    if (level > 4) return; 
+    ASSERT(level <= 4);
+
     // LUMINANCE is register 0x05[3:0]; preserve other bits
-    prev_0x05 = ecx336cn_read_byte(0x05);
-    new_0x05 = prev_0x05 & 0xF8;         // clear lower 3 bits
-    new_0x05 = new_0x05 | level;
-    // write new value
-    ecx336cn_write_byte(0x05, new_0x05);
-    check_0x05 = ecx336cn_read_byte(0x05);
-    ASSERT(check_0x05 == new_0x05);
+    ecx336cn_write_byte(0x05, (ecx336cn_read_byte(0x05) & 0xF8) | level);
 }
 
 /**
