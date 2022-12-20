@@ -41,8 +41,16 @@ STATIC mp_obj_t machine_camera_capture(void)
 }
 MP_DEFINE_CONST_FUN_OBJ_0(machine_camera_capture_obj, &machine_camera_capture);
 
+STATIC mp_obj_t machine_camera_stop(void)
+{
+    fpga_camera_stop();
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_0(machine_camera_stop_obj, &machine_camera_stop);
+
 STATIC const mp_rom_map_elem_t machine_camera_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_capture),     MP_ROM_PTR(&machine_camera_capture_obj) },
+    { MP_ROM_QSTR(MP_QSTR_stop),        MP_ROM_PTR(&machine_camera_stop_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(machine_camera_locals_dict, machine_camera_locals_dict_table);
 
