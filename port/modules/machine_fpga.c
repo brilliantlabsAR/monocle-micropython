@@ -34,15 +34,15 @@
 #include "driver_config.h"
 #include "machine.h"
 
-STATIC mp_obj_t machine_fpga_spi_read(mp_obj_t addr_in)
+STATIC mp_obj_t fpga_spi_read(mp_obj_t addr_in)
 {
     (void)addr_in;
     // use spi_write instead, which fills the bytearray with the value read.
     return mp_const_notimplemented;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_fpga_spi_read_obj, machine_fpga_spi_read);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(fpga_spi_read_obj, fpga_spi_read);
 
-STATIC mp_obj_t machine_fpga_spi_write(mp_obj_t bytearray_in)
+STATIC mp_obj_t fpga_spi_write(mp_obj_t bytearray_in)
 {
     mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
 
@@ -51,24 +51,24 @@ STATIC mp_obj_t machine_fpga_spi_write(mp_obj_t bytearray_in)
     spi_chip_deselect(SPIM0_FPGA_CS_PIN);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_1(machine_fpga_spi_write_obj, &machine_fpga_spi_write);
+MP_DEFINE_CONST_FUN_OBJ_1(fpga_spi_write_obj, &fpga_spi_write);
 
-STATIC mp_obj_t machine_fpga_status(void)
+STATIC mp_obj_t fpga_status(void)
 {
     return MP_OBJ_NEW_SMALL_INT(fpga_system_id());
 }
-MP_DEFINE_CONST_FUN_OBJ_0(machine_fpga_status_obj, &machine_fpga_status);
+MP_DEFINE_CONST_FUN_OBJ_0(fpga_status_obj, &fpga_status);
 
-STATIC const mp_rom_map_elem_t machine_fpga_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_spi_write),  MP_ROM_PTR(&machine_fpga_spi_write_obj) },
-    { MP_ROM_QSTR(MP_QSTR_spi_read),   MP_ROM_PTR(&machine_fpga_spi_read_obj) },
-    { MP_ROM_QSTR(MP_QSTR_status),     MP_ROM_PTR(&machine_fpga_status_obj) },
+STATIC const mp_rom_map_elem_t fpga_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_spi_write),  MP_ROM_PTR(&fpga_spi_write_obj) },
+    { MP_ROM_QSTR(MP_QSTR_spi_read),   MP_ROM_PTR(&fpga_spi_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_status),     MP_ROM_PTR(&fpga_status_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(machine_fpga_locals_dict, machine_fpga_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(fpga_locals_dict, fpga_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    machine_fpga_type,
+    fpga_type,
     MP_QSTR_FPGA,
     MP_TYPE_FLAG_NONE,
-    locals_dict, &machine_fpga_locals_dict
+    locals_dict, &fpga_locals_dict
 );

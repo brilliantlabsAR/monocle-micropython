@@ -50,7 +50,7 @@ void touch_callback(touch_state_t trigger)
     }
 }
 
-void machine_touch_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
+void touch_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
 {
     (void)self_in;
     (void)kind;
@@ -58,7 +58,7 @@ void machine_touch_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kin
     mp_printf(print, "Touch(%s)", machine_touch.callback ? "on" : "off");
 }
 
-STATIC mp_obj_t machine_touch_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args)
+STATIC mp_obj_t touch_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args)
 {
     // Allowed arguments table.
     static const mp_arg_t allowed_args[] = {
@@ -76,7 +76,7 @@ STATIC mp_obj_t machine_touch_make_new(const mp_obj_type_t *type, size_t n_args,
     return MP_OBJ_FROM_PTR(&machine_touch);
 }
 
-STATIC const mp_rom_map_elem_t machine_touch_locals_dict_table[] = {
+STATIC const mp_rom_map_elem_t touch_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_0_TAP),      MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_0_TAP) },
     { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_1_TAP),      MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_1_TAP) },
     { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_BOTH_TAP),   MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_BOTH_TAP) },
@@ -89,13 +89,13 @@ STATIC const mp_rom_map_elem_t machine_touch_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_0_1_SLIDE),  MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_0_1_SLIDE) },
     { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_1_0_SLIDE),  MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_1_0_SLIDE) },
 };
-STATIC MP_DEFINE_CONST_DICT(machine_touch_locals_dict, machine_touch_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(touch_locals_dict, touch_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    machine_touch_type,
+    touch_type,
     MP_QSTR_Touch,
     MP_TYPE_FLAG_NONE,
-    make_new, machine_touch_make_new,
-    print, machine_touch_print,
-    locals_dict, &machine_touch_locals_dict
+    make_new, touch_make_new,
+    print, touch_print,
+    locals_dict, &touch_locals_dict
 );

@@ -33,14 +33,14 @@
 #include "py/nlr.h"
 #include "py/obj.h"
 
-extern const mp_obj_type_t machine_touch_type;
-extern const mp_obj_type_t machine_timer_type;
-extern const mp_obj_type_t machine_rtcounter_type;
-extern const mp_obj_type_t machine_power_type;
-extern const mp_obj_type_t machine_fpga_type;
-extern const mp_obj_type_t machine_camera_type;
-extern const mp_obj_type_t machine_display_type;
-extern const mp_obj_type_t machine_battery_type;
+extern const mp_obj_type_t touch_type;
+extern const mp_obj_type_t timer_type;
+extern const mp_obj_type_t rtcounter_type;
+extern const mp_obj_type_t power_type;
+extern const mp_obj_type_t fpga_type;
+extern const mp_obj_type_t camera_type;
+extern const mp_obj_type_t display_type;
+extern const mp_obj_type_t battery_type;
 
 void machine_init(void);
 void rtc_init0(void);

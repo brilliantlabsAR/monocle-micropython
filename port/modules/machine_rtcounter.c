@@ -69,9 +69,9 @@ STATIC void interrupt_handler1(nrfx_rtc_int_type_t int_type);
 STATIC void interrupt_handler2(nrfx_rtc_int_type_t int_type);
 
 STATIC const machine_rtc_obj_t machine_rtc_obj[] = {
-    {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[0], .handler=interrupt_handler0, .config=&configs[0]},
-    {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[1], .handler=interrupt_handler1, .config=&configs[1]},
-    {{&machine_rtcounter_type}, .p_rtc = &machine_rtc_instances[2], .handler=interrupt_handler2, .config=&configs[2]},
+    {{&rtcounter_type}, .p_rtc = &machine_rtc_instances[0], .handler=interrupt_handler0, .config=&configs[0]},
+    {{&rtcounter_type}, .p_rtc = &machine_rtc_instances[1], .handler=interrupt_handler1, .config=&configs[1]},
+    {{&rtcounter_type}, .p_rtc = &machine_rtc_instances[2], .handler=interrupt_handler2, .config=&configs[2]},
 };
 
 STATIC void interrupt_handler(size_t instance_id) {
@@ -250,7 +250,7 @@ STATIC const mp_rom_map_elem_t machine_rtc_locals_dict_table[] = {
 STATIC MP_DEFINE_CONST_DICT(machine_rtc_locals_dict, machine_rtc_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    machine_rtcounter_type,
+    rtcounter_type,
     MP_QSTR_RTCounter,
     MP_TYPE_FLAG_NONE,
     make_new, machine_rtc_make_new,

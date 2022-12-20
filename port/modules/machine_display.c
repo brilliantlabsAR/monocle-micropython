@@ -34,7 +34,7 @@
 #include "driver_config.h"
 #include "machine.h"
 
-STATIC mp_obj_t machine_display_show(mp_obj_t bytearray_in)
+STATIC mp_obj_t display_show(mp_obj_t bytearray_in)
 {
     mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
 
@@ -43,16 +43,16 @@ STATIC mp_obj_t machine_display_show(mp_obj_t bytearray_in)
     fpga_graphics_on();
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_1(machine_display_show_obj, &machine_display_show);
+MP_DEFINE_CONST_FUN_OBJ_1(display_show_obj, &display_show);
 
-STATIC const mp_rom_map_elem_t machine_display_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_show),        MP_ROM_PTR(&machine_display_show_obj) },
+STATIC const mp_rom_map_elem_t display_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_show),        MP_ROM_PTR(&display_show_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(machine_display_locals_dict, machine_display_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(display_locals_dict, display_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    machine_display_type,
+    display_type,
     MP_QSTR_Display,
     MP_TYPE_FLAG_NONE,
-    locals_dict, &machine_display_locals_dict
+    locals_dict, &display_locals_dict
 );
