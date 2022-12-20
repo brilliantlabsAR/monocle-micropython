@@ -180,6 +180,8 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_Touch),               MP_ROM_PTR(&machine_touch_type) },
     { MP_ROM_QSTR(MP_QSTR_Battery),             MP_ROM_PTR(&machine_battery_type) },
     { MP_ROM_QSTR(MP_QSTR_FPGA),                MP_ROM_PTR(&machine_fpga_type) },
+    { MP_ROM_QSTR(MP_QSTR_FPGA),                MP_ROM_PTR(&machine_display_type) },
+    { MP_ROM_QSTR(MP_QSTR_FPGA),                MP_ROM_PTR(&machine_camera_type) },
     { MP_ROM_QSTR(MP_QSTR_Power),               MP_ROM_PTR(&machine_power_type) },
     { MP_ROM_QSTR(MP_QSTR_RTCounter),           MP_ROM_PTR(&machine_rtcounter_type) },
     { MP_ROM_QSTR(MP_QSTR_Timer),               MP_ROM_PTR(&machine_timer_type) },

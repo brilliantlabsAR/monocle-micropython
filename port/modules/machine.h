@@ -38,6 +38,8 @@ extern const mp_obj_type_t machine_timer_type;
 extern const mp_obj_type_t machine_rtcounter_type;
 extern const mp_obj_type_t machine_power_type;
 extern const mp_obj_type_t machine_fpga_type;
+extern const mp_obj_type_t machine_camera_type;
+extern const mp_obj_type_t machine_display_type;
 extern const mp_obj_type_t machine_battery_type;
 
 void machine_init(void);

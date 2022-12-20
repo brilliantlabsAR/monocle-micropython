@@ -124,7 +124,6 @@ int main(void)
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             stop = pyexec_raw_repl();
-            fpga_graphics_swap_buffer();
         } else {
             stop = pyexec_friendly_repl();
         }

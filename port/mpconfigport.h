@@ -136,6 +136,7 @@
 #define MICROPY_PY_BUILTINS_STR_COUNT           1
 #define MICROPY_PY_BUILTINS_STR_OP_MODULO       1
 #define MICROPY_PY_COLLECTIONS                  1
+#define MICROPY_PY_FRAMEBUF                     1
 #define MICROPY_PY_GC                           1
 #define MICROPY_PY_GENERATOR_PEND_THROW         1
 #define MICROPY_PY_MATH                         1

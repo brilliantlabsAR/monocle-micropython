@@ -133,11 +133,13 @@ SRC += modules/board.c
 SRC += modules/board_led.c
 SRC += modules/machine.c
 SRC += modules/machine_battery.c
+SRC += modules/machine_camera.c
+SRC += modules/machine_display.c
 SRC += modules/machine_fpga.c
+SRC += modules/machine_power.c
 SRC += modules/machine_rtcounter.c
 SRC += modules/machine_timer.c
 SRC += modules/machine_touch.c
-SRC += modules/machine_power.c
 
 SRC += ../segger_rtt/SEGGER_RTT.c
 SRC += ../segger_rtt/SEGGER_RTT_Syscalls_GCC.c
