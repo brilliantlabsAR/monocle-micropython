@@ -32,7 +32,7 @@
 #include "driver_fpga.h"
 #include "driver_spi.h"
 #include "driver_config.h"
-#include "machine.h"
+#include "modules.h"
 
 STATIC mp_obj_t fpga_spi_read(mp_obj_t addr_in)
 {

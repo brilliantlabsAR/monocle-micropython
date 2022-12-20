@@ -26,12 +26,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __MICROPY_INCLUDED_NRF5_MODMACHINE_H__
-#define __MICROPY_INCLUDED_NRF5_MODMACHINE_H__
-
-#include "py/mpstate.h"
-#include "py/nlr.h"
-#include "py/obj.h"
+#ifndef MODULE_H
+#define MODULE_H
 
 extern const mp_obj_type_t touch_type;
 extern const mp_obj_type_t timer_type;
@@ -41,15 +37,6 @@ extern const mp_obj_type_t fpga_type;
 extern const mp_obj_type_t camera_type;
 extern const mp_obj_type_t display_type;
 extern const mp_obj_type_t battery_type;
+extern const mp_obj_type_t led_type;
 
-void machine_init(void);
-void rtc_init0(void);
-void timer_init0(void);
-
-MP_DECLARE_CONST_FUN_OBJ_VAR_BETWEEN(machine_info_obj);
-MP_DECLARE_CONST_FUN_OBJ_0(machine_reset_obj);
-MP_DECLARE_CONST_FUN_OBJ_0(machine_lightsleep_obj);
-MP_DECLARE_CONST_FUN_OBJ_0(machine_deepsleep_obj);
-NORETURN mp_obj_t machine_bootloader(size_t n_args, const mp_obj_t *args);
-
-#endif // __MICROPY_INCLUDED_NRF5_MODMACHINE_H__
+#endif

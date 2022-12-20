@@ -30,27 +30,27 @@
 #include "mphalport.h"
 #include "mpconfigport.h"
 #include "driver_max77654.h"
-#include "board.h"
+#include "modules.h"
 
 typedef struct {
     mp_obj_base_t base;
     mp_uint_t id;
     bool bright;
-} board_led_obj_t;
+} led_obj_t;
 
 enum {
     BOARD_LED_RED,
     BOARD_LED_GREEN
 };
 
-static board_led_obj_t board_led_obj[] = {
-    {{&board_led_type}, BOARD_LED_RED, false},
-    {{&board_led_type}, BOARD_LED_GREEN, false},
+static led_obj_t led_obj[] = {
+    {{&led_type}, BOARD_LED_RED, false},
+    {{&led_type}, BOARD_LED_GREEN, false},
 };
 
-#define NUM_LEDS MP_ARRAY_SIZE(board_led_obj)
+#define NUM_LEDS MP_ARRAY_SIZE(led_obj)
 
-static void board_led_set(board_led_obj_t *led_obj, bool state) {
+static void led_set(led_obj_t *led_obj, bool state) {
     switch (led_obj->id) {
         case BOARD_LED_RED:
             max77654_led_red(state);
@@ -64,8 +64,8 @@ static void board_led_set(board_led_obj_t *led_obj, bool state) {
 
 // MicroPython bindings
 
-void board_led_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
-    board_led_obj_t *self = self_in;
+void led_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+    led_obj_t *self = self_in;
 
     mp_printf(print, "LED(%lu, %s)", self->id, self->bright ? "on" : "off");
 }
@@ -74,7 +74,7 @@ void board_led_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t 
 /// Create an LED object associated with the given LED:
 ///
 ///   - `id` is the LED number, 1-4.
-STATIC mp_obj_t board_led_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+STATIC mp_obj_t led_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check arguments
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
 
@@ -87,37 +87,37 @@ STATIC mp_obj_t board_led_make_new(const mp_obj_type_t *type, size_t n_args, siz
     }
 
     // return static led object
-    return (mp_obj_t)&board_led_obj[id - 1];
+    return (mp_obj_t)&led_obj[id - 1];
 }
 
 /// \method on()
 /// Turn the LED on.
-mp_obj_t board_led_on(mp_obj_t self_in) {
-    board_led_obj_t *self = self_in;
-    board_led_set(self, true);
+mp_obj_t led_on(mp_obj_t self_in) {
+    led_obj_t *self = self_in;
+    led_set(self, true);
     return mp_const_none;
 }
 
 /// \method off()
 /// Turn the LED off.
-mp_obj_t board_led_off(mp_obj_t self_in) {
-    board_led_obj_t *self = self_in;
-    board_led_set(self, false);
+mp_obj_t led_off(mp_obj_t self_in) {
+    led_obj_t *self = self_in;
+    led_set(self, false);
     return mp_const_none;
 }
 
 /// \method toggle()
 /// Toggle the LED between on and off.
-mp_obj_t board_led_toggle(mp_obj_t self_in) {
-    board_led_obj_t *self = self_in;
+mp_obj_t led_toggle(mp_obj_t self_in) {
+    led_obj_t *self = self_in;
 
-    board_led_set(self, !self->bright);
+    led_set(self, !self->bright);
     return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(led_obj_on_obj, board_led_on);
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(led_obj_off_obj, board_led_off);
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(led_obj_toggle_obj, board_led_toggle);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(led_obj_on_obj, led_on);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(led_obj_off_obj, led_off);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(led_obj_toggle_obj, led_toggle);
 
 STATIC const mp_rom_map_elem_t led_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_on), MP_ROM_PTR(&led_obj_on_obj) },
@@ -128,10 +128,10 @@ STATIC const mp_rom_map_elem_t led_locals_dict_table[] = {
 STATIC MP_DEFINE_CONST_DICT(led_locals_dict, led_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    board_led_type,
+    led_type,
     MP_QSTR_LED,
     MP_TYPE_FLAG_NONE,
-    make_new, board_led_make_new,
-    print, board_led_print,
+    make_new, led_make_new,
+    print, led_print,
     locals_dict, &led_locals_dict
 );

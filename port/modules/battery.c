@@ -21,38 +21,35 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <stdint.h>
 #include <stddef.h>
 
 #include "py/obj.h"
-#include "py/objarray.h"
+#include "py/qstr.h"
 #include "py/runtime.h"
 
 #include "nrfx_log.h"
 
-#include "driver_fpga.h"
-#include "driver_spi.h"
-#include "driver_config.h"
-#include "machine.h"
+#include "driver_iqs620.h"
+#include "driver_battery.h"
 
-STATIC mp_obj_t display_show(mp_obj_t bytearray_in)
-{
-    mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
+#include "modules.h"
 
-    fpga_graphics_set_write_base(0x0000);
-    fpga_graphics_write_data(bytearray->items, bytearray->len);
-    fpga_graphics_on();
-    return mp_const_none;
+#define LOG NRFX_LOG_ERROR
+
+STATIC mp_obj_t battery_level(void) {
+    return MP_OBJ_NEW_SMALL_INT(battery_get_percent());
 }
-MP_DEFINE_CONST_FUN_OBJ_1(display_show_obj, &display_show);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(battery_level_obj, battery_level);
 
-STATIC const mp_rom_map_elem_t display_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_show),        MP_ROM_PTR(&display_show_obj) },
+STATIC const mp_rom_map_elem_t battery_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_level),     MP_ROM_PTR(&battery_level_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(display_locals_dict, display_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(battery_locals_dict, battery_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    display_type,
-    MP_QSTR_Display,
+    battery_type,
+    MP_QSTR_Battery,
     MP_TYPE_FLAG_NONE,
-    locals_dict, &display_locals_dict
+    locals_dict, &battery_locals_dict
 );

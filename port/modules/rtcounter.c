@@ -32,7 +32,7 @@
 #include "nrfx_rtc.h"
 #include "nrf_clock.h"
 
-#include "machine.h"
+#include "modules.h"
 
 // Count every 125ms (~maximum prescaler setting)
 #define RTC_FREQUENCY (8UL)

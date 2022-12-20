@@ -30,7 +30,7 @@
 
 #include "nrfx_timer.h"
 
-#include "machine.h"
+#include "modules.h"
 
 enum {
     TIMER_MODE_ONESHOT,

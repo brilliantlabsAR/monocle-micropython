@@ -129,17 +129,17 @@ SRC += driver_spi.c
 SRC += driver_timer.c
 SRC += driver_touch.c
 
+SRC += modules/battery.c
 SRC += modules/board.c
-SRC += modules/board_led.c
+SRC += modules/camera.c
+SRC += modules/display.c
+SRC += modules/fpga.c
+SRC += modules/led.c
 SRC += modules/machine.c
-SRC += modules/machine_battery.c
-SRC += modules/machine_camera.c
-SRC += modules/machine_display.c
-SRC += modules/machine_fpga.c
-SRC += modules/machine_power.c
-SRC += modules/machine_rtcounter.c
-SRC += modules/machine_timer.c
-SRC += modules/machine_touch.c
+SRC += modules/power.c
+SRC += modules/rtcounter.c
+SRC += modules/timer.c
+SRC += modules/touch.c
 
 SRC += ../segger_rtt/SEGGER_RTT.c
 SRC += ../segger_rtt/SEGGER_RTT_Syscalls_GCC.c

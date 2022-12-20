@@ -32,31 +32,27 @@
 #include "driver_fpga.h"
 #include "driver_spi.h"
 #include "driver_config.h"
-#include "machine.h"
+#include "modules.h"
 
-STATIC mp_obj_t camera_capture(void)
+STATIC mp_obj_t display_show(mp_obj_t bytearray_in)
 {
-    fpga_camera_capture();
+    mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
+
+    fpga_graphics_set_write_base(0x0000);
+    fpga_graphics_write_data(bytearray->items, bytearray->len);
+    fpga_graphics_on();
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_0(camera_capture_obj, &camera_capture);
+MP_DEFINE_CONST_FUN_OBJ_1(display_show_obj, &display_show);
 
-STATIC mp_obj_t camera_stop(void)
-{
-    fpga_camera_stop();
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_0(camera_stop_obj, &camera_stop);
-
-STATIC const mp_rom_map_elem_t camera_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_capture),     MP_ROM_PTR(&camera_capture_obj) },
-    { MP_ROM_QSTR(MP_QSTR_stop),        MP_ROM_PTR(&camera_stop_obj) },
+STATIC const mp_rom_map_elem_t display_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_show),        MP_ROM_PTR(&display_show_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(camera_locals_dict, camera_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(display_locals_dict, display_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    camera_type,
-    MP_QSTR_Camera,
+    display_type,
+    MP_QSTR_Display,
     MP_TYPE_FLAG_NONE,
-    locals_dict, &camera_locals_dict
+    locals_dict, &display_locals_dict
 );

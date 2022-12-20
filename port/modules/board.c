@@ -30,21 +30,17 @@
 #include "py/runtime.h"
 #include "shared/runtime/pyexec.h"
 
-#include "board.h"
-//#include "nrf.h"
+#include "modules.h"
 
 STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_board) },
-    { MP_ROM_QSTR(MP_QSTR_repl_info), MP_ROM_PTR(&pyb_set_repl_info_obj) },
-    { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&board_led_type) }
+    { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_board) },
+    { MP_ROM_QSTR(MP_QSTR_repl_info),   MP_ROM_PTR(&pyb_set_repl_info_obj) },
+    { MP_ROM_QSTR(MP_QSTR_LED),         MP_ROM_PTR(&led_type) }
 };
-
-
 STATIC MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);
 
 const mp_obj_module_t board_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t*)&board_module_globals,
 };
-
 MP_REGISTER_MODULE(MP_QSTR_board, board_module);

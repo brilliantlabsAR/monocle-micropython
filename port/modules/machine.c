@@ -40,7 +40,7 @@
 
 #include "driver_dfu.h"
 #include "ble_gap.h"
-#include "machine.h"
+#include "modules.h"
 
 /**
  * Current version as a string object.
