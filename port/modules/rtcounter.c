@@ -32,7 +32,7 @@
 #include "nrfx_rtc.h"
 #include "nrf_clock.h"
 
-#include "modules.h"
+#include "machine.h"
 
 // Count every 125ms (~maximum prescaler setting)
 #define RTC_FREQUENCY (8UL)
@@ -81,10 +81,10 @@ STATIC void interrupt_handler(size_t instance_id) {
         mp_call_function_1((mp_obj_t)config->callback, (mp_obj_t)self);
     }
     if (config->period == 0) {
-        nrfx_rtc_cc_disable(self->p_rtc, 0);
+        //nrfx_rtc_cc_disable(self->p_rtc, 0);
     } else { // periodic
         uint32_t val = nrfx_rtc_counter_get(self->p_rtc) + config->period;
-        nrfx_rtc_cc_set(self->p_rtc, 0, val, true);
+        //nrfx_rtc_cc_set(self->p_rtc, 0, val, true);
     }
 }
 
@@ -174,12 +174,12 @@ STATIC mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, s
     }
 
     // Make sure it's uninitialized.
-    nrfx_rtc_uninit(self->p_rtc);
-    nrfx_rtc_counter_clear(self->p_rtc);
+    //nrfx_rtc_uninit(self->p_rtc);
+    //nrfx_rtc_counter_clear(self->p_rtc);
 
     // Initialize and set the correct IRQ.
-    nrfx_rtc_init(self->p_rtc, &machine_rtc_config, self->handler);
-    nrfx_rtc_cc_set(self->p_rtc, 0 /*channel*/, args[ARG_period].u_int, true /*enable irq*/);
+    //nrfx_rtc_init(self->p_rtc, &machine_rtc_config, self->handler);
+    //nrfx_rtc_cc_set(self->p_rtc, 0 /*channel*/, args[ARG_period].u_int, true /*enable irq*/);
 
     return MP_OBJ_FROM_PTR(self);
 }
@@ -191,7 +191,7 @@ STATIC mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, s
 STATIC mp_obj_t machine_rtc_start(mp_obj_t self_in) {
     machine_rtc_obj_t * self = MP_OBJ_TO_PTR(self_in);
 
-    nrfx_rtc_enable(self->p_rtc);
+    //nrfx_rtc_enable(self->p_rtc);
 
     return mp_const_none;
 }
@@ -228,7 +228,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_rtc_counter_obj, machine_rtc_counter);
 STATIC mp_obj_t machine_rtc_deinit(mp_obj_t self_in) {
     machine_rtc_obj_t * self = MP_OBJ_TO_PTR(self_in);
 
-    nrfx_rtc_uninit(self->p_rtc);
+    //nrfx_rtc_uninit(self->p_rtc);
 
     return mp_const_none;
 }

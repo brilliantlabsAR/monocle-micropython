@@ -32,7 +32,6 @@
 #include "driver_fpga.h"
 #include "driver_spi.h"
 #include "driver_config.h"
-#include "modules.h"
 
 STATIC mp_obj_t camera_capture(void)
 {
@@ -48,15 +47,14 @@ STATIC mp_obj_t camera_stop(void)
 }
 MP_DEFINE_CONST_FUN_OBJ_0(camera_stop_obj, &camera_stop);
 
-STATIC const mp_rom_map_elem_t camera_locals_dict_table[] = {
+STATIC const mp_rom_map_elem_t camera_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_capture),     MP_ROM_PTR(&camera_capture_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop),        MP_ROM_PTR(&camera_stop_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(camera_locals_dict, camera_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(camera_module_globals, camera_module_globals_table);
 
-MP_DEFINE_CONST_OBJ_TYPE(
-    camera_type,
-    MP_QSTR_Camera,
-    MP_TYPE_FLAG_NONE,
-    locals_dict, &camera_locals_dict
-);
+const mp_obj_module_t camera_module = {
+    .base = { &mp_type_module },
+    .globals = (mp_obj_dict_t*)&camera_module_globals,
+};
+MP_REGISTER_MODULE(MP_QSTR_board, camera_module);

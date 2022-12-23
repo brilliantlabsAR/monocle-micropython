@@ -129,8 +129,6 @@ SRC += driver_spi.c
 SRC += driver_timer.c
 SRC += driver_touch.c
 
-SRC += modules/battery.c
-SRC += modules/board.c
 SRC += modules/camera.c
 SRC += modules/display.c
 SRC += modules/fpga.c

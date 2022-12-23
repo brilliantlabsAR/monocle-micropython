@@ -32,7 +32,6 @@
 #include "driver_fpga.h"
 #include "driver_spi.h"
 #include "driver_config.h"
-#include "modules.h"
 
 STATIC mp_obj_t fpga_spi_read(mp_obj_t addr_in)
 {
@@ -59,16 +58,15 @@ STATIC mp_obj_t fpga_status(void)
 }
 MP_DEFINE_CONST_FUN_OBJ_0(fpga_status_obj, &fpga_status);
 
-STATIC const mp_rom_map_elem_t fpga_locals_dict_table[] = {
+STATIC const mp_rom_map_elem_t fpga_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_spi_write),  MP_ROM_PTR(&fpga_spi_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_spi_read),   MP_ROM_PTR(&fpga_spi_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_status),     MP_ROM_PTR(&fpga_status_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(fpga_locals_dict, fpga_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(fpga_module_globals, fpga_module_globals_table);
 
-MP_DEFINE_CONST_OBJ_TYPE(
-    fpga_type,
-    MP_QSTR_FPGA,
-    MP_TYPE_FLAG_NONE,
-    locals_dict, &fpga_locals_dict
-);
+const mp_obj_module_t fpga_module = {
+    .base = { &mp_type_module },
+    .globals = (mp_obj_dict_t*)&fpga_module_globals,
+};
+MP_REGISTER_MODULE(MP_QSTR_board, fpga_module);

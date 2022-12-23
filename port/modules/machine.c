@@ -40,7 +40,7 @@
 
 #include "driver_dfu.h"
 #include "ble_gap.h"
-#include "modules.h"
+#include "machine.h"
 
 /**
  * Current version as a string object.
@@ -97,12 +97,6 @@ STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),            MP_ROM_QSTR(MP_QSTR_umachine) },
 
     // classes for each hardware
-    { MP_ROM_QSTR(MP_QSTR_Touch),               MP_ROM_PTR(&touch_type) },
-    { MP_ROM_QSTR(MP_QSTR_Battery),             MP_ROM_PTR(&battery_type) },
-    { MP_ROM_QSTR(MP_QSTR_FPGA),                MP_ROM_PTR(&fpga_type) },
-    { MP_ROM_QSTR(MP_QSTR_Display),             MP_ROM_PTR(&display_type) },
-    { MP_ROM_QSTR(MP_QSTR_Camera),              MP_ROM_PTR(&camera_type) },
-    { MP_ROM_QSTR(MP_QSTR_Power),               MP_ROM_PTR(&power_type) },
     { MP_ROM_QSTR(MP_QSTR_RTCounter),           MP_ROM_PTR(&rtcounter_type) },
     { MP_ROM_QSTR(MP_QSTR_Timer),               MP_ROM_PTR(&timer_type) },
 

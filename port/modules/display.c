@@ -32,7 +32,6 @@
 #include "driver_fpga.h"
 #include "driver_spi.h"
 #include "driver_config.h"
-#include "modules.h"
 
 STATIC mp_obj_t display_show(mp_obj_t bytearray_in)
 {
@@ -45,14 +44,13 @@ STATIC mp_obj_t display_show(mp_obj_t bytearray_in)
 }
 MP_DEFINE_CONST_FUN_OBJ_1(display_show_obj, &display_show);
 
-STATIC const mp_rom_map_elem_t display_locals_dict_table[] = {
+STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_show),        MP_ROM_PTR(&display_show_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(display_locals_dict, display_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(display_module_globals, display_module_globals_table);
 
-MP_DEFINE_CONST_OBJ_TYPE(
-    display_type,
-    MP_QSTR_Display,
-    MP_TYPE_FLAG_NONE,
-    locals_dict, &display_locals_dict
-);
+const mp_obj_module_t display_module = {
+    .base = { &mp_type_module },
+    .globals = (mp_obj_dict_t*)&display_module_globals,
+};
+MP_REGISTER_MODULE(MP_QSTR_board, display_module);

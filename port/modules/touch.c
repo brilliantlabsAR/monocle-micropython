@@ -28,7 +28,6 @@
 #include "nrfx_log.h"
 
 #include "driver_touch.h"
-#include "modules.h"
 
 #define LOG NRFX_LOG_ERROR
 
@@ -76,7 +75,7 @@ STATIC mp_obj_t touch_make_new(const mp_obj_type_t *type, size_t n_args, size_t 
     return MP_OBJ_FROM_PTR(&machine_touch);
 }
 
-STATIC const mp_rom_map_elem_t touch_locals_dict_table[] = {
+STATIC const mp_rom_map_elem_t touch_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_0_TAP),      MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_0_TAP) },
     { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_1_TAP),      MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_1_TAP) },
     { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_BOTH_TAP),   MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_BOTH_TAP) },
@@ -89,13 +88,10 @@ STATIC const mp_rom_map_elem_t touch_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_0_1_SLIDE),  MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_0_1_SLIDE) },
     { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_1_0_SLIDE),  MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_1_0_SLIDE) },
 };
-STATIC MP_DEFINE_CONST_DICT(touch_locals_dict, touch_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(touch_module_globals, touch_module_globals_table);
 
-MP_DEFINE_CONST_OBJ_TYPE(
-    touch_type,
-    MP_QSTR_Touch,
-    MP_TYPE_FLAG_NONE,
-    make_new, touch_make_new,
-    print, touch_print,
-    locals_dict, &touch_locals_dict
-);
+const mp_obj_module_t touch_module = {
+    .base = { &mp_type_module },
+    .globals = (mp_obj_dict_t*)&touch_module_globals,
+};
+MP_REGISTER_MODULE(MP_QSTR_board, touch_module);

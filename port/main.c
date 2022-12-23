@@ -123,7 +123,7 @@ int main(void)
     // REPL mode can change, or it can request a soft reset
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
-            stop = pyexec_raw_repl();
+            stop = pyexec_raw_repl(); 
         } else {
             stop = pyexec_friendly_repl();
         }

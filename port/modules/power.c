@@ -36,7 +36,7 @@
 #include "driver_ov5640.h"
 #include "driver_ecx336cn.h"
 #include "driver_max77654.h"
-#include "modules.h"
+#include "driver_battery.h"
 
 #define PYB_RESET_HARD      (0)
 #define PYB_RESET_WDT       (1)
@@ -89,6 +89,11 @@ void power_init(void)
     NRF_POWER->RESETREAS = (1 << reset_cause);
 }
 
+STATIC mp_obj_t power_battery_level(void) {
+    return MP_OBJ_NEW_SMALL_INT(battery_get_percent());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(power_battery_level_obj, power_battery_level);
+
 STATIC mp_obj_t power_reset_cause(void)
 {
     return MP_OBJ_NEW_SMALL_INT(reset_cause);
@@ -123,30 +128,16 @@ STATIC mp_obj_t power_deepsleep(void)
 }
 MP_DEFINE_CONST_FUN_OBJ_0(power_deepsleep_obj, power_deepsleep);
 
-STATIC mp_obj_t power_enable_irq(void)
-{
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(power_enable_irq_obj, power_enable_irq);
-
-// Resets the board in a manner similar to pushing the external RESET button.
-STATIC mp_obj_t power_disable_irq(void)
-{
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(power_disable_irq_obj, power_disable_irq);
-
-STATIC const mp_rom_map_elem_t power_locals_dict_table[] = {
+STATIC const mp_rom_map_elem_t power_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_hibernate),           MP_ROM_PTR(&power_hibernate_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset),               MP_ROM_PTR(&power_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset_cause),         MP_ROM_PTR(&power_reset_cause_obj) },
     { MP_ROM_QSTR(MP_QSTR_shutdown),            MP_ROM_PTR(&power_shutdown_obj) },
+    { MP_ROM_QSTR(MP_QSTR_battery_level),       MP_ROM_PTR(&power_battery_level_obj) },
 
-    // tmp
+    // TODO: adjust the naming as per API, and check that the feature match
     { MP_ROM_QSTR(MP_QSTR_reset),               MP_ROM_PTR(&power_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_soft_reset),          MP_ROM_PTR(&power_soft_reset_obj) },
-    { MP_ROM_QSTR(MP_QSTR_enable_irq),          MP_ROM_PTR(&power_enable_irq_obj) },
-    { MP_ROM_QSTR(MP_QSTR_disable_irq),         MP_ROM_PTR(&power_disable_irq_obj) },
     { MP_ROM_QSTR(MP_QSTR_idle),                MP_ROM_PTR(&power_lightsleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_sleep),               MP_ROM_PTR(&power_lightsleep_obj) },
     { MP_ROM_QSTR(MP_QSTR_lightsleep),          MP_ROM_PTR(&power_lightsleep_obj) },
@@ -165,11 +156,10 @@ STATIC const mp_rom_map_elem_t power_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_RESET_SOFTWARE),      MP_OBJ_NEW_SMALL_INT(RESET_SOFTWARE) },
     { MP_ROM_QSTR(MP_QSTR_RESET_OTHER),         MP_OBJ_NEW_SMALL_INT(RESET_OTHER) },
 };
-STATIC MP_DEFINE_CONST_DICT(power_locals_dict, power_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(power_module_globals, power_module_globals_table);
 
-MP_DEFINE_CONST_OBJ_TYPE(
-    power_type,
-    MP_QSTR_Power,
-    MP_TYPE_FLAG_NONE,
-    locals_dict, &power_locals_dict
-);
+const mp_obj_module_t power_module = {
+    .base = { &mp_type_module },
+    .globals = (mp_obj_dict_t*)&power_module_globals,
+};
+MP_REGISTER_MODULE(MP_QSTR_board, power_module);

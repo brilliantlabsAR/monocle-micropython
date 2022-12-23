@@ -30,7 +30,7 @@
 
 #include "nrfx_timer.h"
 
-#include "modules.h"
+#include "machine.h"
 
 enum {
     TIMER_MODE_ONESHOT,
@@ -54,7 +54,7 @@ STATIC const timer_obj_t timer_obj[] = {
 
 void timer_init0(void) {
     for (int i = 0; i < MP_ARRAY_SIZE(timer_obj); i++) {
-        nrfx_timer_uninit(&timer_obj[i].p_instance);
+        //nrfx_timer_uninit(&timer_obj[i].p_instance);
     }
 }
 
@@ -131,18 +131,18 @@ STATIC mp_obj_t timer_make_new(const mp_obj_type_t *type, size_t n_args, size_t 
 
     // Initialize the drive.
     // When it is already initialized, this is a no-op.
-    nrfx_timer_init(&self->p_instance, &config, timer_event_handler);
+    //nrfx_timer_init(&self->p_instance, &config, timer_event_handler);
 
     // Configure channel 0.
     nrf_timer_short_mask_t short_mask = NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK |
         ((args[ARG_mode].u_int == TIMER_MODE_ONESHOT) ? NRF_TIMER_SHORT_COMPARE0_STOP_MASK : 0);
     bool enable_interrupts = true;
-    nrfx_timer_extended_compare(
-            &self->p_instance,
-            NRF_TIMER_CC_CHANNEL0,
-            args[ARG_period].u_int,
-            short_mask,
-            enable_interrupts);
+    //nrfx_timer_extended_compare(
+    //        &self->p_instance,
+    //        NRF_TIMER_CC_CHANNEL0,
+    //        args[ARG_period].u_int,
+    //        short_mask,
+    //        enable_interrupts);
 
     return MP_OBJ_FROM_PTR(self);
 }
@@ -165,7 +165,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(timer_period_obj, timer_period);
 STATIC mp_obj_t timer_start(mp_obj_t self_in) {
     timer_obj_t * self = MP_OBJ_TO_PTR(self_in);
 
-    nrfx_timer_enable(&self->p_instance);
+    //nrfx_timer_enable(&self->p_instance);
 
     return mp_const_none;
 }
@@ -177,7 +177,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(timer_start_obj, timer_start);
 STATIC mp_obj_t timer_stop(mp_obj_t self_in) {
     timer_obj_t * self = MP_OBJ_TO_PTR(self_in);
 
-    nrfx_timer_disable(&self->p_instance);
+    //nrfx_timer_disable(&self->p_instance);
 
     return mp_const_none;
 }
@@ -189,7 +189,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(timer_stop_obj, timer_stop);
 STATIC mp_obj_t timer_deinit(mp_obj_t self_in) {
     timer_obj_t * self = MP_OBJ_TO_PTR(self_in);
 
-    nrfx_timer_uninit(&self->p_instance);
+    //nrfx_timer_uninit(&self->p_instance);
 
     return mp_const_none;
 }
