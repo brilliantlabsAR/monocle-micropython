@@ -133,10 +133,9 @@ SRC += modules/camera.c
 SRC += modules/display.c
 SRC += modules/fpga.c
 SRC += modules/led.c
-SRC += modules/machine.c
+SRC += modules/device.c
 SRC += modules/power.c
-SRC += modules/rtcounter.c
-SRC += modules/timer.c
+#SRC += modules/timer.c
 SRC += modules/touch.c
 
 SRC += ../segger_rtt/SEGGER_RTT.c

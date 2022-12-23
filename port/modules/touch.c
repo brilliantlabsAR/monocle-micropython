@@ -31,9 +31,14 @@
 
 #define LOG NRFX_LOG_ERROR
 
-struct {
-    mp_obj_t callback;
-} machine_touch;
+mp_obj_t callback;
+
+enum {
+    TOUCH_LONG,
+    TOUCH_PRESS,
+    TOUCH_SLIDE,
+    TOUCH_TAP,
+};
 
 /**
  * Overriding the default callback implemented in driver_iqs620.c
@@ -41,52 +46,34 @@ struct {
  */
 void touch_callback(touch_state_t trigger)
 {
-    if (machine_touch.callback) {
+    if (callback) {
         LOG("trigger=0x%02X scheduling trigger", trigger);
-        mp_sched_schedule(machine_touch.callback, MP_OBJ_NEW_SMALL_INT(trigger));
+        mp_sched_schedule(callback, MP_OBJ_NEW_SMALL_INT(trigger));
     } else {
         LOG("trigger=0x%02X no callback set", trigger);
     }
 }
 
-void touch_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
+STATIC mp_obj_t touch_bind(mp_obj_t button, mp_obj_t action, mp_obj_t callback)
 {
-    (void)self_in;
-    (void)kind;
-
-    mp_printf(print, "Touch(%s)", machine_touch.callback ? "on" : "off");
+    (void)button;
+    (void)action;
+    (void)callback;
+    return mp_const_none;
 }
-
-STATIC mp_obj_t touch_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args)
-{
-    // Allowed arguments table.
-    static const mp_arg_t allowed_args[] = {
-        {MP_QSTR_callback, MP_ARG_REQUIRED | MP_ARG_OBJ},
-    };
-
-    // Parse args.
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
-    // Extract the function callback from the arguments.
-    machine_touch.callback = args[0].u_obj;
-
-    // Return the newly created Touch object.
-    return MP_OBJ_FROM_PTR(&machine_touch);
-}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(touch_bind_obj, touch_bind);
 
 STATIC const mp_rom_map_elem_t touch_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_0_TAP),      MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_0_TAP) },
-    { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_1_TAP),      MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_1_TAP) },
-    { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_BOTH_TAP),   MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_BOTH_TAP) },
-    { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_0_PRESS),    MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_0_PRESS) },
-    { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_1_PRESS),    MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_1_PRESS) },
-    { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_BOTH_PRESS), MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_BOTH_PRESS) },
-    { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_0_LONG),     MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_0_LONG) },
-    { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_1_LONG),     MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_1_LONG) },
-    { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_BOTH_LONG),  MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_BOTH_LONG) },
-    { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_0_1_SLIDE),  MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_0_1_SLIDE) },
-    { MP_ROM_QSTR(MP_QSTR_TOUCH_TRIGGER_1_0_SLIDE),  MP_OBJ_NEW_SMALL_INT(TOUCH_TRIGGER_1_0_SLIDE) },
+    // methods
+    { MP_ROM_QSTR(MP_QSTR_bind),       MP_ROM_PTR(&touch_bind_obj) },
+
+    // constants
+    { MP_ROM_QSTR(MP_QSTR_A),          MP_OBJ_NEW_SMALL_INT(0) },
+    { MP_ROM_QSTR(MP_QSTR_B),          MP_OBJ_NEW_SMALL_INT(1) },
+    { MP_ROM_QSTR(MP_QSTR_LONG),       MP_OBJ_NEW_SMALL_INT(TOUCH_LONG) },
+    { MP_ROM_QSTR(MP_QSTR_PRESS),      MP_OBJ_NEW_SMALL_INT(TOUCH_PRESS) },
+    { MP_ROM_QSTR(MP_QSTR_SLIDE),      MP_OBJ_NEW_SMALL_INT(TOUCH_SLIDE) },
+    { MP_ROM_QSTR(MP_QSTR_TAP),        MP_OBJ_NEW_SMALL_INT(TOUCH_TAP) },
 };
 STATIC MP_DEFINE_CONST_DICT(touch_module_globals, touch_module_globals_table);
 
@@ -94,4 +81,4 @@ const mp_obj_module_t touch_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t*)&touch_module_globals,
 };
-MP_REGISTER_MODULE(MP_QSTR_board, touch_module);
+MP_REGISTER_MODULE(MP_QSTR_touch, touch_module);

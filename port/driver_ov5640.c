@@ -530,10 +530,7 @@ void ov5640_focus_init(void)
     ov5640_write_reg(0x3029, 0x7F); // ?
     ov5640_write_reg(0x3000, 0x00); // enable MCU
 
-    uint16_t i = 0;
-    do {
-        state = ov5640_read_reg(0x3029);
-        ov5640_delay_ms(5);
-        ASSERT(++i <= 1000);
-    } while (state != 0x70);
+    ov5640_delay_ms(10);
+    state = ov5640_read_reg(0x3029);
+    ASSERT(state == 0x70);
 }

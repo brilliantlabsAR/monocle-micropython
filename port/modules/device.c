@@ -40,7 +40,6 @@
 
 #include "driver_dfu.h"
 #include "ble_gap.h"
-#include "machine.h"
 
 /**
  * Current version as a string object.
@@ -96,15 +95,11 @@ MP_DEFINE_CONST_FUN_OBJ_0(machine_mac_address_obj, machine_mac_address);
 STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),            MP_ROM_QSTR(MP_QSTR_umachine) },
 
-    // classes for each hardware
-    { MP_ROM_QSTR(MP_QSTR_RTCounter),           MP_ROM_PTR(&rtcounter_type) },
-    { MP_ROM_QSTR(MP_QSTR_Timer),               MP_ROM_PTR(&timer_type) },
-
-    // local methods for the monocle
+    // methods
     { MP_ROM_QSTR(MP_QSTR_mac_address),         MP_ROM_PTR(&machine_mac_address_obj) },
     { MP_ROM_QSTR(MP_QSTR_update),              MP_ROM_PTR(&machine_update_obj) },
 
-    // Information about the version and device
+    // constants
     { MP_ROM_QSTR(MP_QSTR_board_name),          MP_ROM_PTR(&machine_board_name_obj) },
     { MP_ROM_QSTR(MP_QSTR_git_tag),             MP_ROM_PTR(&machine_git_tag_obj) },
     { MP_ROM_QSTR(MP_QSTR_mcu_name),            MP_ROM_PTR(&machine_mcu_name_obj) },

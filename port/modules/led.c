@@ -63,8 +63,11 @@ static mp_obj_t led_off(mp_obj_t led_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(led_off_obj, led_off);
 
 STATIC const mp_rom_map_elem_t led_module_globals_table[] = {
+    // methods
     { MP_ROM_QSTR(MP_QSTR_on),      MP_ROM_PTR(&led_on_obj) },
     { MP_ROM_QSTR(MP_QSTR_off),     MP_ROM_PTR(&led_off_obj) },
+
+    // constants
     { MP_ROM_QSTR(MP_QSTR_RED),     MP_OBJ_NEW_SMALL_INT(LED_RED) },
     { MP_ROM_QSTR(MP_QSTR_GREEN),   MP_OBJ_NEW_SMALL_INT(LED_GREEN) },
 };

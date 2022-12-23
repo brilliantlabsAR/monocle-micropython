@@ -33,16 +33,17 @@
 #include "driver_spi.h"
 #include "driver_config.h"
 
-STATIC mp_obj_t display_show(mp_obj_t bytearray_in)
+STATIC mp_obj_t display_show(void)
 {
-    mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
+    uint8_t buf[128];
 
+    memset(buf, 0, sizeof buf);
     fpga_graphics_set_write_base(0x0000);
-    fpga_graphics_write_data(bytearray->items, bytearray->len);
+    fpga_graphics_write_data(buf, sizeof buf);
     fpga_graphics_on();
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_1(display_show_obj, &display_show);
+MP_DEFINE_CONST_FUN_OBJ_0(display_show_obj, &display_show);
 
 STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_show),        MP_ROM_PTR(&display_show_obj) },
@@ -53,4 +54,4 @@ const mp_obj_module_t display_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t*)&display_module_globals,
 };
-MP_REGISTER_MODULE(MP_QSTR_board, display_module);
+MP_REGISTER_MODULE(MP_QSTR_display, display_module);

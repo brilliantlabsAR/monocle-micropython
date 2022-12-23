@@ -206,7 +206,6 @@ touch_event_t touch_timer_event;
 
 static void touch_set_timer(touch_event_t event)
 {
-
     // Choose the apropriate duration depending on the event triggered.
     switch (event) {
         case TOUCH_EVENT_LONG:

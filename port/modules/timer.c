@@ -30,8 +30,6 @@
 
 #include "nrfx_timer.h"
 
-#include "machine.h"
-
 enum {
     TIMER_MODE_ONESHOT,
     TIMER_MODE_PERIODIC,
@@ -51,12 +49,6 @@ STATIC const timer_obj_t timer_obj[] = {
     {{&timer_type}, NRFX_TIMER_INSTANCE(0)},
     {{&timer_type}, NRFX_TIMER_INSTANCE(1)},
 };
-
-void timer_init0(void) {
-    for (int i = 0; i < MP_ARRAY_SIZE(timer_obj); i++) {
-        //nrfx_timer_uninit(&timer_obj[i].p_instance);
-    }
-}
 
 STATIC int timer_find(mp_obj_t id) {
     // given an integer id
@@ -79,9 +71,6 @@ STATIC void timer_event_handler(nrf_timer_event_t event_type, void *p_context) {
         mp_call_function_1(callback, self);
     }
 }
-
-/******************************************************************************/
-/* MicroPython bindings for machine API                                       */
 
 STATIC mp_obj_t timer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_id, ARG_period, ARG_mode, ARG_callback };
@@ -206,14 +195,10 @@ STATIC const mp_rom_map_elem_t timer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_ONESHOT),  MP_ROM_INT(TIMER_MODE_ONESHOT) },
     { MP_ROM_QSTR(MP_QSTR_PERIODIC), MP_ROM_INT(TIMER_MODE_PERIODIC) },
 };
-
 STATIC MP_DEFINE_CONST_DICT(timer_locals_dict, timer_locals_dict_table);
 
-MP_DEFINE_CONST_OBJ_TYPE(
-    timer_type,
-    MP_QSTR_Timer,
-    MP_TYPE_FLAG_NONE,
-    make_new, timer_make_new,
-    print, timer_print,
-    locals_dict, &timer_locals_dict
-);
+const mp_obj_module_t mp_module_timer = {
+    .base = { &mp_type_module },
+    .globals = (mp_obj_dict_t*)&timer_module_globals,
+};
+MP_REGISTER_MODULE(MP_QSTR_timer, mp_module_timer);
