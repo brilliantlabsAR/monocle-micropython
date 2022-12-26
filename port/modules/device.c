@@ -31,8 +31,6 @@
 #include "py/runtime.h"
 #include "py/mphal.h"
 #include "py/objstr.h"
-#include "extmod/machine_mem.h"
-#include "extmod/machine_pulse.h"
 #include "genhdr/mpversion.h"
 
 #include "lib/oofatfs/ff.h"
@@ -44,32 +42,32 @@
 /**
  * Current version as a string object.
  */
-STATIC const MP_DEFINE_STR_OBJ(machine_version_obj, BUILD_VERSION);
+STATIC const MP_DEFINE_STR_OBJ(device_version_obj, BUILD_VERSION);
 
 /**
  * Current git tag as a string object.
  */
-STATIC const MP_DEFINE_STR_OBJ(machine_git_tag_obj, MICROPY_GIT_HASH);
+STATIC const MP_DEFINE_STR_OBJ(device_git_tag_obj, MICROPY_GIT_HASH);
 
 /**
  * Board name as a string object.
  */
-STATIC const MP_DEFINE_STR_OBJ(machine_board_name_obj, MICROPY_HW_BOARD_NAME);
+STATIC const MP_DEFINE_STR_OBJ(device_board_name_obj, MICROPY_HW_BOARD_NAME);
 
 /**
  * MCU name as a string object.
  */
-STATIC const MP_DEFINE_STR_OBJ(machine_mcu_name_obj, MICROPY_HW_MCU_NAME);
+STATIC const MP_DEFINE_STR_OBJ(device_mcu_name_obj, MICROPY_HW_MCU_NAME);
 
-STATIC mp_obj_t machine_update(const mp_obj_t reboot)
+STATIC mp_obj_t device_update(const mp_obj_t reboot)
 {
     if (mp_obj_is_true(reboot))
         MICROPY_BOARD_ENTER_BOOTLOADER(n_args, args);
     return mp_const_true;
 }
-MP_DEFINE_CONST_FUN_OBJ_1(machine_update_obj, machine_update);
+MP_DEFINE_CONST_FUN_OBJ_1(device_update_obj, device_update);
 
-STATIC mp_obj_t machine_mac_address(void)
+STATIC mp_obj_t device_mac_address(void)
 {
     static char m_mac_address[sizeof "XX:XX:XX:XX:XX:XX"];
     uint32_t err;
@@ -89,26 +87,24 @@ STATIC mp_obj_t machine_mac_address(void)
     }
     return mp_obj_new_str(m_mac_address, strlen(m_mac_address));
 }
-MP_DEFINE_CONST_FUN_OBJ_0(machine_mac_address_obj, machine_mac_address);
+MP_DEFINE_CONST_FUN_OBJ_0(device_mac_address_obj, device_mac_address);
 
 
-STATIC const mp_rom_map_elem_t machine_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__),            MP_ROM_QSTR(MP_QSTR_umachine) },
-
+STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
     // methods
-    { MP_ROM_QSTR(MP_QSTR_mac_address),         MP_ROM_PTR(&machine_mac_address_obj) },
-    { MP_ROM_QSTR(MP_QSTR_update),              MP_ROM_PTR(&machine_update_obj) },
+    { MP_ROM_QSTR(MP_QSTR_mac_address),         MP_ROM_PTR(&device_mac_address_obj) },
+    { MP_ROM_QSTR(MP_QSTR_update),              MP_ROM_PTR(&device_update_obj) },
 
     // constants
-    { MP_ROM_QSTR(MP_QSTR_board_name),          MP_ROM_PTR(&machine_board_name_obj) },
-    { MP_ROM_QSTR(MP_QSTR_git_tag),             MP_ROM_PTR(&machine_git_tag_obj) },
-    { MP_ROM_QSTR(MP_QSTR_mcu_name),            MP_ROM_PTR(&machine_mcu_name_obj) },
-    { MP_ROM_QSTR(MP_QSTR_version),             MP_ROM_PTR(&machine_version_obj) },
+    { MP_ROM_QSTR(MP_QSTR_board_name),          MP_ROM_PTR(&device_board_name_obj) },
+    { MP_ROM_QSTR(MP_QSTR_git_tag),             MP_ROM_PTR(&device_git_tag_obj) },
+    { MP_ROM_QSTR(MP_QSTR_mcu_name),            MP_ROM_PTR(&device_mcu_name_obj) },
+    { MP_ROM_QSTR(MP_QSTR_version),             MP_ROM_PTR(&device_version_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(machine_module_globals, machine_module_globals_table);
+STATIC MP_DEFINE_CONST_DICT(device_module_globals, device_module_globals_table);
 
-const mp_obj_module_t mp_module_machine = {
+const mp_obj_module_t mp_module_device = {
     .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t*)&machine_module_globals,
+    .globals = (mp_obj_dict_t*)&device_module_globals,
 };
-MP_REGISTER_MODULE(MP_QSTR_umachine, mp_module_machine);
+MP_REGISTER_MODULE(MP_QSTR_device, mp_module_device);

@@ -45,25 +45,25 @@
 
 static inline const void ecx336cn_write_byte(uint8_t addr, uint8_t data)
 {
-    uint8_t buf[2] = { addr, data };
-
     spi_chip_select(SPIM0_DISP_CS_PIN);
-    spi_xfer(buf, sizeof buf);
+    spi_write(&addr, 1);
+    spi_write(&data, 1);
     spi_chip_deselect(SPIM0_DISP_CS_PIN);
 }
 
 static inline uint8_t ecx336cn_read_byte(uint8_t addr)
 {
-    uint8_t buf[2] = { 0x81, 0x00 };
+    uint8_t data;
 
     ecx336cn_write_byte(0x80, 0x01);
     ecx336cn_write_byte(0x81, addr);
 
     spi_chip_select(SPIM0_DISP_CS_PIN);
-    spi_xfer(buf, sizeof buf);
+    spi_write(&addr, 1);
+    spi_read(&data, 1);
     spi_chip_deselect(SPIM0_DISP_CS_PIN);
 
-    return buf[1];
+    return data;
 }
 
 /**

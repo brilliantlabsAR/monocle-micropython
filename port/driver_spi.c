@@ -128,16 +128,9 @@ void spi_chip_deselect(uint8_t cs_pin)
     nrf_gpio_pin_set(cs_pin);
 }
 
-/**
- * Write a buffer over SPI, and read the result back to the same buffer.
- * @param cs_pin Pin to use as chip-select signal, must be configured as output.
- * @param buf Data buffer to send, starting one byte just before that pointer (compatibility hack).
- * @param len Length of the buffer (buf[-1] excluded).
- */
-void spi_xfer(uint8_t *buf, size_t len)
+static void spi_xfer(nrfx_spim_xfer_desc_t *xfer)
 {
     uint32_t err;
-    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TRX(buf, len, buf, len);
 
     // wait for any pending SPI operation to complete
     while (!m_xfer_done)
@@ -145,8 +138,30 @@ void spi_xfer(uint8_t *buf, size_t len)
 
     // Start the transaction and wait for the interrupt handler to warn us it is done.
     m_xfer_done = false;
-    err = nrfx_spim_xfer(&m_spi, &xfer, 0);
+    err = nrfx_spim_xfer(&m_spi, xfer, 0);
     ASSERT(err == NRFX_SUCCESS);
     while (!m_xfer_done)
         __WFE();
+}
+
+/**
+ * Write a buffer over SPI, and read the result back to the same buffer.
+ * @param buf Data buffer to send, starting one byte just before that pointer (compatibility hack).
+ * @param len Length of the buffer (buf[-1] excluded).
+ */
+void spi_read(uint8_t *buf, size_t len)
+{
+    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, len);
+    spi_xfer(&xfer);
+}
+
+/**
+ * Write a buffer over SPI, and read the result back to the same buffer.
+ * @param buf Data buffer to send, starting one byte just before that pointer (compatibility hack).
+ * @param len Length of the buffer (buf[-1] excluded).
+ */
+void spi_write(uint8_t *buf, size_t len)
+{
+    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, len);
+    spi_xfer(&xfer);
 }

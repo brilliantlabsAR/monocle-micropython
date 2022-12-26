@@ -204,12 +204,12 @@ void board_init(void)
 
     // Initialise the SPI conection to the flash.
     // Needs: power
-    //flash_init();
+    flash_init();
 
     LOG("ready errors=0x%02X test_num=%d", board_errors, board_test_num);
 
     max77654_led_green(false);
-    board_check_errors();
+    //board_check_errors();
 }
 
 void board_deinit(void)

@@ -31,9 +31,9 @@
 
 #include "nrf_gpio.h"
 #include "nrfx_log.h"
-#include "nrfx_spim.h"
 #include "nrfx_systick.h"
 
+#include "driver_spi.h"
 #include "driver_board.h"
 #include "driver_config.h"
 #include "driver_flash.h"
@@ -47,32 +47,9 @@
 #define FLASH_CMD_STATUS            0x05
 #define FLASH_CMD_CHIP_ERASE        0xC7
 #define FLASH_CMD_JEDEC_ID          0x9F
+#define FLASH_CMD_DEVICE_ID         0x90
 
 #define FLASH_STATUS_BUSY_MASK      0x01
-
-/**
- * Workaround the fact taht nordic returns an ENUM instead of a simple integer.
- */
-static inline void check(char const *func, nrfx_err_t err)
-{
-    if (err != NRFX_SUCCESS)
-        LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
-}
-
-static const nrfx_spim_t m_spi = NRFX_SPIM_INSTANCE(SPI_INSTANCE);
-static volatile bool m_xfer_done;
-
-/**
- * SPI event handler
- */
-static void flash_event_handler(nrfx_spim_evt_t const * p_event, void *p_context)
-{
-    // There is only one event type: NRFX_SPIM_EVENT_DONE, so no need for case statement
-    (void)p_event;
-    (void)p_context;
-
-    m_xfer_done = true;
-}
 
 /**
  * Prepare the GPIO setup for the SPI flash interface.
@@ -89,95 +66,30 @@ void flash_prepare(void)
  */
 void flash_init(void)
 {
-    uint32_t err;
-    nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
-        SPIM0_SCK_PIN,
-        SPIM0_MOSI_PIN,
-        SPIM0_MISO_PIN,
-        NRFX_SPIM_PIN_NOT_USED
-    );
+    LOG("id=0x%02X", (int)flash_get_device_id());
+    nrfx_systick_delay_ms(100);
+    LOG("id=0x%02X", (int)flash_get_device_id());
+    nrfx_systick_delay_ms(100);
+    LOG("id=0x%02X", (int)flash_get_device_id());
+    nrfx_systick_delay_ms(100);
+    LOG("id=0x%02X", (int)flash_get_device_id());
+    nrfx_systick_delay_ms(100);
+    LOG("id=0x%02X", (int)flash_get_device_id());
+    nrfx_systick_delay_ms(100);
+    LOG("id=0xXXXX");
 
-    config.frequency    = NRF_SPIM_FREQ_125K;
-    config.mode         = NRF_SPIM_MODE_0;
-    config.bit_order    = NRF_SPIM_BIT_ORDER_MSB_FIRST;
-    err = nrfx_spim_init(&m_spi, &config, &flash_event_handler, NULL);
-    ASSERT(err == NRFX_SUCCESS);
-
+    LOG("id=0xXXXX");
     LOG("ready");
-}
-
-/**
- * Write a chunk of max 16 bytes (EASYDMA limitation).
- * @param buf Buffer with data to send.
- * @param len Buffer length.
- */
-static void flash_spi_write_chunk(const uint8_t *buf, size_t len)
-{
-    uint32_t err;
-    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, len);
-
-    // Reset rx buffer and transfer done flag
-    m_xfer_done = false;
-
-    // Submit the buffer for transfer.
-    err = nrfx_spim_xfer(&m_spi, &xfer, 0);
-    ASSERT(err == NRFX_SUCCESS);
-
-    // Wait until the event handler tells us that the transfer is over.
-    while (!m_xfer_done)
-        __WFE();
-}
-
-/**
- * Write a buffer to the flash over SPI.
- * @param buf Buffer with data to send.
- * @param len Buffer length.
- */
-static void flash_spi_write(const uint8_t *buf, size_t len)
-{
-    for (size_t n; len > 0; len -= n, buf += n) {
-        n = len;
-        if (n > 16)
-            n = 16;
-        flash_spi_write_chunk(buf, n);
-    }
-}
-
-/**
- * Read a chunk of max 16 bytes (EASYDMA limitation).
- * @param buf Buffer receiving the data.
- * @param len Buffer length.
- */
-static void flash_spi_read_chunk(uint8_t *buf, size_t len)
-{
-    uint32_t err;
-    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, len);
-
-    // Reset rx buffer and transfer done flag
-    m_xfer_done = false;
-
-    // Submit the buffer for transfer.
-    err = nrfx_spim_xfer(&m_spi, &xfer, 0);
-    ASSERT(err == NRFX_SUCCESS);
-
-    // Wait until the event handler tells us that the transfer is over.
-    while (!m_xfer_done)
-        __WFE();
-}
-
-/**
- * Read a buffer from the flash over SPI.
- * @param buf Buffer data is read to.
- * @param len Buffer length.
- */
-static void flash_spi_read(uint8_t *buf, size_t len)
-{
-    for (size_t n; len > 0; len -= n, buf += n) {
-        n = len;
-        if (n > 16)
-            n = 16;
-        flash_spi_read_chunk(buf, n);
-    }
+    LOG("id=0xXXXX");
+    LOG("ready");
+    LOG("id=0xXXXX");
+    LOG("ready");
+    LOG("id=0xXXXX");
+    LOG("ready");
+    LOG("id=0xXXXX");
+    LOG("ready");
+    LOG("id=0xXXXX");
+    LOG("ready");
 }
 
 /**
@@ -200,20 +112,31 @@ static inline void flash_chip_deselect(void)
     nrfx_systick_delay_us(10);
 }
 
+static inline void flash_cmd_input(uint8_t cmd, uint8_t *buf, size_t len)
+{
+    flash_chip_select();
+    spi_write(&cmd, 1);
+    spi_read(buf, len);
+    flash_chip_deselect();
+}
+
+static inline void flash_cmd_output(uint8_t cmd, uint8_t *buf, size_t len)
+{
+    flash_chip_select();
+    spi_write(&cmd, 1);
+    spi_write(buf, len);
+    flash_chip_deselect();
+}
+
 /**
  * Read the manufacturer ID.
  * @return The combined manufacturer ID and device ID.
  */
-uint32_t flash_get_id(void)
+uint32_t flash_get_jedec_id(void)
 {
-    uint8_t const cmds[] = { FLASH_CMD_JEDEC_ID };
     uint8_t buf[3] = {0};
 
-    flash_chip_select();
-    flash_spi_write(cmds, sizeof cmds);
-    flash_spi_read(buf, sizeof buf);
-    flash_chip_deselect();
-
+    flash_cmd_input(FLASH_CMD_JEDEC_ID, buf, sizeof buf);
     return buf[0] << 16 | buf[1] << 8 | buf[2] << 0;
 }
 
@@ -222,24 +145,16 @@ uint32_t flash_get_id(void)
  */
 static void flash_wait_completion(void)
 {
-    uint8_t const cmds[] = { FLASH_CMD_STATUS };
     uint8_t status = 0;
 
     do {
-        flash_chip_select();
-        flash_spi_write(cmds, sizeof cmds);
-        flash_spi_read(&status, sizeof status);
-        flash_chip_deselect();
+        flash_cmd_input(FLASH_CMD_STATUS, &status, 1);
     } while (status & FLASH_STATUS_BUSY_MASK);
 }
 
 static void flash_enable_write(void)
 {
-    uint8_t const cmds[] = { FLASH_CMD_ENABLE_WRITE };
-
-    flash_chip_select();
-    flash_spi_write(cmds, sizeof cmds);
-    flash_chip_deselect();
+    flash_cmd_output(FLASH_CMD_ENABLE_WRITE , NULL, 0);
 }
 
 /**
@@ -247,17 +162,17 @@ static void flash_enable_write(void)
  * @param addr The address at which the data is written.
  * @param page The buffer holding the data to be sent to the flash chip, of size @ref FLASH_PAGE_SIZE.
  */
-void flash_program_page(uint32_t addr, uint8_t const page[FLASH_PAGE_SIZE])
+void flash_program_page(uint32_t addr, uint8_t page[FLASH_PAGE_SIZE])
 {
-    uint8_t const cmds[] = { FLASH_CMD_PROGRAM_PAGE, addr >> 16, addr >> 8, addr >> 0 };
+    uint8_t cmds[] = { FLASH_CMD_PROGRAM_PAGE, addr >> 16, addr >> 8, addr >> 0 };
 
     ASSERT(addr % FLASH_PAGE_SIZE == 0);
 
     flash_enable_write();
 
     flash_chip_select();
-    flash_spi_write(cmds, sizeof cmds);
-    flash_spi_write(page, FLASH_PAGE_SIZE);
+    spi_write(cmds, sizeof cmds);
+    spi_read(page, FLASH_PAGE_SIZE);
     flash_chip_deselect();
 
     flash_wait_completion();
@@ -271,11 +186,11 @@ void flash_program_page(uint32_t addr, uint8_t const page[FLASH_PAGE_SIZE])
  */
 void flash_read(uint32_t addr, uint8_t *buf, size_t len)
 {
-    uint8_t const cmds[] = { FLASH_CMD_READ, addr >> 16, addr >> 8, addr >> 0 };
+    uint8_t cmds[] = { FLASH_CMD_READ, addr >> 16, addr >> 8, addr >> 0 };
 
     flash_chip_select();
-    flash_spi_write(cmds, sizeof cmds);
-    flash_spi_read(buf, len);
+    spi_write(cmds, sizeof cmds);
+    spi_read(buf, len);
     flash_chip_deselect();
 }
 
@@ -284,11 +199,14 @@ void flash_read(uint32_t addr, uint8_t *buf, size_t len)
  */
 void flash_erase_chip(void)
 {
-    uint8_t const cmds[] = { FLASH_CMD_CHIP_ERASE };
-
-    flash_chip_select();
-    flash_spi_write(cmds, sizeof cmds);
-    flash_chip_deselect();
-
+    flash_cmd_output(FLASH_CMD_CHIP_ERASE, NULL, 0);
     flash_wait_completion();
+}
+
+uint8_t flash_get_device_id(void)
+{
+    uint8_t id;
+
+    flash_cmd_input(FLASH_CMD_DEVICE_ID, &id, 1);
+    return id;
 }

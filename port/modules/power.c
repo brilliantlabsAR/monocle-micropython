@@ -47,12 +47,6 @@
 #define PYB_RESET_DIF       (18)
 #define PYB_RESET_NFC       (19)
 
-enum {
-    RESET_BOOTUP,
-    RESET_SOFTWARE,
-    RESET_OTHER
-};
-
 STATIC mp_obj_t power_hibernate(void)
 {
     return mp_const_notimplemented;
@@ -151,10 +145,6 @@ STATIC const mp_rom_map_elem_t power_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_PWRON_RESET),         MP_ROM_INT(PYB_RESET_POWER_ON) },
     { MP_ROM_QSTR(MP_QSTR_LPCOMP_RESET),        MP_ROM_INT(PYB_RESET_LPCOMP) },
     { MP_ROM_QSTR(MP_QSTR_DEBUG_IF_RESET),      MP_ROM_INT(PYB_RESET_DIF) },
-
-    { MP_ROM_QSTR(MP_QSTR_RESET_BOOTUP),        MP_OBJ_NEW_SMALL_INT(RESET_BOOTUP) },
-    { MP_ROM_QSTR(MP_QSTR_RESET_SOFTWARE),      MP_OBJ_NEW_SMALL_INT(RESET_SOFTWARE) },
-    { MP_ROM_QSTR(MP_QSTR_RESET_OTHER),         MP_OBJ_NEW_SMALL_INT(RESET_OTHER) },
 };
 STATIC MP_DEFINE_CONST_DICT(power_module_globals, power_module_globals_table);
 

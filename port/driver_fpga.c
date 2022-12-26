@@ -127,14 +127,29 @@ void fpga_deinit(void)
 
 #define FPGA_CMD_SYSTEM 0x00
 
-static inline void fpga_cmd(uint8_t cmd1, uint8_t cmd2, uint8_t *buf, size_t len)
+static inline void fpga_cmd(uint8_t cmd1, uint8_t cmd2)
 {
-    uint8_t cmd[] = { cmd1, cmd2 };
-
     spi_chip_select(SPIM0_FPGA_CS_PIN);
-    spi_xfer(cmd, sizeof cmd);
-    if (len > 0)
-        spi_xfer(buf, len);
+    spi_write(&cmd1, 1);
+    spi_write(&cmd2, 1);
+    spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+}
+
+static inline void fpga_cmd_write(uint8_t cmd1, uint8_t cmd2, uint8_t *buf, size_t len)
+{
+    spi_chip_select(SPIM0_FPGA_CS_PIN);
+    spi_write(&cmd1, 1);
+    spi_write(&cmd2, 1);
+    spi_read(buf, len);
+    spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+}
+
+static inline void fpga_cmd_read(uint8_t cmd1, uint8_t cmd2, uint8_t *buf, size_t len)
+{
+    spi_chip_select(SPIM0_FPGA_CS_PIN);
+    spi_write(&cmd1, 1);
+    spi_write(&cmd2, 1);
+    spi_read(buf, len);
     spi_chip_deselect(SPIM0_FPGA_CS_PIN);
 }
 
@@ -142,7 +157,7 @@ uint32_t fpga_system_id(void)
 {
     uint8_t buf[] = { 0x00, 0x00 };
 
-    fpga_cmd(FPGA_CMD_SYSTEM, 0x01, buf, sizeof buf);
+    fpga_cmd_read(FPGA_CMD_SYSTEM, 0x01, buf, sizeof buf);
     return buf[0] << 8 | buf[1] << 0;
 }
 
@@ -150,7 +165,7 @@ uint32_t fpga_system_version(void)
 {
     uint8_t buf[] = { 0x00, 0x00, 0x00 };
 
-    fpga_cmd(FPGA_CMD_SYSTEM, 0x02, buf, sizeof buf);
+    fpga_cmd_read(FPGA_CMD_SYSTEM, 0x02, buf, sizeof buf);
     return buf[0] << 16 | buf[1] << 8 | buf[2] << 0;
 }
 
@@ -158,71 +173,71 @@ uint32_t fpga_system_version(void)
 
 void fpga_camera_zoom(uint8_t zoom_level)
 {
-    fpga_cmd(FPGA_CMD_CAMERA, 0x02, &zoom_level, 1);
+    fpga_cmd_write(FPGA_CMD_CAMERA, 0x02, &zoom_level, 1);
 }
 
 void fpga_camera_stop(void)
 {
-    fpga_cmd(FPGA_CMD_CAMERA, 0x04, NULL, 0);
+    fpga_cmd(FPGA_CMD_CAMERA, 0x04);
 }
 
 void fpga_camera_start(void)
 {
-    fpga_cmd(FPGA_CMD_CAMERA, 0x05, NULL, 0);
+    fpga_cmd(FPGA_CMD_CAMERA, 0x05);
 }
 
 void fpga_camera_capture(void)
 {
-    fpga_cmd(FPGA_CMD_CAMERA, 0x06, NULL, 0);
+    fpga_cmd(FPGA_CMD_CAMERA, 0x06);
 }
 
 void fpga_camera_off(void)
 {
-    fpga_cmd(FPGA_CMD_CAMERA, 0x08, NULL, 0);
+    fpga_cmd(FPGA_CMD_CAMERA, 0x08);
 }
 
 void fpga_camera_on(void)
 {
-    fpga_cmd(FPGA_CMD_CAMERA, 0x09, NULL, 0);
+    fpga_cmd(FPGA_CMD_CAMERA, 0x09);
 }
 
 #define FPGA_CMD_LIVE_VIDEO 0x30
 
 void fpga_live_video_start(void)
 {
-    fpga_cmd(FPGA_CMD_LIVE_VIDEO, 0x05, NULL, 0);
+    fpga_cmd(FPGA_CMD_LIVE_VIDEO, 0x05);
 }
 
 void fpga_live_video_stop(void)
 {
-    fpga_cmd(FPGA_CMD_LIVE_VIDEO, 0x04, NULL, 0);
+    fpga_cmd(FPGA_CMD_LIVE_VIDEO, 0x04);
 }
 
 void fpga_live_video_replay(void)
 {
-    fpga_cmd(FPGA_CMD_LIVE_VIDEO, 0x07, NULL, 0);
+    fpga_cmd(FPGA_CMD_LIVE_VIDEO, 0x07);
 }
 
 #define FPGA_CMD_GRAPHICS 0x40
 
 void fpga_graphics_off(void)
 {
-    fpga_cmd(FPGA_CMD_GRAPHICS, 0x04, NULL, 0);
+    fpga_cmd(FPGA_CMD_GRAPHICS, 0x04);
 }
 
 void fpga_graphics_on(void)
 {
-    fpga_cmd(FPGA_CMD_GRAPHICS, 0x05, NULL, 0);
+    fpga_cmd(FPGA_CMD_GRAPHICS, 0x05);
 }
 
 void fpga_graphics_clear(void)
 {
-    fpga_cmd(FPGA_CMD_GRAPHICS, 0x06, NULL, 0);
+    fpga_cmd(FPGA_CMD_GRAPHICS, 0x06);
 }
 
 void fpga_graphics_swap_buffer(void)
 {
-    fpga_cmd(FPGA_CMD_GRAPHICS, 0x07, NULL, 0);
+    fpga_cmd(FPGA_CMD_GRAPHICS, 0x07);
 }
 
 void fpga_graphics_set_write_base(uint32_t base)
@@ -234,12 +249,12 @@ void fpga_graphics_set_write_base(uint32_t base)
         (base & 0x000000FF) >> 0,
     };
 
-    fpga_cmd(FPGA_CMD_GRAPHICS, 0x10, buf, sizeof buf);
+    fpga_cmd_write(FPGA_CMD_GRAPHICS, 0x10, buf, sizeof buf);
 }
 
 void fpga_graphics_write_data(uint8_t *buf, size_t len)
 {
-    fpga_cmd(FPGA_CMD_GRAPHICS, 0x11, buf, len);
+    fpga_cmd_write(FPGA_CMD_GRAPHICS, 0x11, buf, len);
 }
 
 #define FPGA_CMD_CAPTURE 0x50
@@ -248,11 +263,11 @@ uint16_t fpga_capture_read_status(void)
 {
     uint8_t buf[] = { 0x00, 0x00 };
 
-    fpga_cmd(FPGA_CMD_CAPTURE, 0x00, buf, sizeof buf);
+    fpga_cmd_read(FPGA_CMD_CAPTURE, 0x00, buf, sizeof buf);
     return (buf[0] & 0xFF00) >> 8 | (buf[1] & 0x00FF) >> 0;
 }
 
 void fpga_capture_read_data(uint8_t *buf, size_t len)
 {
-    fpga_cmd(FPGA_CMD_CAPTURE, 0x10, buf, len);
+    fpga_cmd_read(FPGA_CMD_CAPTURE, 0x10, buf, len);
 }

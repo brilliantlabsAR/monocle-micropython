@@ -33,24 +33,40 @@
 #include "driver_spi.h"
 #include "driver_config.h"
 
-STATIC mp_obj_t fpga_spi_read(mp_obj_t addr_in)
+static inline void write_addr(mp_obj_t obj)
 {
-    (void)addr_in;
-    // use spi_write instead, which fills the bytearray with the value read.
-    return mp_const_notimplemented;
+    uint8_t buf[] = {
+        mp_obj_get_int(obj) >> 0,
+        mp_obj_get_int(obj) >> 8,
+    };
+    spi_write(buf, sizeof buf);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(fpga_spi_read_obj, fpga_spi_read);
 
-STATIC mp_obj_t fpga_spi_write(mp_obj_t bytearray_in)
+STATIC mp_obj_t fpga_read(mp_obj_t addr_in, mp_obj_t bytearray_in)
 {
     mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
 
     spi_chip_select(SPIM0_FPGA_CS_PIN);
-    spi_xfer(bytearray->items, bytearray->len);
+    write_addr(addr_in);
+    spi_read(bytearray->items, bytearray->len);
     spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_1(fpga_spi_write_obj, &fpga_spi_write);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(fpga_read_obj, fpga_read);
+
+STATIC mp_obj_t fpga_write(mp_obj_t addr_in, mp_obj_t bytearray_in)
+{
+    mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
+
+    spi_chip_select(SPIM0_FPGA_CS_PIN);
+    write_addr(addr_in);
+    spi_write(bytearray->items, bytearray->len);
+    spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(fpga_write_obj, &fpga_write);
 
 STATIC mp_obj_t fpga_status(void)
 {
@@ -59,8 +75,8 @@ STATIC mp_obj_t fpga_status(void)
 MP_DEFINE_CONST_FUN_OBJ_0(fpga_status_obj, &fpga_status);
 
 STATIC const mp_rom_map_elem_t fpga_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_spi_write),  MP_ROM_PTR(&fpga_spi_write_obj) },
-    { MP_ROM_QSTR(MP_QSTR_spi_read),   MP_ROM_PTR(&fpga_spi_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_write),  MP_ROM_PTR(&fpga_write_obj) },
+    { MP_ROM_QSTR(MP_QSTR_read),   MP_ROM_PTR(&fpga_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_status),     MP_ROM_PTR(&fpga_status_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(fpga_module_globals, fpga_module_globals_table);

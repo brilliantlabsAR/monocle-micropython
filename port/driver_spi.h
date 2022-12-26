@@ -29,4 +29,5 @@ void spi_init(void);
 void spi_uninit(void);
 void spi_chip_select(uint8_t cs_pin);
 void spi_chip_deselect(uint8_t cs_pin);
-void spi_xfer(uint8_t *buf, size_t len);
+void spi_read(uint8_t *buf, size_t len);
+void spi_write(uint8_t *buf, size_t len);
