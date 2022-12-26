@@ -37,10 +37,10 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
-#include "driver_board.h"
-#include "driver_iqs620.h"
-#include "driver_i2c.h"
-#include "driver_config.h"
+#include "driver/board.h"
+#include "driver/iqs620.h"
+#include "driver/i2c.h"
+#include "driver/config.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  BOARD_ASSERT

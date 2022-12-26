@@ -29,7 +29,7 @@
 
 #include "mphalport.h"
 #include "mpconfigport.h"
-#include "driver_max77654.h"
+#include "driver/max77654.h"
 
 enum {
     LED_RED,

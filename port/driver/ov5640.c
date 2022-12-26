@@ -35,11 +35,11 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
-#include "driver_board.h"
-#include "driver_ov5640.h"
-#include "driver_ov5640_data.h"
-#include "driver_i2c.h"
-#include "driver_config.h"
+#include "driver/board.h"
+#include "driver/ov5640.h"
+#include "driver/ov5640_data.h"
+#include "driver/i2c.h"
+#include "driver/config.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT BOARD_ASSERT

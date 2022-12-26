@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "driver_checksum.h"
+#include "driver/checksum.h"
 
 /**
  * This function add each bytes of the buffer (passes) of size (passed).

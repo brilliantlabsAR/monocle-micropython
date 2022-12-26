@@ -31,10 +31,10 @@
 #include "nrf_gpio.h"
 #include "nrfx_log.h"
 
-#include "driver_board.h"
-#include "driver_timer.h"
-#include "driver_config.h"
-#include "driver_battery.h"
+#include "driver/board.h"
+#include "driver/timer.h"
+#include "driver/config.h"
+#include "driver/battery.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  BOARD_ASSERT

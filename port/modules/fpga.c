@@ -29,9 +29,9 @@
 
 #include "nrfx_log.h"
 
-#include "driver_fpga.h"
-#include "driver_spi.h"
-#include "driver_config.h"
+#include "driver/fpga.h"
+#include "driver/spi.h"
+#include "driver/config.h"
 
 static inline void write_addr(mp_obj_t obj)
 {

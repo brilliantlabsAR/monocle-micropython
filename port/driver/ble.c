@@ -35,9 +35,9 @@
 #include "nrf_sdm.h"
 #include "nrfx_log.h"
 
-#include "driver_board.h"
-#include "driver_config.h"
-#include "driver_ble.h"
+#include "driver/board.h"
+#include "driver/config.h"
+#include "driver/ble.h"
 
 #define BLE_ADV_MAX_SIZE 31
 #define BLE_MAX_MTU_LENGTH          128

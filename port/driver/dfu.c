@@ -33,7 +33,7 @@
 #include "nrf_soc.h"
 #include "nrfx_log.h"
 
-#include "driver_dfu.h"
+#include "driver/dfu.h"
 
 #define LOG     NRFX_LOG
 

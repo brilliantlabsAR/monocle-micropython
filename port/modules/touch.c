@@ -27,7 +27,7 @@
 
 #include "nrfx_log.h"
 
-#include "driver_touch.h"
+#include "driver/touch.h"
 
 #define LOG NRFX_LOG_ERROR
 
@@ -41,7 +41,7 @@ enum {
 };
 
 /**
- * Overriding the default callback implemented in driver_iqs620.c
+ * Overriding the default callback implemented in driver/iqs620.c
  * @param trigger The trigger that ran the callback.
  */
 void touch_callback(touch_state_t trigger)

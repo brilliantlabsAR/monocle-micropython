@@ -33,14 +33,14 @@
 
 #include "nrfx_twi.h"
 
-#include "driver_i2c.h"
+#include "driver/i2c.h"
 #include "nrf_gpio.h"
-#include "driver_config.h"
+#include "driver/config.h"
 #include "nrfx_log.h"
 
-#include "driver_board.h"
-#include "driver_config.h"
-#include "driver_i2c.h"
+#include "driver/board.h"
+#include "driver/config.h"
+#include "driver/i2c.h"
 
 #define LOG     NRFX_LOG_OFF
 #define ASSERT  NRFX_ASSERT

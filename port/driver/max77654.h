@@ -27,7 +27,7 @@
  * There are at least 5 Different voltage outputs.
  * Main Power Rail:
  * - 1.8V Power Rail: MCU and the Touch IC, Always on.
- * Auxillary Power Rails, tured ON by MCU in a specific routine, in driver_board.c.
+ * Auxillary Power Rails, tured ON by MCU in a specific routine, in driver/board.c.
  * - 1.2V Power Rail
  * - 2.7V Power Rail
  * - 10V Power Rail

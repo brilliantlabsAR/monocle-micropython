@@ -32,11 +32,11 @@
 #include "nrf_soc.h"
 #include "nrfx_reset_reason.h"
 
-#include "driver_board.h"
-#include "driver_ov5640.h"
-#include "driver_ecx336cn.h"
-#include "driver_max77654.h"
-#include "driver_battery.h"
+#include "driver/board.h"
+#include "driver/ov5640.h"
+#include "driver/ecx336cn.h"
+#include "driver/max77654.h"
+#include "driver/battery.h"
 
 #define PYB_RESET_HARD      (0)
 #define PYB_RESET_WDT       (1)

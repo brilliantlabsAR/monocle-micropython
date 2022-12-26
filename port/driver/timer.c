@@ -33,8 +33,8 @@
 #include "nrfx_log.h"
 #include "nrfx_timer.h"
 
-#include "driver_timer.h"
-#include "driver_config.h"
+#include "driver/timer.h"
+#include "driver/config.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT

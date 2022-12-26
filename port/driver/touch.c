@@ -34,11 +34,11 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
-#include "driver_touch.h"
-#include "driver_timer.h"
-#include "driver_iqs620.h"
-#include "driver_i2c.h"
-#include "driver_config.h"
+#include "driver/touch.h"
+#include "driver/timer.h"
+#include "driver/iqs620.h"
+#include "driver/i2c.h"
+#include "driver/config.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT

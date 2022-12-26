@@ -29,9 +29,9 @@
 
 #include "nrfx_log.h"
 
-#include "driver_fpga.h"
-#include "driver_spi.h"
-#include "driver_config.h"
+#include "driver/fpga.h"
+#include "driver/spi.h"
+#include "driver/config.h"
 
 STATIC mp_obj_t display_show(void)
 {

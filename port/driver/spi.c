@@ -31,8 +31,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "driver_spi.h"
-#include "driver_config.h"
+#include "driver/spi.h"
+#include "driver/config.h"
 #include "nrfx_log.h"
 #include "nrfx_spim.h"
 #include "nrfx_systick.h"

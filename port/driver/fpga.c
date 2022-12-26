@@ -32,11 +32,11 @@
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
-#include "driver_board.h"
-#include "driver_fpga.h"
-#include "driver_ov5640.h"
-#include "driver_spi.h"
-#include "driver_config.h"
+#include "driver/board.h"
+#include "driver/fpga.h"
+#include "driver/ov5640.h"
+#include "driver/spi.h"
+#include "driver/config.h"
 
 #define LOG NRFX_LOG_ERROR
 #define ASSERT BOARD_ASSERT

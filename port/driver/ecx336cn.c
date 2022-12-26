@@ -35,10 +35,10 @@
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
 
-#include "driver_board.h"
-#include "driver_config.h"
-#include "driver_ecx336cn.h"
-#include "driver_spi.h"
+#include "driver/board.h"
+#include "driver/config.h"
+#include "driver/ecx336cn.h"
+#include "driver/spi.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  BOARD_ASSERT

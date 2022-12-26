@@ -36,7 +36,7 @@
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
 
-#include "driver_dfu.h"
+#include "driver/dfu.h"
 #include "ble_gap.h"
 
 /**

@@ -41,9 +41,9 @@
 #include "nrf_sdm.h"
 #include "nrfx_systick.h"
 
-#include "driver_ble.h"
-#include "driver_board.h"
-#include "driver_battery.h" // debug
+#include "driver/ble.h"
+#include "driver/board.h"
+#include "driver/battery.h" // debug
 
 /** Variable that holds the Softdevice NVIC state.  */
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};

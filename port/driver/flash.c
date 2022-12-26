@@ -33,10 +33,10 @@
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
 
-#include "driver_spi.h"
-#include "driver_board.h"
-#include "driver_config.h"
-#include "driver_flash.h"
+#include "driver/spi.h"
+#include "driver/board.h"
+#include "driver/config.h"
+#include "driver/flash.h"
 
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 #define ASSERT BOARD_ASSERT
