@@ -33,13 +33,13 @@
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
 
-#include "driver/spi.h"
-#include "driver/board.h"
 #include "driver/config.h"
 #include "driver/flash.h"
+#include "driver/max77654.h"
+#include "driver/spi.h"
 
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
-#define ASSERT BOARD_ASSERT
+#define ASSERT NRFX_ASSERT
 
 #define FLASH_CMD_PROGRAM_PAGE      0x02
 #define FLASH_CMD_READ              0x03
@@ -59,37 +59,6 @@ void flash_prepare(void)
     // Prepare the SPI_CS pin for the flash.
     nrf_gpio_pin_set(SPIM0_FLASH_CS_PIN);
     nrf_gpio_cfg_output(SPIM0_FLASH_CS_PIN);
-}
-
-/**
- * Configure the SPI peripheral.
- */
-void flash_init(void)
-{
-    LOG("id=0x%02X", (int)flash_get_device_id());
-    nrfx_systick_delay_ms(100);
-    LOG("id=0x%02X", (int)flash_get_device_id());
-    nrfx_systick_delay_ms(100);
-    LOG("id=0x%02X", (int)flash_get_device_id());
-    nrfx_systick_delay_ms(100);
-    LOG("id=0x%02X", (int)flash_get_device_id());
-    nrfx_systick_delay_ms(100);
-    LOG("id=0x%02X", (int)flash_get_device_id());
-    nrfx_systick_delay_ms(100);
-    LOG("id=0xXXXX");
-
-    LOG("id=0xXXXX");
-    LOG("ready");
-    LOG("id=0xXXXX");
-    LOG("ready");
-    LOG("id=0xXXXX");
-    LOG("ready");
-    LOG("id=0xXXXX");
-    LOG("ready");
-    LOG("id=0xXXXX");
-    LOG("ready");
-    LOG("id=0xXXXX");
-    LOG("ready");
 }
 
 /**
@@ -209,4 +178,22 @@ uint8_t flash_get_device_id(void)
 
     flash_cmd_input(FLASH_CMD_DEVICE_ID, &id, 1);
     return id;
+}
+
+bool flash_ready;
+
+/**
+ * Configure the SPI peripheral.
+ */
+void flash_init(void)
+{
+    if (flash_ready)
+        return;
+
+    // dependencies:
+    max77654_rail_1v8(true);
+    spi_init();
+
+    LOG("ready id=0x%02X", flash_get_device_id());
+    flash_ready = true;
 }

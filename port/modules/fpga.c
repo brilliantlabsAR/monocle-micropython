@@ -29,39 +29,78 @@
 
 #include "nrfx_log.h"
 
-#include "driver/fpga.h"
-#include "driver/spi.h"
 #include "driver/config.h"
+#include "driver/fpga.h"
+#include "driver/max77654.h"
+#include "driver/spi.h"
 
-static inline void write_addr(mp_obj_t obj)
+STATIC mp_obj_t mod_fpga___init__(void)
 {
-    uint8_t buf[] = {
-        mp_obj_get_int(obj) >> 0,
-        mp_obj_get_int(obj) >> 8,
-    };
-    spi_write(buf, sizeof buf);
-}
-
-STATIC mp_obj_t fpga_read(mp_obj_t addr_in, mp_obj_t bytearray_in)
-{
-    mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
-
-    spi_chip_select(SPIM0_FPGA_CS_PIN);
-    write_addr(addr_in);
-    spi_read(bytearray->items, bytearray->len);
-    spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+    // dependencies:
+    fpga_init();
 
     return mp_const_none;
 }
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_fpga___init___obj, mod_fpga___init__);
+
+static inline void write_addr(uint16_t addr)
+{
+    uint8_t buf[] = { addr >> 0, addr >> 8, };
+    spi_write(buf, sizeof buf);
+}
+
+STATIC mp_obj_t fpga_read(mp_obj_t addr_in, mp_obj_t len_in)
+{
+    uint16_t addr = mp_obj_get_int(addr_in);
+    size_t len = mp_obj_get_int(len_in);
+
+    // Allocate a buffer for reading data into
+    uint8_t *out_data = m_malloc(len);
+
+    // Create a list where we'll return the bytes
+    mp_obj_t return_list = mp_obj_new_list(0, NULL);
+
+    // Read on the SPI using the command and address given
+    spi_chip_select(SPIM0_FPGA_CS_PIN);
+    write_addr(addr);
+    spi_read(out_data, len);
+    spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+
+    // Copy the read bytes into the list object
+    for (size_t i = 0; i < len; i++)
+    {
+        mp_obj_list_append(return_list, MP_OBJ_NEW_SMALL_INT(out_data[i]));
+    }
+
+    // Free the temporary buffer
+    m_free(out_data);
+
+    // Return the list
+    return MP_OBJ_FROM_PTR(return_list);
+}
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(fpga_read_obj, fpga_read);
 
-STATIC mp_obj_t fpga_write(mp_obj_t addr_in, mp_obj_t bytearray_in)
+STATIC mp_obj_t fpga_write(mp_obj_t addr_in, mp_obj_t list_in)
 {
-    mp_obj_array_t *bytearray = MP_OBJ_TO_PTR(bytearray_in);
+    uint16_t addr = mp_obj_get_int(addr_in);
+
+    // Extract the buffer of elements and size from the python object.
+    size_t len = 0;
+    mp_obj_t *elems = NULL;
+    mp_obj_list_get(list_in, &len, &elems);
+
+    // Create a contiguous region with the bytes to read in.
+    uint8_t *in_data = m_malloc(len);
+
+    // Copy the write bytes into the a continuous buffer
+    for (size_t i = 0; i < len; i++)
+    {
+        in_data[i] = MP_OBJ_NEW_SMALL_INT(in_data[i]);
+    }
 
     spi_chip_select(SPIM0_FPGA_CS_PIN);
-    write_addr(addr_in);
-    spi_write(bytearray->items, bytearray->len);
+    write_addr(addr);
+    spi_write(in_data, len);
     spi_chip_deselect(SPIM0_FPGA_CS_PIN);
 
     return mp_const_none;
@@ -75,9 +114,13 @@ STATIC mp_obj_t fpga_status(void)
 MP_DEFINE_CONST_FUN_OBJ_0(fpga_status_obj, &fpga_status);
 
 STATIC const mp_rom_map_elem_t fpga_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_write),  MP_ROM_PTR(&fpga_write_obj) },
-    { MP_ROM_QSTR(MP_QSTR_read),   MP_ROM_PTR(&fpga_read_obj) },
-    { MP_ROM_QSTR(MP_QSTR_status),     MP_ROM_PTR(&fpga_status_obj) },
+    { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_fpga) },
+    { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&mod_fpga___init___obj) },
+
+    // methods
+    { MP_ROM_QSTR(MP_QSTR_write),       MP_ROM_PTR(&fpga_write_obj) },
+    { MP_ROM_QSTR(MP_QSTR_read),        MP_ROM_PTR(&fpga_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_status),      MP_ROM_PTR(&fpga_status_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(fpga_module_globals, fpga_module_globals_table);
 

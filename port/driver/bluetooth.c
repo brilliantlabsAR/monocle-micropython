@@ -35,7 +35,6 @@
 #include "nrf_sdm.h"
 #include "nrfx_log.h"
 
-#include "driver/board.h"
 #include "driver/config.h"
 #include "driver/bluetooth.h"
 
@@ -196,7 +195,8 @@ int ble_nus_rx(void)
 
 void ble_nus_tx(char const *buf, size_t sz)
 {
-    for (; sz > 0; buf++, sz--) {
+    for (; sz > 0; buf++, sz--)
+    {
         while (ring_full(&nus_tx))
             ble_nus_flush_tx();
         ring_push(&nus_tx, *buf);
@@ -447,82 +447,6 @@ static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
 }
 
 /**
- * Initialise the bluetooth low energy driver.
- * Initialises the softdevice and Bluetooth functionality.
- * It features a single GATT profile for UART communication, used by the REPL.
- */
-void ble_init(void)
-{
-    // Error code variable
-    uint32_t err;
-
-    // Init LF clock
-    nrf_clock_lf_cfg_t clock_config = {
-        .source = NRF_CLOCK_LF_SRC_XTAL,
-        .rc_ctiv = 0,
-        .rc_temp_ctiv = 0,
-        .accuracy = NRF_CLOCK_LF_ACCURACY_10_PPM
-    };
-
-    // Enable the softdevice
-    err = sd_softdevice_enable(&clock_config, softdevice_assert_handler);
-    ASSERT(!err);
-
-    // Enable softdevice interrupt
-    err = sd_nvic_EnableIRQ((IRQn_Type)SD_EVT_IRQn);
-    ASSERT(!err);
-
-    // Enable the DC-DC convertor
-    err = sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE);
-    ASSERT(!err);
-
-    // Set configuration parameters for the SoftDevice suitable for this code.
-    ble_configure_softdevice();
-
-    // Start bluetooth. `ram_start` is the address of a variable containing an address, defined in the linker script.
-    // It updates that address with another one planning ahead the RAM needed by the softdevice.
-    err = sd_ble_enable(&ram_start);
-    ASSERT(!err);
-
-    // Set security to open
-    ble_gap_conn_sec_mode_t sec_mode;
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
-
-    // Set device name. Last four characters are taken from MAC address ;
-    err = sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)BLE_DEVICE_NAME, sizeof BLE_DEVICE_NAME - 1);
-    ASSERT(!err);
-
-    // Set connection parameters
-    ble_gap_conn_params_t gap_conn_params = {0};
-    gap_conn_params.min_conn_interval = (15 * 1000) / 1250;
-    gap_conn_params.max_conn_interval = (15 * 1000) / 1250;
-    gap_conn_params.slave_latency = 3;
-    gap_conn_params.conn_sup_timeout = (2000 * 1000) / 10000;
-    err = sd_ble_gap_ppcp_set(&gap_conn_params);
-    ASSERT(!err);
-
-    // Add name to advertising payload
-    ble_adv_add_device_name(BLE_DEVICE_NAME);
-
-    // Set discovery mode flag
-    ble_adv_add_discovery_mode();
-
-    ble_uuid_t nus_service_uuid, raw_service_uuid;
-
-    // Configure the Nordic UART Service (NUS) and custom "raw" service.
-    ble_configure_nus_service(&nus_service_uuid);
-    ble_configure_raw_service(&raw_service_uuid);
-
-    // Add only the Nordic UART Service to the advertisement.
-    ble_adv_add_uuid(&nus_service_uuid);
-
-    // Submit the adv now that it is complete.
-    ble_adv_start();
-
-    LOG("ready services=uart,data");
-}
-
-/**
  * BLE event handler.
  */
 void SWI2_IRQHandler(void)
@@ -741,4 +665,86 @@ void SWI2_IRQHandler(void)
         }
         }
     }
+}
+
+bool ble_ready;
+
+/**
+ * Initialise the bluetooth low energy driver.
+ * Initialises the softdevice and Bluetooth functionality.
+ * It features a single GATT profile for UART communication, used by the REPL.
+ */
+void ble_init(void)
+{
+    // Error code variable
+    uint32_t err;
+
+    if (ble_ready)
+        return;
+
+    // Init LF clock
+    nrf_clock_lf_cfg_t clock_config = {
+        .source = NRF_CLOCK_LF_SRC_XTAL,
+        .rc_ctiv = 0,
+        .rc_temp_ctiv = 0,
+        .accuracy = NRF_CLOCK_LF_ACCURACY_10_PPM
+    };
+
+    // Enable the softdevice
+    err = sd_softdevice_enable(&clock_config, softdevice_assert_handler);
+    ASSERT(!err);
+
+    // Enable softdevice interrupt
+    err = sd_nvic_EnableIRQ((IRQn_Type)SD_EVT_IRQn);
+    ASSERT(!err);
+
+    // Enable the DC-DC convertor
+    err = sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE);
+    ASSERT(!err);
+
+    // Set configuration parameters for the SoftDevice suitable for this code.
+    ble_configure_softdevice();
+
+    // Start bluetooth. `ram_start` is the address of a variable containing an address, defined in the linker script.
+    // It updates that address with another one planning ahead the RAM needed by the softdevice.
+    err = sd_ble_enable(&ram_start);
+    ASSERT(!err);
+
+    // Set security to open
+    ble_gap_conn_sec_mode_t sec_mode;
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
+
+    // Set device name. Last four characters are taken from MAC address ;
+    err = sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)BLE_DEVICE_NAME, sizeof BLE_DEVICE_NAME - 1);
+    ASSERT(!err);
+
+    // Set connection parameters
+    ble_gap_conn_params_t gap_conn_params = {0};
+    gap_conn_params.min_conn_interval = (15 * 1000) / 1250;
+    gap_conn_params.max_conn_interval = (15 * 1000) / 1250;
+    gap_conn_params.slave_latency = 3;
+    gap_conn_params.conn_sup_timeout = (2000 * 1000) / 10000;
+    err = sd_ble_gap_ppcp_set(&gap_conn_params);
+    ASSERT(!err);
+
+    // Add name to advertising payload
+    ble_adv_add_device_name(BLE_DEVICE_NAME);
+
+    // Set discovery mode flag
+    ble_adv_add_discovery_mode();
+
+    ble_uuid_t nus_service_uuid, raw_service_uuid;
+
+    // Configure the Nordic UART Service (NUS) and custom "raw" service.
+    ble_configure_nus_service(&nus_service_uuid);
+    ble_configure_raw_service(&raw_service_uuid);
+
+    // Add only the Nordic UART Service to the advertisement.
+    ble_adv_add_uuid(&nus_service_uuid);
+
+    // Submit the adv now that it is complete.
+    ble_adv_start();
+
+    LOG("ready services=uart,data");
+    ble_ready = true;
 }

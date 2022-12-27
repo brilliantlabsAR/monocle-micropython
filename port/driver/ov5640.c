@@ -35,14 +35,15 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
-#include "driver/board.h"
-#include "driver/ov5640.h"
-#include "driver/ov5640_data.h"
-#include "driver/i2c.h"
 #include "driver/config.h"
+#include "driver/fpga.h"
+#include "driver/i2c.h"
+#include "driver/max77654.h"
+#include "driver/ov5640_data.h"
+#include "driver/ov5640.h"
 
 #define LOG     NRFX_LOG
-#define ASSERT BOARD_ASSERT
+#define ASSERT NRFX_ASSERT
 #define LEN(x) (sizeof (x) / sizeof *(x))
 
 static inline void ov5640_delay_ms(uint32_t ms)
@@ -129,31 +130,6 @@ void ov5640_prepare(void)
     // Set to 0V = not asserted.
     nrf_gpio_pin_write(OV5640_PWDN_PIN, false);
     nrf_gpio_cfg_output(OV5640_PWDN_PIN);
-}
-
-/**
- * Init the camera.
- * Trigger initialisation of the chip, controlling its reset and power pins.
- */
-void ov5640_init(void)
-{
-    ov5640_pin_pwdn(true);
-    ov5640_pin_nresetb(false);
-
-    ov5640_pwr_on();
-    ov5640_light_mode(0);
-    ov5640_color_saturation(3);
-    ov5640_brightness(4);
-    ov5640_contrast(3);
-    ov5640_sharpness(33);
-    ov5640_flip(true);
-    ov5640_focus_init();
-
-    // Check the chip ID
-    uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
-    ASSERT(id == OV5640_ID);
-
-    LOG("ready max_resolution=2592x1944 id=0x%04X", id);
 }
 
 /**
@@ -533,4 +509,41 @@ void ov5640_focus_init(void)
     ov5640_delay_ms(10);
     state = ov5640_read_reg(0x3029);
     ASSERT(state == 0x70);
+}
+
+bool ov5640_ready;
+
+/**
+ * Init the camera.
+ * Trigger initialisation of the chip, controlling its reset and power pins.
+ */
+void ov5640_init(void)
+{
+    if (ov5640_ready)
+        return;
+
+    // dependencies:
+    max77654_rail_1v8(true);
+    max77654_rail_10v(true);
+    i2c_init();
+    fpga_init();
+
+    ov5640_pin_pwdn(true);
+    ov5640_pin_nresetb(false);
+
+    ov5640_pwr_on();
+    ov5640_light_mode(0);
+    ov5640_color_saturation(3);
+    ov5640_brightness(4);
+    ov5640_contrast(3);
+    ov5640_sharpness(33);
+    ov5640_flip(true);
+    ov5640_focus_init();
+
+    // Check the chip ID
+    uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
+    ASSERT(id == OV5640_ID);
+
+    LOG("ready max_resolution=2592x1944 id=0x%04X", id);
+    ov5640_ready = true;
 }

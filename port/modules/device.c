@@ -59,6 +59,12 @@ STATIC const MP_DEFINE_STR_OBJ(device_board_name_obj, MICROPY_HW_BOARD_NAME);
  */
 STATIC const MP_DEFINE_STR_OBJ(device_mcu_name_obj, MICROPY_HW_MCU_NAME);
 
+STATIC mp_obj_t mod_device___init__(void)
+{
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_device___init___obj, mod_device___init__);
+
 STATIC mp_obj_t device_update(const mp_obj_t reboot)
 {
     if (mp_obj_is_true(reboot))
@@ -91,6 +97,9 @@ MP_DEFINE_CONST_FUN_OBJ_0(device_mac_address_obj, device_mac_address);
 
 
 STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_device) },
+    { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&mod_device___init___obj) },
+
     // methods
     { MP_ROM_QSTR(MP_QSTR_mac_address),         MP_ROM_PTR(&device_mac_address_obj) },
     { MP_ROM_QSTR(MP_QSTR_update),              MP_ROM_PTR(&device_update_obj) },

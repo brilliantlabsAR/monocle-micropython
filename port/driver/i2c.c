@@ -38,7 +38,6 @@
 #include "driver/config.h"
 #include "nrfx_log.h"
 
-#include "driver/board.h"
 #include "driver/config.h"
 #include "driver/i2c.h"
 
@@ -59,7 +58,8 @@ static volatile bool m_xfer_nack = false;
  */
 static inline bool i2c_filter_error(char const *func, nrfx_err_t err)
 {
-    switch (err) {
+    switch (err)
+    {
         case NRFX_SUCCESS:
             return true;
         case NRFX_ERROR_DRV_TWI_ERR_ANACK:
@@ -68,38 +68,6 @@ static inline bool i2c_filter_error(char const *func, nrfx_err_t err)
             LOG("%s, %s", func, NRFX_LOG_ERROR_STRING_GET(err));
             return false;
     }
-}
-
-/**
- * Configure the hardware I2C instance as well as software-based I2C instance.
- */
-// TODO: validate that 400kH speed works & increase to that
-void i2c_init(void)
-{
-    uint32_t err;
-    nrfx_twi_config_t config = {0};
-
-    config.scl                = I2C0_SCL_PIN;
-    config.sda                = I2C0_SDA_PIN;
-    config.frequency          = NRF_TWI_FREQ_100K;
-    config.interrupt_priority = NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY;
-
-    err = nrfx_twi_init(&i2c0, &config, NULL, NULL);
-    ASSERT(err == NRFX_SUCCESS);
-
-    nrfx_twi_enable(&i2c0);
-
-    config.scl                = I2C1_SCL_PIN;
-    config.sda                = I2C1_SDA_PIN;
-    config.frequency          = NRF_TWI_FREQ_100K;
-    config.interrupt_priority = NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY;
-
-    err = nrfx_twi_init(&i2c1, &config, NULL, NULL);
-    ASSERT(err == NRFX_SUCCESS);
-
-    nrfx_twi_enable(&i2c1);
-
-    LOG("ready nrfx=twi");
 }
 
 /**
@@ -152,12 +120,52 @@ void i2c_scan(nrfx_twi_t twi)
     uint8_t sample_data;
     bool detected_device = false;
 
-    for (addr = 1; addr <= 127; addr++) {
-        if (i2c_read(twi, addr, &sample_data, sizeof(sample_data))) {
+    for (addr = 1; addr <= 127; addr++)
+    {
+        if (i2c_read(twi, addr, &sample_data, sizeof(sample_data)))
+        {
             detected_device = true;
             LOG("I2C device found: addr=0x%02X", addr);
         }
     }
     if (! detected_device)
         LOG("No I2C device found");
+}
+
+bool i2c_ready;
+
+/**
+ * Configure the hardware I2C instance as well as software-based I2C instance.
+ */
+// TODO: validate that 400kH speed works & increase to that
+void i2c_init(void)
+{
+    uint32_t err;
+    nrfx_twi_config_t config = {0};
+
+    if (i2c_ready)
+        return;
+
+    config.scl                = I2C0_SCL_PIN;
+    config.sda                = I2C0_SDA_PIN;
+    config.frequency          = NRF_TWI_FREQ_100K;
+    config.interrupt_priority = NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY;
+
+    err = nrfx_twi_init(&i2c0, &config, NULL, NULL);
+    ASSERT(err == NRFX_SUCCESS);
+
+    nrfx_twi_enable(&i2c0);
+
+    config.scl                = I2C1_SCL_PIN;
+    config.sda                = I2C1_SDA_PIN;
+    config.frequency          = NRF_TWI_FREQ_100K;
+    config.interrupt_priority = NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY;
+
+    err = nrfx_twi_init(&i2c1, &config, NULL, NULL);
+    ASSERT(err == NRFX_SUCCESS);
+
+    nrfx_twi_enable(&i2c1);
+
+    LOG("ready nrfx=twi");
+    i2c_ready = true;
 }

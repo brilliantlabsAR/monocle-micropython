@@ -32,14 +32,14 @@
 
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
+#include "nrfx_systick.h"
 
-#include "driver/board.h"
 #include "driver/max77654.h"
 #include "driver/i2c.h"
 #include "driver/config.h"
 
 #define LOG     NRFX_LOG
-#define ASSERT  BOARD_ASSERT
+#define ASSERT  NRFX_ASSERT
 #define LEN(x)  (sizeof x / sizeof *x)
 
 /** Allowable charge current in mA; to protect battery, disallow any higher setting (even if configurable). */
@@ -475,12 +475,188 @@ struct { uint8_t addr, data; } max77654_conf[] = {
 };
 
 /**
+ * Turn the 1.8V rail on/off powering all 1.8V components of the circuit.
+ * @param on True for power on.
+ */
+void max77654_rail_1v8(bool on)
+{
+    uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
+    max77654_write(MAX77654_CNFG_LDO0_B,
+      MAX77654_CNFG_LDO_B_MD | MAX77654_CNFG_LDO_B_ADE | en);
+    nrfx_systick_delay_ms(1);
+}
+
+/**
+ * Turn the 2.7V rail on/off powering all 2.7V components of the circuit.
+ * @param on True for power on.
+ */
+void max77654_rail_2v7(bool on)
+{
+    uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
+    max77654_write(MAX77654_CNFG_SBB0_B,
+      MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | en);
+    nrfx_systick_delay_ms(1);
+}
+
+/**
+ * Turn the 1.2V rail on/off powering all 1.2V components of the circuit.
+ * @param on True for power on.
+ */
+void max77654_rail_1v2(bool on)
+{
+    uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
+    max77654_write(MAX77654_CNFG_SBB2_B,
+      MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | en);
+    nrfx_systick_delay_ms(1);
+}
+
+/**
+ * Turn the 10V rail on/off powering all 10V components of the circuit.
+ * @param on True for power on.
+ */
+void max77654_rail_10v(bool on)
+{
+    // push-pull high for on, push-pull low for off
+    uint8_t en = on ? MAX77654_DO : 0;
+    max77654_write(MAX77654_CNFG_GPIO2, MAX77654_DRV | en); 
+    nrfx_systick_delay_ms(1);
+}
+
+/**
+ * Enable the power rail used to power the LEDs.
+ */
+void max77654_rail_vled(bool on)
+{
+    uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
+    max77654_write(MAX77654_CNFG_LDO1_B, MAX77654_CNFG_LDO_B_ADE | en);
+    nrfx_systick_delay_ms(1);
+}
+
+// open-drain, set low, LED on
+#define LED_ON 0x00
+
+// open-drain, set to hi-Z, LED off
+#define LED_OFF MAX77654_DO
+
+/**
+ * Turn the red led connected to the max77654 on or off.
+ * @param on Desired state of the led.
+ */
+void max77654_led_red(bool on)
+{
+    max77654_write(MAX77654_CNFG_GPIO0, on ? LED_ON : LED_OFF);
+}
+
+/**
+ * Turn the green led connected to the max77654 on or off.
+ * @param on Desired state of the led.
+ */
+void max77654_led_green(bool on)
+{
+    max77654_write(MAX77654_CNFG_GPIO1, on ? LED_ON : LED_OFF);
+}
+
+/**
+ * Get the battery status.
+ * @return Current status of charge.
+ */
+max77654_status max77654_charging_status(void)
+{
+    uint8_t val;
+
+    val = max77654_read((MAX77654_STAT_CHG_B) & MAX77654_CHG_DTLS_Msk);
+    LOG("MAX77654 Status = 0x%02X.", val);
+
+    switch (val)
+    {
+        case MAX77654_CHG_DTLS_OFF:
+            return MAX77654_READY;
+        case MAX77654_CHG_DTLS_DONE:
+        case MAX77654_CHG_DTLS_DONE_J:
+            return MAX77654_CHARGE_DONE;
+        case MAX77654_CHG_DTLS_FAULT_PRE_Q:
+        case MAX77654_CHG_DTLS_FAULT_TIME:
+        case MAX77654_CHG_DTLS_FAULT_TEMP:
+            return MAX77654_FAULT;
+        default:
+            return MAX77654_CHARGING;
+    }
+}
+
+/**
+ * Query the fault status of the device.
+ * @return An enum with the type of the fault.
+ */
+max77654_fault max77654_faults_status(void)
+{
+    switch (max77654_read(MAX77654_STAT_CHG_B) & MAX77654_CHG_DTLS_Msk)
+    {
+        case MAX77654_CHG_DTLS_FAULT_PRE_Q:
+            return MAX77654_FAULT_PRE_Q;
+        case MAX77654_CHG_DTLS_FAULT_TIME:
+            return MAX77654_FAULT_TIME;
+        case MAX77654_CHG_DTLS_FAULT_TEMP:
+            return MAX77654_FAULT_TEMP;
+        default:
+            return MAX77654_NORMAL;
+    }
+}
+
+/**
+ * Set input current upper limit (in mA).
+ * @param current Range is 95 to 475 in increments of 95mA, see MAX77654_CNFG_CHG_B definitions.
+ */
+void max77654_set_current_limit(uint16_t current)
+{
+    uint8_t charge_bits = 0;
+
+    if (current <= 95)
+    {
+        charge_bits = MAX77654_ICHGIN_LIM_95MA;
+    }
+    else if (current <= 190)
+    {
+        charge_bits = MAX77654_ICHGIN_LIM_190MA;
+    }
+    else if (current <= 285)
+    {
+        charge_bits = MAX77654_ICHGIN_LIM_285MA;
+    }
+    else if (current <= 380)
+    {
+        charge_bits = MAX77654_ICHGIN_LIM_380MA;
+    }
+    else
+    {
+        charge_bits = MAX77654_ICHGIN_LIM_475MA;
+    }
+    max77654_update(MAX77654_CNFG_CHG_B, charge_bits, MAX77654_ICHGIN_LIM_Msk);
+}
+
+/**
+ * Set the device in extreme low power mode.
+ *  This disconnects the battery from the system, not powered anymore.
+ */
+void max77564_factory_ship_mode(void) 
+{
+    max77654_write(MAX77654_CNFG_GLBL, 0xA3);
+}
+
+bool max77654_ready;
+
+/**
  * Initialize the MAX77654 chip.
  *  Test results: (using resistors to simulate bulk & constant voltage charging)
  *  bulk charging current: 67.4mA, constant voltage: 4.28V
  */
 void max77654_init(void)
 {
+    if (max77654_ready)
+        return;
+
+    // dependencies:
+    i2c_init();
+
     // verify MAX77654 on I2C bus by attempting to read Chip ID register
     ASSERT(max77654_get_cid() == MAX77654_CID_EXPECTED);
 
@@ -521,156 +697,5 @@ void max77654_init(void)
     max77654_led_green(false);
 
     LOG("ready rails=1.2v,1.8v,2.7v,10v");
-}
-
-/**
- * Turn the 1.8V rail on/off powering all 1.8V components of the circuit.
- * @param on True for power on.
- */
-void max77654_rail_1v8(bool on)
-{
-    uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
-    max77654_write(MAX77654_CNFG_LDO0_B,
-      MAX77654_CNFG_LDO_B_MD | MAX77654_CNFG_LDO_B_ADE | en);
-}
-
-/**
- * Turn the 2.7V rail on/off powering all 2.7V components of the circuit.
- * @param on True for power on.
- */
-void max77654_rail_2v7(bool on)
-{
-    uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
-    max77654_write(MAX77654_CNFG_SBB0_B,
-      MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | en);
-}
-
-/**
- * Turn the 1.2V rail on/off powering all 1.2V components of the circuit.
- * @param on True for power on.
- */
-void max77654_rail_1v2(bool on)
-{
-    uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
-    max77654_write(MAX77654_CNFG_SBB2_B,
-      MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | en);
-}
-
-/**
- * Turn the 10V rail on/off powering all 10V components of the circuit.
- * @param on True for power on.
- */
-void max77654_rail_10v(bool on)
-{
-    // push-pull high for on, push-pull low for off
-    uint8_t en = on ? MAX77654_DO : 0;
-    max77654_write(MAX77654_CNFG_GPIO2, MAX77654_DRV | en); 
-}
-
-/**
- * Enable the power rail used to power the LEDs.
- */
-void max77654_rail_vled(bool on)
-{
-    uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
-    max77654_write(MAX77654_CNFG_LDO1_B, MAX77654_CNFG_LDO_B_ADE | en);
-}
-
-// open-drain, set low, LED on
-#define LED_ON 0x00
-
-// open-drain, set to hi-Z, LED off
-#define LED_OFF MAX77654_DO
-
-/**
- * Turn the red led connected to the max77654 on or off.
- * @param on Desired state of the led.
- */
-void max77654_led_red(bool on)
-{
-    max77654_write(MAX77654_CNFG_GPIO0, on ? LED_ON : LED_OFF);
-}
-
-/**
- * Turn the green led connected to the max77654 on or off.
- * @param on Desired state of the led.
- */
-void max77654_led_green(bool on)
-{
-    max77654_write(MAX77654_CNFG_GPIO1, on ? LED_ON : LED_OFF);
-}
-
-/**
- * Get the battery status.
- * @return Current status of charge.
- */
-max77654_status max77654_charging_status(void)
-{
-    uint8_t val;
-
-    val = max77654_read((MAX77654_STAT_CHG_B) & MAX77654_CHG_DTLS_Msk);
-    LOG("MAX77654 Status = 0x%02X.", val);
-
-    switch (val) {
-        case MAX77654_CHG_DTLS_OFF:
-            return MAX77654_READY;
-        case MAX77654_CHG_DTLS_DONE:
-        case MAX77654_CHG_DTLS_DONE_J:
-            return MAX77654_CHARGE_DONE;
-        case MAX77654_CHG_DTLS_FAULT_PRE_Q:
-        case MAX77654_CHG_DTLS_FAULT_TIME:
-        case MAX77654_CHG_DTLS_FAULT_TEMP:
-            return MAX77654_FAULT;
-        default:
-            return MAX77654_CHARGING;
-    }
-}
-
-/**
- * Query the fault status of the device.
- * @return An enum with the type of the fault.
- */
-max77654_fault max77654_faults_status(void)
-{
-    switch (max77654_read(MAX77654_STAT_CHG_B) & MAX77654_CHG_DTLS_Msk) {
-        case MAX77654_CHG_DTLS_FAULT_PRE_Q:
-            return MAX77654_FAULT_PRE_Q;
-        case MAX77654_CHG_DTLS_FAULT_TIME:
-            return MAX77654_FAULT_TIME;
-        case MAX77654_CHG_DTLS_FAULT_TEMP:
-            return MAX77654_FAULT_TEMP;
-        default:
-            return MAX77654_NORMAL;
-    }
-}
-
-/**
- * Set input current upper limit (in mA).
- * @param current Range is 95 to 475 in increments of 95mA, see MAX77654_CNFG_CHG_B definitions.
- */
-void max77654_set_current_limit(uint16_t current)
-{
-    uint8_t charge_bits = 0;
-
-    if (current <= 95) {
-        charge_bits = MAX77654_ICHGIN_LIM_95MA;
-    } else if (current <= 190) {
-        charge_bits = MAX77654_ICHGIN_LIM_190MA;
-    } else if (current <= 285) {
-        charge_bits = MAX77654_ICHGIN_LIM_285MA;
-    } else if (current <= 380) {
-        charge_bits = MAX77654_ICHGIN_LIM_380MA;
-    } else {
-        charge_bits = MAX77654_ICHGIN_LIM_475MA;
-    }
-    max77654_update(MAX77654_CNFG_CHG_B, charge_bits, MAX77654_ICHGIN_LIM_Msk);
-}
-
-/**
- * Set the device in extreme low power mode.
- *  This disconnects the battery from the system, not powered anymore.
- */
-void max77564_factory_ship_mode(void) 
-{
-    max77654_write(MAX77654_CNFG_GLBL, 0xA3);
+    max77654_ready = true;
 }

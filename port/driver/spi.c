@@ -57,41 +57,6 @@ void spim_event_handler(nrfx_spim_evt_t const * p_event, void *p_context)
 }
 
 /**
- * Configure the SPI peripheral.
- */
-void spi_init(void)
-{
-    uint32_t err;
-    nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
-        SPIM0_SCK_PIN, SPIM0_MOSI_PIN, SPIM0_MISO_PIN, NRFX_SPIM_PIN_NOT_USED
-    );
-
-    config.frequency = NRF_SPIM_FREQ_1M;
-    config.mode      = NRF_SPIM_MODE_3;
-    config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
-
-    err = nrfx_spim_init(&m_spi, &config, spim_event_handler, NULL);
-    ASSERT(err == NRFX_SUCCESS);
-
-    // configure CS pin for the Display (for active low)
-    nrf_gpio_pin_set(SPIM0_DISP_CS_PIN);
-    nrf_gpio_cfg_output(SPIM0_DISP_CS_PIN);
-
-    // for now, pull high to disable external flash chip
-    nrf_gpio_pin_set(SPIM0_FLASH_CS_PIN);
-    nrf_gpio_cfg_output(SPIM0_FLASH_CS_PIN);
-
-    // for now, pull high to disable external flash chip
-    nrf_gpio_pin_set(SPIM0_FPGA_CS_PIN);
-    nrf_gpio_cfg_output(SPIM0_FPGA_CS_PIN);
-
-    // initialze xfer state (needed for init/uninit cycles)
-    m_xfer_done = true;
-
-    LOG("ready nrfx=spim");
-}
-
-/**
  * Reset the SPI peripheral.
  */
 void spi_uninit(void)
@@ -164,4 +129,45 @@ void spi_write(uint8_t *buf, size_t len)
 {
     nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, len);
     spi_xfer(&xfer);
+}
+
+bool spi_ready;
+
+/**
+ * Configure the SPI peripheral.
+ */
+void spi_init(void)
+{
+    uint32_t err;
+    nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
+        SPIM0_SCK_PIN, SPIM0_MOSI_PIN, SPIM0_MISO_PIN, NRFX_SPIM_PIN_NOT_USED
+    );
+
+    if (spi_ready)
+        return;
+
+    config.frequency = NRF_SPIM_FREQ_1M;
+    config.mode      = NRF_SPIM_MODE_3;
+    config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
+
+    err = nrfx_spim_init(&m_spi, &config, spim_event_handler, NULL);
+    ASSERT(err == NRFX_SUCCESS);
+
+    // configure CS pin for the Display (for active low)
+    nrf_gpio_pin_set(SPIM0_DISP_CS_PIN);
+    nrf_gpio_cfg_output(SPIM0_DISP_CS_PIN);
+
+    // for now, pull high to disable external flash chip
+    nrf_gpio_pin_set(SPIM0_FLASH_CS_PIN);
+    nrf_gpio_cfg_output(SPIM0_FLASH_CS_PIN);
+
+    // for now, pull high to disable external flash chip
+    nrf_gpio_pin_set(SPIM0_FPGA_CS_PIN);
+    nrf_gpio_cfg_output(SPIM0_FPGA_CS_PIN);
+
+    // initialze xfer state (needed for init/uninit cycles)
+    m_xfer_done = true;
+
+    LOG("ready nrfx=spim");
+    spi_ready = true;
 }

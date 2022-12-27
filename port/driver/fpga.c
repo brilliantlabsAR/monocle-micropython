@@ -32,20 +32,20 @@
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
-#include "driver/board.h"
 #include "driver/fpga.h"
 #include "driver/ov5640.h"
 #include "driver/spi.h"
 #include "driver/config.h"
 
 #define LOG NRFX_LOG_ERROR
-#define ASSERT BOARD_ASSERT
+#define ASSERT NRFX_ASSERT
 
 void fpga_check_pins(char const *msg)
 {
     static bool first = true;
 
-    if (first) {
+    if (first)
+    {
         LOG("| INT   |       | MODE1 |       |       |");
         LOG("| RECFG | SCK   | CSN   | MOSI  | MISO  |");
         LOG("+-------+-------+-------+-------+-------+");
@@ -89,34 +89,6 @@ void fpga_prepare(void)
         NRF_GPIO_PIN_S0S1,
         NRF_GPIO_PIN_NOSENSE
     );
-}
-
-/**
- * Initial configuration of the registers of the FPGA.
- */
-void fpga_init(void)
-{
-    // Set the FPGA to boot from its internal flash.
-    nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
-    nrfx_systick_delay_ms(1);
-
-    // Issue a "reconfig" pulse.
-    // Datasheet UG290E: T_recfglw >= 70 us
-    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, false);
-    nrfx_systick_delay_ms(100); // 1000 times more than needed
-    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
-
-    // Give the FPGA some time to boot.
-    // Datasheet UG290E: T_recfgtdonel <=
-    nrfx_systick_delay_ms(100);
-
-    // Reset the CSN pin, changed as it is also MODE1.
-    nrf_gpio_pin_write(SPIM0_FPGA_CS_PIN, true);
-
-    // Give the FPGA some further time.
-    nrfx_systick_delay_ms(100);
-
-    LOG("ready model=GW1N-LV9MG100 id=0x%X version=0x%X", fpga_system_id(), fpga_system_version());
 }
 
 void fpga_deinit(void)
@@ -270,4 +242,43 @@ uint16_t fpga_capture_read_status(void)
 void fpga_capture_read_data(uint8_t *buf, size_t len)
 {
     fpga_cmd_read(FPGA_CMD_CAPTURE, 0x10, buf, len);
+}
+
+bool fpga_ready;
+
+/**
+ * Initial configuration of the registers of the FPGA.
+ */
+void fpga_init(void)
+{
+    if (fpga_ready)
+        return;
+
+    // dependencies:
+    max77654_rail_1v2(true);
+    max77654_rail_1v8(true);
+    spi_init();
+
+    // Set the FPGA to boot from its internal flash.
+    nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
+    nrfx_systick_delay_ms(1);
+
+    // Issue a "reconfig" pulse.
+    // Datasheet UG290E: T_recfglw >= 70 us
+    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, false);
+    nrfx_systick_delay_ms(100); // 1000 times more than needed
+    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
+
+    // Give the FPGA some time to boot.
+    // Datasheet UG290E: T_recfgtdonel <=
+    nrfx_systick_delay_ms(100);
+
+    // Reset the CSN pin, changed as it is also MODE1.
+    nrf_gpio_pin_write(SPIM0_FPGA_CS_PIN, true);
+
+    // Give the FPGA some further time.
+    nrfx_systick_delay_ms(100);
+
+    LOG("ready model=GW1N-LV9MG100 id=0x%X version=0x%X", fpga_system_id(), fpga_system_version());
+    fpga_ready = true;
 }

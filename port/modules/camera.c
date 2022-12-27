@@ -28,10 +28,22 @@
 #include "py/runtime.h"
 
 #include "nrfx_log.h"
+#include "nrfx_twi.h"
 
 #include "driver/fpga.h"
-#include "driver/spi.h"
+#include "driver/i2c.h"
+#include "driver/ov5640.h"
+#include "driver/max77654.h"
 #include "driver/config.h"
+
+STATIC mp_obj_t mod_camera___init__(void)
+{
+    // dependencies:
+    ov5640_init();
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_camera___init___obj, mod_camera___init__);
 
 STATIC mp_obj_t camera_capture(void)
 {
@@ -48,6 +60,10 @@ STATIC mp_obj_t camera_stop(void)
 MP_DEFINE_CONST_FUN_OBJ_0(camera_stop_obj, &camera_stop);
 
 STATIC const mp_rom_map_elem_t camera_module_globals_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_camera) },
+    { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&mod_camera___init___obj) },
+
+    // methods
     { MP_ROM_QSTR(MP_QSTR_capture),     MP_ROM_PTR(&camera_capture_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop),        MP_ROM_PTR(&camera_stop_obj) },
 };

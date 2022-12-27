@@ -29,9 +29,19 @@
 
 #include "nrfx_log.h"
 
-#include "driver/fpga.h"
-#include "driver/spi.h"
 #include "driver/config.h"
+#include "driver/ecx336cn.h"
+#include "driver/fpga.h"
+#include "driver/max77654.h"
+#include "driver/spi.h"
+
+STATIC mp_obj_t mod_display___init__(void)
+{
+    // dependencies:
+    ecx336cn_init();
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_display___init___obj, mod_display___init__);
 
 STATIC mp_obj_t display_show(void)
 {
@@ -46,6 +56,10 @@ STATIC mp_obj_t display_show(void)
 MP_DEFINE_CONST_FUN_OBJ_0(display_show_obj, &display_show);
 
 STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_display) },
+    { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&mod_display___init___obj) },
+
+    // methods
     { MP_ROM_QSTR(MP_QSTR_show),        MP_ROM_PTR(&display_show_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(display_module_globals, display_module_globals_table);

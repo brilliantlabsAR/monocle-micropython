@@ -35,13 +35,14 @@
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
 
-#include "driver/board.h"
 #include "driver/config.h"
 #include "driver/ecx336cn.h"
+#include "driver/fpga.h"
+#include "driver/max77654.h"
 #include "driver/spi.h"
 
 #define LOG     NRFX_LOG
-#define ASSERT  BOARD_ASSERT
+#define ASSERT  NRFX_ASSERT
 
 static inline const void ecx336cn_write_byte(uint8_t addr, uint8_t data)
 {
@@ -76,11 +77,59 @@ void ecx336cn_prepare(void)
     nrf_gpio_cfg_output(ECX336CN_XCLR_PIN);
 }
 
+void ecx336cn_deinit(void)
+{
+    nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);
+    nrf_gpio_cfg_default(ECX336CN_XCLR_PIN);
+}
+
+/**
+ * Configure the luminance level of the display.
+ * @param level Predefined level of luminance.
+ */
+void ecx336cn_set_luminance(ecx336cn_luminance_t level)
+{
+    // maximum value value is 4
+    ASSERT(level <= 4);
+
+    // LUMINANCE is register 0x05[3:0]; preserve other bits
+    ecx336cn_write_byte(0x05, (ecx336cn_read_byte(0x05) & 0xF8) | level);
+}
+
+/**
+ * Put the display to sleep power mode.
+ */
+void ecx336cn_sleep(void)
+{
+    ecx336cn_write_byte(0x00, 0x9E); // enter power saving mode (YUV)
+    // it is now possible to turn off the 10V rail
+}
+
+/**
+ * Power back on the dispay from sleep mode.
+ */
+void ecx336cn_awake(void)
+{
+    // the 10V power rail needs to be turned back on first
+    ecx336cn_write_byte(0x00, 0x9F); // exit power saving mode (YUV)
+}
+
+bool ecx336cn_ready;
+
 /**
  * Configure each value of the screen over SPI.
  */
 void ecx336cn_init(void)
 {
+    if (ecx336cn_ready)
+        return;
+
+    // dependencies:
+    max77654_rail_1v8(true);
+    max77654_rail_10v(true);
+    spi_init();
+    fpga_init();
+
     // power-on sequence, see Datasheet section 9
     // 1ms after 1.8V on, device has finished initializing
     nrfx_systick_delay_ms(100);
@@ -235,41 +284,5 @@ void ecx336cn_init(void)
 
     LOG("ready resolution=640x400 [0x29]=0x%02X [0x2A]=0x%02X",
             ecx336cn_read_byte(0x29), ecx336cn_read_byte(0x2A));
-}
-
-void ecx336cn_deinit(void)
-{
-    nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);
-    nrf_gpio_cfg_default(ECX336CN_XCLR_PIN);
-}
-
-/**
- * Configure the luminance level of the display.
- * @param level Predefined level of luminance.
- */
-void ecx336cn_set_luminance(ecx336cn_luminance_t level)
-{
-    // maximum value value is 4
-    ASSERT(level <= 4);
-
-    // LUMINANCE is register 0x05[3:0]; preserve other bits
-    ecx336cn_write_byte(0x05, (ecx336cn_read_byte(0x05) & 0xF8) | level);
-}
-
-/**
- * Put the display to sleep power mode.
- */
-void ecx336cn_sleep(void)
-{
-    ecx336cn_write_byte(0x00, 0x9E); // enter power saving mode (YUV)
-    // it is now possible to turn off the 10V rail
-}
-
-/**
- * Power back on the dispay from sleep mode.
- */
-void ecx336cn_awake(void)
-{
-    // the 10V power rail needs to be turned back on first
-    ecx336cn_write_byte(0x00, 0x9F); // exit power saving mode (YUV)
+    ecx336cn_ready = true;
 }

@@ -42,8 +42,7 @@
 #include "nrfx_systick.h"
 
 #include "driver/bluetooth.h"
-#include "driver/board.h"
-#include "driver/battery.h" // debug
+#include "driver/power.h"
 
 /** Variable that holds the Softdevice NVIC state.  */
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
@@ -98,9 +97,6 @@ int main(void)
     // Initialise BLE, also used for logging
     ble_init();
 
-    // Configure the hardware and IO pins
-    board_init();
-
     // Initialise the stack pointer for the main thread
     mp_stack_set_top(&_stack_top);
 
@@ -122,7 +118,7 @@ int main(void)
     // REPL mode can change, or it can request a soft reset
     for (int stop = false; !stop;) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
-            stop = pyexec_raw_repl(); 
+            stop = pyexec_raw_repl();
         } else {
             stop = pyexec_friendly_repl();
         }
@@ -130,7 +126,7 @@ int main(void)
     }
 
     // Deinitialize the board and power things off early
-    board_deinit();
+    //power_off(); // TODO: implement this?
 
     // Garbage collection ready to exit
     gc_sweep_all(); // TODO optimize away GC if space needed later

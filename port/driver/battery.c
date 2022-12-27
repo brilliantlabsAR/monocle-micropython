@@ -31,13 +31,12 @@
 #include "nrf_gpio.h"
 #include "nrfx_log.h"
 
-#include "driver/board.h"
 #include "driver/timer.h"
 #include "driver/config.h"
 #include "driver/battery.h"
 
 #define LOG     NRFX_LOG
-#define ASSERT  BOARD_ASSERT
+#define ASSERT  NRFX_ASSERT
 
 /*
  * Lithium battery discharge curve, modeled from Grepow data for 1C discharge rate
@@ -95,8 +94,10 @@ static uint8_t battery_voltage_to_percent(float voltage)
         return 100;
 
     // Search for the first value below the measured voltage.
-    for (size_t i = 0; i < NRFX_ARRAY_SIZE(battery_discharge_curve); i++) {
-        if (battery_discharge_curve[i] < voltage) {
+    for (size_t i = 0; i < NRFX_ARRAY_SIZE(battery_discharge_curve); i++)
+    {
+        if (battery_discharge_curve[i] < voltage)
+        {
             float v0 = battery_discharge_curve[i];
             float v1 = battery_discharge_curve[i - 1];
             float p0 = (10 - i) * 10;
@@ -166,6 +167,8 @@ void battery_timer_handler(void)
     //LOG("v_inst=%d v_mean=%d %d%%", (int)(v_inst * 1000), (int)(v_mean * 1000), battery_percent);
 }
 
+bool battery_ready;
+
 /**
  * Initialize the ADC.
  * This includes setting up buffering.
@@ -174,6 +177,9 @@ void battery_init(void)
 {
     uint32_t err;
     nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(BATTERY_ADC_PIN, 0);
+
+    if (battery_ready)
+        return;
 
     channel.channel_config.reference = BATTERY_ADC_REFERENCE;
     channel.channel_config.gain = BATTERY_SAADC_GAIN_CONF;
@@ -187,8 +193,8 @@ void battery_init(void)
     ASSERT(err == NRFX_SUCCESS);
 
     // Add a low-frequency house-cleaning timer
-    LOG("timer_add_handler");
     timer_add_handler(&battery_timer_handler);
 
-    LOG("ready nrfx=saadc dep=timer");
+    LOG("ready timer=0x%p", &battery_timer_handler);
+    battery_ready = false;
 }

@@ -37,13 +37,12 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
-#include "driver/board.h"
 #include "driver/iqs620.h"
 #include "driver/i2c.h"
 #include "driver/config.h"
 
 #define LOG     NRFX_LOG
-#define ASSERT  BOARD_ASSERT
+#define ASSERT  NRFX_ASSERT
 
 // registers
 
@@ -376,7 +375,8 @@ static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_
         uint8_t sysflags;
         iqs620_read_reg(IQS620_SYS_FLAGS, &sysflags, 1);
         LOG("sysflags=0x%02x", sysflags);
-        if (sysflags & IQS620_SYS_FLAGS_RESET_HAPPENED) {
+        if (sysflags & IQS620_SYS_FLAGS_RESET_HAPPENED)
+        {
             LOG("reset detected, reconfiguring");
             iqs620_configure();
         }
@@ -397,11 +397,37 @@ uint32_t iqs620_get_id(void)
 }
 
 /**
+ * Get the raw counts for tuning thresholds.
+ * @param channel Sensor channel number to read the data from
+ */
+uint16_t iqs620_get_count(uint8_t channel)
+{
+    uint16_t count;
+    uint8_t data[2];
+
+    // Read 2 bytes from the base address of the channel count register
+    iqs620_read_reg(channel * 2 + IQS620_CHANNEL_COUNT_0_LO, data, sizeof(data));
+
+    count = data[1] << 8 | data[0] << 0;
+    LOG("channel=%d count=%d", channel, count);
+    return (count);
+}
+
+bool iqs620_ready;
+
+/**
  * Initialise the chip as well as the iqs620 instance.
  */
 void iqs620_init(void)
 {
     uint32_t err;
+
+    if (iqs620_ready)
+        return;
+
+    // dependencies:
+    i2c_init();
+
     // Setup the GPIO pin for touch state interrupts.
     nrf_gpio_cfg(
         IQS620_TOUCH_RDY_PIN,
@@ -434,21 +460,5 @@ void iqs620_init(void)
     nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);
 
     LOG("ready buttons=b0,b1");
-}
-
-/**
- * Get the raw counts for tuning thresholds.
- * @param channel Sensor channel number to read the data from
- */
-uint16_t iqs620_get_count(uint8_t channel)
-{
-    uint16_t count;
-    uint8_t data[2];
-
-    // Read 2 bytes from the base address of the channel count register
-    iqs620_read_reg(channel * 2 + IQS620_CHANNEL_COUNT_0_LO, data, sizeof(data));
-
-    count = data[1] << 8 | data[0] << 0;
-    LOG("channel=%d count=%d", channel, count);
-    return (count);
+    iqs620_ready = true;
 }

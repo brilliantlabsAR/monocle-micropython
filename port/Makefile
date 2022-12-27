@@ -114,8 +114,6 @@ SRC += nrf$(NRF).c
 
 SRC += driver/battery.c
 SRC += driver/bluetooth.c
-SRC += driver/board.c
-SRC += driver/checksum.c
 SRC += driver/dfu.c
 SRC += driver/ecx336cn.c
 SRC += driver/flash.c
