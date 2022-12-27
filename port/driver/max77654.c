@@ -22,10 +22,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/**
- * MAX77654 PMIC driver.
- */
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

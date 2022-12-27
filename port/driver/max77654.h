@@ -2,6 +2,7 @@
  * This file is part of the MicroPython for Monocle:
  *      https://github.com/Itsbrilliantlabs/monocle-micropython
  *
+ * Authored by: Nathan Ashelman <nathan@itsbrilliant.co>
  * Authored by: Josuah Demangeon <me@josuah.net>
  *
  * ISC Licence
@@ -66,4 +67,3 @@ void max77654_set_charge_current(uint16_t current);
 void max77654_set_charge_voltage(uint16_t voltage);
 void max77654_set_current_limit(uint16_t current);
 void max77564_factory_ship_mode(void);
-

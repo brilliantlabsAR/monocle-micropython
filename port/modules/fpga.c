@@ -86,8 +86,8 @@ STATIC mp_obj_t fpga_write(mp_obj_t addr_in, mp_obj_t list_in)
 
     // Extract the buffer of elements and size from the python object.
     size_t len = 0;
-    mp_obj_t *elems = NULL;
-    mp_obj_list_get(list_in, &len, &elems);
+    mp_obj_t *list = NULL;
+    mp_obj_list_get(list_in, &len, &list);
 
     // Create a contiguous region with the bytes to read in.
     uint8_t *in_data = m_malloc(len);
@@ -95,13 +95,16 @@ STATIC mp_obj_t fpga_write(mp_obj_t addr_in, mp_obj_t list_in)
     // Copy the write bytes into the a continuous buffer
     for (size_t i = 0; i < len; i++)
     {
-        in_data[i] = MP_OBJ_NEW_SMALL_INT(in_data[i]);
+        in_data[i] = mp_obj_get_int(list[i]);
     }
 
     spi_chip_select(SPIM0_FPGA_CS_PIN);
     write_addr(addr);
     spi_write(in_data, len);
     spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+
+    // Free the temporary buffer
+    m_free(in_data);
 
     return mp_const_none;
 }
