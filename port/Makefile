@@ -75,7 +75,6 @@ LIBS += -lgcc -lm
 
 INC += -I.
 INC += -Ibuild
-INC += -Idrivers
 INC += -Imodules
 INC += -I../segger_rtt
 INC += -I../micropython
@@ -114,7 +113,7 @@ SRC += mphalport.c
 SRC += nrf$(NRF).c
 
 SRC += driver/battery.c
-SRC += driver/ble.c
+SRC += driver/bluetooth.c
 SRC += driver/board.c
 SRC += driver/checksum.c
 SRC += driver/dfu.c

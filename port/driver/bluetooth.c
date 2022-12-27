@@ -37,7 +37,7 @@
 
 #include "driver/board.h"
 #include "driver/config.h"
-#include "driver/ble.h"
+#include "driver/bluetooth.h"
 
 #define BLE_ADV_MAX_SIZE 31
 #define BLE_MAX_MTU_LENGTH          128

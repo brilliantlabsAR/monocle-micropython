@@ -36,7 +36,7 @@
 #include "py/stream.h"
 #include "nrfx_errors.h"
 #include "nrfx_config.h"
-#include "driver/ble.h"
+#include "driver/bluetooth.h"
 
 #if MICROPY_PY_TIME_TICKS
 #include "nrfx_rtc.h"

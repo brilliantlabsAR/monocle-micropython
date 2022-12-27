@@ -36,7 +36,6 @@
 #include "nrfx_twi.h"
 
 #include "driver/battery.h"
-#include "driver/ble.h"
 #include "driver/board.h"
 #include "driver/config.h"
 #include "driver/ecx336cn.h"

@@ -41,7 +41,7 @@
 #include "nrf_sdm.h"
 #include "nrfx_systick.h"
 
-#include "driver/ble.h"
+#include "driver/bluetooth.h"
 #include "driver/board.h"
 #include "driver/battery.h" // debug
 
