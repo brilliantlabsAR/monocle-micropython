@@ -131,8 +131,6 @@ void spi_write(uint8_t *buf, size_t len)
     spi_xfer(&xfer);
 }
 
-bool spi_ready;
-
 /**
  * Configure the SPI peripheral.
  */
@@ -142,9 +140,6 @@ void spi_init(void)
     nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
         SPIM0_SCK_PIN, SPIM0_MOSI_PIN, SPIM0_MISO_PIN, NRFX_SPIM_PIN_NOT_USED
     );
-
-    if (spi_ready)
-        return;
 
     config.frequency = NRF_SPIM_FREQ_1M;
     config.mode      = NRF_SPIM_MODE_3;
@@ -169,5 +164,4 @@ void spi_init(void)
     m_xfer_done = true;
 
     LOG("ready nrfx=spim");
-    spi_ready = true;
 }

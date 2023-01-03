@@ -180,14 +180,12 @@ uint8_t flash_get_device_id(void)
     return id;
 }
 
-bool flash_ready;
-
 /**
  * Configure the SPI peripheral.
  */
 void flash_init(void)
 {
-    if (flash_ready)
+    if (driver_ready(DRIVER_FLASH))
         return;
 
     // dependencies:
@@ -195,5 +193,4 @@ void flash_init(void)
     spi_init();
 
     LOG("ready id=0x%02X", flash_get_device_id());
-    flash_ready = true;
 }

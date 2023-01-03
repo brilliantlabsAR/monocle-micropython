@@ -45,7 +45,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_fpga___init___obj, mod_fpga___init__);
 
 static inline void write_addr(uint16_t addr)
 {
-    uint8_t buf[] = { addr >> 0, addr >> 8, };
+    uint8_t buf[] = { addr >> 8, addr >> 0, };
     spi_write(buf, sizeof buf);
 }
 

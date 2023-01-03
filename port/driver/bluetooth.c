@@ -667,8 +667,6 @@ void SWI2_IRQHandler(void)
     }
 }
 
-bool ble_ready;
-
 /**
  * Initialise the bluetooth low energy driver.
  * Initialises the softdevice and Bluetooth functionality.
@@ -679,7 +677,7 @@ void ble_init(void)
     // Error code variable
     uint32_t err;
 
-    if (ble_ready)
+    if (driver_ready(DRIVER_BLE))
         return;
 
     // Init LF clock
@@ -746,5 +744,4 @@ void ble_init(void)
     ble_adv_start();
 
     LOG("ready services=uart,data");
-    ble_ready = true;
 }

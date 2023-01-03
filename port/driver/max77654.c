@@ -638,8 +638,6 @@ void max77564_factory_ship_mode(void)
     max77654_write(MAX77654_CNFG_GLBL, 0xA3);
 }
 
-bool max77654_ready;
-
 /**
  * Initialize the MAX77654 chip.
  *  Test results: (using resistors to simulate bulk & constant voltage charging)
@@ -647,7 +645,7 @@ bool max77654_ready;
  */
 void max77654_init(void)
 {
-    if (max77654_ready)
+    if (driver_ready(DRIVER_MAX77654))
         return;
 
     // dependencies:
@@ -693,5 +691,4 @@ void max77654_init(void)
     max77654_led_green(false);
 
     LOG("ready rails=1.2v,1.8v,2.7v,10v");
-    max77654_ready = true;
 }

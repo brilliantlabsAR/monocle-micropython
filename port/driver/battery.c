@@ -167,8 +167,6 @@ void battery_timer_handler(void)
     //LOG("v_inst=%d v_mean=%d %d%%", (int)(v_inst * 1000), (int)(v_mean * 1000), battery_percent);
 }
 
-bool battery_ready;
-
 /**
  * Initialize the ADC.
  * This includes setting up buffering.
@@ -178,7 +176,7 @@ void battery_init(void)
     uint32_t err;
     nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(BATTERY_ADC_PIN, 0);
 
-    if (battery_ready)
+    if (driver_ready(DRIVER_BATTERY))
         return;
 
     channel.channel_config.reference = BATTERY_ADC_REFERENCE;
@@ -196,5 +194,4 @@ void battery_init(void)
     timer_add_handler(&battery_timer_handler);
 
     LOG("ready timer=0x%p", &battery_timer_handler);
-    battery_ready = false;
 }

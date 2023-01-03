@@ -33,31 +33,13 @@
 #include "py/objstr.h"
 #include "genhdr/mpversion.h"
 
+#include "nrfx_reset_reason.h"
+
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
 
 #include "driver/dfu.h"
 #include "ble_gap.h"
-
-/**
- * Current version as a string object.
- */
-STATIC const MP_DEFINE_STR_OBJ(device_version_obj, BUILD_VERSION);
-
-/**
- * Current git tag as a string object.
- */
-STATIC const MP_DEFINE_STR_OBJ(device_git_tag_obj, MICROPY_GIT_HASH);
-
-/**
- * Board name as a string object.
- */
-STATIC const MP_DEFINE_STR_OBJ(device_board_name_obj, MICROPY_HW_BOARD_NAME);
-
-/**
- * MCU name as a string object.
- */
-STATIC const MP_DEFINE_STR_OBJ(device_mcu_name_obj, MICROPY_HW_MCU_NAME);
 
 STATIC mp_obj_t mod_device___init__(void)
 {
@@ -95,20 +77,74 @@ STATIC mp_obj_t device_mac_address(void)
 }
 MP_DEFINE_CONST_FUN_OBJ_0(device_mac_address_obj, device_mac_address);
 
+STATIC mp_obj_t device_battery_level(void) {
+    return MP_OBJ_NEW_SMALL_INT(battery_get_percent());
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_battery_level_obj, device_battery_level);
+
+STATIC mp_obj_t reset_cause;
+
+STATIC mp_obj_t mod_device___init__(void)
+{
+    uint32_t state = NRF_POWER->RESETREAS;
+
+    // dependencies:
+    battery_init();
+
+    if (state & POWER_RESETREAS_RESETPIN_Msk) {
+        reset_cause = MP_OBJ_NEW_QSTR(MP_QSTR_POWERED_ON);
+    } else if (state & POWER_RESETREAS_DOG_Msk) {
+        reset_cause = MP_OBJ_NEW_QSTR(MP_QSTR_CRASHED);
+    } else if (state & POWER_RESETREAS_SREQ_Msk) {
+        reset_cause = MP_OBJ_NEW_QSTR(MP_QSTR_SOFTWARE_RESET)
+    } else if (state & POWER_RESETREAS_LOCKUP_Msk) {
+        reset_cause = MP_OBJ_NEW_QSTR(MP_QSTR_CRASHED);
+    } else if (state & POWER_RESETREAS_OFF_Msk) {
+        reset_cause = MP_OBJ_NEW_QSTR(MP_QSTR_POWERED_ON);
+    } else if (state & POWER_RESETREAS_DIF_Msk) {
+        reset_cause = MP_OBJ_NEW_QSTR(MP_QSTR_CRASHED);
+    }
+    assert(reset_cause != NULL);
+
+    // clear reset reason
+    NRF_POWER->RESETREAS = 0;
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_device___init___obj, mod_device___init__);
+
+NORETURN STATIC mp_obj_t device_reset(void)
+{
+    NVIC_SystemReset();
+}
+MP_DEFINE_CONST_FUN_OBJ_0(device_reset_obj, &device_reset);
+
+STATIC mp_obj_t device_reset_cause(void)
+{
+    return reset_cause;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_reset_cause_obj, device_reset_cause);
 
 STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_device) },
-    { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&mod_device___init___obj) },
+    { MP_ROM_QSTR(MP_QSTR___name__),            MP_ROM_QSTR(MP_QSTR_device) },
+    { MP_ROM_QSTR(MP_QSTR___init__),            MP_ROM_PTR(&mod_device___init___obj) },
+
+    { MP_OBJ_NEW_QSTR(BUILD_VERSION
+    { MP_OBJ_NEW_QSTR(MICROPY_GIT_HASH)
+    { MP_OBJ_NEW_QSTR(MICROPY_HW_BOARD_NAME)
+    { MP_OBJ_NEW_QSTR(MICROPY_PY_SYS_PLATFORM)
 
     // methods
     { MP_ROM_QSTR(MP_QSTR_mac_address),         MP_ROM_PTR(&device_mac_address_obj) },
     { MP_ROM_QSTR(MP_QSTR_update),              MP_ROM_PTR(&device_update_obj) },
+    { MP_ROM_QSTR(MP_QSTR_battery_level),       MP_ROM_PTR(&device_battery_level_obj) },
+    { MP_ROM_QSTR(MP_QSTR_reset),               MP_ROM_PTR(&device_reset_obj) },
+    { MP_ROM_QSTR(MP_QSTR_reset_cause),         MP_ROM_PTR(&device_reset_cause_obj) },
 
     // constants
-    { MP_ROM_QSTR(MP_QSTR_board_name),          MP_ROM_PTR(&device_board_name_obj) },
-    { MP_ROM_QSTR(MP_QSTR_git_tag),             MP_ROM_PTR(&device_git_tag_obj) },
-    { MP_ROM_QSTR(MP_QSTR_mcu_name),            MP_ROM_PTR(&device_mcu_name_obj) },
-    { MP_ROM_QSTR(MP_QSTR_version),             MP_ROM_PTR(&device_version_obj) },
+    { MP_ROM_QSTR(MP_QSTR_GIT_TAG),             MP_ROM_PTR(&device_git_tag_obj) },
+    { MP_ROM_QSTR(MP_QSTR_NAME),                MP_ROM_PTR(&device_name_obj) },
+    { MP_ROM_QSTR(MP_QSTR_VERSION),             MP_ROM_PTR(&device_version_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(device_module_globals, device_module_globals_table);
 

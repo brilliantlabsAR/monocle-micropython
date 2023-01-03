@@ -511,15 +511,13 @@ void ov5640_focus_init(void)
     ASSERT(state == 0x70);
 }
 
-bool ov5640_ready;
-
 /**
  * Init the camera.
  * Trigger initialisation of the chip, controlling its reset and power pins.
  */
 void ov5640_init(void)
 {
-    if (ov5640_ready)
+    if (driver_ready(DRIVER_OV5640))
         return;
 
     // dependencies:
@@ -545,5 +543,4 @@ void ov5640_init(void)
     ASSERT(id == OV5640_ID);
 
     LOG("ready max_resolution=2592x1944 id=0x%04X", id);
-    ov5640_ready = true;
 }

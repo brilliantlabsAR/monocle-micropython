@@ -114,14 +114,12 @@ void ecx336cn_awake(void)
     ecx336cn_write_byte(0x00, 0x9F); // exit power saving mode (YUV)
 }
 
-bool ecx336cn_ready;
-
 /**
  * Configure each value of the screen over SPI.
  */
 void ecx336cn_init(void)
 {
-    if (ecx336cn_ready)
+    if (driver_ready(DRIVER_ECX336CN))
         return;
 
     // dependencies:
@@ -284,5 +282,4 @@ void ecx336cn_init(void)
 
     LOG("ready resolution=640x400 [0x29]=0x%02X [0x2A]=0x%02X",
             ecx336cn_read_byte(0x29), ecx336cn_read_byte(0x2A));
-    ecx336cn_ready = true;
 }

@@ -413,8 +413,6 @@ uint16_t iqs620_get_count(uint8_t channel)
     return (count);
 }
 
-bool iqs620_ready;
-
 /**
  * Initialise the chip as well as the iqs620 instance.
  */
@@ -422,7 +420,7 @@ void iqs620_init(void)
 {
     uint32_t err;
 
-    if (iqs620_ready)
+    if (driver_ready(DRIVER_IQS620))
         return;
 
     // dependencies:
@@ -460,5 +458,4 @@ void iqs620_init(void)
     nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);
 
     LOG("ready buttons=b0,b1");
-    iqs620_ready = true;
 }

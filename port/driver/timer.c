@@ -104,14 +104,9 @@ void timer_add_handler(timer_handler_t *ptr)
     __enable_irq();
 }
 
-bool timer_ready;
-
 void timer_init(void)
 {
     uint32_t err;
-
-    if (timer_ready)
-        return;
 
     // Prepare the configuration structure.
     timer_config.mode = NRF_TIMER_MODE_TIMER;
@@ -129,5 +124,4 @@ void timer_init(void)
     nrfx_timer_enable(&timer);
 
     LOG("ready max_handlers=%d", TIMER_MAX_HANDLERS);
-    timer_ready = true;
 }

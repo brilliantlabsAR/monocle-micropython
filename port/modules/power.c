@@ -30,7 +30,6 @@
 
 #include "nrfx_log.h"
 #include "nrf_soc.h"
-#include "nrfx_reset_reason.h"
 
 #include "driver/battery.h"
 #include "driver/max77654.h"
@@ -44,63 +43,11 @@
 #define PYB_RESET_DIF       (18)
 #define PYB_RESET_NFC       (19)
 
-STATIC uint32_t reset_cause;
-
-STATIC void set_reset_cause(void)
-{
-    uint32_t state = NRF_POWER->RESETREAS;
-
-    if (state & POWER_RESETREAS_RESETPIN_Msk) {
-        reset_cause = PYB_RESET_HARD;
-    } else if (state & POWER_RESETREAS_DOG_Msk) {
-        reset_cause = PYB_RESET_WDT;
-    } else if (state & POWER_RESETREAS_SREQ_Msk) {
-        reset_cause = PYB_RESET_SOFT;
-    } else if (state & POWER_RESETREAS_LOCKUP_Msk) {
-        reset_cause = PYB_RESET_LOCKUP;
-    } else if (state & POWER_RESETREAS_OFF_Msk) {
-        reset_cause = PYB_RESET_POWER_ON;
-    } else if (state & POWER_RESETREAS_DIF_Msk) {
-        reset_cause = PYB_RESET_DIF;
-    }
-    // clear reset reason
-    NRF_POWER->RESETREAS = (1 << reset_cause);
-
-    assert(reset_cause > 0);
-}
-
-STATIC mp_obj_t mod_power___init__(void)
-{
-    // dependencies:
-    battery_init();
-
-    set_reset_cause();
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_power___init___obj, mod_power___init__);
-
 STATIC mp_obj_t power_hibernate(void)
 {
     return mp_const_notimplemented;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(power_hibernate_obj, &power_hibernate);
-
-NORETURN STATIC mp_obj_t power_reset(void)
-{
-    NVIC_SystemReset();
-}
-MP_DEFINE_CONST_FUN_OBJ_0(power_reset_obj, &power_reset);
-
-STATIC mp_obj_t power_battery_level(void) {
-    return MP_OBJ_NEW_SMALL_INT(battery_get_percent());
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(power_battery_level_obj, power_battery_level);
-
-STATIC mp_obj_t power_reset_cause(void)
-{
-    return MP_OBJ_NEW_SMALL_INT(reset_cause);
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(power_reset_cause_obj, power_reset_cause);
 
 STATIC mp_obj_t power_shutdown(mp_obj_t timeout)
 {
@@ -140,10 +87,7 @@ STATIC const mp_rom_map_elem_t power_module_globals_table[] = {
 
     // methods
     { MP_ROM_QSTR(MP_QSTR_hibernate),           MP_ROM_PTR(&power_hibernate_obj) },
-    { MP_ROM_QSTR(MP_QSTR_reset),               MP_ROM_PTR(&power_reset_obj) },
-    { MP_ROM_QSTR(MP_QSTR_reset_cause),         MP_ROM_PTR(&power_reset_cause_obj) },
     { MP_ROM_QSTR(MP_QSTR_shutdown),            MP_ROM_PTR(&power_shutdown_obj) },
-    { MP_ROM_QSTR(MP_QSTR_battery_level),       MP_ROM_PTR(&power_battery_level_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset),               MP_ROM_PTR(&power_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_soft_reset),          MP_ROM_PTR(&power_soft_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_idle),                MP_ROM_PTR(&power_lightsleep_obj) },

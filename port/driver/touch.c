@@ -318,19 +318,15 @@ void touch_callback(touch_state_t trigger)
     LOG("trigger=%d", trigger);
 }
 
-bool touch_ready;
-
 /**
  * Initialise the touch logic: mostly call the dependencies.
  */
 void touch_init(void)
 {
-    if (touch_ready)
+    if (driver_ready(DRIVER_TOUCH))
         return;
 
     // dependencies:
     iqs620_init();
     timer_init();
-
-    touch_ready = true;
 }

@@ -132,8 +132,6 @@ void i2c_scan(nrfx_twi_t twi)
         LOG("No I2C device found");
 }
 
-bool i2c_ready;
-
 /**
  * Configure the hardware I2C instance as well as software-based I2C instance.
  */
@@ -142,9 +140,6 @@ void i2c_init(void)
 {
     uint32_t err;
     nrfx_twi_config_t config = {0};
-
-    if (i2c_ready)
-        return;
 
     config.scl                = I2C0_SCL_PIN;
     config.sda                = I2C0_SDA_PIN;
@@ -167,5 +162,4 @@ void i2c_init(void)
     nrfx_twi_enable(&i2c1);
 
     LOG("ready nrfx=twi");
-    i2c_ready = true;
 }

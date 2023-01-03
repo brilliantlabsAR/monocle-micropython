@@ -23,7 +23,7 @@ JLINKGDBSERVERCL = JLinkGDBServerCLExe
 GDB = gdb-multiarch
 PYTHON = python3
 GIT_COMMIT = $(shell git rev-parse HEAD | cut -c 1-6)
-BUILD_VERSION = $(shell git tag -l 'v[0-9]*' | tail -n 1)
+BUILD_VERSION = monocle-firmware-$(shell git tag -l 'v[0-9]*' | tail -n 1)
 RELEASE = $(shell TZ= date +v%y.%j.%H%M)
 
 # Softdevice binary placed to the flash, imported from the nRF5-SDK
