@@ -30,4 +30,3 @@ typedef void timer_handler_t(void);
 void timer_init(void);
 void timer_add_handler(timer_handler_t *handler);
 void timer_del_handler(timer_handler_t *handler);
-

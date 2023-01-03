@@ -36,6 +36,7 @@
 #include "nrfx_systick.h"
 
 #include "driver/config.h"
+#include "driver/driver.h"
 #include "driver/ecx336cn.h"
 #include "driver/fpga.h"
 #include "driver/max77654.h"
@@ -46,10 +47,10 @@
 
 static inline const void ecx336cn_write_byte(uint8_t addr, uint8_t data)
 {
-    spi_chip_select(SPIM0_DISP_CS_PIN);
+    spi_chip_select(SPI_DISP_CS_PIN);
     spi_write(&addr, 1);
     spi_write(&data, 1);
-    spi_chip_deselect(SPIM0_DISP_CS_PIN);
+    spi_chip_deselect(SPI_DISP_CS_PIN);
 }
 
 static inline uint8_t ecx336cn_read_byte(uint8_t addr)
@@ -59,10 +60,10 @@ static inline uint8_t ecx336cn_read_byte(uint8_t addr)
     ecx336cn_write_byte(0x80, 0x01);
     ecx336cn_write_byte(0x81, addr);
 
-    spi_chip_select(SPIM0_DISP_CS_PIN);
+    spi_chip_select(SPI_DISP_CS_PIN);
     spi_write(&addr, 1);
     spi_read(&data, 1);
-    spi_chip_deselect(SPIM0_DISP_CS_PIN);
+    spi_chip_deselect(SPI_DISP_CS_PIN);
 
     return data;
 }
@@ -79,7 +80,7 @@ void ecx336cn_prepare(void)
 
 void ecx336cn_deinit(void)
 {
-    nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);
+    nrf_gpio_cfg_default(SPI_DISP_CS_PIN);
     nrf_gpio_cfg_default(ECX336CN_XCLR_PIN);
 }
 
@@ -119,10 +120,7 @@ void ecx336cn_awake(void)
  */
 void ecx336cn_init(void)
 {
-    if (driver_ready(DRIVER_ECX336CN))
-        return;
-
-    // dependencies:
+    DRIVER(ECX336CN);
     max77654_rail_1v8(true);
     max77654_rail_10v(true);
     spi_init();
@@ -277,9 +275,6 @@ void ecx336cn_init(void)
 
     // check that 0x29 changed from default 0x0A to 0x0B
     // and that 0x2A has been restored
-    //ASSERT(ecx336cn_read_byte(0x29) == 0x0B);
-    //ASSERT(ecx336cn_read_byte(0x2A) == 0xBE);
-
-    LOG("ready resolution=640x400 [0x29]=0x%02X [0x2A]=0x%02X",
-            ecx336cn_read_byte(0x29), ecx336cn_read_byte(0x2A));
+    ASSERT(ecx336cn_read_byte(0x29) == 0x0B);
+    ASSERT(ecx336cn_read_byte(0x2A) == 0xBE);
 }

@@ -32,11 +32,12 @@
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
 
+#include "driver/config.h"
+#include "driver/driver.h"
 #include "driver/fpga.h"
 #include "driver/max77654.h"
 #include "driver/ov5640.h"
 #include "driver/spi.h"
-#include "driver/config.h"
 
 #define LOG NRFX_LOG_ERROR
 #define ASSERT NRFX_ASSERT
@@ -102,29 +103,29 @@ void fpga_deinit(void)
 
 static inline void fpga_cmd(uint8_t cmd1, uint8_t cmd2)
 {
-    spi_chip_select(SPIM0_FPGA_CS_PIN);
+    spi_chip_select(SPI_FPGA_CS_PIN);
     spi_write(&cmd1, 1);
     spi_write(&cmd2, 1);
-    spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+    spi_chip_deselect(SPI_FPGA_CS_PIN);
 }
 
 static inline void fpga_cmd_write(uint8_t cmd1, uint8_t cmd2, uint8_t *buf, size_t len)
 {
     LOG("cmd1=0x%02X cmd2=0x%02X buf[]={ 0x%02X, ... (x%d) }", cmd1, cmd2, buf[0], len);
-    spi_chip_select(SPIM0_FPGA_CS_PIN);
+    spi_chip_select(SPI_FPGA_CS_PIN);
     spi_write(&cmd1, 1);
     spi_write(&cmd2, 1);
     spi_read(buf, len);
-    spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+    spi_chip_deselect(SPI_FPGA_CS_PIN);
 }
 
 static inline void fpga_cmd_read(uint8_t cmd1, uint8_t cmd2, uint8_t *buf, size_t len)
 {
-    spi_chip_select(SPIM0_FPGA_CS_PIN);
+    spi_chip_select(SPI_FPGA_CS_PIN);
     spi_write(&cmd1, 1);
     spi_write(&cmd2, 1);
     spi_read(buf, len);
-    spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+    spi_chip_deselect(SPI_FPGA_CS_PIN);
 }
 
 uint32_t fpga_system_id(void)
@@ -251,10 +252,7 @@ void fpga_capture_read_data(uint8_t *buf, size_t len)
  */
 void fpga_init(void)
 {
-    if (driver_ready(DRIVER_FPGA))
-        return;
-
-    // dependencies:
+    DRIVER(FPGA);
     max77654_rail_1v2(true);
     max77654_rail_1v8(true);
     spi_init();
@@ -274,10 +272,8 @@ void fpga_init(void)
     nrfx_systick_delay_ms(100);
 
     // Reset the CSN pin, changed as it is also MODE1.
-    nrf_gpio_pin_write(SPIM0_FPGA_CS_PIN, true);
+    nrf_gpio_pin_write(SPI_FPGA_CS_PIN, true);
 
     // Give the FPGA some further time.
     nrfx_systick_delay_ms(100);
-
-    LOG("ready model=GW1N-LV9MG100 id=0x%X version=0x%X", fpga_system_id(), fpga_system_version());
 }

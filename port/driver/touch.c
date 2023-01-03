@@ -34,11 +34,12 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
-#include "driver/touch.h"
-#include "driver/timer.h"
-#include "driver/iqs620.h"
-#include "driver/i2c.h"
 #include "driver/config.h"
+#include "driver/driver.h"
+#include "driver/i2c.h"
+#include "driver/iqs620.h"
+#include "driver/timer.h"
+#include "driver/touch.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
@@ -323,10 +324,7 @@ void touch_callback(touch_state_t trigger)
  */
 void touch_init(void)
 {
-    if (driver_ready(DRIVER_TOUCH))
-        return;
-
-    // dependencies:
+    DRIVER(TOUCH);
     iqs620_init();
     timer_init();
 }

@@ -34,6 +34,7 @@
 #include "nrfx_systick.h"
 
 #include "driver/config.h"
+#include "driver/driver.h"
 #include "driver/flash.h"
 #include "driver/max77654.h"
 #include "driver/spi.h"
@@ -57,27 +58,27 @@
 void flash_prepare(void)
 {
     // Prepare the SPI_CS pin for the flash.
-    nrf_gpio_pin_set(SPIM0_FLASH_CS_PIN);
-    nrf_gpio_cfg_output(SPIM0_FLASH_CS_PIN);
+    nrf_gpio_pin_set(SPI_FLASH_CS_PIN);
+    nrf_gpio_cfg_output(SPI_FLASH_CS_PIN);
 }
 
 /**
- * Set the CS pin configured with #define SPIM0_FLASH_CS_PIN
+ * Set the CS pin configured with #define SPI_FLASH_CS_PIN
  */
 static inline void flash_chip_select(void)
 {
     nrfx_systick_delay_us(10);
-    nrf_gpio_pin_clear(SPIM0_FLASH_CS_PIN);
+    nrf_gpio_pin_clear(SPI_FLASH_CS_PIN);
     nrfx_systick_delay_us(10);
 }
 
 /**
- * Clear the CS pin configured with #define SPIM0_FLASH_CS_PIN
+ * Clear the CS pin configured with #define SPI_FLASH_CS_PIN
  */
 static inline void flash_chip_deselect(void)
 {
     nrfx_systick_delay_us(10);
-    nrf_gpio_pin_set(SPIM0_FLASH_CS_PIN);
+    nrf_gpio_pin_set(SPI_FLASH_CS_PIN);
     nrfx_systick_delay_us(10);
 }
 
@@ -185,12 +186,9 @@ uint8_t flash_get_device_id(void)
  */
 void flash_init(void)
 {
-    if (driver_ready(DRIVER_FLASH))
-        return;
-
-    // dependencies:
+    DRIVER(FLASH);
     max77654_rail_1v8(true);
     spi_init();
 
-    LOG("ready id=0x%02X", flash_get_device_id());
+    LOG("flash_device_id=0x%02X", flash_get_device_id());
 }

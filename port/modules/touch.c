@@ -29,6 +29,7 @@
 #include "nrfx_twi.h"
 
 #include "driver/i2c.h"
+#include "driver/timer.h"
 #include "driver/touch.h"
 
 #define LOG NRFX_LOG_ERROR

@@ -35,8 +35,9 @@
 #include "nrf_sdm.h"
 #include "nrfx_log.h"
 
-#include "driver/config.h"
 #include "driver/bluetooth.h"
+#include "driver/config.h"
+#include "driver/driver.h"
 
 #define BLE_ADV_MAX_SIZE 31
 #define BLE_MAX_MTU_LENGTH          128
@@ -674,11 +675,10 @@ void SWI2_IRQHandler(void)
  */
 void ble_init(void)
 {
+    DRIVER(BLE);
+
     // Error code variable
     uint32_t err;
-
-    if (driver_ready(DRIVER_BLE))
-        return;
 
     // Init LF clock
     nrf_clock_lf_cfg_t clock_config = {
@@ -742,6 +742,4 @@ void ble_init(void)
 
     // Submit the adv now that it is complete.
     ble_adv_start();
-
-    LOG("ready services=uart,data");
 }

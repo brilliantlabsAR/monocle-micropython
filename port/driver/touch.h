@@ -92,4 +92,4 @@ typedef enum {
 } touch_state_t;
 
 void touch_callback(touch_state_t trigger);
-
+void touch_init(void);

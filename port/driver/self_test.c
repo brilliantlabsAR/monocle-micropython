@@ -36,8 +36,8 @@
 #include "nrfx_twi.h"
 
 #include "driver/battery.h"
-#include "driver/power.h"
 #include "driver/config.h"
+#include "driver/driver.h"
 #include "driver/ecx336cn.h"
 #include "driver/flash.h"
 #include "driver/fpga.h"
@@ -45,6 +45,7 @@
 #include "driver/iqs620.h"
 #include "driver/max77654.h"
 #include "driver/ov5640.h"
+#include "driver/power.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
 

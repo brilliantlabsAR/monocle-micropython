@@ -30,9 +30,10 @@
 #include "nrfx_twi.h"
 #include "nrfx_systick.h"
 
-#include "driver/max77654.h"
-#include "driver/i2c.h"
 #include "driver/config.h"
+#include "driver/driver.h"
+#include "driver/i2c.h"
+#include "driver/max77654.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
@@ -477,6 +478,7 @@ struct { uint8_t addr, data; } max77654_conf[] = {
 void max77654_rail_1v8(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_LDO_B_EN_ON : MAX77654_CNFG_LDO_B_EN_OFF;
+    max77654_init();
     max77654_write(MAX77654_CNFG_LDO0_B,
       MAX77654_CNFG_LDO_B_MD | MAX77654_CNFG_LDO_B_ADE | en);
     nrfx_systick_delay_ms(1);
@@ -489,6 +491,7 @@ void max77654_rail_1v8(bool on)
 void max77654_rail_2v7(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
+    max77654_init();
     max77654_write(MAX77654_CNFG_SBB0_B,
       MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | en);
     nrfx_systick_delay_ms(1);
@@ -501,6 +504,7 @@ void max77654_rail_2v7(bool on)
 void max77654_rail_1v2(bool on)
 {
     uint8_t en = on ? MAX77654_CNFG_SBB_B_EN_ON : MAX77654_CNFG_SBB_B_EN_OFF;
+    max77654_init();
     max77654_write(MAX77654_CNFG_SBB2_B,
       MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | en);
     nrfx_systick_delay_ms(1);
@@ -512,8 +516,8 @@ void max77654_rail_1v2(bool on)
  */
 void max77654_rail_10v(bool on)
 {
-    // push-pull high for on, push-pull low for off
     uint8_t en = on ? MAX77654_DO : 0;
+    max77654_init();
     max77654_write(MAX77654_CNFG_GPIO2, MAX77654_DRV | en); 
     nrfx_systick_delay_ms(1);
 }
@@ -645,10 +649,7 @@ void max77564_factory_ship_mode(void)
  */
 void max77654_init(void)
 {
-    if (driver_ready(DRIVER_MAX77654))
-        return;
-
-    // dependencies:
+    DRIVER(MAX77654);
     i2c_init();
 
     // verify MAX77654 on I2C bus by attempting to read Chip ID register
@@ -689,6 +690,4 @@ void max77654_init(void)
     // Reset LED state
     max77654_led_red(false);
     max77654_led_green(false);
-
-    LOG("ready rails=1.2v,1.8v,2.7v,10v");
 }

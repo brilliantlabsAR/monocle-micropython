@@ -61,10 +61,10 @@ STATIC mp_obj_t fpga_read(mp_obj_t addr_in, mp_obj_t len_in)
     mp_obj_t return_list = mp_obj_new_list(0, NULL);
 
     // Read on the SPI using the command and address given
-    spi_chip_select(SPIM0_FPGA_CS_PIN);
+    spi_chip_select(SPI_FPGA_CS_PIN);
     write_addr(addr);
     spi_read(out_data, len);
-    spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+    spi_chip_deselect(SPI_FPGA_CS_PIN);
 
     // Copy the read bytes into the list object
     for (size_t i = 0; i < len; i++)
@@ -98,10 +98,10 @@ STATIC mp_obj_t fpga_write(mp_obj_t addr_in, mp_obj_t list_in)
         in_data[i] = mp_obj_get_int(list[i]);
     }
 
-    spi_chip_select(SPIM0_FPGA_CS_PIN);
+    spi_chip_select(SPI_FPGA_CS_PIN);
     write_addr(addr);
     spi_write(in_data, len);
-    spi_chip_deselect(SPIM0_FPGA_CS_PIN);
+    spi_chip_deselect(SPI_FPGA_CS_PIN);
 
     // Free the temporary buffer
     m_free(in_data);

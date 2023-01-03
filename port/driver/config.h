@@ -34,13 +34,13 @@
 
 #define BATTERY_ADC_PIN NRF_SAADC_INPUT_AIN1 // P0.02/AIN0 = VBATT_MEAS
 #define IQS620_TOUCH_RDY_PIN        2       // P0.02 Interrupt pin.              
-#define SPIM0_SCK_PIN               7       // P0.07 SPI Clock pin
-#define SPIM0_MOSI_PIN              9       // P0.09 SPI Master Out Slave In pin.
-#define SPIM0_MISO_PIN              10      // P0.10 SPI Master In Slave Out pin.
-#define SPIM0_DISP_CS_PIN           6       // P0.06 SPI Slave Select pin for the display.
-#define SPIM0_FPGA_CS_PIN           8       // P0.08 SPI Slave Select pin for the FPGA.
-#define SPIM0_FLASH_CS_PIN          4       // P0.04 SPI Slave Select pin for the flash.
-#define FPGA_MODE1_PIN              SPIM0_FPGA_CS_PIN // Alias
+#define SPI2_SCK_PIN                7       // P0.07 SPI Clock pin
+#define SPI2_MOSI_PIN               9       // P0.09 SPI Master Out Slave In pin.
+#define SPI2_MISO_PIN               10      // P0.10 SPI Master In Slave Out pin.
+#define SPI_DISP_CS_PIN             6       // P0.06 SPI Slave Select pin for the display.
+#define SPI_FPGA_CS_PIN             8       // P0.08 SPI Slave Select pin for the FPGA.
+#define SPI_FLASH_CS_PIN            4       // P0.04 SPI Slave Select pin for the flash.
+#define FPGA_MODE1_PIN              SPI_FPGA_CS_PIN // Alias
 #define FPGA_INT_PIN                5       // P0.05 FPGA Interrupt pin, to hold low in init.
 #define FPGA_RECONFIG_N_PIN         FPGA_INT_PIN // Alias
 #define I2C0_SCL_PIN                17      // P0.17 I2C clock GPIO pin.
@@ -52,10 +52,6 @@
 #define OV5640_NRESETB_PIN          0       // P0.00
 #define OV5640_PWDN_PIN             1       // P0.01
 #define ECX336CN_XCLR_PIN           15      // P0.15
-
-// SPI
-
-#define SPI_INSTANCE                2
 
 // TIMER
 

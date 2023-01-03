@@ -42,7 +42,6 @@
 #include "nrfx_systick.h"
 
 #include "driver/bluetooth.h"
-#include "driver/power.h"
 
 /** Variable that holds the Softdevice NVIC state.  */
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};

@@ -37,9 +37,10 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
-#include "driver/iqs620.h"
-#include "driver/i2c.h"
 #include "driver/config.h"
+#include "driver/driver.h"
+#include "driver/i2c.h"
+#include "driver/iqs620.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
@@ -418,13 +419,10 @@ uint16_t iqs620_get_count(uint8_t channel)
  */
 void iqs620_init(void)
 {
-    uint32_t err;
-
-    if (driver_ready(DRIVER_IQS620))
-        return;
-
-    // dependencies:
+    DRIVER(IQS620);
     i2c_init();
+
+    uint32_t err;
 
     // Setup the GPIO pin for touch state interrupts.
     nrf_gpio_cfg(
@@ -456,6 +454,4 @@ void iqs620_init(void)
 
     // Enable the TOUCH_RDY event after the reset.
     nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);
-
-    LOG("ready buttons=b0,b1");
 }

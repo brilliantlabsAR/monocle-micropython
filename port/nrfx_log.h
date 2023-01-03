@@ -40,20 +40,19 @@
 #define VALUE_TO_STR(x) #x
 #define VALUE(x) VALUE_TO_STR(x)
 
-static inline void nrfx_log_off(char const *fmt, ...) { (void)fmt; }
+static inline void NRFX_LOG_NONE(void *v, ...) { (void)v; }
+
+#define NRFX_PRINTF_RTT(fmt, ...)   SEGGER_RTT_printf(0, fmt, ## __VA_ARGS__)
+#define NRFX_PRINTF_MP(fmt, ...)    mp_printf(MP_PYTHON_PRINTER, fmt, ## __VA_ARGS__)
+#define NRFX_PRINTF                 NRFX_PRINTF_RTT
+#define NRFX_LOG(fmt, ...)          NRFX_PRINTF("%s: " fmt "\n", __func__, ## __VA_ARGS__)
+
+#define NRFX_LOG_DEBUG              NRFX_LOG_NONE
+#define NRFX_LOG_INFO               NRFX_LOG_NONE
+#define NRFX_LOG_WARNING            NRFX_LOG_NONE
+#define NRFX_LOG_ERROR              NRFX_LOG
 
 #define NRFX_LOG_ERROR_STRING_GET(error_code) nrfx_error_code_lookup(error_code)
-#define NRFX_LOG_RTT(fmt, ...) SEGGER_RTT_printf(0, "%s: " fmt "\n", __func__, ## __VA_ARGS__)
-#define NRFX_LOG_MP(fmt, ...) mp_printf(MP_PYTHON_PRINTER, "%s: " fmt "\n", __func__, ## __VA_ARGS__)
-#define NRFX_LOG_OFF nrfx_log_off
-
-#define NRFX_LOG            NRFX_LOG_RTT
-
-#define NRFX_LOG_DEBUG      NRFX_LOG_OFF
-#define NRFX_LOG_INFO       NRFX_LOG_OFF
-#define NRFX_LOG_WARNING    NRFX_LOG_OFF
-#define NRFX_LOG_ERROR      NRFX_LOG
-
 #define NRFX_LOG_HEXDUMP_ERROR(p_memory, length)
 #define NRFX_LOG_HEXDUMP_WARNING(p_memory, length)
 #define NRFX_LOG_HEXDUMP_INFO(p_memory, length)

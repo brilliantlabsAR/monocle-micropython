@@ -33,8 +33,9 @@
 #include "nrfx_log.h"
 #include "nrfx_timer.h"
 
-#include "driver/timer.h"
 #include "driver/config.h"
+#include "driver/driver.h"
+#include "driver/timer.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
@@ -106,6 +107,8 @@ void timer_add_handler(timer_handler_t *ptr)
 
 void timer_init(void)
 {
+    DRIVER(TIMER);
+
     uint32_t err;
 
     // Prepare the configuration structure.
@@ -122,6 +125,4 @@ void timer_init(void)
 
     // Start the timer, letting timer_add_handler() append more of them while running.
     nrfx_timer_enable(&timer);
-
-    LOG("ready max_handlers=%d", TIMER_MAX_HANDLERS);
 }

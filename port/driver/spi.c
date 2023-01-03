@@ -31,8 +31,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "driver/spi.h"
 #include "driver/config.h"
+#include "driver/driver.h"
+#include "driver/spi.h"
 #include "nrfx_log.h"
 #include "nrfx_spim.h"
 #include "nrfx_systick.h"
@@ -41,7 +42,7 @@
 #define ASSERT  NRFX_ASSERT
 
 // SPI instance
-static const nrfx_spim_t m_spi = NRFX_SPIM_INSTANCE(SPI_INSTANCE);
+static const nrfx_spim_t spi2 = NRFX_SPIM_INSTANCE(2);
 
 // Indicate that SPI completed the transfer from the interrupt handler to main loop.
 static volatile bool m_xfer_done = true;
@@ -54,25 +55,6 @@ void spim_event_handler(nrfx_spim_evt_t const * p_event, void *p_context)
     // NOTE: there is only one event type: NRFX_SPIM_EVENT_DONE
     // so no need for case statement
     m_xfer_done = true;
-}
-
-/**
- * Reset the SPI peripheral.
- */
-void spi_uninit(void)
-{
-    nrf_gpio_cfg_default(SPIM0_FLASH_CS_PIN);
-    // return pins to default state (input, hi-z)
-    nrf_gpio_cfg_default(SPIM0_DISP_CS_PIN);
-    // uninitialize the SPIM driver instance
-    nrfx_spim_uninit(&m_spi);
-
-    // errata 89, see https://infocenter.nordicsemi.com/index.jsp?topic=%2Ferrata_nRF52832_Rev3%2FERR%2FnRF52832%2FRev3%2Flatest%2Fanomaly_832_89.html&cp=4_2_1_0_1_26
-    ASSERT(SPI_INSTANCE == 2);
-    *(volatile uint32_t *)0x40023FFC = 0;
-    *(volatile uint32_t *)0x40023FFC;
-    *(volatile uint32_t *)0x40023FFC = 1;
-    // NOTE: this did not make a measurable difference
 }
 
 /**
@@ -103,7 +85,7 @@ static void spi_xfer(nrfx_spim_xfer_desc_t *xfer)
 
     // Start the transaction and wait for the interrupt handler to warn us it is done.
     m_xfer_done = false;
-    err = nrfx_spim_xfer(&m_spi, xfer, 0);
+    err = nrfx_spim_xfer(&spi2, xfer, 0);
     ASSERT(err == NRFX_SUCCESS);
     while (!m_xfer_done)
         __WFE();
@@ -132,36 +114,45 @@ void spi_write(uint8_t *buf, size_t len)
 }
 
 /**
- * Configure the SPI peripheral.
+ * Initialise an SPI master interface with defaults values.
+ * @param spi The instance to configure.
+ * @param sck_pin SPI SCK pin used with it.
+ * @param MOSI_pin SPI MOSI pin used with it.
+ * @param MISO_pin SPI MISO pin used with it.
  */
-void spi_init(void)
+static void spi_init_instance(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_pin)
 {
     uint32_t err;
     nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
-        SPIM0_SCK_PIN, SPIM0_MOSI_PIN, SPIM0_MISO_PIN, NRFX_SPIM_PIN_NOT_USED
+        sck_pin, mosi_pin, miso_pin, NRFX_SPIM_PIN_NOT_USED
     );
 
     config.frequency = NRF_SPIM_FREQ_1M;
     config.mode      = NRF_SPIM_MODE_3;
     config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
 
-    err = nrfx_spim_init(&m_spi, &config, spim_event_handler, NULL);
+    err = nrfx_spim_init(&spi2, &config, spim_event_handler, NULL);
     ASSERT(err == NRFX_SUCCESS);
+}
+
+/**
+ * Configure the SPI peripheral.
+ */
+void spi_init(void)
+{
+    DRIVER(SPI);
+
+    spi_init_instance(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
 
     // configure CS pin for the Display (for active low)
-    nrf_gpio_pin_set(SPIM0_DISP_CS_PIN);
-    nrf_gpio_cfg_output(SPIM0_DISP_CS_PIN);
+    nrf_gpio_pin_set(SPI_DISP_CS_PIN);
+    nrf_gpio_cfg_output(SPI_DISP_CS_PIN);
 
     // for now, pull high to disable external flash chip
-    nrf_gpio_pin_set(SPIM0_FLASH_CS_PIN);
-    nrf_gpio_cfg_output(SPIM0_FLASH_CS_PIN);
+    nrf_gpio_pin_set(SPI_FLASH_CS_PIN);
+    nrf_gpio_cfg_output(SPI_FLASH_CS_PIN);
 
     // for now, pull high to disable external flash chip
-    nrf_gpio_pin_set(SPIM0_FPGA_CS_PIN);
-    nrf_gpio_cfg_output(SPIM0_FPGA_CS_PIN);
-
-    // initialze xfer state (needed for init/uninit cycles)
-    m_xfer_done = true;
-
-    LOG("ready nrfx=spim");
+    nrf_gpio_pin_set(SPI_FPGA_CS_PIN);
+    nrf_gpio_cfg_output(SPI_FPGA_CS_PIN);
 }

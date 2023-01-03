@@ -31,9 +31,10 @@
 #include "nrf_gpio.h"
 #include "nrfx_log.h"
 
-#include "driver/timer.h"
-#include "driver/config.h"
 #include "driver/battery.h"
+#include "driver/config.h"
+#include "driver/driver.h"
+#include "driver/timer.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
@@ -173,11 +174,10 @@ void battery_timer_handler(void)
  */
 void battery_init(void)
 {
+    DRIVER(BATTERY);
+
     uint32_t err;
     nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(BATTERY_ADC_PIN, 0);
-
-    if (driver_ready(DRIVER_BATTERY))
-        return;
 
     channel.channel_config.reference = BATTERY_ADC_REFERENCE;
     channel.channel_config.gain = BATTERY_SAADC_GAIN_CONF;
@@ -192,6 +192,4 @@ void battery_init(void)
 
     // Add a low-frequency house-cleaning timer
     timer_add_handler(&battery_timer_handler);
-
-    LOG("ready timer=0x%p", &battery_timer_handler);
 }

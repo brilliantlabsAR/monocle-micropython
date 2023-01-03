@@ -24,14 +24,17 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "nrfx_log.h"
+
 #include "driver.h"
 
 static uint32_t driver_flags;
 
-bool driver_ready(driver_num_t num)
+bool driver_ready(driver_num_t num, char const *name)
 {
     if (driver_flags & (1u << num))
         return true;
+    NRFX_PRINTF("DRIVER(%s)\r\n", name);
     driver_flags |= 1u << num;
     return false;
 }

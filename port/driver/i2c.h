@@ -31,4 +31,3 @@ void i2c_init(void);
 bool i2c_write(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz);
 bool i2c_write_no_stop(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz);
 bool i2c_read(nrfx_twi_t twi, uint8_t addr, uint8_t *readBuffer, uint8_t sz);
-void i2c_scan(nrfx_twi_t twi);

@@ -34,6 +34,7 @@
 #include "nrfx_log.h"
 
 #include "driver/dfu.h"
+#include "driver/driver.h"
 
 #define LOG     NRFX_LOG
 

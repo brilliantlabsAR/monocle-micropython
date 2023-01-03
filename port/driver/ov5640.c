@@ -36,6 +36,7 @@
 #include "nrfx_twi.h"
 
 #include "driver/config.h"
+#include "driver/driver.h"
 #include "driver/fpga.h"
 #include "driver/i2c.h"
 #include "driver/max77654.h"
@@ -517,10 +518,7 @@ void ov5640_focus_init(void)
  */
 void ov5640_init(void)
 {
-    if (driver_ready(DRIVER_OV5640))
-        return;
-
-    // dependencies:
+    DRIVER(OV5640);
     max77654_rail_1v8(true);
     max77654_rail_10v(true);
     i2c_init();
@@ -541,6 +539,4 @@ void ov5640_init(void)
     // Check the chip ID
     uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
     ASSERT(id == OV5640_ID);
-
-    LOG("ready max_resolution=2592x1944 id=0x%04X", id);
 }
