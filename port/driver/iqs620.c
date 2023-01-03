@@ -41,6 +41,8 @@
 #include "driver/driver.h"
 #include "driver/i2c.h"
 #include "driver/iqs620.h"
+#include "driver/nrfx.h"
+#include "driver/timer.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
@@ -421,6 +423,8 @@ void iqs620_init(void)
 {
     DRIVER(IQS620);
     i2c_init();
+    nrfx_init();
+    timer_init();
 
     uint32_t err;
 

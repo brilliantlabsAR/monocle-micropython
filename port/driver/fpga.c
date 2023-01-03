@@ -38,6 +38,7 @@
 #include "driver/max77654.h"
 #include "driver/ov5640.h"
 #include "driver/spi.h"
+#include "driver/timer.h"
 
 #define LOG NRFX_LOG_ERROR
 #define ASSERT NRFX_ASSERT
@@ -56,40 +57,12 @@ void fpga_check_pins(char const *msg)
         first = false;
     }
     LOG("|  %3d  |  %3d  |  %3d  |  %3d  |  %3d  | %s",
-        nrf_gpio_pin_read(5),
-        nrf_gpio_pin_read(7),
-        nrf_gpio_pin_read(8),
-        nrf_gpio_pin_read(9),
-        nrf_gpio_pin_read(10),
+        nrf_gpio_pin_read(FPGA_RECONFIG_N_PIN),
+        nrf_gpio_pin_read(SPI2_SCK_PIN),
+        nrf_gpio_pin_read(FPGA_MODE1_PIN),
+        nrf_gpio_pin_read(SPI2_MOSI_PIN),
+        nrf_gpio_pin_read(SPI2_MISO_PIN),
         msg
-    );
-}
-
-/**
- * Preparations for GPIO pins before to power-on the FPGA.
- */
-void fpga_prepare(void)
-{
-    // MODE1 set low for AUTOBOOT from FPGA internal flash
-    nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
-    nrf_gpio_cfg(
-        FPGA_MODE1_PIN,
-        NRF_GPIO_PIN_DIR_OUTPUT,
-        NRF_GPIO_PIN_INPUT_CONNECT,
-        NRF_GPIO_PIN_NOPULL,
-        NRF_GPIO_PIN_S0S1,
-        NRF_GPIO_PIN_NOSENSE
-    );
-
-    // Let the FPGA start as soon as it has the power on.
-    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
-    nrf_gpio_cfg(
-        FPGA_RECONFIG_N_PIN,
-        NRF_GPIO_PIN_DIR_OUTPUT,
-        NRF_GPIO_PIN_INPUT_CONNECT,
-        NRF_GPIO_PIN_NOPULL,
-        NRF_GPIO_PIN_S0S1,
-        NRF_GPIO_PIN_NOSENSE
     );
 }
 
@@ -253,27 +226,33 @@ void fpga_capture_read_data(uint8_t *buf, size_t len)
 void fpga_init(void)
 {
     DRIVER(FPGA);
+    fpga_check_pins("before driver setup");
+    max77654_init();
     max77654_rail_1v2(true);
     max77654_rail_1v8(true);
     spi_init();
+    timer_init();
+    fpga_check_pins("started dependencies");
 
     // Set the FPGA to boot from its internal flash.
     nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
     nrfx_systick_delay_ms(1);
+    fpga_check_pins("set the MODE1 pin");
 
     // Issue a "reconfig" pulse.
     // Datasheet UG290E: T_recfglw >= 70 us
     nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, false);
     nrfx_systick_delay_ms(100); // 1000 times more than needed
     nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
+    fpga_check_pins("issued a low FPGA_RECONFIG_N pulse");
 
     // Give the FPGA some time to boot.
     // Datasheet UG290E: T_recfgtdonel <=
     nrfx_systick_delay_ms(100);
+    fpga_check_pins("waited configuration delay");
 
     // Reset the CSN pin, changed as it is also MODE1.
     nrf_gpio_pin_write(SPI_FPGA_CS_PIN, true);
-
-    // Give the FPGA some further time.
     nrfx_systick_delay_ms(100);
+    fpga_check_pins("done");
 }

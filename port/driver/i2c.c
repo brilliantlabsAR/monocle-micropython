@@ -36,7 +36,6 @@
 #include "driver/config.h"
 #include "driver/driver.h"
 #include "driver/i2c.h"
-#include "nrf_gpio.h"
 #include "nrfx_log.h"
 
 #include "driver/config.h"
@@ -159,5 +158,5 @@ void i2c_init(void)
     DRIVER(I2C);
 
     i2c_init_instance(i2c0, I2C0_SCL_PIN, I2C0_SDA_PIN);
-    i2c_init_instance(i2c1, I2C1_SCL_PIN, I2C1_SDA_PIN);
+    //i2c_init_instance(i2c1, I2C1_SCL_PIN, I2C1_SDA_PIN);
 }

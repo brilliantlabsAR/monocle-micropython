@@ -39,6 +39,7 @@
 #include "driver/i2c.h"
 #include "driver/iqs620.h"
 #include "driver/timer.h"
+#include "driver/timer.h"
 #include "driver/touch.h"
 
 #define LOG     NRFX_LOG

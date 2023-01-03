@@ -26,6 +26,8 @@
  * GPIO pins used, I2C addresses, peripheral instances in use...
  */
 
+#include "nrf_gpio.h"
+
 // Bluetooth params
 
 #define BLE_DEVICE_NAME             "Monocle"

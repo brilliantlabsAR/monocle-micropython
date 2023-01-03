@@ -42,6 +42,7 @@
 #include "driver/max77654.h"
 #include "driver/ov5640_data.h"
 #include "driver/ov5640.h"
+#include "driver/timer.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT NRFX_ASSERT
@@ -117,20 +118,6 @@ static uint8_t ov5640_read_reg(uint16_t reg)
     if (!i2c_read(OV5640_I2C, I2C_SLAVE_ADDR, &ret_val, 1))
         return 0;
     return ret_val;
-}
-
-/**
- * Prepare the pins before the power comes in.
- */
-void ov5640_prepare(void)
-{
-    // Set to 0V = hold camera in reset.
-    nrf_gpio_pin_write(OV5640_NRESETB_PIN, false);
-    nrf_gpio_cfg_output(OV5640_NRESETB_PIN);
-
-    // Set to 0V = not asserted.
-    nrf_gpio_pin_write(OV5640_PWDN_PIN, false);
-    nrf_gpio_cfg_output(OV5640_PWDN_PIN);
 }
 
 /**
@@ -519,10 +506,12 @@ void ov5640_focus_init(void)
 void ov5640_init(void)
 {
     DRIVER(OV5640);
+    max77654_init();
     max77654_rail_1v8(true);
     max77654_rail_10v(true);
-    i2c_init();
     fpga_init();
+    i2c_init();
+    timer_init();
 
     ov5640_pin_pwdn(true);
     ov5640_pin_nresetb(false);

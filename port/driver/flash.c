@@ -38,6 +38,7 @@
 #include "driver/flash.h"
 #include "driver/max77654.h"
 #include "driver/spi.h"
+#include "driver/timer.h"
 
 #define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 #define ASSERT NRFX_ASSERT
@@ -51,16 +52,6 @@
 #define FLASH_CMD_DEVICE_ID         0x90
 
 #define FLASH_STATUS_BUSY_MASK      0x01
-
-/**
- * Prepare the GPIO setup for the SPI flash interface.
- */
-void flash_prepare(void)
-{
-    // Prepare the SPI_CS pin for the flash.
-    nrf_gpio_pin_set(SPI_FLASH_CS_PIN);
-    nrf_gpio_cfg_output(SPI_FLASH_CS_PIN);
-}
 
 /**
  * Set the CS pin configured with #define SPI_FLASH_CS_PIN
@@ -187,8 +178,10 @@ uint8_t flash_get_device_id(void)
 void flash_init(void)
 {
     DRIVER(FLASH);
+    max77654_init();
     max77654_rail_1v8(true);
     spi_init();
+    timer_init();
 
     LOG("flash_device_id=0x%02X", flash_get_device_id());
 }

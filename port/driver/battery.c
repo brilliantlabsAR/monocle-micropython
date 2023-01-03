@@ -34,6 +34,7 @@
 #include "driver/battery.h"
 #include "driver/config.h"
 #include "driver/driver.h"
+#include "driver/nrfx.h"
 #include "driver/timer.h"
 
 #define LOG     NRFX_LOG
@@ -175,6 +176,7 @@ void battery_timer_handler(void)
 void battery_init(void)
 {
     DRIVER(BATTERY);
+    nrfx_init();
 
     uint32_t err;
     nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(BATTERY_ADC_PIN, 0);
@@ -183,9 +185,6 @@ void battery_init(void)
     channel.channel_config.gain = BATTERY_SAADC_GAIN_CONF;
 
     nrf_gpio_cfg_input(BATTERY_ADC_PIN, NRF_GPIO_PIN_NOPULL);
-
-    err = nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
-    ASSERT(err == NRFX_SUCCESS);
 
     err = nrfx_saadc_channel_config(&channel);
     ASSERT(err == NRFX_SUCCESS);

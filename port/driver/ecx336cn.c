@@ -41,6 +41,7 @@
 #include "driver/fpga.h"
 #include "driver/max77654.h"
 #include "driver/spi.h"
+#include "driver/timer.h"
 
 #define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
@@ -66,16 +67,6 @@ static inline uint8_t ecx336cn_read_byte(uint8_t addr)
     spi_chip_deselect(SPI_DISP_CS_PIN);
 
     return data;
-}
-
-/**
- * Prepare GPIO pins before the chip receives power.
- */
-void ecx336cn_prepare(void)
-{
-    // Set to 0V on boot (datasheet p.11)
-    nrf_gpio_pin_write(ECX336CN_XCLR_PIN, 0);
-    nrf_gpio_cfg_output(ECX336CN_XCLR_PIN);
 }
 
 void ecx336cn_deinit(void)
@@ -121,10 +112,12 @@ void ecx336cn_awake(void)
 void ecx336cn_init(void)
 {
     DRIVER(ECX336CN);
+    max77654_init();
     max77654_rail_1v8(true);
     max77654_rail_10v(true);
-    spi_init();
     fpga_init();
+    spi_init();
+    timer_init();
 
     // power-on sequence, see Datasheet section 9
     // 1ms after 1.8V on, device has finished initializing

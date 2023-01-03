@@ -32,9 +32,11 @@
 #include "nrf_soc.h"
 #include "nrfx_log.h"
 #include "nrfx_timer.h"
+#include "nrfx_systick.h"
 
 #include "driver/config.h"
 #include "driver/driver.h"
+#include "driver/nrfx.h"
 #include "driver/timer.h"
 
 #define LOG     NRFX_LOG
@@ -107,17 +109,18 @@ void timer_add_handler(timer_handler_t *ptr)
 
 void timer_init(void)
 {
-    DRIVER(TIMER);
-
     uint32_t err;
+
+    DRIVER(TIMER);
+    nrfx_init();
+
+    err = nrfx_timer_init(&timer, &timer_config, timer_event_handler);
+    ASSERT(err == NRFX_SUCCESS);
 
     // Prepare the configuration structure.
     timer_config.mode = NRF_TIMER_MODE_TIMER;
     timer_config.frequency = NRF_TIMER_FREQ_31250Hz;
     timer_config.bit_width = NRF_TIMER_BIT_WIDTH_8;
-
-    err = nrfx_timer_init(&timer, &timer_config, timer_event_handler);
-    ASSERT(err == NRFX_SUCCESS);
 
     // Do not raise an interrupt every time, but on every 100 times -> 31.25 Hz.
     nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 100,

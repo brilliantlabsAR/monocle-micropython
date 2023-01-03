@@ -41,7 +41,7 @@ enum {
 
 STATIC mp_obj_t mod_led___init__(void)
 {
-    // dependencies:
+    max77654_init();
     max77654_rail_vled(true);
 
     max77654_led_red(false);
