@@ -29,9 +29,7 @@
 #include "nrfx_systick.h"
 
 #include "driver/config.h"
-#include "driver/driver.h"
 
-#define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
 
 /*
@@ -90,7 +88,7 @@ void nrfx_gpio_fpga(void)
 
 void nrfx_init(void)
 {
-    DRIVER(NRFX);
+    DRIVER("NRFX");
 
     uint32_t err;
 

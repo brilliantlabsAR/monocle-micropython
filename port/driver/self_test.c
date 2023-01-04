@@ -37,7 +37,6 @@
 
 #include "driver/battery.h"
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/ecx336cn.h"
 #include "driver/flash.h"
 #include "driver/fpga.h"
@@ -49,7 +48,6 @@
 #include "driver/spi.h"
 #include "driver/timer.h"
 
-#define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
 
 static bool power_halt_on_error;

@@ -32,13 +32,11 @@
 #include <stdint.h>
 
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/spi.h"
 #include "nrfx_log.h"
 #include "nrfx_spim.h"
 #include "nrfx_systick.h"
 
-#define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
 
 // SPI instance
@@ -140,7 +138,7 @@ static void spi_init_instance(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin
  */
 void spi_init(void)
 {
-    DRIVER(SPI);
+    DRIVER("SPI");
 
     spi_init_instance(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
 

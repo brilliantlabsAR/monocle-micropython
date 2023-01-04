@@ -38,13 +38,11 @@
 #include "nrfx_twi.h"
 
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/i2c.h"
 #include "driver/iqs620.h"
 #include "driver/nrfx.h"
 #include "driver/timer.h"
 
-#define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
 
 // registers
@@ -421,7 +419,7 @@ uint16_t iqs620_get_count(uint8_t channel)
  */
 void iqs620_init(void)
 {
-    DRIVER(IQS620);
+    DRIVER("IQS620");
     i2c_init();
     nrfx_init();
     timer_init();

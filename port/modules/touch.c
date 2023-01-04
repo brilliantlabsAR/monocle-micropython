@@ -32,8 +32,6 @@
 #include "driver/timer.h"
 #include "driver/touch.h"
 
-#define LOG NRFX_LOG_ERROR
-
 mp_obj_t callback;
 
 enum {

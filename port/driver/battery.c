@@ -33,11 +33,9 @@
 
 #include "driver/battery.h"
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/nrfx.h"
 #include "driver/timer.h"
 
-#define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
 
 /*
@@ -175,7 +173,7 @@ void battery_timer_handler(void)
  */
 void battery_init(void)
 {
-    DRIVER(BATTERY);
+    DRIVER("BATTERY");
     nrfx_init();
 
     uint32_t err;

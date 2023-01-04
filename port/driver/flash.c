@@ -34,13 +34,11 @@
 #include "nrfx_systick.h"
 
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/flash.h"
 #include "driver/max77654.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
 
-#define LOG(...) NRFX_LOG_ERROR(__VA_ARGS__)
 #define ASSERT NRFX_ASSERT
 
 #define FLASH_CMD_PROGRAM_PAGE      0x02
@@ -177,7 +175,7 @@ uint8_t flash_get_device_id(void)
  */
 void flash_init(void)
 {
-    DRIVER(FLASH);
+    DRIVER("FLASH");
     max77654_init();
     max77654_rail_1v8(true);
     spi_init();

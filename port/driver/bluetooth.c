@@ -37,13 +37,11 @@
 
 #include "driver/bluetooth.h"
 #include "driver/config.h"
-#include "driver/driver.h"
 
 #define BLE_ADV_MAX_SIZE 31
 #define BLE_MAX_MTU_LENGTH          128
 #define BLE_UUID_COUNT              2
 
-#define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
 
 /** Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go. */
@@ -124,41 +122,17 @@ static inline uint8_t ring_pop(ring_buf_t *ring)
 // Nordic UART Service service functions
 
 /**
- * Sends all buffered data in the tx ring buffer over BLE.
+ * Send a buffer out, retrying continuously until it goes to completion (with success or failure).
  */
-void ble_nus_flush_tx(void)
+static void ble_buffer_tx(ble_service_t *service, uint8_t *buf, uint16_t len)
 {
     uint32_t err;
-    // Local buffer for sending data
-    uint8_t out_buffer[BLE_MAX_MTU_LENGTH] = "";
-    uint16_t out_len = 0;
-    ble_service_t *service = &ble_nus_service;
-
-    // If not connected, do not flush.
-    if (ble_conn_handle == BLE_CONN_HANDLE_INVALID)
-        return;
-
-    // If there's no data to send, simply return
-    if (ring_empty(&nus_tx))
-        return;
-
-    // For all the remaining characters, i.e until the heads come back together
-    while (!ring_empty(&nus_tx))
-    {
-        // Copy over a character from the tail to the outgoing buffer
-        out_buffer[out_len++] = ring_pop(&nus_tx);
-
-        // Break if we over-run the negotiated MTU size, send the rest later
-        if (out_len >= negotiated_mtu)
-            break;
-    }
-
-    // Initialise the service value parameters
-    ble_gatts_hvx_params_t hvx_params = {0};
-    hvx_params.handle = service->tx_characteristic.value_handle;
-    hvx_params.p_data = out_buffer;
-    hvx_params.p_len = (uint16_t *)&out_len;
-    hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
+    ble_gatts_hvx_params_t hvx_params = {
+        .handle = service->tx_characteristic.value_handle,
+        .p_data = buf,
+        .p_len = (uint16_t *)&len,
+        .type = BLE_GATT_HVX_NOTIFICATION,
+    };
 
     do {
         ASSERT(ble_conn_handle != BLE_CONN_HANDLE_INVALID);
@@ -175,6 +149,36 @@ void ble_nus_flush_tx(void)
 
     // Catch other errors
     ASSERT(!err);
+}
+
+/**
+ * Sends all buffered data in the tx ring buffer over BLE.
+ */
+static void ble_nus_flush_tx(void)
+{
+    // Local buffer for sending data
+    uint8_t buf[BLE_MAX_MTU_LENGTH] = "";
+    uint16_t len = 0;
+
+    // If not connected, do not flush.
+    if (ble_conn_handle == BLE_CONN_HANDLE_INVALID)
+        return;
+
+    // If there's no data to send, simply return
+    if (ring_empty(&nus_tx))
+        return;
+
+    // For all the remaining characters, i.e until the heads come back together
+    while (!ring_empty(&nus_tx))
+    {
+        // Copy over a character from the tail to the outgoing buffer
+        buf[len++] = ring_pop(&nus_tx);
+
+        // Break if we over-run the negotiated MTU size, send the rest later
+        if (len >= negotiated_mtu)
+            break;
+    }
+    ble_buffer_tx(&ble_nus_service, buf, len);
 }
 
 int ble_nus_rx(void)
@@ -675,7 +679,7 @@ void SWI2_IRQHandler(void)
  */
 void ble_init(void)
 {
-    DRIVER(BLE);
+    DRIVER("BLE");
 
     // Error code variable
     uint32_t err;

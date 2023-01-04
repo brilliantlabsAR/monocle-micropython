@@ -38,6 +38,7 @@
 #include "shared/readline/readline.h"
 #include "shared/runtime/pyexec.h"
 
+#include "nrfx_log.h"
 #include "nrf_sdm.h"
 #include "nrfx_systick.h"
 
@@ -81,9 +82,6 @@ _Noreturn void nlr_jump_fail(void *val)
     (void)val;
     assert(!"exception raised without any handlers for it");
 }
-
-#include "nrfx_log.h"
-#define LOG NRFX_LOG_ERROR
 
 /**
  * Main application called from Reset_Handler().

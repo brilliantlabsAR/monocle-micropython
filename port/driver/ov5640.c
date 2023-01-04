@@ -36,7 +36,6 @@
 #include "nrfx_twi.h"
 
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/fpga.h"
 #include "driver/i2c.h"
 #include "driver/max77654.h"
@@ -44,7 +43,6 @@
 #include "driver/ov5640.h"
 #include "driver/timer.h"
 
-#define LOG     NRFX_LOG
 #define ASSERT NRFX_ASSERT
 #define LEN(x) (sizeof (x) / sizeof *(x))
 
@@ -505,7 +503,7 @@ void ov5640_focus_init(void)
  */
 void ov5640_init(void)
 {
-    DRIVER(OV5640);
+    DRIVER("OV5640");
     max77654_init();
     max77654_rail_1v8(true);
     max77654_rail_10v(true);

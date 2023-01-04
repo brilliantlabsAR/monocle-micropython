@@ -35,14 +35,12 @@
 #include "nrfx_twi.h"
 
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/i2c.h"
 #include "driver/iqs620.h"
 #include "driver/timer.h"
 #include "driver/timer.h"
 #include "driver/touch.h"
 
-#define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
 
 /** Timeout for button press (ticks) = 0.5 s */
@@ -325,7 +323,7 @@ void touch_callback(touch_state_t trigger)
  */
 void touch_init(void)
 {
-    DRIVER(TOUCH);
+    DRIVER("TOUCH");
     iqs620_init();
     timer_init();
 }

@@ -31,13 +31,11 @@
 #include "nrfx_systick.h"
 
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/i2c.h"
 #include "driver/max77654.h"
 #include "driver/nrfx.h"
 #include "driver/timer.h"
 
-#define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
 #define LEN(x)  (sizeof x / sizeof *x)
 
@@ -669,7 +667,7 @@ void max77564_factory_ship_mode(void)
  */
 void max77654_init(void)
 {
-    DRIVER(MAX77654);
+    DRIVER("MAX77654");
     nrfx_init();
     i2c_init();
     timer_init();

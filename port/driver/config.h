@@ -71,3 +71,9 @@
 
 #define OV5640_I2C                  i2c1
 #define OV5640_ADDR                 0x3C
+
+#define DRIVER(name) { \
+    static bool ready = false; \
+    if (ready) return; else ready = true; \
+    PRINTF("DRIVER(%s)\r\n", name); \
+}

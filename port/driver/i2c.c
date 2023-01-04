@@ -34,14 +34,12 @@
 #include "nrfx_twi.h"
 
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/i2c.h"
 #include "nrfx_log.h"
 
 #include "driver/config.h"
 #include "driver/i2c.h"
 
-#define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
 
 nrfx_twi_t const i2c0 = NRFX_TWI_INSTANCE(0);
@@ -155,7 +153,7 @@ void i2c_init_instance(nrfx_twi_t twi, uint8_t scl_pin, uint8_t sda_pin)
 // TODO: validate that 400kH speed works & increase to that
 void i2c_init(void)
 {
-    DRIVER(I2C);
+    DRIVER("I2C");
 
     i2c_init_instance(i2c0, I2C0_SCL_PIN, I2C0_SDA_PIN);
     //i2c_init_instance(i2c1, I2C1_SCL_PIN, I2C1_SDA_PIN);

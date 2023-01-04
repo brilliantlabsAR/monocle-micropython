@@ -36,14 +36,12 @@
 #include "nrfx_systick.h"
 
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/ecx336cn.h"
 #include "driver/fpga.h"
 #include "driver/max77654.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
 
-#define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
 #define LEN(x)  (sizeof(x) / sizeof*(x))
 
@@ -208,7 +206,7 @@ void ecx336cn_awake(void)
  */
 void ecx336cn_init(void)
 {
-    DRIVER(ECX336CN);
+    DRIVER("ECX336CN");
     max77654_init();
     max77654_rail_1v8(true);
     max77654_rail_10v(true);

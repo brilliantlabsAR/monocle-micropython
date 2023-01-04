@@ -35,11 +35,9 @@
 #include "nrfx_systick.h"
 
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/nrfx.h"
 #include "driver/timer.h"
 
-#define LOG     NRFX_LOG
 #define ASSERT  NRFX_ASSERT
 
 static nrfx_timer_t timer = NRFX_TIMER_INSTANCE(TIMER_INSTANCE);
@@ -111,7 +109,7 @@ void timer_init(void)
 {
     uint32_t err;
 
-    DRIVER(TIMER);
+    DRIVER("TIMER");
     nrfx_init();
 
     err = nrfx_timer_init(&timer, &timer_config, timer_event_handler);

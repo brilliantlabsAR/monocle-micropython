@@ -22,7 +22,8 @@
  */
 
 /**
- * Bluetooth Low Energy driver, providing the Nordic Uart Service console.
+ * Bluetooth Low Energy driver, providing the Nordic Uart Service console
+ * and the custom media transfer protocol.
  */
 
 void ble_init(void);

@@ -33,14 +33,12 @@
 #include "nrfx_log.h"
 
 #include "driver/config.h"
-#include "driver/driver.h"
 #include "driver/fpga.h"
 #include "driver/max77654.h"
 #include "driver/ov5640.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
 
-#define LOG NRFX_LOG_ERROR
 #define ASSERT NRFX_ASSERT
 
 void fpga_check_pins(char const *msg)
@@ -225,7 +223,7 @@ void fpga_capture_read_data(uint8_t *buf, size_t len)
  */
 void fpga_init(void)
 {
-    DRIVER(FPGA);
+    DRIVER("FPGA");
     fpga_check_pins("before driver setup");
     max77654_init();
     max77654_rail_1v2(true);
