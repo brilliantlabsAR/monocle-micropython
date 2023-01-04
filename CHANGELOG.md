@@ -1,8 +1,17 @@
 Changelog
 =========
 
+v23.004.0055
+------------
+FPGA: `brilliant_monocle_fpga_sx_v22.351.1434.fs`
+
+- Reorganize all the drivers with a dependency system so that each gets called only once,
+  but so that they can be initialized on-demande, and in any order.
+- Rework the python API entirely to match the documentation.
+- Bugfixes for the drivers, simplified, some rewritten.
+
 v22.346.2141
--------
+------------
 FPGA: `MK11_FPGA_V0.12.fs`
 
 - Initial pre-release of the new Micropython-based firmware
