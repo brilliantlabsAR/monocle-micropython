@@ -540,6 +540,18 @@ void max77654_rail_vled(bool on)
     nrfx_systick_delay_ms(1);
 }
 
+/**
+ * Turn all rails off starting with the highest voltage to the lowest one, then finally the LEDs.
+ */
+void max77654_power_off(void)
+{
+    max77654_rail_10v(false);
+    max77654_rail_2v7(false);
+    max77654_rail_1v8(false);
+    max77654_rail_1v2(false);
+    max77654_rail_vled(false);
+}
+
 // open-drain, set low, LED on
 #define LED_ON 0x00
 
@@ -684,6 +696,9 @@ void max77654_init(void)
 
     // MAX77654_CNFG_CHG_H: JEITA charge voltage = 4.3V, Thermistor enabled
     max77654_update(MAX77654_CNFG_CHG_H, cv_to_hw(4300), MAX77654_CHG_CV_JEITA_Msk);
+
+    // Turn everything off at startup
+    max77654_power_off();
 
     // MAX77654_CNFG_CHG_I: use defaults: AMUX BATT discharge 300mA
     // scale, AMUX disabled (hi-Z)

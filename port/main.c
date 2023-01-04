@@ -42,6 +42,7 @@
 #include "nrfx_systick.h"
 
 #include "driver/bluetooth.h"
+#include "driver/fpga.h"
 
 /** Variable that holds the Softdevice NVIC state.  */
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
@@ -93,8 +94,9 @@ int main(void)
     SEGGER_RTT_Init();
     LOG("Monocle firmware "BUILD_VERSION" "GIT_COMMIT);
 
-    // Initialise BLE, also used for logging
+    // Initialise drivers
     ble_init();
+    fpga_init();
 
     // Initialise the stack pointer for the main thread
     mp_stack_set_top(&_stack_top);

@@ -230,6 +230,7 @@ void fpga_init(void)
     max77654_init();
     max77654_rail_1v2(true);
     max77654_rail_1v8(true);
+    max77654_rail_2v7(true);
     spi_init();
     timer_init();
     fpga_check_pins("started dependencies");

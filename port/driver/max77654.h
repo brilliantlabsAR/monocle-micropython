@@ -59,6 +59,7 @@ void max77654_rail_1v8(bool on);
 void max77654_rail_2v7(bool on);
 void max77654_rail_10v(bool on);
 void max77654_rail_vled(bool on);
+void max77654_power_off(void);
 void max77654_led_red(bool on);
 void max77654_led_green(bool on);
 max77654_status max77654_charging_status(void);
