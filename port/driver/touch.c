@@ -209,23 +209,33 @@ static void touch_set_timer(touch_event_t event)
     // Choose the apropriate duration depending on the event triggered.
     switch (event)
     {
-        case TOUCH_EVENT_LONG:
-            LOG("TOUCH_EVENT_LONG");
-            // No timer to configure.
-            timer_del_handler(&touch_timer_handler);
-            return;
-        case TOUCH_EVENT_SHORT:
-            LOG("TOUCH_EVENT_SHORT");
-            // After a short timer, extend to a long timer.
-            touch_timer_ticks = TOUCH_DELAY_LONG_MS;
-            touch_timer_event = TOUCH_EVENT_LONG;
-            break;
-        default:
-            LOG("default event");
-            // After a button event, setup a short timer.
-            touch_timer_ticks = TOUCH_DELAY_SHORT_MS;
-            touch_timer_event = TOUCH_EVENT_SHORT;
-            break;
+
+    case TOUCH_EVENT_LONG:
+    {
+        LOG("TOUCH_EVENT_LONG");
+        // No timer to configure.
+        timer_del_handler(&touch_timer_handler);
+        return;
+    }
+
+    case TOUCH_EVENT_SHORT:
+    {
+        LOG("TOUCH_EVENT_SHORT");
+        // After a short timer, extend to a long timer.
+        touch_timer_ticks = TOUCH_DELAY_LONG_MS;
+        touch_timer_event = TOUCH_EVENT_LONG;
+        break;
+    }
+
+    default:
+    {
+        LOG("default event");
+        // After a button event, setup a short timer.
+        touch_timer_ticks = TOUCH_DELAY_SHORT_MS;
+        touch_timer_event = TOUCH_EVENT_SHORT;
+        break;
+    }
+
     }
 
     // Submit the configuration.
@@ -287,14 +297,22 @@ static void touch_timer_handler(void)
 void iqs620_callback_button_pressed(uint8_t button)
 {
     LOG("button=%d", button);
+
     switch (button)
     {
-        case 0:
-            touch_next_state(TOUCH_EVENT_0_ON);
-            break;
-        case 1:
-            touch_next_state(TOUCH_EVENT_1_ON);
-            break;
+
+    case 0:
+    {
+        touch_next_state(TOUCH_EVENT_0_ON);
+        break;
+    }
+
+    case 1:
+    {
+        touch_next_state(TOUCH_EVENT_1_ON);
+        break;
+    }
+
     }
 }
 
@@ -303,12 +321,18 @@ void iqs620_callback_button_released(uint8_t button)
     LOG("button=%d", button);
     switch (button)
     {
-        case 0:
-            touch_next_state(TOUCH_EVENT_0_OFF);
-            break;
-        case 1:
-            touch_next_state(TOUCH_EVENT_1_OFF);
-            break;
+
+    case 0:
+    {
+        touch_next_state(TOUCH_EVENT_0_OFF);
+        break;
+    }
+
+    case 1:
+    {
+        touch_next_state(TOUCH_EVENT_1_OFF);
+        break;
+    }
     }
 }
 

@@ -575,52 +575,6 @@ void max77654_led_green(bool on)
 }
 
 /**
- * Get the battery status.
- * @return Current status of charge.
- */
-max77654_status max77654_charging_status(void)
-{
-    uint8_t val;
-
-    val = max77654_read((MAX77654_STAT_CHG_B) & MAX77654_CHG_DTLS_Msk);
-    LOG("MAX77654 Status = 0x%02X.", val);
-
-    switch (val)
-    {
-        case MAX77654_CHG_DTLS_OFF:
-            return MAX77654_READY;
-        case MAX77654_CHG_DTLS_DONE:
-        case MAX77654_CHG_DTLS_DONE_J:
-            return MAX77654_CHARGE_DONE;
-        case MAX77654_CHG_DTLS_FAULT_PRE_Q:
-        case MAX77654_CHG_DTLS_FAULT_TIME:
-        case MAX77654_CHG_DTLS_FAULT_TEMP:
-            return MAX77654_FAULT;
-        default:
-            return MAX77654_CHARGING;
-    }
-}
-
-/**
- * Query the fault status of the device.
- * @return An enum with the type of the fault.
- */
-max77654_fault max77654_faults_status(void)
-{
-    switch (max77654_read(MAX77654_STAT_CHG_B) & MAX77654_CHG_DTLS_Msk)
-    {
-        case MAX77654_CHG_DTLS_FAULT_PRE_Q:
-            return MAX77654_FAULT_PRE_Q;
-        case MAX77654_CHG_DTLS_FAULT_TIME:
-            return MAX77654_FAULT_TIME;
-        case MAX77654_CHG_DTLS_FAULT_TEMP:
-            return MAX77654_FAULT_TEMP;
-        default:
-            return MAX77654_NORMAL;
-    }
-}
-
-/**
  * Set input current upper limit (in mA).
  * @param current Range is 95 to 475 in increments of 95mA, see MAX77654_CNFG_CHG_B definitions.
  */

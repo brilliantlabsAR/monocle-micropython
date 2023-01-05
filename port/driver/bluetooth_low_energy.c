@@ -130,7 +130,7 @@ static inline uint8_t ring_pop(ring_buf_t *ring)
 /**
  * Send a buffer out, retrying continuously until it goes to completion (with success or failure).
  */
-static void ble_tx(ble_service_t *service, uint8_t *buf, uint16_t len)
+static void ble_tx(ble_service_t *service, uint8_t const *buf, uint16_t len)
 {
     uint32_t err;
     ble_gatts_hvx_params_t hvx_params = {
@@ -207,7 +207,7 @@ int ble_nus_rx(void)
 
 void ble_nus_tx(char const *buf, size_t len)
 {
-    for (size_t i; i < len; i++)
+    for (size_t i = 0; i < len; i++)
     {
         while (ring_full(&nus_tx))
             ble_nus_flush_tx();
@@ -469,15 +469,21 @@ void SWI2_IRQHandler(void)
         switch (evt_id)
         {
         case NRF_EVT_FLASH_OPERATION_SUCCESS:
+        {
             // TODO In case we add a filesystem in the future
             break;
+        }
 
         case NRF_EVT_FLASH_OPERATION_ERROR:
+        {
             // TODO In case we add a filesystem in the future
             break;
+        }
 
         default:
+        {
             break;
+        }
         }
     }
 

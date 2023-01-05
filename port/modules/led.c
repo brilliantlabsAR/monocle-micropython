@@ -54,12 +54,19 @@ static mp_obj_t led_on(mp_obj_t led_in)
 {
     switch (MP_OBJ_SMALL_INT_VALUE(led_in))
     {
+
     case LED_RED:
+    {
         max77654_led_red(true);
         break;
+    }
+
     case LED_GREEN:
+    {
         max77654_led_green(true);
         break;
+    }
+
     }
     return mp_const_none;
 }
@@ -69,12 +76,19 @@ static mp_obj_t led_off(mp_obj_t led_in)
 {
     switch (MP_OBJ_SMALL_INT_VALUE(led_in))
     {
-    case LED_RED: {
+
+    case LED_RED:
+    {
         max77654_led_red(false);
-    } break;
-    case LED_GREEN: {
+        break;
+    }
+
+    case LED_GREEN:
+    {
         max77654_led_green(false);
-    } break;
+        break;
+    }
+
     }
     return mp_const_none;
 }

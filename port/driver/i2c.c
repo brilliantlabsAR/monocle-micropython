@@ -58,13 +58,19 @@ static inline bool i2c_filter_error(char const *func, nrfx_err_t err)
 {
     switch (err)
     {
-        case NRFX_SUCCESS:
-            return true;
-        case NRFX_ERROR_DRV_TWI_ERR_ANACK:
-            return false;
-        default:
-            LOG("%s, %s", func, NRFX_LOG_ERROR_STRING_GET(err));
-            return false;
+    case NRFX_SUCCESS:
+    {
+        return true;
+    }
+    case NRFX_ERROR_DRV_TWI_ERR_ANACK:
+    {
+        return false;
+    }
+    default:
+    {
+        LOG("%s, %s", func, NRFX_LOG_ERROR_STRING_GET(err));
+        return false;
+    }
     }
 }
 

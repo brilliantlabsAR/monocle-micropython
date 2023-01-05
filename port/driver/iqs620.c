@@ -330,15 +330,21 @@ static void iqs620_process_state(uint8_t button, iqs620_state_t *old, iqs620_sta
     // We changed from some state to either TOUCH or NONE.
     switch (new)
     {
-        case IQS620_STATE_PROX:
-            // Not triggering anything, state just useful for debouncing.
-            return;
-        case IQS620_STATE_NONE:
-            iqs620_callback_button_released(button);
-            break;
-        case IQS620_STATE_TOUCH:
-            iqs620_callback_button_pressed(button);
-            break;
+    case IQS620_STATE_PROX:
+    {
+        // Not triggering anything, state just useful for debouncing.
+        return;
+    }
+    case IQS620_STATE_NONE:
+    {
+        iqs620_callback_button_released(button);
+        break;
+    }
+    case IQS620_STATE_TOUCH:
+    {
+        iqs620_callback_button_pressed(button);
+        break;
+    }
     }
     *old = new;
 }
