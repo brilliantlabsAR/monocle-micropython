@@ -47,6 +47,14 @@
 /** Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go. */
 #define RING_BUFFER_LENGTH (1024 + 45)
 
+#define UUID128(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) { .uuid128 = { \
+    0x##p, 0x##o, 0x##n, 0x##m, 0x##l, 0x##k, 0x##j, 0x##i, \
+    0x##h, 0x##g, 0x##f, 0x##e, 0x##d, 0x##c, 0x##b, 0x##a, \
+} }
+
+ble_uuid128_t ble_nus_uuid128 = UUID128(6E,40,00,00, B5,A3, F3,93, E0,A9, E5,0E,24,DC,CA,9E);
+ble_uuid128_t ble_raw_uuid128 = UUID128(E5,70,00,00, 7B,AC, 42,9A, B4,CE, 57,FF,90,0F,47,9D);
+
 /**
  * Holds the handles for the conenction and characteristics.
  * Convenient for use in interrupts, to get all service-specific data
@@ -124,7 +132,7 @@ static inline uint8_t ring_pop(ring_buf_t *ring)
 /**
  * Send a buffer out, retrying continuously until it goes to completion (with success or failure).
  */
-static void ble_buffer_tx(ble_service_t *service, uint8_t *buf, uint16_t len)
+static void ble_tx(ble_service_t *service, uint8_t *buf, uint16_t len)
 {
     uint32_t err;
     ble_gatts_hvx_params_t hvx_params = {
@@ -178,7 +186,8 @@ static void ble_nus_flush_tx(void)
         if (len >= negotiated_mtu)
             break;
     }
-    ble_buffer_tx(&ble_nus_service, buf, len);
+    ble_tx(&ble_nus_service, buf, len);
+    ble_tx(&ble_raw_service, buf, len);
 }
 
 int ble_nus_rx(void)
@@ -334,17 +343,13 @@ static void ble_configure_nus_service(ble_uuid_t *service_uuid)
 {
     uint32_t err;
     ble_service_t *service = &ble_nus_service;
-    ble_uuid128_t uuid128 = { .uuid128 = {
-        // Reverse byte endianess to the string representation.
-        0x9E,0xCA,0xDC,0x24,0x0E,0xE5, 0xA9,0xE0, 0x93,0xF3, 0xA3,0xB5, 0x00,0x00,0x40,0x6E
-    } };
 
     // Set the 16 bit UUIDs for the service and characteristics
     service_uuid->uuid = 0x0001;
     ble_uuid_t rx_uuid = { .uuid = 0x0002 };
     ble_uuid_t tx_uuid = { .uuid = 0x0003 };
 
-    err = sd_ble_uuid_vs_add(&uuid128, &service_uuid->type);
+    err = sd_ble_uuid_vs_add(&ble_nus_uuid128, &service_uuid->type);
     ASSERT(!err);
 
     err = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
@@ -364,17 +369,12 @@ void ble_configure_raw_service(ble_uuid_t *service_uuid)
     uint32_t err;
     ble_service_t *service = &ble_raw_service;
 
-    ble_uuid128_t uuid128 = { .uuid128 = {
-        // Reverse byte endianess to the string representation.
-        0xFF,0xCA,0xDC,0x24,0x0E,0xE5, 0xA9,0xE0, 0x93,0xF3, 0xA3,0xB5, 0x00,0x00,0x40,0x6E
-    } };
-
     // Set the 16 bit UUIDs for the service and characteristics
     service_uuid->uuid = 0x0001;
-    ble_uuid_t rx_uuid = { .uuid = 0x3002 };
-    ble_uuid_t tx_uuid = { .uuid = 0x3003 };
+    ble_uuid_t rx_uuid = { .uuid = 0x0002 };
+    ble_uuid_t tx_uuid = { .uuid = 0x0003 };
 
-    err = sd_ble_uuid_vs_add(&uuid128, &service_uuid->type);
+    err = sd_ble_uuid_vs_add(&ble_raw_uuid128, &service_uuid->type);
     ASSERT(!err);
 
     err = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
