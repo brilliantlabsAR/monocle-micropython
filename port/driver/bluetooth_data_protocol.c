@@ -72,13 +72,8 @@ struct data_state_space_t
     {                                                         // ------------------------------------
         struct data_output_file                               // Metadata of the file to send
         {                                                     // ------------
-            union                                             // File size is a union
-            {                                                 // ------
-                uint32_t size;                                // either as a 32 bit value
-                uint8_t size_byte[4];                         // or can be read as 4 bytes
-            };                                                // ------
+            uint32_t size;                                    // File size
             char name[50];                                    // File name string. 50byte limit
-            char name_length;                                 // File name length simply strlen(name) for convenience
         } file;                                               // ------------
         struct data_output_ble                                // Buffer payload and lengths for Bluetooth transfers
         {                                                     // ------------
@@ -121,6 +116,30 @@ static bool read_and_clear(bool *flag)
 
     // Otherwise return false
     return false;
+}
+
+static inline size_t data_encode_u32(uint8_t *buf, uint32_t u32)
+{
+    buf[0] = u32 >> 24;
+    buf[1] = u32 >> 16;
+    buf[2] = u32 >> 8;
+    buf[3] = u32 >> 0;
+    return 4;
+}
+
+static inline size_t data_encode_str(uint8_t *buf, char *name)
+{
+    size_t len = strlen(name);
+
+    buf[0] = len;
+    memcpy(buf + 1, name, len);
+    return 1 + len;
+}
+
+static inline size_t data_encode_mem(uint8_t *buf, uint8_t const *mem, size_t len)
+{
+    memcpy(buf, mem, len);
+    return 1 + len;
 }
 
 /**
@@ -182,11 +201,7 @@ static void data_state_machine(void)
         data.output.file.size = sizeof(dummy_small_file); // TODO spi
 
         // Get the filename
-        strcpy(data.output.file.name, "test_file.jpg"); // TODO spi
-
-        // Set the filename length
-        data.output.file.name_length = strnlen(data.output.file.name,
-                                               sizeof(data.output.file.name));
+        size_t len = snprintf(data.output.file.name, sizeof data.output.file.name, "test_file.jpg"); // TODO spi
 
         // Set the MTU length
         data.output.ble.mtu = ble_negotiated_mtu - 3;
@@ -195,8 +210,7 @@ static void data_state_machine(void)
         data.output.ble.sent_bytes = 0;
 
         // If the payload is smaller than a single payload
-        if (data.output.file.size + data.output.file.name_length + 6 <=
-            data.output.ble.mtu)
+        if (data.output.file.size + len + 6 <= data.output.ble.mtu)
         {
             // Go to small payload state
             data.state.next = DATA_STATE_BLE_CAM_SMALL_PAYLOAD;
@@ -210,30 +224,22 @@ static void data_state_machine(void)
 
     case DATA_STATE_BLE_CAM_SMALL_PAYLOAD:
     {
+        size_t i = 0;
+
         // Append the small file flag
-        data.output.ble.buffer[0] = BLE_FILE_SMALL_FLAG;
+        data.output.ble.buffer[i++] = BLE_FILE_SMALL_FLAG;
 
         // Insert the filesize
-        data.output.ble.buffer[1] = data.output.file.size_byte[3];
-        data.output.ble.buffer[2] = data.output.file.size_byte[2];
-        data.output.ble.buffer[3] = data.output.file.size_byte[1];
-        data.output.ble.buffer[4] = data.output.file.size_byte[0];
+        i += data_encode_u32(data.output.ble.buffer + i, data.output.file.size);
 
-        // Add the file name length
-        data.output.ble.buffer[5] = data.output.file.name_length;
-
-        // Append the file name
-        memcpy(data.output.ble.buffer + 6,
-               data.output.file.name,
-               data.output.file.name_length);
+        // Add the file name
+        i += data_encode_str(data.output.ble.buffer + i, data.output.file.name);
 
         // Append the data into the remaining buffer space
-        memcpy(data.output.ble.buffer + 6 + data.output.file.name_length,
-               dummy_small_file, // TODO spi
-               data.output.file.size);
+        i += data_encode_mem(data.output.ble.buffer + i, dummy_small_file, data.output.file.size);
 
         // Send the data
-        ble_raw_tx(data.output.ble.buffer, 6 + data.output.file.name_length + data.output.file.size);
+        ble_raw_tx(data.output.ble.buffer, i);
 
         // Return to IDLE
         data.state.next = DATA_STATE_IDLE;
@@ -242,39 +248,29 @@ static void data_state_machine(void)
 
     case DATA_STATE_BLE_CAM_DATA_START:
     {
+        size_t i = 0, len;
+
         // Append the start file flag
-        data.output.ble.buffer[0] = BLE_FILE_START_FLAG;
+        data.output.ble.buffer[i++] = BLE_FILE_START_FLAG;
 
         // Insert the filesize
-        data.output.ble.buffer[1] = data.output.file.size_byte[3];
-        data.output.ble.buffer[2] = data.output.file.size_byte[2];
-        data.output.ble.buffer[3] = data.output.file.size_byte[1];
-        data.output.ble.buffer[4] = data.output.file.size_byte[0];
+        i += data_encode_u32(data.output.ble.buffer + i, data.output.file.size);
 
-        // Add the file name length
-        data.output.ble.buffer[5] = data.output.file.name_length;
-
-        // Append the file name
-        memcpy(data.output.ble.buffer + 6,
-               data.output.file.name,
-               data.output.file.name_length);
+        // Add the file name
+        i += data_encode_str(data.output.ble.buffer + i, data.output.file.name);
 
         // Append the data into the remaining buffer space
-        memcpy(data.output.ble.buffer + 6 + data.output.file.name_length,
-               dummy_large_file, // TODO spi
-               data.output.ble.mtu - 6 - data.output.file.name_length);
+        len = data.output.ble.mtu - i;
+        i += data_encode_mem(data.output.ble.buffer + i, dummy_large_file, len);
 
         // Send the data. If not successful
-        ble_raw_tx(data.output.ble.buffer, data.output.ble.mtu);
+        ble_raw_tx(data.output.ble.buffer, i);
 
         // Increment the sent bytes
-        data.output.ble.sent_bytes += data.output.ble.mtu -
-                                      6 -
-                                      data.output.file.name_length;
+        data.output.ble.sent_bytes += len;
 
         // If there is less than one MTU length worth of data length
-        if (data.output.file.size <=
-            data.output.ble.sent_bytes + data.output.ble.mtu - 1)
+        if (data.output.file.size <= data.output.ble.sent_bytes + data.output.ble.mtu - 1)
         {
             // Go to the end data state
             data.state.next = DATA_STATE_BLE_CAM_DATA_END;
@@ -288,19 +284,22 @@ static void data_state_machine(void)
 
     case DATA_STATE_BLE_CAM_DATA_MIDDLE:
     {
+        size_t i = 0, len;
+
         // Append the middle of file flag
-        data.output.ble.buffer[0] = BLE_FILE_MIDDLE_FLAG;
+        data.output.ble.buffer[i++] = BLE_FILE_MIDDLE_FLAG;
 
         // Append the data into the remaining buffer space
-        memcpy(data.output.ble.buffer + 1,
-               dummy_large_file + data.output.ble.sent_bytes, // TODO spi
-               data.output.ble.mtu - 1);
+        len = data.output.ble.mtu - i;
+        i += data_encode_mem(data.output.ble.buffer + i,
+                dummy_large_file + data.output.ble.sent_bytes,
+                len);
 
         // Send the data. If not successful
-        ble_raw_tx(data.output.ble.buffer, data.output.ble.mtu);
+        ble_raw_tx(data.output.ble.buffer, i);
 
         // Increment the sent bytes
-        data.output.ble.sent_bytes += data.output.ble.mtu - 1;
+        data.output.ble.sent_bytes += len;
 
         // If the user cancels the transfer
         if (data.input.stop_flag)
@@ -325,16 +324,18 @@ static void data_state_machine(void)
 
     case DATA_STATE_BLE_CAM_DATA_END:
     {
+        size_t i = 0;
+
         // Add the end flag
-        data.output.ble.buffer[0] = BLE_FILE_END_FLAG;
+        data.output.ble.buffer[i++] = BLE_FILE_END_FLAG;
 
         // Append the data into the remaining buffer space
-        memcpy(data.output.ble.buffer + 1,
+        i += data_encode_mem(data.output.ble.buffer + i,
                dummy_large_file + data.output.ble.sent_bytes, // TODO spi
                data.output.file.size - data.output.ble.sent_bytes);
 
         // Send the data
-        ble_raw_tx(data.output.ble.buffer, 1 + (data.output.file.size - data.output.ble.sent_bytes));
+        ble_raw_tx(data.output.ble.buffer, i);
 
         // Return to IDLE
         data.state.next = DATA_STATE_IDLE;
@@ -362,7 +363,7 @@ static void data_state_machine(void)
  * @param channel: Type of operation to request.
  * @return One of the status codes from data_op_t.
  */
-data_op_t app_data_operation(data_op_t channel)
+bool app_data_operation(data_op_t channel)
 {
     // Based on the requested action
     switch (channel)
@@ -373,7 +374,7 @@ data_op_t app_data_operation(data_op_t channel)
         // If a transfer is already in progress
         if (data.output.tx_in_progress_flag)
         {
-            return DATA_OP_ALREADY_IN_PROGRESS;
+            return false;
         }
 
         // Initiate a capture
@@ -388,7 +389,7 @@ data_op_t app_data_operation(data_op_t channel)
         // If a transfer is already in progress
         if (data.output.tx_in_progress_flag)
         {
-            return DATA_OP_ALREADY_IN_PROGRESS;
+            return false;
         }
 
         // Initiate a capture
@@ -429,5 +430,5 @@ data_op_t app_data_operation(data_op_t channel)
     // Start the timer
     timer_add_handler(&data_state_machine);
 
-    return DATA_OP_ACCEPTED;
+    return true;
 }

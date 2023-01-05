@@ -39,18 +39,12 @@ typedef enum data_op_t
 
     // Stops an ongoing transaction
     DATA_OP_STOP,
-
-    // Return status codes
-    DATA_OP_ACCEPTED,            // If the request was accepted
-    DATA_OP_ALREADY_IN_PROGRESS, // If a operation is ongoing on the channel
-    DATA_OP_NO_INTERNET,         // If there is no internet connection
-    DATA_OP_CANNOT_REACH_SERVER, // If the URL cannot be reached
 } data_op_t;
 
 /**
  * Starts/stops a data operation of a given type to the mobile over BLE, or WiFi to a server.
  * @param channel: Type of operation to request.
  * @param url: URL to download/upload the request. If NULL, Bluetooth will be used.
- * @return One of the status codes from data_op_t.
+ * @return True if the operation is accepted, false if already in progress.
  */
-data_op_t app_data_operation(data_op_t channel);
+bool app_data_operation(data_op_t op);
