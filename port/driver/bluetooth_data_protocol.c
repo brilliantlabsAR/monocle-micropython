@@ -83,7 +83,6 @@ struct data_state_space_t
         } ble;                                                // ------------
         bool no_ble_error_flag;                               // Goes high if BLE is not connected ot enabled on the host. Must be cleared after read
         bool no_internet_error_flag;                          // Goes high if there is no internet connection. Must be cleared after read
-        bool tx_in_progress_flag;                             // Goes high when a transfer is in progress. Doesn't need to be cleared after read
     } output;                                                 // ------------------------------------
 } data = {
     .state.current = DATA_STATE_IDLE,
@@ -162,9 +161,6 @@ static void data_state_machine(void)
     {
     case DATA_STATE_IDLE:
     {
-        // Clear the busy flag (we'll set it again if needed)
-        data.output.tx_in_progress_flag = false;
-
         // If a stop is requested
         if (read_and_clear(&data.input.stop_flag))
         {
@@ -176,9 +172,6 @@ static void data_state_machine(void)
         if (read_and_clear(&data.input.camera_capture_flag) ||
             data.input.camera_stream_flag)
         {
-            // Set the busy flag
-            data.output.tx_in_progress_flag = true;
-
             // Go get the image metadata
             data.state.next = DATA_STATE_GET_CAM_METADATA;
             break;
@@ -360,23 +353,20 @@ static void data_state_machine(void)
 /**
  * @brief Starts/stops a data operation of a given type to the mobile over
  *        BLE, or WiFi to a server.
- * @param channel: Type of operation to request.
+ * @param op: Type of operation to request.
  * @return One of the status codes from data_op_t.
  */
-bool app_data_operation(data_op_t channel)
+bool app_data_operation(data_op_t op)
 {
+    if (data.state.current != DATA_STATE_IDLE)
+        return false;
+
     // Based on the requested action
-    switch (channel)
+    switch (op)
     {
     // If a single camera capture
     case DATA_OP_CAMERA_CAPTURE:
     {
-        // If a transfer is already in progress
-        if (data.output.tx_in_progress_flag)
-        {
-            return false;
-        }
-
         // Initiate a capture
         data.input.camera_capture_flag = true;
 
@@ -386,12 +376,6 @@ bool app_data_operation(data_op_t channel)
     // If a continuos camera stream
     case DATA_OP_CAMERA_STREAM:
     {
-        // If a transfer is already in progress
-        if (data.output.tx_in_progress_flag)
-        {
-            return false;
-        }
-
         // Initiate a capture
         data.input.camera_stream_flag = true;
 
