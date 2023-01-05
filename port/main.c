@@ -42,7 +42,7 @@
 #include "nrf_sdm.h"
 #include "nrfx_systick.h"
 
-#include "driver/bluetooth.h"
+#include "driver/bluetooth_low_energy.h"
 #include "driver/fpga.h"
 
 /** Variable that holds the Softdevice NVIC state.  */
@@ -115,10 +115,14 @@ int main(void)
     //pyexec_frozen_module("main.py");
 
     // REPL mode can change, or it can request a soft reset
-    for (int stop = false; !stop;) {
-        if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
+    for (int stop = false; !stop;)
+    {
+        if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL)
+        {
             stop = pyexec_raw_repl();
-        } else {
+        }
+        else
+        {
             stop = pyexec_friendly_repl();
         }
         LOG("switching the interpreter mode");

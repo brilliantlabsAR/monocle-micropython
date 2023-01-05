@@ -61,17 +61,28 @@ STATIC mp_obj_t mod_device___init__(void)
     // dependencies:
     battery_init();
 
-    if (state & POWER_RESETREAS_RESETPIN_Msk) {
+    if (state & POWER_RESETREAS_RESETPIN_Msk)
+    {
         reset_cause_obj = MP_OBJ_NEW_QSTR(MP_QSTR_POWERED_ON);
-    } else if (state & POWER_RESETREAS_DOG_Msk) {
+    }
+    else if (state & POWER_RESETREAS_DOG_Msk)
+    {
         reset_cause_obj = MP_OBJ_NEW_QSTR(MP_QSTR_CRASHED);
-    } else if (state & POWER_RESETREAS_SREQ_Msk) {
+    }
+    else if (state & POWER_RESETREAS_SREQ_Msk)
+    {
         reset_cause_obj = MP_OBJ_NEW_QSTR(MP_QSTR_SOFTWARE_RESET);
-    } else if (state & POWER_RESETREAS_LOCKUP_Msk) {
+    }
+    else if (state & POWER_RESETREAS_LOCKUP_Msk)
+    {
         reset_cause_obj = MP_OBJ_NEW_QSTR(MP_QSTR_CRASHED);
-    } else if (state & POWER_RESETREAS_OFF_Msk) {
+    }
+    else if (state & POWER_RESETREAS_OFF_Msk)
+    {
         reset_cause_obj = MP_OBJ_NEW_QSTR(MP_QSTR_POWERED_ON);
-    } else if (state & POWER_RESETREAS_DIF_Msk) {
+    }
+    else if (state & POWER_RESETREAS_DIF_Msk)
+    {
         reset_cause_obj = MP_OBJ_NEW_QSTR(MP_QSTR_CRASHED);
     }
     assert(reset_cause_obj != NULL);
@@ -104,7 +115,8 @@ STATIC mp_obj_t device_mac_address(void)
     assert(err == 0);
 
     assert(sizeof m_mac_address / 3 > sizeof addr.addr);
-    for (uint8_t i = 0; i < 6; i++) {
+    for (uint8_t i = 0; i < 6; i++)
+    {
         n = snprintf(str, sz, i == 0 ? "%02X" : ":%02X", m_mac_address[i]);
         str += n;
         sz -= n;
@@ -113,7 +125,8 @@ STATIC mp_obj_t device_mac_address(void)
 }
 MP_DEFINE_CONST_FUN_OBJ_0(device_mac_address_obj, device_mac_address);
 
-STATIC mp_obj_t device_battery_level(void) {
+STATIC mp_obj_t device_battery_level(void)
+{
     return MP_OBJ_NEW_SMALL_INT(battery_get_percent());
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_battery_level_obj, device_battery_level);

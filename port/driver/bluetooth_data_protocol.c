@@ -1,0 +1,433 @@
+/*
+ * This file is part of the MicroPython for Frame project:
+ *      https://github.com/Itsbrilliantlabs/frame-micropython
+ *
+ * Authored by: Raj Nakarja / Silicon Witchery (raj@siliconwitchery.com)
+ *              for Brilliant Labs Inc.
+ * Authored by: Josuah Demangeon (me@josuah.net)
+ *
+ * ISC Licence
+ *
+ * Copyright © 2023 Brilliant Labs Inc.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+#include <string.h>
+
+#include "ble.h"
+#include "nrfx_log.h"
+
+#include "driver/bluetooth_data_protocol.h"
+#include "driver/bluetooth_low_energy.h"
+#include "driver/timer.h"
+
+/**
+ * @brief List of states for the data operations state machine.
+ */
+typedef enum data_state_t
+{
+    DATA_STATE_IDLE,
+    DATA_STATE_GET_CAM_METADATA,
+    DATA_STATE_BLE_CAM_SMALL_PAYLOAD,
+    DATA_STATE_BLE_CAM_DATA_START,
+    DATA_STATE_BLE_CAM_DATA_MIDDLE,
+    DATA_STATE_BLE_CAM_DATA_END,
+} data_state_t;
+
+/**
+ * @brief State space for the data operations state machine.
+ */
+struct data_state_space_t
+{                                                             // ------------------------------------
+    struct data_input                                         // Inputs
+    {                                                         // ------------------------------------
+        bool camera_capture_flag;                             // Setting this flag starts a single camera capture. It's automatically cleared when read
+        bool camera_stream_flag;                              // Setting this flag starts a continuos camera capture. It's not automatically cleared, stop must be used
+        bool microphone_stream_flag;                          // Setting this flag starts a continuos microphone capture. It's not automatically cleared, stop must be used
+        bool firmware_download_flag;                          // Setting this flag starts a firmware update. It's automatically cleared when read
+        bool bitstream_download_flag;                         // Setting this flag starts a bitstream update. It's automatically cleared when read
+        bool stop_flag;                                       // Setting this flag stops one of the above transfers
+    } input;                                                  // ------------------------------------
+    struct data_state                                         // Internal state variables
+    {                                                         // ------------------------------------
+        data_state_t current;                                 // Current state of the state machine. Set automatically within the state machine
+        data_state_t next;                                    // Next state to go into. Set this value in the state switch() logic to change state
+        uint32_t seconds_elapsed;                             // How long we've been in the current state for. Set automatically within the state machine, and reset when a state changes
+    } state;                                                  // ------------------------------------
+    struct data_output                                        // Outputs
+    {                                                         // ------------------------------------
+        struct data_output_file                               // Metadata of the file to send
+        {                                                     // ------------
+            union                                             // File size is a union
+            {                                                 // ------
+                uint32_t size;                                // either as a 32 bit value
+                uint8_t size_byte[4];                         // or can be read as 4 bytes
+            };                                                // ------
+            char name[50];                                    // File name string. 50byte limit
+            char name_length;                                 // File name length simply strlen(name) for convenience
+        } file;                                               // ------------
+        struct data_output_ble                                // Buffer payload and lengths for Bluetooth transfers
+        {                                                     // ------------
+            uint8_t buffer[BLE_MAX_MTU_LENGTH];               // Buffer containing a single BLE payload
+            uint16_t mtu;                                     // MTU length - 3
+            uint16_t sent_bytes;                              // How many bytes of the current file have been sent so far
+        } ble;                                                // ------------
+        bool no_ble_error_flag;                               // Goes high if BLE is not connected ot enabled on the host. Must be cleared after read
+        bool no_internet_error_flag;                          // Goes high if there is no internet connection. Must be cleared after read
+        bool tx_in_progress_flag;                             // Goes high when a transfer is in progress. Doesn't need to be cleared after read
+    } output;                                                 // ------------------------------------
+} data = {
+    .state.current = DATA_STATE_IDLE,
+    .state.next = DATA_STATE_IDLE,
+    .state.seconds_elapsed = 0,
+};
+
+// TODO remove this when no longer needed
+#include "dummy_data.h"
+
+static inline size_t strnlen(const char *s, size_t maxlen)
+{
+    char *cp;
+
+    cp = memchr(s, '\0', maxlen);
+    return (cp == NULL) ? maxlen : cp - s;
+}
+
+static bool read_and_clear(bool *flag)
+{
+    // If the flag is true
+    if (*flag)
+    {
+        // Clear the flag
+        *flag = false;
+
+        // Return true
+        return true;
+    }
+
+    // Otherwise return false
+    return false;
+}
+
+/**
+ * @brief State machine which handles all data operations such as OTA and file
+ *        transfers.
+ */
+static void data_state_machine(void)
+{
+    // List of flags to append in the header when we send file chunks over BLE
+    enum ble_file_flag
+    {
+        BLE_FILE_SMALL_FLAG = 0,
+        BLE_FILE_START_FLAG = 1,
+        BLE_FILE_MIDDLE_FLAG = 2,
+        BLE_FILE_END_FLAG = 3,
+    };
+
+    // // State machine logic
+    switch (data.state.current)
+    {
+    case DATA_STATE_IDLE:
+    {
+        // Clear the busy flag (we'll set it again if needed)
+        data.output.tx_in_progress_flag = false;
+
+        // If a stop is requested
+        if (read_and_clear(&data.input.stop_flag))
+        {
+            // Clear the streaming flag
+            data.input.camera_stream_flag = false;
+        }
+
+        // If a camera capture or stream is requested
+        if (read_and_clear(&data.input.camera_capture_flag) ||
+            data.input.camera_stream_flag)
+        {
+            // Set the busy flag
+            data.output.tx_in_progress_flag = true;
+
+            // Go get the image metadata
+            data.state.next = DATA_STATE_GET_CAM_METADATA;
+            break;
+        }
+
+        // TODO microphone
+
+        // TODO firmware update
+
+        // TODO bitstream update
+
+        // Stop the timer callback if there's nothing to do
+        timer_del_handler(&data_state_machine);
+        break;
+    }
+
+    case DATA_STATE_GET_CAM_METADATA:
+    {
+        // Get the file size
+        data.output.file.size = sizeof(dummy_small_file); // TODO spi
+
+        // Get the filename
+        strcpy(data.output.file.name, "test_file.jpg"); // TODO spi
+
+        // Set the filename length
+        data.output.file.name_length = strnlen(data.output.file.name,
+                                               sizeof(data.output.file.name));
+
+        // Set the MTU length
+        data.output.ble.mtu = ble_negotiated_mtu - 3;
+
+        // Reset the number of sent bytes
+        data.output.ble.sent_bytes = 0;
+
+        // If the payload is smaller than a single payload
+        if (data.output.file.size + data.output.file.name_length + 6 <=
+            data.output.ble.mtu)
+        {
+            // Go to small payload state
+            data.state.next = DATA_STATE_BLE_CAM_SMALL_PAYLOAD;
+            break;
+        }
+
+        // Otherwise go to data start state
+        data.state.next = DATA_STATE_BLE_CAM_DATA_START;
+        break;
+    }
+
+    case DATA_STATE_BLE_CAM_SMALL_PAYLOAD:
+    {
+        // Append the small file flag
+        data.output.ble.buffer[0] = BLE_FILE_SMALL_FLAG;
+
+        // Insert the filesize
+        data.output.ble.buffer[1] = data.output.file.size_byte[3];
+        data.output.ble.buffer[2] = data.output.file.size_byte[2];
+        data.output.ble.buffer[3] = data.output.file.size_byte[1];
+        data.output.ble.buffer[4] = data.output.file.size_byte[0];
+
+        // Add the file name length
+        data.output.ble.buffer[5] = data.output.file.name_length;
+
+        // Append the file name
+        memcpy(data.output.ble.buffer + 6,
+               data.output.file.name,
+               data.output.file.name_length);
+
+        // Append the data into the remaining buffer space
+        memcpy(data.output.ble.buffer + 6 + data.output.file.name_length,
+               dummy_small_file, // TODO spi
+               data.output.file.size);
+
+        // Send the data
+        ble_raw_tx(data.output.ble.buffer, 6 + data.output.file.name_length + data.output.file.size);
+
+        // Return to IDLE
+        data.state.next = DATA_STATE_IDLE;
+        break;
+    }
+
+    case DATA_STATE_BLE_CAM_DATA_START:
+    {
+        // Append the start file flag
+        data.output.ble.buffer[0] = BLE_FILE_START_FLAG;
+
+        // Insert the filesize
+        data.output.ble.buffer[1] = data.output.file.size_byte[3];
+        data.output.ble.buffer[2] = data.output.file.size_byte[2];
+        data.output.ble.buffer[3] = data.output.file.size_byte[1];
+        data.output.ble.buffer[4] = data.output.file.size_byte[0];
+
+        // Add the file name length
+        data.output.ble.buffer[5] = data.output.file.name_length;
+
+        // Append the file name
+        memcpy(data.output.ble.buffer + 6,
+               data.output.file.name,
+               data.output.file.name_length);
+
+        // Append the data into the remaining buffer space
+        memcpy(data.output.ble.buffer + 6 + data.output.file.name_length,
+               dummy_large_file, // TODO spi
+               data.output.ble.mtu - 6 - data.output.file.name_length);
+
+        // Send the data. If not successful
+        ble_raw_tx(data.output.ble.buffer, data.output.ble.mtu);
+
+        // Increment the sent bytes
+        data.output.ble.sent_bytes += data.output.ble.mtu -
+                                      6 -
+                                      data.output.file.name_length;
+
+        // If there is less than one MTU length worth of data length
+        if (data.output.file.size <=
+            data.output.ble.sent_bytes + data.output.ble.mtu - 1)
+        {
+            // Go to the end data state
+            data.state.next = DATA_STATE_BLE_CAM_DATA_END;
+            break;
+        }
+
+        // Otherwise go to middle data state
+        data.state.next = DATA_STATE_BLE_CAM_DATA_MIDDLE;
+        break;
+    }
+
+    case DATA_STATE_BLE_CAM_DATA_MIDDLE:
+    {
+        // Append the middle of file flag
+        data.output.ble.buffer[0] = BLE_FILE_MIDDLE_FLAG;
+
+        // Append the data into the remaining buffer space
+        memcpy(data.output.ble.buffer + 1,
+               dummy_large_file + data.output.ble.sent_bytes, // TODO spi
+               data.output.ble.mtu - 1);
+
+        // Send the data. If not successful
+        ble_raw_tx(data.output.ble.buffer, data.output.ble.mtu);
+
+        // Increment the sent bytes
+        data.output.ble.sent_bytes += data.output.ble.mtu - 1;
+
+        // If the user cancels the transfer
+        if (data.input.stop_flag)
+        {
+            // Return to IDLE
+            data.state.next = DATA_STATE_IDLE;
+            break;
+        }
+
+        // If there is less than one MTU length worth of data length
+        if (data.output.file.size <=
+            data.output.ble.sent_bytes + data.output.ble.mtu - 1)
+        {
+            // Go to the end data state
+            data.state.next = DATA_STATE_BLE_CAM_DATA_END;
+            break;
+        }
+
+        // Otherwise stay in the middle state
+        break;
+    }
+
+    case DATA_STATE_BLE_CAM_DATA_END:
+    {
+        // Add the end flag
+        data.output.ble.buffer[0] = BLE_FILE_END_FLAG;
+
+        // Append the data into the remaining buffer space
+        memcpy(data.output.ble.buffer + 1,
+               dummy_large_file + data.output.ble.sent_bytes, // TODO spi
+               data.output.file.size - data.output.ble.sent_bytes);
+
+        // Send the data
+        ble_raw_tx(data.output.ble.buffer, 1 + (data.output.file.size - data.output.ble.sent_bytes));
+
+        // Return to IDLE
+        data.state.next = DATA_STATE_IDLE;
+        break;
+    }
+    }
+
+    // Increment the seconds timer
+    data.state.seconds_elapsed++;
+
+    // If we're changing states
+    if (data.state.current != data.state.next)
+    {
+        // Reset the elapsed time in the current state
+        data.state.seconds_elapsed = 0;
+
+        // Set the current state to the next state ready for next entry
+        data.state.current = data.state.next;
+    }
+}
+
+/**
+ * @brief Starts/stops a data operation of a given type to the mobile over
+ *        BLE, or WiFi to a server.
+ * @param channel: Type of operation to request.
+ * @return One of the status codes from data_op_t.
+ */
+data_op_t app_data_operation(data_op_t channel)
+{
+    // Based on the requested action
+    switch (channel)
+    {
+    // If a single camera capture
+    case DATA_OP_CAMERA_CAPTURE:
+    {
+        // If a transfer is already in progress
+        if (data.output.tx_in_progress_flag)
+        {
+            return DATA_OP_ALREADY_IN_PROGRESS;
+        }
+
+        // Initiate a capture
+        data.input.camera_capture_flag = true;
+
+        break;
+    }
+
+    // If a continuos camera stream
+    case DATA_OP_CAMERA_STREAM:
+    {
+        // If a transfer is already in progress
+        if (data.output.tx_in_progress_flag)
+        {
+            return DATA_OP_ALREADY_IN_PROGRESS;
+        }
+
+        // Initiate a capture
+        data.input.camera_stream_flag = true;
+
+        break;
+    }
+
+    // If a continuos microphone stream
+    case DATA_OP_MICROPHONE_STREAM:
+    {
+        break;
+    }
+
+    // If a firmware download is requested
+    case DATA_OP_FIRMWARE_DOWNLOAD:
+    {
+        break;
+    }
+
+    // If a bitstream update is requested
+    case DATA_OP_BITSTREAM_DOWNLOAD:
+    {
+        break;
+    }
+
+    // If a stop command is requested
+    case DATA_OP_STOP:
+    {
+        data.input.stop_flag = true;
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    // Start the timer
+    timer_add_handler(&data_state_machine);
+
+    return DATA_OP_ACCEPTED;
+}

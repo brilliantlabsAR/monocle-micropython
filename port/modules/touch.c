@@ -57,10 +57,13 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_touch___init___obj, mod_touch___init__);
  */
 void touch_callback(touch_state_t trigger)
 {
-    if (callback) {
+    if (callback)
+    {
         LOG("trigger=0x%02X scheduling trigger", trigger);
         mp_sched_schedule(callback, MP_OBJ_NEW_SMALL_INT(trigger));
-    } else {
+    }
+    else
+    {
         LOG("trigger=0x%02X no callback set", trigger);
     }
 }

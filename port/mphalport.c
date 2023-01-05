@@ -36,7 +36,7 @@
 #include "py/stream.h"
 #include "nrfx_errors.h"
 #include "nrfx_config.h"
-#include "driver/bluetooth.h"
+#include "driver/bluetooth_low_energy.h"
 
 #if MICROPY_PY_TIME_TICKS
 #include "nrfx_rtc.h"
@@ -69,9 +69,8 @@
         overflows = rtc_overflows; \
         counter = rtc.p_reg->COUNTER; \
         uint32_t has_overflowed = rtc.p_reg->EVENTS_OVRFLW; \
-        if (has_overflowed && counter < (1 << 23)) { \
+        if (has_overflowed && counter < (1 << 23)) \
             overflows += 1; \
-        } \
         rtc.p_reg->INTENSET = RTC_INTENSET_OVRFLW_Msk; \
     } while (0);
 
@@ -85,22 +84,21 @@ const nrfx_rtc_config_t rtc_config_time_ticks = {
     .interrupt_priority = 3,
 };
 
-STATIC void rtc_irq_time(nrfx_rtc_int_type_t event) {
+STATIC void rtc_irq_time(nrfx_rtc_int_type_t event)
+{
     // irq handler for overflow
-    if (event == NRFX_RTC_INT_OVERFLOW) {
+    if (event == NRFX_RTC_INT_OVERFLOW)
         rtc_overflows += 1;
-    }
     // irq handler for wakeup from WFI (~1msec)
-    if (event == NRFX_RTC_INT_COMPARE0) {
+    if (event == NRFX_RTC_INT_COMPARE0)
         RTC_RESCHEDULE_CC(rtc1, 0, RTC_TICK_INCREASE_MSEC)
-    }
 }
 
-void rtc1_init_time_ticks(void) {
+void rtc1_init_time_ticks(void)
+{
     // Start the low-frequency clock (if it hasn't been started already)
-    if (!nrf_clock_lf_is_running(NRF_CLOCK)) {
+    if (!nrf_clock_lf_is_running(NRF_CLOCK))
         nrf_clock_task_trigger(NRF_CLOCK, NRF_CLOCK_TASK_LFCLKSTART);
-    }
     // Uninitialize first, then set overflow IRQ and first CC event
     nrfx_rtc_uninit(&rtc1);
     nrfx_rtc_init(&rtc1, &rtc_config_time_ticks, rtc_irq_time);
@@ -109,7 +107,8 @@ void rtc1_init_time_ticks(void) {
     nrfx_rtc_enable(&rtc1);
 }
 
-mp_uint_t mp_hal_ticks_ms(void) {
+mp_uint_t mp_hal_ticks_ms(void)
+{
     // Compute: (rtc_overflows << 24 + COUNTER) * 1000 / 32768
     //
     // Note that COUNTER * 1000 / 32768 would overflow during calculation, so use
@@ -125,7 +124,8 @@ mp_uint_t mp_hal_ticks_ms(void) {
     return (overflows << 9) * 1000 + (counter * 125 / 4096);
 }
 
-mp_uint_t mp_hal_ticks_us(void) {
+mp_uint_t mp_hal_ticks_us(void)
+{
     // Compute: ticks_us = (overflows << 24 + counter) * 1000000 / 32768
     //    = (overflows << 15 * 15625) + (counter * 15625 / 512)
     // Since this function is likely to be called in a poll loop it must
@@ -143,13 +143,15 @@ mp_uint_t mp_hal_ticks_us(void) {
 
 #else
 
-mp_uint_t mp_hal_ticks_ms(void) {
+mp_uint_t mp_hal_ticks_ms(void)
+{
     return 0;
 }
 
 #endif
 
-uint64_t mp_hal_time_ns(void) {
+uint64_t mp_hal_time_ns(void)
+{
     return 0;
 }
 
@@ -161,15 +163,10 @@ const byte mp_hal_status_to_errno_table[4] = {
     [HAL_TIMEOUT] = MP_ETIMEDOUT,
 };
 
-NORETURN void mp_hal_raise(HAL_StatusTypeDef status) {
+NORETURN void mp_hal_raise(HAL_StatusTypeDef status)
+{
     mp_raise_OSError(mp_hal_status_to_errno_table[status]);
 }
-
-#if !MICROPY_KBD_EXCEPTION
-void mp_hal_set_interrupt_char(int c) {
-
-}
-#endif
 
 /**
  * @brief Sends data to BLE central device.
@@ -186,11 +183,11 @@ void mp_hal_stdout_tx_strn_cooked(const char *str, mp_uint_t len)
     mp_hal_stdout_tx_strn(str, len);
 }
 
-uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags) {
+uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags)
+{
     uintptr_t ret = 0;
-    if ((poll_flags & MP_STREAM_POLL_RD) && ble_nus_is_rx_pending()) {
+    if ((poll_flags & MP_STREAM_POLL_RD) && ble_nus_is_rx_pending())
         ret |= MP_STREAM_POLL_RD;
-    }
     return ret;
 }
 
@@ -203,29 +200,28 @@ int mp_hal_stdin_rx_chr(void)
     return ble_nus_rx();
 }
 
-void mp_hal_stdout_tx_str(const char *str) {
+void mp_hal_stdout_tx_str(const char *str)
+{
     mp_hal_stdout_tx_strn(str, strlen(str));
 }
 
-void mp_hal_delay_us(mp_uint_t us) {
+void mp_hal_delay_us(mp_uint_t us)
+{
     uint32_t now;
-    if (us == 0) {
+    if (us == 0)
         return;
-    }
     now = mp_hal_ticks_us();
-    while (mp_hal_ticks_us() - now < us) {
-    }
+    while (mp_hal_ticks_us() - now < us);
 }
 
-void mp_hal_delay_ms(mp_uint_t ms) {
+void mp_hal_delay_ms(mp_uint_t ms)
+{
     uint32_t now;
-    if (ms == 0) {
+    if (ms == 0)
         return;
-    }
     now = mp_hal_ticks_ms();
-    while (mp_hal_ticks_ms() - now < ms) {
+    while (mp_hal_ticks_ms() - now < ms)
         MICROPY_EVENT_POLL_HOOK
-    }
 }
 
 static const char nrfx_error_unknown[1] = "";
@@ -270,10 +266,14 @@ static const char *nrfx_drv_error_strings[3] = {
     nrfx_drv_error_twi_err_dnack
 };
 
-const char *nrfx_error_code_lookup(uint32_t err_code) {
-    if (err_code >= NRFX_ERROR_BASE_NUM && err_code <= NRFX_ERROR_BASE_NUM + 13) {
+const char *nrfx_error_code_lookup(uint32_t err_code)
+{
+    if (err_code >= NRFX_ERROR_BASE_NUM && err_code <= NRFX_ERROR_BASE_NUM + 13)
+    {
         return nrfx_error_strings[err_code - NRFX_ERROR_BASE_NUM];
-    } else if (err_code >= NRFX_ERROR_DRIVERS_BASE_NUM && err_code <= NRFX_ERROR_DRIVERS_BASE_NUM + 3) {
+    }
+    else if (err_code >= NRFX_ERROR_DRIVERS_BASE_NUM && err_code <= NRFX_ERROR_DRIVERS_BASE_NUM + 3)
+    {
         return nrfx_drv_error_strings[err_code - NRFX_ERROR_DRIVERS_BASE_NUM];
     }
 

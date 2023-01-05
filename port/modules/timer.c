@@ -59,29 +59,31 @@ STATIC mp_obj_t mod_timer___init__(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_timer___init___obj, mod_timer___init__);
 
-STATIC int timer_find(mp_obj_t id) {
+STATIC int timer_find(mp_obj_t id)
+{
     // given an integer id
     int timer_id = mp_obj_get_int(id);
-    if (timer_id >= 0 && timer_id < MP_ARRAY_SIZE(timer_obj)) {
+    if (timer_id >= 0 && timer_id < MP_ARRAY_SIZE(timer_obj))
         return timer_id;
-    }
     mp_raise_ValueError(MP_ERROR_TEXT("Timer(0) and Timer(1) only"));
 }
 
-STATIC void timer_print(const mp_print_t *print, mp_obj_t o, mp_print_kind_t kind) {
+STATIC void timer_print(const mp_print_t *print, mp_obj_t o, mp_print_kind_t kind)
+{
     timer_obj_t *self = o;
     mp_printf(print, "Timer(%u)", self->p_instance.instance_id);
 }
 
-STATIC void timer_event_handler(nrf_timer_event_t event_type, void *p_context) {
+STATIC void timer_event_handler(nrf_timer_event_t event_type, void *p_context)
+{
     timer_obj_t *self = p_context;
     mp_obj_t callback = timer_callbacks[self->p_instance.instance_id];
-    if (callback != NULL) {
+    if (callback != NULL)
         mp_call_function_1(callback, self);
-    }
 }
 
-STATIC mp_obj_t timer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
+STATIC mp_obj_t timer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args)
+{
     enum { ARG_id, ARG_period, ARG_mode, ARG_callback };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_id,       MP_ARG_OBJ, {.u_obj = MP_OBJ_NEW_SMALL_INT(-1)} },
@@ -97,17 +99,21 @@ STATIC mp_obj_t timer_make_new(const mp_obj_type_t *type, size_t n_args, size_t 
     // get static peripheral object
     int timer_id = timer_find(args[ARG_id].u_obj);
 
-    if (timer_id == 0) {
+    if (timer_id == 0)
         mp_raise_ValueError(MP_ERROR_TEXT("Timer reserved by Bluetooth LE stack"));
-    }
 
     timer_obj_t *self = (timer_obj_t*)&timer_obj[timer_id];
 
-    if (mp_obj_is_fun(args[ARG_callback].u_obj)) {
+    if (mp_obj_is_fun(args[ARG_callback].u_obj))
+    {
         timer_callbacks[timer_id] = args[ARG_callback].u_obj;
-    } else if (args[ARG_callback].u_obj == mp_const_none) {
+    }
+    else if (args[ARG_callback].u_obj == mp_const_none)
+    {
         timer_callbacks[timer_id] = NULL;
-    } else {
+    }
+    else
+    {
         mp_raise_ValueError(MP_ERROR_TEXT("callback must be a function"));
     }
 
@@ -148,7 +154,8 @@ STATIC mp_obj_t timer_make_new(const mp_obj_type_t *type, size_t n_args, size_t 
 /// \method period()
 /// Return counter value, which is currently in us.
 ///
-STATIC mp_obj_t timer_period(mp_obj_t self_in) {
+STATIC mp_obj_t timer_period(mp_obj_t self_in)
+{
     timer_obj_t * self = MP_OBJ_TO_PTR(self_in);
 
     uint32_t period = nrfx_timer_capture(&self->p_instance, NRF_TIMER_CC_CHANNEL1);
@@ -160,7 +167,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(timer_period_obj, timer_period);
 /// \method start()
 /// Start the timer.
 ///
-STATIC mp_obj_t timer_start(mp_obj_t self_in) {
+STATIC mp_obj_t timer_start(mp_obj_t self_in)
+{
     timer_obj_t * self = MP_OBJ_TO_PTR(self_in);
 
     //nrfx_timer_enable(&self->p_instance);
@@ -172,7 +180,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(timer_start_obj, timer_start);
 /// \method stop()
 /// Stop the timer.
 ///
-STATIC mp_obj_t timer_stop(mp_obj_t self_in) {
+STATIC mp_obj_t timer_stop(mp_obj_t self_in)
+{
     timer_obj_t * self = MP_OBJ_TO_PTR(self_in);
 
     //nrfx_timer_disable(&self->p_instance);
@@ -184,7 +193,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(timer_stop_obj, timer_stop);
 /// \method deinit()
 /// Free resources associated with the timer.
 ///
-STATIC mp_obj_t timer_deinit(mp_obj_t self_in) {
+STATIC mp_obj_t timer_deinit(mp_obj_t self_in)
+{
     timer_obj_t * self = MP_OBJ_TO_PTR(self_in);
 
     //nrfx_timer_uninit(&self->p_instance);

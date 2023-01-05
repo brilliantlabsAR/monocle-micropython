@@ -50,27 +50,31 @@ STATIC mp_obj_t mod_led___init__(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_led___init___obj, mod_led___init__);
 
-static mp_obj_t led_on(mp_obj_t led_in) {
-    switch (MP_OBJ_SMALL_INT_VALUE(led_in)) {
-        case LED_RED:
-            max77654_led_red(true);
-            break;
-        case LED_GREEN:
-            max77654_led_green(true);
-            break;
+static mp_obj_t led_on(mp_obj_t led_in)
+{
+    switch (MP_OBJ_SMALL_INT_VALUE(led_in))
+    {
+    case LED_RED:
+        max77654_led_red(true);
+        break;
+    case LED_GREEN:
+        max77654_led_green(true);
+        break;
     }
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(led_on_obj, led_on);
 
-static mp_obj_t led_off(mp_obj_t led_in) {
-    switch (MP_OBJ_SMALL_INT_VALUE(led_in)) {
-        case LED_RED:
-            max77654_led_red(false);
-            break;
-        case LED_GREEN:
-            max77654_led_green(false);
-            break;
+static mp_obj_t led_off(mp_obj_t led_in)
+{
+    switch (MP_OBJ_SMALL_INT_VALUE(led_in))
+    {
+    case LED_RED: {
+        max77654_led_red(false);
+    } break;
+    case LED_GREEN: {
+        max77654_led_green(false);
+    } break;
     }
     return mp_const_none;
 }

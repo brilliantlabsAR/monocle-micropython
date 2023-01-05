@@ -113,7 +113,8 @@ SRC += mphalport.c
 SRC += nrf$(NRF).c
 
 SRC += driver/battery.c
-SRC += driver/bluetooth.c
+SRC += driver/bluetooth_low_energy.c
+SRC += driver/bluetooth_data_protocol.c
 SRC += driver/dfu.c
 SRC += driver/ecx336cn.c
 SRC += driver/flash.c

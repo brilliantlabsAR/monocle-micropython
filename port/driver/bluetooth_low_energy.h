@@ -26,7 +26,12 @@
  * and the custom media transfer protocol.
  */
 
+#define BLE_MAX_MTU_LENGTH          128
+
+extern uint16_t ble_negotiated_mtu;
+
 void ble_init(void);
-void ble_nus_tx(char const *buf, size_t sz);
+void ble_nus_tx(char const *buf, size_t len);
+void ble_raw_tx(uint8_t const *buf, uint16_t len);
 int ble_nus_rx(void);
 bool ble_nus_is_rx_pending(void); 

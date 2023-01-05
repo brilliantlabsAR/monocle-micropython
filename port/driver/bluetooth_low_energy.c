@@ -35,11 +35,10 @@
 #include "nrf_sdm.h"
 #include "nrfx_log.h"
 
-#include "driver/bluetooth.h"
+#include "driver/bluetooth_low_energy.h"
 #include "driver/config.h"
 
-#define BLE_ADV_MAX_SIZE 31
-#define BLE_MAX_MTU_LENGTH          128
+#define BLE_ADV_MAX_SIZE            31
 #define BLE_UUID_COUNT              2
 
 #define ASSERT  NRFX_ASSERT
@@ -81,10 +80,9 @@ extern uint32_t _ram_start;
 /** The `_ram_start` symbol's address often needs to be passed as an integer. */
 static uint32_t ram_start = (uint32_t)&_ram_start;
 
-/**
- * This is the negotiated MTU length. Not used for anything currently.
- */
-static uint16_t negotiated_mtu;
+/** MTU length obtained by the negotiation with the currently connected peer. */
+uint16_t ble_negotiated_mtu;
+
 
 // Ring buffer library
 
@@ -183,7 +181,7 @@ static void ble_nus_flush_tx(void)
         buf[len++] = ring_pop(&nus_tx);
 
         // Break if we over-run the negotiated MTU size, send the rest later
-        if (len >= negotiated_mtu)
+        if (len >= ble_negotiated_mtu)
             break;
     }
     ble_tx(&ble_nus_service, buf, len);
@@ -207,13 +205,13 @@ int ble_nus_rx(void)
     return ring_pop(&nus_rx);
 }
 
-void ble_nus_tx(char const *buf, size_t sz)
+void ble_nus_tx(char const *buf, size_t len)
 {
-    for (; sz > 0; buf++, sz--)
+    for (size_t i; i < len; i++)
     {
         while (ring_full(&nus_tx))
             ble_nus_flush_tx();
-        ring_push(&nus_tx, *buf);
+        ring_push(&nus_tx, buf[i]);
     }
 }
 
@@ -362,6 +360,11 @@ static void ble_configure_nus_service(ble_uuid_t *service_uuid)
     // Add tx and rx characteristics to the advertisement.
     ble_service_add_characteristic_rx(service, &rx_uuid);
     ble_service_add_characteristic_tx(service, &tx_uuid);
+}
+
+void ble_raw_tx(uint8_t const *buf, uint16_t len)
+{
+    ble_tx(&ble_raw_service, buf, len);
 }
 
 void ble_configure_raw_service(ble_uuid_t *service_uuid)
@@ -565,7 +568,7 @@ void SWI2_IRQHandler(void)
 
             // Choose the smaller MTU as the final length we'll use
             // -3 bytes to accommodate for Op-code and attribute service
-            negotiated_mtu = BLE_MAX_MTU_LENGTH < client_mtu
+            ble_negotiated_mtu = BLE_MAX_MTU_LENGTH < client_mtu
                                  ? BLE_MAX_MTU_LENGTH - 3
                                  : client_mtu - 3;
             break;
