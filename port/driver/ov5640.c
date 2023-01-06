@@ -511,7 +511,7 @@ void ov5640_init(void)
     i2c_init();
     timer_init();
 
-    // Enable 24MHz pixel clock to the OV5640
+    // enable 24mhz pixel clock to the ov5640, required for i²c configuration
     fpga_camera_on();
 
     // sets control pin states

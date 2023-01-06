@@ -51,10 +51,8 @@ void fpga_graphics_clear(void);
 void fpga_graphics_swap_buffer(void);
 void fpga_graphics_set_write_base(uint32_t base);
 void fpga_graphics_write_data(uint8_t *buf, size_t len);
-uint16_t fpga_capture_read_status(void);
-void fpga_capture_read_data(uint8_t *buf, size_t len);
+uint16_t fpga_capture_get_status(void);
+void fpga_capture_get_data(uint8_t *buf, size_t len);
 
 // debug
 void fpga_check_pins(char const *msg);
-#define fpga_check_reg(reg) NRFX_LOG("[0x%02X] %-s=%d", reg, #reg, fpga_read_register(reg))
-

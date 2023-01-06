@@ -48,11 +48,21 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_camera___init___obj, mod_camera___init__);
 
 STATIC mp_obj_t camera_capture(void)
 {
+    fpga_camera_start();
     fpga_camera_capture();
-    LOG("capture=0x%02X", fpga_capture_read_status());
+    LOG("capture=0x%02X", fpga_capture_get_status());
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(camera_capture_obj, &camera_capture);
+
+STATIC mp_obj_t camera_live(void)
+{
+    fpga_camera_start();
+    fpga_live_video_start();
+    fpga_live_video_replay();
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_0(camera_live_obj, &camera_live);
 
 STATIC mp_obj_t camera_stop(void)
 {
@@ -68,6 +78,7 @@ STATIC const mp_rom_map_elem_t camera_module_globals_table[] = {
     // methods
     { MP_ROM_QSTR(MP_QSTR_capture),     MP_ROM_PTR(&camera_capture_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop),        MP_ROM_PTR(&camera_stop_obj) },
+    { MP_ROM_QSTR(MP_QSTR_live),        MP_ROM_PTR(&camera_live_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(camera_module_globals, camera_module_globals_table);
 

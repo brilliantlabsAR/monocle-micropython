@@ -205,15 +205,15 @@ void fpga_graphics_write_data(uint8_t *buf, size_t len)
 
 #define FPGA_CMD_CAPTURE 0x50
 
-uint16_t fpga_capture_read_status(void)
+uint16_t fpga_capture_get_status(void)
 {
     uint8_t buf[] = { 0x00, 0x00 };
 
     fpga_cmd_read(FPGA_CMD_CAPTURE, 0x00, buf, sizeof buf);
-    return (buf[0] & 0xFF00) >> 8 | (buf[1] & 0x00FF) >> 0;
+    return buf[0] << 8 | buf[1] << 0;
 }
 
-void fpga_capture_read_data(uint8_t *buf, size_t len)
+void fpga_capture_get_data(uint8_t *buf, size_t len)
 {
     fpga_cmd_read(FPGA_CMD_CAPTURE, 0x10, buf, len);
 }
