@@ -201,7 +201,7 @@ clean_extra:
 	rm -rf micropython segger_rtt nrfx
 
 release:
-	sed -i 's/RELEASE/$(RELEASE)/' ../CHANGELOG.md
+	sed -i 's/NEXT_RELEASE/$(RELEASE)/' ../CHANGELOG.md
 	git commit -am "Release $(RELEASE)"
 	git tag $(RELEASE)
 

@@ -43,27 +43,10 @@ STATIC mp_obj_t mod_fpga___init__(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_fpga___init___obj, mod_fpga___init__);
 
-static inline void rx(uint8_t *buf, size_t len)
+static inline void spi_write_u16(uint16_t u16)
 {
-    PRINTF("RX");
-    spi_read(buf, len);
-    for (size_t i = 0; i < len; i++) PRINTF(" %02X", buf[i]);
-    PRINTF("\r\n");
-}
-
-static inline void tx(uint8_t const *buf, size_t len)
-{
-    PRINTF("TX");
-    for (size_t i = 0; i < len; i++) PRINTF(" %02X", buf[i]);
-    PRINTF("\r\n");
-    spi_write((uint8_t *)buf, len);
-}
-
-static inline void tx_addr(uint16_t addr)
-{
-    PRINTF("\r\n");
-    uint8_t buf[] = { addr >> 8, addr >> 0, };
-    tx(buf, sizeof buf);
+    uint8_t buf[] = { u16 >> 8, u16 >> 0, };
+    spi_write(buf, sizeof buf);
 }
 
 STATIC mp_obj_t fpga_read(mp_obj_t addr_in, mp_obj_t len_in)
@@ -79,8 +62,8 @@ STATIC mp_obj_t fpga_read(mp_obj_t addr_in, mp_obj_t len_in)
 
     // Read on the SPI using the command and address given
     spi_chip_select(SPI_FPGA_CS_PIN);
-    tx_addr(addr);
-    rx(out_data, len);
+    spi_write_u16(addr);
+    spi_read(out_data, len);
     spi_chip_deselect(SPI_FPGA_CS_PIN);
 
     // Copy the read bytes into the list object
@@ -116,8 +99,8 @@ STATIC mp_obj_t fpga_write(mp_obj_t addr_in, mp_obj_t list_in)
     }
 
     spi_chip_select(SPI_FPGA_CS_PIN);
-    tx_addr(addr);
-    tx(in_data, len);
+    spi_write_u16(addr);
+    spi_write(in_data, len);
     spi_chip_deselect(SPI_FPGA_CS_PIN);
 
     // Free the temporary buffer

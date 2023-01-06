@@ -39,8 +39,8 @@
 void nrfx_gpio_ov5640(void)
 {
     // Set to 0V = hold camera in reset.
-    nrf_gpio_pin_write(OV5640_NRESETB_PIN, false);
-    nrf_gpio_cfg_output(OV5640_NRESETB_PIN);
+    nrf_gpio_pin_write(OV5640_RESETB_N_PIN, false);
+    nrf_gpio_cfg_output(OV5640_RESETB_N_PIN);
 
     // Set to 0V = not asserted.
     nrf_gpio_pin_write(OV5640_PWDN_PIN, false);

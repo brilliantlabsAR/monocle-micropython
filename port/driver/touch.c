@@ -263,12 +263,12 @@ static void touch_next_state(touch_event_t event)
     }
     else if (touch_state == TOUCH_STATE_IDLE)
     {
-            // Idle, do not setup a timer.
+        // Idle, do not setup a timer.
     }
     else
     {
-            // Intermediate states, do not go back to TOUCH_STATE_IDLE.
-            touch_set_timer(event);
+        // Intermediate states, do not go back to TOUCH_STATE_IDLE.
+        touch_set_timer(event);
     }
 }
 

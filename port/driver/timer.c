@@ -78,9 +78,8 @@ void timer_del_handler(timer_handler_t *ptr)
     timer_handler_t **slot;
 
     slot = timer_get_handler_slot(ptr);
-    assert(slot != NULL); // should have been added first
-
-    LOG("0x%p", ptr);
+    if (slot == NULL)
+        return;
 
     __disable_irq();
     *slot = NULL;
@@ -91,14 +90,14 @@ void timer_add_handler(timer_handler_t *ptr)
 {
     timer_handler_t **slot;
 
+    LOG("0x%p", ptr);
+
     // Check if the timer is already configured.
     if (timer_get_handler_slot(ptr) != NULL)
         return;
 
     slot = timer_get_handler_slot(NULL);
     assert(slot != NULL); // misconfiguration of TIMER_MAX_HANDLERS
-
-    LOG("0x%p", ptr);
 
     __disable_irq();
     *slot = ptr;

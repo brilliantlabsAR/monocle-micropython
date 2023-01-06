@@ -65,18 +65,18 @@ static uint16_t __bswap_16(uint16_t in)
  * Set the chip on or off by changing its reset pin.
  * @param n True for on.
  */
-static inline void ov5640_pin_nresetb(bool state)
+static inline void ov5640_set_reset(bool state)
 {
-    nrf_gpio_pin_write(OV5640_NRESETB_PIN, state);
+    nrf_gpio_pin_write(OV5640_RESETB_N_PIN, !state);
 }
 
 /*
  * Control the power state on/off of the chip.
  * @param n True for on.
  */
-static void ov5640_pin_pwdn(bool state)
+static void ov5640_set_power(bool state)
 {
-    nrf_gpio_pin_write(OV5640_PWDN_PIN, state);
+    nrf_gpio_pin_write(OV5640_PWDN_PIN, !state);
 }
 
 /**
@@ -123,7 +123,7 @@ static uint8_t ov5640_read_reg(uint16_t reg)
  */
 void ov5640_deinit(void)
 {
-    nrf_gpio_cfg_default(OV5640_NRESETB_PIN);
+    nrf_gpio_cfg_default(OV5640_RESETB_N_PIN);
     nrf_gpio_cfg_default(OV5640_PWDN_PIN);
 }
 
@@ -156,17 +156,17 @@ void ov5640_pwr_on(void)
     // 6) >= 20ms later, can begin using SCCB to access ov5640 registers
 
     // step (1) --though already done in ov5640_init(), keep in case of re-try
-    ov5640_pin_pwdn(true);
-    ov5640_pin_nresetb(false);
+    ov5640_set_power(false);
+    ov5640_set_reset(true);
     ov5640_delay_ms(5);
     // step (2): 1.8V is already on
     // step (3), 2.8V is already on
     // step (4)
     ov5640_delay_ms(8);
-    ov5640_pin_pwdn(false);
+    ov5640_set_power(true);
     // step (5)
     ov5640_delay_ms(2);
-    ov5640_pin_nresetb(1);
+    ov5640_set_reset(false);
     // step (6)
     ov5640_delay_ms(20);
 
@@ -180,7 +180,7 @@ void ov5640_pwr_on(void)
  */
 void ov5640_pwr_sleep(void)
 {
-    ov5640_pin_pwdn(true);
+    ov5640_set_power(true);
 }
 
 /**
@@ -188,7 +188,7 @@ void ov5640_pwr_sleep(void)
  */
 void ov5640_pwr_wake(void)
 {
-    ov5640_pin_pwdn(false);
+    ov5640_set_power(true);
 }
 
 /**
@@ -511,19 +511,22 @@ void ov5640_init(void)
     i2c_init();
     timer_init();
 
+    // Enable 24MHz pixel clock to the OV5640
     fpga_camera_on();
 
-    ov5640_pin_pwdn(true);
-    ov5640_pin_nresetb(false);
-
+    // sets control pin states
     ov5640_pwr_on();
+
+    ov5640_reduce_size(640, 400);
+    ov5640_mode_1x();
+
+    ov5640_focus_init();
     ov5640_light_mode(0);
     ov5640_color_saturation(3);
     ov5640_brightness(4);
     ov5640_contrast(3);
     ov5640_sharpness(33);
     ov5640_flip(true);
-    ov5640_focus_init();
 
     // Check the chip ID
     uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);

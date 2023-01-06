@@ -51,7 +51,7 @@
 #define I2C1_SDA_PIN                16      // P0.16 I2C data GPIO pin.
 #define PMIC_IRQ_PIN                14      // P0.14
 #define RESET_L_PIN                 21      // P0.21
-#define OV5640_NRESETB_PIN          0       // P0.00
+#define OV5640_RESETB_N_PIN         0       // P0.00
 #define OV5640_PWDN_PIN             1       // P0.01
 #define ECX336CN_XCLR_PIN           15      // P0.15
 
