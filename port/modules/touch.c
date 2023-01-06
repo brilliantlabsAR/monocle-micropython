@@ -32,17 +32,26 @@
 #include "driver/timer.h"
 #include "driver/touch.h"
 
-mp_obj_t callback;
+#define LEN(x) (sizeof(x) / sizeof*(x))
 
 enum {
-    TOUCH_LONG,
-    TOUCH_PRESS,
-    TOUCH_SLIDE,
-    TOUCH_TAP,
+    TOUCH_ACTION_LONG,
+    TOUCH_ACTION_PRESS,
+    TOUCH_ACTION_SLIDE,
+    TOUCH_ACTION_TAP,
+
+    TOUCH_ACTION_NUM,
 };
+
+#define TOUCH_BUTTON_NUM 2
+
+mp_obj_t callback_list[TOUCH_BUTTON_NUM][TOUCH_ACTION_NUM];
 
 STATIC mp_obj_t mod_touch___init__(void)
 {
+    for (size_t i = 0; i < LEN(callback_list); i++)
+        callback_list[0][i] = callback_list[1][i] = mp_const_none;
+
     // dependencies:
     touch_init();
     timer_init();
@@ -51,28 +60,57 @@ STATIC mp_obj_t mod_touch___init__(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_touch___init___obj, mod_touch___init__);
 
+static inline mp_obj_t touch_get_callback(touch_state_t trigger)
+{
+    switch (trigger) {
+    case TOUCH_TRIGGER_0_TAP:       return callback_list[0][TOUCH_ACTION_TAP];
+    case TOUCH_TRIGGER_1_TAP:       return callback_list[1][TOUCH_ACTION_TAP];
+    case TOUCH_TRIGGER_0_PRESS:     return callback_list[0][TOUCH_ACTION_PRESS];
+    case TOUCH_TRIGGER_1_PRESS:     return callback_list[1][TOUCH_ACTION_PRESS];
+    case TOUCH_TRIGGER_0_LONG:      return callback_list[0][TOUCH_ACTION_LONG];
+    case TOUCH_TRIGGER_1_LONG:      return callback_list[1][TOUCH_ACTION_LONG];
+    case TOUCH_TRIGGER_0_1_SLIDE:   return callback_list[0][TOUCH_ACTION_SLIDE];
+    case TOUCH_TRIGGER_1_0_SLIDE:   return callback_list[1][TOUCH_ACTION_SLIDE];
+    default:                        return mp_const_none;
+    }
+}
+
 /**
  * Overriding the default callback implemented in driver/iqs620.c
  * @param trigger The trigger that ran the callback.
  */
 void touch_callback(touch_state_t trigger)
 {
-    if (callback)
+    mp_obj_t callback = touch_get_callback(trigger);
+
+    if (callback == mp_const_none)
+    {
+        LOG("trigger=0x%02X no callback set", trigger);
+    }
+    else
     {
         LOG("trigger=0x%02X scheduling trigger", trigger);
         mp_sched_schedule(callback, MP_OBJ_NEW_SMALL_INT(trigger));
     }
-    else
-    {
-        LOG("trigger=0x%02X no callback set", trigger);
-    }
 }
 
-STATIC mp_obj_t touch_bind(mp_obj_t button, mp_obj_t action, mp_obj_t callback)
+/**
+ * Setup a python function as a callback for a given action.
+ * @param button_in Button (0 or 1) to use.
+ * @param action_in Action to react to.
+ * @param callback Python function to be called.
+ */
+STATIC mp_obj_t touch_bind(mp_obj_t button_in, mp_obj_t action_in, mp_obj_t callback)
 {
-    (void)button;
-    (void)action;
-    (void)callback;
+    uint8_t button = mp_obj_get_int(button_in);
+    uint8_t action = mp_obj_get_int(action_in);
+
+    if (button >= TOUCH_BUTTON_NUM)
+        mp_raise_ValueError(MP_ERROR_TEXT("button must be touch.A or touch.B"));
+    if (action >= TOUCH_ACTION_NUM)
+        mp_raise_ValueError(MP_ERROR_TEXT("action must be any of touch.TOUCH_*"));
+
+    callback_list[button][action] = callback;
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(touch_bind_obj, touch_bind);
@@ -87,10 +125,10 @@ STATIC const mp_rom_map_elem_t touch_module_globals_table[] = {
     // constants
     { MP_ROM_QSTR(MP_QSTR_A),                   MP_OBJ_NEW_SMALL_INT(0) },
     { MP_ROM_QSTR(MP_QSTR_B),                   MP_OBJ_NEW_SMALL_INT(1) },
-    { MP_ROM_QSTR(MP_QSTR_LONG),                MP_OBJ_NEW_SMALL_INT(TOUCH_LONG) },
-    { MP_ROM_QSTR(MP_QSTR_PRESS),               MP_OBJ_NEW_SMALL_INT(TOUCH_PRESS) },
-    { MP_ROM_QSTR(MP_QSTR_SLIDE),               MP_OBJ_NEW_SMALL_INT(TOUCH_SLIDE) },
-    { MP_ROM_QSTR(MP_QSTR_TAP),                 MP_OBJ_NEW_SMALL_INT(TOUCH_TAP) },
+    { MP_ROM_QSTR(MP_QSTR_LONG),                MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_LONG) },
+    { MP_ROM_QSTR(MP_QSTR_PRESS),               MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_PRESS) },
+    { MP_ROM_QSTR(MP_QSTR_SLIDE),               MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_SLIDE) },
+    { MP_ROM_QSTR(MP_QSTR_TAP),                 MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_TAP) },
 };
 STATIC MP_DEFINE_CONST_DICT(touch_module_globals, touch_module_globals_table);
 

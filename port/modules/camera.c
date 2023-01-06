@@ -35,6 +35,7 @@
 #include "driver/ov5640.h"
 #include "driver/max77654.h"
 #include "driver/config.h"
+#include "driver/bluetooth_data_protocol.h"
 
 STATIC mp_obj_t mod_camera___init__(void)
 {
@@ -48,6 +49,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_camera___init___obj, mod_camera___init__);
 STATIC mp_obj_t camera_capture(void)
 {
     fpga_camera_capture();
+    LOG("capture=0x%02X", fpga_capture_read_status());
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(camera_capture_obj, &camera_capture);

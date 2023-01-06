@@ -185,7 +185,6 @@ static void ble_nus_flush_tx(void)
             break;
     }
     ble_tx(&ble_nus_service, buf, len);
-    ble_tx(&ble_raw_service, buf, len);
 }
 
 int ble_nus_rx(void)

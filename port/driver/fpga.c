@@ -70,8 +70,6 @@ void fpga_deinit(void)
     nrf_gpio_cfg_default(FPGA_RECONFIG_N_PIN);
 }
 
-#define FPGA_CMD_SYSTEM 0x00
-
 static inline void fpga_cmd(uint8_t cmd1, uint8_t cmd2)
 {
     spi_chip_select(SPI_FPGA_CS_PIN);
@@ -98,6 +96,8 @@ static inline void fpga_cmd_read(uint8_t cmd1, uint8_t cmd2, uint8_t *buf, size_
     spi_read(buf, len);
     spi_chip_deselect(SPI_FPGA_CS_PIN);
 }
+
+#define FPGA_CMD_SYSTEM 0x00
 
 uint32_t fpga_system_id(void)
 {

@@ -29,6 +29,7 @@
 
 #include "nrfx_log.h"
 
+#include "driver/bluetooth_data_protocol.h"
 #include "driver/config.h"
 #include "driver/ecx336cn.h"
 #include "driver/fpga.h"
@@ -39,6 +40,10 @@ STATIC mp_obj_t mod_display___init__(void)
 {
     // dependencies:
     ecx336cn_init();
+
+    // TODO: debug
+    app_data_operation(DATA_OP_CAMERA_CAPTURE);
+
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_display___init___obj, mod_display___init__);

@@ -227,19 +227,19 @@ void ov5640_mode_2x(void)
 /**
  * Reduce camera output size.
  * @pre ov5640_rgb565_mode_1x() or _2x() should have already been called
- * @param Hpixels desired horizontal output resolution (should be <= 640)
- * @param Vpixels desired vertical output resolution (should be <= 400)
+ * @param h_pixels desired horizontal output resolution (should be <= 640)
+ * @param v_pixels desired vertical output resolution (should be <= 400)
  * @todo This function has not been tested, but uses code from >
  * @todo Implement error checking on inputs, return a success/failure code>
  */
-void ov5640_reduce_size(uint16_t Hpixels, uint16_t Vpixels)
+void ov5640_reduce_size(uint16_t h_pixels, uint16_t v_pixels)
 {
     ov5640_write_reg(0x3212, 0x03); // start group 3
 
-    ov5640_write_reg(0x3808, Hpixels >> 8);   // DVPHO, upper byte
-    ov5640_write_reg(0x3809, Hpixels & 0xFF); // DVPHO, lower byte
-    ov5640_write_reg(0x380a, Vpixels >> 8);   // DVPVO, upper byte
-    ov5640_write_reg(0x380b, Vpixels & 0xFF); // DVPVO, lower byte
+    ov5640_write_reg(0x3808, h_pixels >> 8);   // DVPHO, upper byte
+    ov5640_write_reg(0x3809, h_pixels & 0xFF); // DVPHO, lower byte
+    ov5640_write_reg(0x380a, v_pixels >> 8);   // DVPVO, upper byte
+    ov5640_write_reg(0x380b, v_pixels & 0xFF); // DVPVO, lower byte
 
     // end group 3
     ov5640_write_reg(0x3212, 0x13);
@@ -506,10 +506,12 @@ void ov5640_init(void)
     DRIVER("OV5640");
     max77654_init();
     max77654_rail_1v8(true);
-    max77654_rail_10v(true);
+    max77654_rail_2v7(true);
     fpga_init();
     i2c_init();
     timer_init();
+
+    fpga_camera_on();
 
     ov5640_pin_pwdn(true);
     ov5640_pin_nresetb(false);
