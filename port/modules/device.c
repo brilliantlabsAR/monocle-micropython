@@ -87,9 +87,6 @@ STATIC mp_obj_t mod_device___init__(void)
     }
     assert(reset_cause_obj != NULL);
 
-    // clear reset reason
-    NRF_POWER->RESETREAS = 0;
-
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_device___init___obj, mod_device___init__);
@@ -97,7 +94,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_device___init___obj, mod_device___init__);
 STATIC mp_obj_t device_update(const mp_obj_t reboot)
 {
     if (mp_obj_is_true(reboot))
-        MICROPY_BOARD_ENTER_BOOTLOADER(n_args, args);
+        MICROPY_BOARD_ENTER_BOOTLOADER(0, NULL);
     return mp_const_true;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(device_update_obj, device_update);
@@ -114,7 +111,7 @@ STATIC mp_obj_t device_mac_address(void)
     err = sd_ble_gap_addr_get(&addr);
     assert(err == 0);
 
-    assert(sizeof m_mac_address / 3 > sizeof addr.addr);
+    assert(sizeof m_mac_address / 3 == sizeof addr.addr);
     for (uint8_t i = 0; i < 6; i++)
     {
         n = snprintf(str, sz, i == 0 ? "%02X" : ":%02X", m_mac_address[i]);
