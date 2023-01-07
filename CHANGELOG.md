@@ -1,9 +1,15 @@
 Changelog
 =========
 
+NEXT_RELEASE
+------------
+FPGA: `brilliant-monocle-fpga-sx-v22.351.1434.fs`
+
+- Bugfix for the systick timer being stuck.
+
 v23.004.0055
 ------------
-FPGA: `brilliant_monocle_fpga_sx_v22.351.1434.fs`
+FPGA: `brilliant-monocle-fpga-sx-v22.351.1434.fs`
 
 - Reorganize all the drivers with a dependency system so that each gets called only once,
   but so that they can be initialized on-demande, and in any order.

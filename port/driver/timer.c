@@ -43,6 +43,7 @@
 static nrfx_timer_t timer = NRFX_TIMER_INSTANCE(TIMER_INSTANCE);
 static nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG;
 static timer_handler_t *timer_handlers_list[TIMER_MAX_HANDLERS];
+static volatile uint64_t timer_uptime_ms;
 
 /**
  * The timer hander that dispatches the timer to all the other functions.
@@ -51,6 +52,9 @@ static void timer_event_handler(nrf_timer_event_t event, void *ctx)
 {
     (void)event;
     (void)ctx;
+
+    /* Update the current time since timer_init in millisecond. */
+    timer_uptime_ms++;
 
     // call all timer functions
     for (size_t i = 0; i < TIMER_MAX_HANDLERS; i++)
@@ -105,33 +109,18 @@ void timer_add_handler(timer_handler_t *ptr)
     __enable_irq();
 }
 
-static volatile uint64_t timer_frequency = 0;
-static volatile uint64_t timer_ticks = 0;
-static volatile uint64_t timer_uptime = 0;
-
-/**
- * Update the current time since timer_init in second.
- */
-static void timer_tick_handler(void)
-{
-    if (++timer_ticks >= timer_frequency) {
-        timer_ticks = 0;
-        timer_uptime++;
-    }
-}
-
 /**
  * Get the time elapsed since timer_init();
  * @return The uptime in seconds.
  */
-uint64_t timer_get_uptime_s(void)
+uint64_t timer_get_uptime_ms(void)
 {
-    uint64_t uptime;
+    uint64_t uptime_ms;
 
     __disable_irq();
-    uptime = timer_uptime;
+    uptime_ms = timer_uptime_ms;
     __enable_irq();
-    return uptime;
+    return uptime_ms;
 }
 
 void timer_init(void)
@@ -146,16 +135,12 @@ void timer_init(void)
 
     // Prepare the configuration structure.
     timer_config.mode = NRF_TIMER_MODE_TIMER;
-    timer_config.frequency = NRF_TIMER_FREQ_31250Hz;
+    timer_config.frequency = NRF_TIMER_FREQ_125kHz;
     timer_config.bit_width = NRF_TIMER_BIT_WIDTH_8;
 
-    // Raise an interrupt every 125 times: 31250 Hz / 125 = 250 Hz.
+    // Raise an interrupt every 1ms: 125 kHz / 125: every 1 ms.
     nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 125,
             NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
-    timer_frequency = 250 * 500; // TODO: why x500 ?
-
-    // Add our own timer for computing maintaining a clock
-    timer_add_handler(timer_tick_handler);
 
     // Start the timer, letting timer_add_handler() append more of them while running.
     nrfx_timer_enable(&timer);
