@@ -164,7 +164,7 @@ void fpga_live_video_replay(void)
     fpga_cmd(FPGA_CMD_LIVE_VIDEO, 0x07);
 }
 
-#define FPGA_CMD_GRAPHICS 0x40
+#define FPGA_CMD_GRAPHICS 0x44
 
 void fpga_graphics_off(void)
 {
