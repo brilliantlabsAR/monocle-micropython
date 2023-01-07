@@ -28,9 +28,9 @@
 
 #include <alloca.h>
 
-#define MICROPY_HW_BOARD_NAME                   "MK12"
+#define MICROPY_HW_BOARD_NAME                   "monocle"
 #define MICROPY_HW_MCU_NAME                     "NRF52832"
-#define MICROPY_PY_SYS_PLATFORM                 "monocle"
+#define MICROPY_PY_SYS_PLATFORM                 "MK12"
 
 #define MICROPY_HW_ENABLE_RNG                   1
 #define MICROPY_HW_HAS_LED                      0
