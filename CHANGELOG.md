@@ -1,10 +1,12 @@
 Changelog
 =========
 
-NEXT_RELEASE
+v23.007.1838
 ------------
 FPGA: `brilliant-monocle-fpga-sx-v22.351.1434.fs`
 
+- Implement the `time` module
+- Implement the `camera.live()` function
 - Bugfix for the systick timer being stuck.
 
 v23.004.0055
