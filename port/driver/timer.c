@@ -41,7 +41,6 @@
 #define ASSERT  NRFX_ASSERT
 
 static nrfx_timer_t timer = NRFX_TIMER_INSTANCE(TIMER_INSTANCE);
-static nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG;
 static timer_handler_t *timer_handlers_list[TIMER_MAX_HANDLERS];
 static volatile uint64_t timer_uptime_ms;
 
@@ -53,7 +52,7 @@ static void timer_event_handler(nrf_timer_event_t event, void *ctx)
     (void)event;
     (void)ctx;
 
-    /* Update the current time since timer_init in millisecond. */
+    // update the current time since timer_init in millisecond.
     timer_uptime_ms++;
 
     // call all timer functions
@@ -125,20 +124,21 @@ uint64_t timer_get_uptime_ms(void)
 
 void timer_init(void)
 {
+    static nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG;
     uint32_t err;
 
     DRIVER("TIMER");
     nrfx_init();
 
+    // Prepare the configuration structure.
+    timer_config.frequency = NRF_TIMER_FREQ_125kHz;
+    timer_config.mode = NRF_TIMER_MODE_TIMER;
+    timer_config.bit_width = NRF_TIMER_BIT_WIDTH_8;
+
     err = nrfx_timer_init(&timer, &timer_config, timer_event_handler);
     ASSERT(err == NRFX_SUCCESS);
 
-    // Prepare the configuration structure.
-    timer_config.mode = NRF_TIMER_MODE_TIMER;
-    timer_config.frequency = NRF_TIMER_FREQ_125kHz;
-    timer_config.bit_width = NRF_TIMER_BIT_WIDTH_8;
-
-    // Raise an interrupt every 1ms: 125 kHz / 125: every 1 ms.
+    // Raise an interrupt every 1ms: 125 kHz / 125
     nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 125,
             NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
 
