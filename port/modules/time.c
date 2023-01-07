@@ -59,7 +59,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_epoch_obj, 0, 1, time_epoch);
 
 STATIC mp_obj_t time_ticks_ms(void)
 {
-    return mp_obj_new_int(time_at_init * 1000 + timer_get_uptime_ms());
+    return mp_obj_new_int(timer_get_uptime_ms());
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(time_ticks_ms_obj, time_ticks_ms);
 
@@ -110,7 +110,7 @@ STATIC mp_obj_t time_time(size_t n_args, const mp_obj_t *args)
 
     // get the time to convert from one way or another
     if (n_args == 0)
-        t = timer_get_uptime_ms() / 1000;
+        t = time_at_init + timer_get_uptime_ms() / 1000;
     else
         t = mp_obj_get_int(args[0]);
 
@@ -118,19 +118,16 @@ STATIC mp_obj_t time_time(size_t n_args, const mp_obj_t *args)
     t += time_zone_offset;
 
     // compute time components
-    tm_sec = t % 60;
-    t /= 60;
-    tm_min = t % 60;
-    t /= 60;
-    tm_hour = t % 60;
-    t /= 24;
+    tm_sec = t % 60; t /= 60;
+    tm_min = t % 60; t /= 60;
+    tm_hour = t % 24; t /= 24;
 
     // compute date components
     for (tm_year = 1970; t >= (days = (365 + isleap(tm_year))); tm_year++)
         t -= days;
     for (tm_mon = 1; t >= (days = mdays(tm_mon, tm_year)); tm_mon++)
         t -= days;
-    tm_mday = t;
+    tm_mday = t + 1;
 
     // fill the fields of a python dict
     mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_sec), MP_OBJ_NEW_SMALL_INT(tm_sec));
