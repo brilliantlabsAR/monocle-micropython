@@ -160,6 +160,7 @@ static void data_state_machine(void)
     switch (data.state.current)
     {
     case DATA_STATE_IDLE:
+    LOG("DATA_STATE_IDLE");
     {
         // If a stop is requested
         if (read_and_clear(&data.input.stop_flag))
@@ -189,6 +190,7 @@ static void data_state_machine(void)
     }
 
     case DATA_STATE_GET_CAM_METADATA:
+    LOG("DATA_STATE_GET_CAM_METADATA");
     {
         // Get the file size
         data.output.file.size = sizeof(dummy_small_file); // TODO spi
@@ -216,6 +218,7 @@ static void data_state_machine(void)
     }
 
     case DATA_STATE_BLE_CAM_SMALL_PAYLOAD:
+    LOG("DATA_STATE_BLE_CAM_SMALL_PAYLOAD");
     {
         size_t i = 0;
 
@@ -240,6 +243,7 @@ static void data_state_machine(void)
     }
 
     case DATA_STATE_BLE_CAM_DATA_START:
+    LOG("DATA_STATE_BLE_CAM_DATA_START");
     {
         size_t i = 0, len;
 
@@ -276,6 +280,7 @@ static void data_state_machine(void)
     }
 
     case DATA_STATE_BLE_CAM_DATA_MIDDLE:
+    LOG("DATA_STATE_BLE_CAM_DATA_MIDDLE");
     {
         size_t i = 0, len;
 
@@ -316,6 +321,7 @@ static void data_state_machine(void)
     }
 
     case DATA_STATE_BLE_CAM_DATA_END:
+    LOG("DATA_STATE_BLE_CAM_DATA_END");
     {
         size_t i = 0;
 
@@ -366,6 +372,7 @@ bool app_data_operation(data_op_t op)
     {
     // If a single camera capture
     case DATA_OP_CAMERA_CAPTURE:
+    LOG("DATA_OP_CAMERA_CAPTURE");
     {
         // Initiate a capture
         data.input.camera_capture_flag = true;
@@ -375,6 +382,7 @@ bool app_data_operation(data_op_t op)
 
     // If a continuos camera stream
     case DATA_OP_CAMERA_STREAM:
+    LOG("DATA_OP_CAMERA_STREAM");
     {
         // Initiate a capture
         data.input.camera_stream_flag = true;
@@ -384,24 +392,28 @@ bool app_data_operation(data_op_t op)
 
     // If a continuos microphone stream
     case DATA_OP_MICROPHONE_STREAM:
+    LOG("DATA_OP_MICROPHONE_STREAM");
     {
         break;
     }
 
     // If a firmware download is requested
     case DATA_OP_FIRMWARE_DOWNLOAD:
+    LOG("DATA_OP_FIRMWARE_DOWNLOAD");
     {
         break;
     }
 
     // If a bitstream update is requested
     case DATA_OP_BITSTREAM_DOWNLOAD:
+    LOG("DATA_OP_BITSTREAM_DOWNLOAD");
     {
         break;
     }
 
     // If a stop command is requested
     case DATA_OP_STOP:
+    LOG("DATA_OP_STOP");
     {
         data.input.stop_flag = true;
         break;
