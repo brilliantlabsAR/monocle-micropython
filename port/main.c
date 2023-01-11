@@ -40,9 +40,9 @@
 
 #include "nrfx_log.h"
 #include "nrf_sdm.h"
-#include "nrfx_systick.h"
 
 #include "driver/bluetooth_low_energy.h"
+#include "driver/bluetooth_data_protocol.h"
 #include "driver/fpga.h"
 
 /** Variable that holds the Softdevice NVIC state.  */
@@ -126,6 +126,9 @@ int main(void)
             stop = pyexec_friendly_repl();
         }
         LOG("switching the interpreter mode");
+
+        // TODO: debug
+        bluetooth_data_operation(DATA_OP_CAMERA_CAPTURE);
     }
 
     // Deinitialize the board and power things off early

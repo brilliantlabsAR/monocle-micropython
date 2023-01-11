@@ -41,9 +41,6 @@ STATIC mp_obj_t mod_display___init__(void)
     // dependencies:
     ecx336cn_init();
 
-    // TODO: debug
-    app_data_operation(DATA_OP_CAMERA_CAPTURE);
-
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_display___init___obj, mod_display___init__);
@@ -61,12 +58,31 @@ STATIC mp_obj_t display_show(void)
 }
 MP_DEFINE_CONST_FUN_OBJ_0(display_show_obj, &display_show);
 
+STATIC mp_obj_t display_brightness(mp_obj_t brightness_in)
+{
+    uint32_t brightness = mp_obj_get_int(brightness_in);
+    ecx336cn_luminance_t tab[] = {
+        ECX336CN_DIM,
+        ECX336CN_LOW,
+        ECX336CN_MEDIUM,
+        ECX336CN_HIGH,
+        ECX336CN_BRIGHT,
+    };
+
+    if (brightness >= MP_ARRAY_SIZE(tab))
+        mp_raise_ValueError(MP_ERROR_TEXT("brightness must be between 0 and 4"));
+    ecx336cn_set_luminance(tab[brightness]);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(display_brightness_obj, &display_brightness);
+
 STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_display) },
     { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&mod_display___init___obj) },
 
     // methods
     { MP_ROM_QSTR(MP_QSTR_show),        MP_ROM_PTR(&display_show_obj) },
+    { MP_ROM_QSTR(MP_QSTR_brightness),  MP_ROM_PTR(&display_brightness_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(display_module_globals, display_module_globals_table);
 

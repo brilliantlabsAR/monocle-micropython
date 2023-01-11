@@ -47,4 +47,4 @@ typedef enum data_op_t
  * @param url: URL to download/upload the request. If NULL, Bluetooth will be used.
  * @return True if the operation is accepted, false if already in progress.
  */
-bool app_data_operation(data_op_t op);
+bool bluetooth_data_operation(data_op_t op);

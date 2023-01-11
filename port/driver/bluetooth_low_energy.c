@@ -363,6 +363,8 @@ static void ble_configure_nus_service(ble_uuid_t *service_uuid)
 
 void ble_raw_tx(uint8_t const *buf, uint16_t len)
 {
+    LOG("0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X, 0x%02X...",
+         buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6]);
     ble_tx(&ble_raw_service, buf, len);
 }
 

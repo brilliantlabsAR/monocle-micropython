@@ -8,6 +8,7 @@ FPGA: `brilliant-monocle-fpga-sx-v22.351.1434.fs`
 - Bugfix for the base address of FPGA_CMD_DISPLAY definition.
 - Add sample display.show() data.
 - Full tracing for the bluetooth module.
+- Bugfix for the bluetooth protocol
 
 v23.007.1838
 ------------

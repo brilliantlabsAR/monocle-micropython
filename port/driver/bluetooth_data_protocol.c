@@ -119,10 +119,10 @@ static bool read_and_clear(bool *flag)
 
 static inline size_t data_encode_u32(uint8_t *buf, uint32_t u32)
 {
-    buf[0] = u32 >> 24;
-    buf[1] = u32 >> 16;
-    buf[2] = u32 >> 8;
-    buf[3] = u32 >> 0;
+    buf[0] = u32 >> 0;
+    buf[1] = u32 >> 8;
+    buf[2] = u32 >> 16;
+    buf[3] = u32 >> 24;
     return 4;
 }
 
@@ -138,7 +138,7 @@ static inline size_t data_encode_str(uint8_t *buf, char *name)
 static inline size_t data_encode_mem(uint8_t *buf, uint8_t const *mem, size_t len)
 {
     memcpy(buf, mem, len);
-    return 1 + len;
+    return len;
 }
 
 /**
@@ -193,7 +193,7 @@ static void data_state_machine(void)
     LOG("DATA_STATE_GET_CAM_METADATA");
     {
         // Get the file size
-        data.output.file.size = sizeof(dummy_small_file); // TODO spi
+        data.output.file.size = sizeof(dummy_jpeg_file); // TODO spi
 
         // Get the filename
         size_t len = snprintf(data.output.file.name, sizeof data.output.file.name, "test_file.jpg"); // TODO spi
@@ -209,11 +209,12 @@ static void data_state_machine(void)
         {
             // Go to small payload state
             data.state.next = DATA_STATE_BLE_CAM_SMALL_PAYLOAD;
-            break;
         }
-
-        // Otherwise go to data start state
-        data.state.next = DATA_STATE_BLE_CAM_DATA_START;
+        else
+        {
+            // Otherwise go to data start state
+            data.state.next = DATA_STATE_BLE_CAM_DATA_START;
+        }
         break;
     }
 
@@ -232,7 +233,7 @@ static void data_state_machine(void)
         i += data_encode_str(data.output.ble.buffer + i, data.output.file.name);
 
         // Append the data into the remaining buffer space
-        i += data_encode_mem(data.output.ble.buffer + i, dummy_small_file, data.output.file.size);
+        i += data_encode_mem(data.output.ble.buffer + i, dummy_jpeg_file, data.output.file.size);
 
         // Send the data
         ble_raw_tx(data.output.ble.buffer, i);
@@ -258,7 +259,7 @@ static void data_state_machine(void)
 
         // Append the data into the remaining buffer space
         len = data.output.ble.mtu - i;
-        i += data_encode_mem(data.output.ble.buffer + i, dummy_large_file, len);
+        i += data_encode_mem(data.output.ble.buffer + i, dummy_jpeg_file, len);
 
         // Send the data. If not successful
         ble_raw_tx(data.output.ble.buffer, i);
@@ -267,15 +268,16 @@ static void data_state_machine(void)
         data.output.ble.sent_bytes += len;
 
         // If there is less than one MTU length worth of data length
-        if (data.output.file.size <= data.output.ble.sent_bytes + data.output.ble.mtu - 1)
+        if (1 + data.output.file.size - data.output.ble.sent_bytes <= data.output.ble.mtu)
         {
             // Go to the end data state
             data.state.next = DATA_STATE_BLE_CAM_DATA_END;
-            break;
         }
-
-        // Otherwise go to middle data state
-        data.state.next = DATA_STATE_BLE_CAM_DATA_MIDDLE;
+        else
+        {
+            // Otherwise go to middle data state
+            data.state.next = DATA_STATE_BLE_CAM_DATA_MIDDLE;
+        }
         break;
     }
 
@@ -290,7 +292,7 @@ static void data_state_machine(void)
         // Append the data into the remaining buffer space
         len = data.output.ble.mtu - i;
         i += data_encode_mem(data.output.ble.buffer + i,
-                dummy_large_file + data.output.ble.sent_bytes,
+                dummy_jpeg_file + data.output.ble.sent_bytes,
                 len);
 
         // Send the data. If not successful
@@ -308,8 +310,8 @@ static void data_state_machine(void)
         }
 
         // If there is less than one MTU length worth of data length
-        if (data.output.file.size <=
-            data.output.ble.sent_bytes + data.output.ble.mtu - 1)
+        if (1 + data.output.file.size - data.output.ble.sent_bytes <=
+            data.output.ble.mtu)
         {
             // Go to the end data state
             data.state.next = DATA_STATE_BLE_CAM_DATA_END;
@@ -330,7 +332,7 @@ static void data_state_machine(void)
 
         // Append the data into the remaining buffer space
         i += data_encode_mem(data.output.ble.buffer + i,
-               dummy_large_file + data.output.ble.sent_bytes, // TODO spi
+               dummy_jpeg_file + data.output.ble.sent_bytes, // TODO spi
                data.output.file.size - data.output.ble.sent_bytes);
 
         // Send the data
@@ -362,7 +364,7 @@ static void data_state_machine(void)
  * @param op: Type of operation to request.
  * @return One of the status codes from data_op_t.
  */
-bool app_data_operation(data_op_t op)
+bool bluetooth_data_operation(data_op_t op)
 {
     if (data.state.current != DATA_STATE_IDLE)
         return false;
