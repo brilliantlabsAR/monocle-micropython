@@ -126,9 +126,6 @@ int main(void)
             stop = pyexec_friendly_repl();
         }
         LOG("switching the interpreter mode");
-
-        // TODO: debug
-        bluetooth_data_operation(DATA_OP_CAMERA_CAPTURE);
     }
 
     // Deinitialize the board and power things off early

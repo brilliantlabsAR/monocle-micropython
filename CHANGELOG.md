@@ -1,7 +1,7 @@
 Changelog
 =========
 
-NEXT_VERSION
+v23.012.0631
 ------------
 FPGA: `brilliant-monocle-fpga-sx-v22.351.1434.fs`
 
