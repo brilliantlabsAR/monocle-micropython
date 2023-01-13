@@ -1,10 +1,12 @@
 Changelog
 =========
 
+v23.013.2251
+------------
+- Bugfix for the display on the new MK12 board suggested by Venkat.
+
 v23.012.0631
 ------------
-FPGA: `brilliant-monocle-fpga-sx-v22.351.1434.fs`
-
 - Bugfix for the base address of FPGA_CMD_DISPLAY definition.
 - Add sample display.show() data.
 - Full tracing for the bluetooth module.
@@ -12,16 +14,12 @@ FPGA: `brilliant-monocle-fpga-sx-v22.351.1434.fs`
 
 v23.007.1838
 ------------
-FPGA: `brilliant-monocle-fpga-sx-v22.351.1434.fs`
-
 - Implement the `time` module
 - Implement the `camera.live()` function
 - Bugfix for the systick timer being stuck.
 
 v23.004.0055
 ------------
-FPGA: `brilliant-monocle-fpga-sx-v22.351.1434.fs`
-
 - Reorganize all the drivers with a dependency system so that each gets called only once,
   but so that they can be initialized on-demande, and in any order.
 - Rework the python API entirely to match the documentation.
