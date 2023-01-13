@@ -51,8 +51,7 @@ void fpga_graphics_clear(void);
 void fpga_graphics_swap_buffer(void);
 void fpga_graphics_set_write_base(uint32_t base);
 void fpga_graphics_write_data(uint8_t *buf, size_t len);
-uint16_t fpga_capture_get_status(void);
-void fpga_capture_get_data(uint8_t *buf, size_t len);
+size_t fpga_capture_read(uint8_t *buf, size_t len);
 
 // debug
 void fpga_check_pins(char const *msg);

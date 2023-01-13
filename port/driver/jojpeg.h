@@ -42,7 +42,7 @@ typedef struct {
     float fdtable_y[64], fdtable_uv[64];
 } jojpeg_t;
 
-extern void jojpeg_write(uint8_t *buf, size_t len);
+extern void jojpeg_write(uint8_t const *buf, size_t len);
 
-void jojpeg_start(jojpeg_t *ctx, uint16_t width, uint8_t height, uint8_t components, uint8_t quality);
+void jojpeg_start(jojpeg_t *ctx, size_t width, size_t height, uint8_t components, uint8_t quality);
 bool jojpeg_append_16_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len);

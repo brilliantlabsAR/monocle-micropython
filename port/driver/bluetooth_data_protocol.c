@@ -61,12 +61,12 @@ static inline size_t data_encode_u32(uint8_t *buf, uint32_t u32)
     return 4;
 }
 
-static inline size_t data_encode_str(uint8_t *buf, char *name)
+static inline size_t data_encode_str(uint8_t *buf, char const *str)
 {
-    size_t len = strlen(name);
+    size_t len = strlen(str);
 
     buf[0] = len;
-    memcpy(buf + 1, name, len);
+    memcpy(buf + 1, str, len);
     return 1 + len;
 }
 
@@ -85,7 +85,7 @@ void data_flush_ble_packet(void)
     ble_flag = BLE_FILE_MIDDLE_FLAG;
 }
 
-static void data_write_jpeg_cb(uint8_t *jpeg_buf, size_t jpeg_len)
+void jojpeg_write(uint8_t const *jpeg_buf, size_t jpeg_len)
 {
     for (size_t i = 0; i < jpeg_len; i++) {
         if (ble_pos == ble_len) {
@@ -96,12 +96,11 @@ static void data_write_jpeg_cb(uint8_t *jpeg_buf, size_t jpeg_len)
     }
 }
 
-bool bluetooth_data_camera_capture(char const *filename, uint8_t quality)
+void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
 {
     // buffer storing RGB data from from the camera, used by the JPEG library
     jojpeg_t ctx;
     uint8_t rgb_buf[OV5640_WIDTH * 16 * 3];
-    size_t rgb_len;
 
     // ask the FPGA to start a camera capture, and read the data later.
     fpga_camera_capture();
@@ -125,10 +124,10 @@ bool bluetooth_data_camera_capture(char const *filename, uint8_t quality)
 
     do {
         // get a buffer-ful of RGB data from the camera (via the FPGA)
-        fpga_capture_read(&ctx, rgb_buf, sizeof rgb_buf);
+        fpga_capture_read(rgb_buf, sizeof rgb_buf);
 
         // enqueue the conversion, letting the callback flush the data over bluetooth
-    } while (jojpeg_encode_16_rows(ctx, rgb_buf, data_write_jpeg_cb));
+    } while (jojpeg_append_16_rows(&ctx, rgb_buf, sizeof rgb_buf));
 
     // the callback sets the ble_flag to BLE_MIDDLE when run, instead, here, we want
     // it to be the end packet, unless the callback never ran, which means we have
@@ -136,5 +135,5 @@ bool bluetooth_data_camera_capture(char const *filename, uint8_t quality)
     ble_flag = BLE_FILE_MIDDLE_FLAG ? BLE_FILE_END_FLAG : BLE_FILE_SMALL_FLAG;
 
     // perform the last data transfer
-    data_flush_ble_packet_cb();
+    data_flush_ble_packet();
 }

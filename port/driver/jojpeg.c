@@ -356,7 +356,7 @@ static void jojpeg_write_header(jojpeg_t *ctx, int quality)
     jojpeg_write(head2, sizeof(head2));
 }
 
-bool jojpeg_append_16_rows(jojpeg_t *ctx, uint8_t *rgb_buf)
+bool jojpeg_append_16_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len)
 {
     bool need_more_data;
     assert(rgb_len == ctx->width * 16 * ctx->components);
@@ -369,36 +369,34 @@ bool jojpeg_append_16_rows(jojpeg_t *ctx, uint8_t *rgb_buf)
     // encode 16x16 or 8x8 macroblocks
     if (ctx->subsample) {
         jojpeg_encode_row_subsample(ctx);
-        ctx->height -= 16
-        need_more_data = ctx->height >= 16;
+        ctx->height -= 16;
+        need_more_data = (ctx->height >= 16);
     } else {
-        jojpeg_encode_row_nosubsample(&ctx);
+        jojpeg_encode_row_nosubsample(ctx);
         ctx->height -= 8;
-        need_more_data = ctx->height >= 8;
+        need_more_data = (ctx->height >= 8);
     }
 
     // do the bit alignment of the EOI marker
     static const unsigned short fill_bits[] = {0x7F, 7};
-    jojpeg_write_bits(&ctx, fill_bits);
+    jojpeg_write_bits(ctx, fill_bits);
     jojpeg_putc(0xFF);
     jojpeg_putc(0xD9);
+
+    return need_more_data;
 }
 
-void jojpeg_start(jojpeg_t *ctx, uint16 width, uint8_t height, uint8_t components, uint8_t quality)
+void jojpeg_start(jojpeg_t *ctx, size_t width, size_t height, uint8_t components, uint8_t quality)
 {
-    jojpeg_t ctx = {
-        .subsample = (quality <= 90)
-        .width = width,
-        .height = height,
-        .components = components,
-        .rgb_buf = rgb_buf,
-        .rgb_len = rgb_len
-    };
-
     assert(width > 0);
     assert(height > 0);
     assert(quality <= 100);
     assert(components == 1 || components == 3 || components == 4);
+
+    ctx->subsample = (quality <= 90);
+    ctx->width = width;
+    ctx->height = height;
+    ctx->components = components;
 
     jojpeg_write_header(ctx, quality < 50 ? 5000 / quality : 200 - quality * 2);
 }
