@@ -267,7 +267,6 @@
 #define MAX77654_CNFG_SBB_B_EN_ON       (0x06 << 0)  // On irrespective of FPS
 
 #define MAX77654_CNFG_SBB_TOP           0x2F // RW
-// ICHGIN_LIM_DEF                    bit 7 // Don't use, we always set to 0 for standard definitions
 #define MAX77654_CNFG_SBB_TOP_DRV       (0x03 << 0)
 
 // LDO Registers
@@ -413,8 +412,7 @@ struct { uint8_t addr, data; } max77654_conf[] = {
     // ICHGIN_LIM_DEF=0: clear this bit so dev brd "M" OTP matches "B" OTP of 0, that is ICHGIN_LIM scale starts at 95mA
     // ICHGIN_LIM assumes CNFG_SBB_TOP.ICHGIN_LIM_DEF = 0
     // Drive strength, slow down to reduce EMI (but reduces efficiency)
-    // Second slowest.
-    { MAX77654_CNFG_SBB_TOP, 0x00 }, // 0x00 works best for MK12
+    { MAX77654_CNFG_SBB_TOP, 0x02 },
 
     // GPIO configuration
 
