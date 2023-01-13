@@ -9,8 +9,9 @@ some of which are directly accessible from python for driving the Monocle.
 
 To drive the Monocle, a Bluetooth Low Energy Nordic UART Service (BLE-NUS) is broadcasted.
 
-The `serial_console.py` script permits to connect to it from the local computer.
-A working [bleak](https://bleak.readthedocs.io/en/latest/) is required for it.
+In addition to the [official web REPL](https://repl.brilliant.xyz/),
+the `serial_console.py` script permits to connect to it from the local computer.
+[Bleak](https://bleak.readthedocs.io/en/latest/) is required for it.
 
 Building
 --------

@@ -113,14 +113,15 @@ SRC += mphalport.c
 SRC += nrf$(NRF).c
 
 SRC += driver/battery.c
-SRC += driver/bluetooth_low_energy.c
 SRC += driver/bluetooth_data_protocol.c
+SRC += driver/bluetooth_low_energy.c
 SRC += driver/dfu.c
 SRC += driver/ecx336cn.c
 SRC += driver/flash.c
 SRC += driver/fpga.c
 SRC += driver/i2c.c
 SRC += driver/iqs620.c
+SRC += driver/jojpeg.c
 SRC += driver/max77654.c
 SRC += driver/nrfx.c
 SRC += driver/ov5640.c

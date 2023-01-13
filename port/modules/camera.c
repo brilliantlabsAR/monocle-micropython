@@ -52,6 +52,7 @@ STATIC mp_obj_t camera_capture(void)
     fpga_camera_capture();
     LOG("capture=0x%02X", fpga_capture_get_status());
 
+    jojpeg_write_jpg(int width, int height, int components, int quality);
     bluetooth_data_operation(DATA_OP_CAMERA_CAPTURE);
 
     return mp_const_none;
