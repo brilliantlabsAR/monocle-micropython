@@ -64,12 +64,6 @@ void fpga_check_pins(char const *msg)
     );
 }
 
-void fpga_deinit(void)
-{
-    nrf_gpio_cfg_default(FPGA_MODE1_PIN);
-    nrf_gpio_cfg_default(FPGA_RECONFIG_N_PIN);
-}
-
 static inline void fpga_cmd(uint8_t cmd1, uint8_t cmd2)
 {
     spi_chip_select(SPI_FPGA_CS_PIN);
@@ -205,25 +199,27 @@ void fpga_graphics_write_data(uint8_t *buf, size_t len)
 
 #define FPGA_CMD_CAPTURE 0x50
 
-static uint16_t fpga_capture_get_size(void)
+static uint16_t fpga_capture_get_status(void)
 {
     uint8_t buf[] = { 0x00, 0x00 };
 
     fpga_cmd_read(FPGA_CMD_CAPTURE, 0x00, buf, sizeof buf);
-    return (buf[0] << 8 | buf[1] << 0) & 0xFFF;
+    return (buf[0] << 8 | buf[1] << 0);
 }
 
 static void fpga_capture_get_data(uint8_t *buf, size_t len)
 {
+    PRINTF(".");
     fpga_cmd_read(FPGA_CMD_CAPTURE, 0x10, buf, len);
 }
 
 size_t fpga_capture_read(uint8_t *buf, size_t len)
 {
+    LOG("len=%d", len);
     for (size_t n, i = 0; i < len; i++) {
 
         // the FPGA stores the length to read in a dedicated register
-        n = fpga_capture_get_status();
+        n = fpga_capture_get_status() & 0x0FFF;
 
         // if there is nothing more to read, return the length
         if (n == 0) {
@@ -266,12 +262,12 @@ void fpga_init(void)
     nrfx_systick_delay_ms(1);
     fpga_check_pins("set the MODE1 pin");
 
-    // Issue a "reconfig" pulse.
-    // Datasheet UG290E: T_recfglw >= 70 us
-    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, false);
-    nrfx_systick_delay_ms(100); // 1000 times more than needed
-    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
-    fpga_check_pins("issued a low FPGA_RECONFIG_N pulse");
+    //// Issue a "reconfig" pulse.
+    //// Datasheet UG290E: T_recfglw >= 70 us
+    //nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, false);
+    //nrfx_systick_delay_ms(100); // 1000 times more than needed
+    //nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
+    //fpga_check_pins("issued a low FPGA_RECONFIG_N pulse");
 
     // Give the FPGA some time to boot.
     // Datasheet UG290E: T_recfgtdonel <=

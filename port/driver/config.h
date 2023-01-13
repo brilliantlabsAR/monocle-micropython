@@ -71,12 +71,15 @@
 
 #define OV5640_I2C                  i2c1
 #define OV5640_ADDR                 0x3C
+
+// OV5640
+
 #define OV5640_WIDTH                1280
 #define OV5640_HEIGHT               720
 
 // SPI
 
-#define SPI_MAX_READ_LEN            0
+#define SPI_MAX_READ_LEN            255  // TODO: find the appropriate size
 
 // JOJPEG
 

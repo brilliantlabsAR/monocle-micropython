@@ -22,29 +22,7 @@
  */
 
 /*
- * Custom media transfer protocol  on top of Bluetooth Low Energy.
+ * Custom media transfer protocol on top of Bluetooth Low Energy.
  */
 
-/**
- * Type of data transaction used in app_start_data_transaction().
- */
-typedef enum data_op_t
-{
-    // Types of transaction which may be selected
-    DATA_OP_CAMERA_CAPTURE,     // Capture a single image over Bluetooth or WiFi
-    DATA_OP_CAMERA_STREAM,      // Streams frames continuously over WiFi
-    DATA_OP_MICROPHONE_STREAM,  // Continuously streams microphone data over Bluetooth or WiFi
-    DATA_OP_FIRMWARE_DOWNLOAD,  // Downloads a firmware update over WiFi
-    DATA_OP_BITSTREAM_DOWNLOAD, // Downloads an FPGA bitstream over WiFi
-
-    // Stops an ongoing transaction
-    DATA_OP_STOP,
-} data_op_t;
-
-/**
- * Starts/stops a data operation of a given type to the mobile over BLE, or WiFi to a server.
- * @param channel: Type of operation to request.
- * @param url: URL to download/upload the request. If NULL, Bluetooth will be used.
- * @return True if the operation is accepted, false if already in progress.
- */
-bool bluetooth_data_operation(data_op_t op);
+void bluetooth_data_camera_capture(char const *filename, uint8_t quality);

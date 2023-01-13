@@ -33,6 +33,8 @@
 #include <assert.h>
 #include <string.h>
 
+#include "nrfx_log.h"
+
 #include "driver/jojpeg.h"
 
 static const unsigned char jojpeg_zigzag[] = {
@@ -191,6 +193,8 @@ static int jojpeg_process_du(jojpeg_t *ctx, float *CDU, int du_stride, float *fd
     const unsigned short EOB[2] = { HTAC[0x00][0], HTAC[0x00][1] };
     const unsigned short M16zeroes[2] = { HTAC[0xF0][0], HTAC[0xF0][1] };
 
+    LOG("");
+
     // DCT rows
     for (int i=0; i<du_stride*8; i+=du_stride) {
         jojpeg_dct(CDU+i, CDU+i+1, CDU+i+2, CDU+i+3, CDU+i+4, CDU+i+5, CDU+i+6, CDU+i+7);
@@ -219,10 +223,11 @@ static int jojpeg_process_du(jojpeg_t *ctx, float *CDU, int du_stride, float *fd
         jojpeg_write_bits(ctx, HTDC[bits[1]]);
         jojpeg_write_bits(ctx, bits);
     }
+
     // Encode ACs
     int end0pos = 63;
-    for (; (end0pos>0)&&(DU[end0pos]==0); --end0pos) {
-    }
+    for (; end0pos > 0 && DU[end0pos] == 0; --end0pos);
+
     // end0pos = first element in reverse order !=0
     if (end0pos == 0) {
         jojpeg_write_bits(ctx, EOB);
@@ -230,8 +235,7 @@ static int jojpeg_process_du(jojpeg_t *ctx, float *CDU, int du_stride, float *fd
     }
     for (int i = 1; i <= end0pos; ++i) {
         int startpos = i;
-        for (; DU[i]==0 && i<=end0pos; ++i) {
-        }
+        for (; DU[i]==0 && i<=end0pos; ++i);
         int nrzeroes = i-startpos;
         if ( nrzeroes >= 16 ) {
             int lng = nrzeroes>>4;
@@ -360,6 +364,8 @@ bool jojpeg_append_16_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len)
 {
     bool need_more_data;
     assert(rgb_len == ctx->width * 16 * ctx->components);
+
+    LOG("rgb_len=%d", rgb_len);
 
     // save the r/g/b components along with their offset
     ctx->r = rgb_buf + (ctx->components > 1 ? 0 : 0);

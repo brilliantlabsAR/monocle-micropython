@@ -51,6 +51,7 @@ static uint8_t ble_buf[BLE_MAX_MTU_LENGTH];
 static uint8_t ble_flag;
 static size_t ble_pos;
 static size_t ble_len;
+static size_t total_decoded; // TODO: debug
 
 static inline size_t data_encode_u32(uint8_t *buf, uint32_t u32)
 {
@@ -72,6 +73,7 @@ static inline size_t data_encode_str(uint8_t *buf, char const *str)
 
 void data_flush_ble_packet(void)
 {
+    LOG("ble_flag=%d ble_len=%d", ble_flag, ble_len);
     // fill the flag field and send the data
     ble_buf[0] = ble_flag;
     ble_raw_tx(ble_buf, ble_len);
@@ -87,20 +89,26 @@ void data_flush_ble_packet(void)
 
 void jojpeg_write(uint8_t const *jpeg_buf, size_t jpeg_len)
 {
+    LOG("jpeg_len=%d", jpeg_len);
     for (size_t i = 0; i < jpeg_len; i++) {
+        PRINTF(".");
         if (ble_pos == ble_len) {
             data_flush_ble_packet();
         }
         assert(ble_pos < ble_len);
+        assert(ble_pos > 0);
         ble_buf[ble_pos++] = jpeg_buf[i];
     }
+    PRINTF("\r\n");
 }
 
 void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
 {
     // buffer storing RGB data from from the camera, used by the JPEG library
     jojpeg_t ctx;
-    uint8_t rgb_buf[OV5640_WIDTH * 16 * 3];
+    uint8_t rgb_buf[OV5640_WIDTH * 8 * 3];
+
+    LOG("start");
 
     // ask the FPGA to start a camera capture, and read the data later.
     fpga_camera_capture();
@@ -126,8 +134,11 @@ void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
         // get a buffer-ful of RGB data from the camera (via the FPGA)
         fpga_capture_read(rgb_buf, sizeof rgb_buf);
 
+        total_decoded += sizeof rgb_buf;
+        LOG("total_decoded=%d", total_decoded);
+
         // enqueue the conversion, letting the callback flush the data over bluetooth
-    } while (jojpeg_append_16_rows(&ctx, rgb_buf, sizeof rgb_buf));
+    } while (jojpeg_append_16_rows(&ctx, rgb_buf, sizeof rgb_buf * 2));
 
     // the callback sets the ble_flag to BLE_MIDDLE when run, instead, here, we want
     // it to be the end packet, unless the callback never ran, which means we have
