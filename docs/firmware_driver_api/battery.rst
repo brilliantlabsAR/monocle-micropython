@@ -1,4 +1,0 @@
-battery
--------
-
-.. doxygengroup:: battery

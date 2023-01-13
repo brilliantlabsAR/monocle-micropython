@@ -1,4 +1,0 @@
-ble
----
-
-.. doxygengroup:: ble

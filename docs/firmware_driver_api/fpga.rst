@@ -1,4 +1,0 @@
-fpga
-----
-
-.. doxygengroup:: fpga

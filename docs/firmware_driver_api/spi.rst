@@ -1,4 +1,0 @@
-spi
----
-
-.. doxygengroup:: spi

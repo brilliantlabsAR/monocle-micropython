@@ -1,4 +1,0 @@
-dfu
----
-
-.. doxygengroup:: dfu

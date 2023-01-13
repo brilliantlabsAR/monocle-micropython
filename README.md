@@ -1,11 +1,13 @@
 # MicroPython-based Monocle Firmware
 
+Docs: <https://docs.brilliantmonocle.com/>
+
 This is a port of MicroPython for running in the Nordic nRF51832 chip inside the Monocle.
 
 It also cointains drivers for controlling the rest of the circuit,
 some of which are directly accessible from python for driving the Monocle.
 
-To drive the Monocle, a Bluetooth serial service (RFCOMM) is broadcasted.
+To drive the Monocle, a Bluetooth Low Energy Nordic UART Service (BLE-NUS) is broadcasted.
 
 The `serial_console.py` script permits to connect to it from the local computer.
 A working [bleak](https://bleak.readthedocs.io/en/latest/) is required for it.
@@ -46,36 +48,14 @@ brew install arm-none-eabi-gcc arm-none-eabi-binutils arm-none-eabi-newlib gdb-m
 
 Flashing to the Monocle
 -----------------------
-The devkit can be flashed through the SWD debugger interface with a dongle such as [st-link/v2][1] or [J-Link][2].
+The monocle can be flashed through the SWD debugger interface with a dongle such as [st-link/v2][1] or [J-Link][2].
 
 [1]: https://www.adafruit.com/product/2548
 [2]: https://www.adafruit.com/product/3571
 
 The connection to the Monocle board is as follow:
 
-```
-┌─────────────────────────────────┐
-│ () ┌───────────────────────┐ () │
-│    │  o o o o o o o o o o  │    │
-│    │  o o o o o │ o o o o  │    │
-│    └────────│─│ │───│──────┘    │
-│             │ │ │   └─────────────── RESET
-│        ┌────│ │ └─────────────────── GND    st-link
-│        │    │ └───────────────────── SWCLK
-│        │    └─────────────────────── SWDIO
-│        │               │        │
-│        │               │        │
-│        │               │        │
-│        └───────────────┘        │
-│                                 │
-│            |||||||              │
-│                                 │
-│             ┌──  ──┐            │
-│             └──────┘            │
-│                 └─────────────────── SEGGER J-Link
-│                                 │
-:                                 :
-```
+![image of the monocle connected to the monocle](https://docs.brilliantmonocle.com/monocle/images/monocle-swd.png)
 
 Then, the flash command can be issued.
 
@@ -99,7 +79,6 @@ make flash_openocd_jlink
 # If using nrfjprog with a J-Link:
 make flash_nrfjprog_jlink
 ```
-
 
 Debugging the firmware with GDB
 -------------------------------
@@ -127,9 +106,14 @@ make gdb
 Connecting to the Monocle
 -------------------------
 A [MicroPython](https://micropython.org/) REPL is running on the Monocle.
-You can connect to it over the Bluetooth RFCOMM service.
+You can connect to it over the BLE-NUS.
 
 ### From a computer
+
+You may use <https://repl.brilliant.xyz/> which is a web-bluetooth
+implementation, for now only supported by Google Chrome.
+
+This is the official way to use the Monocle.
 
 A `serial_console.py` script is provided for connecting over Bluetooth.
 You can invoke it with `python3 serial_console.py` or:
@@ -146,7 +130,7 @@ You can then scan the existing devices with `bluetoothctl` or `sudo hcitool lesc
 
 ### From a phone
 
-You may use a RFCOMM serial console to connect to the shell.
+You may use a BLE-NUS serial console to connect to the shell.
 
 * Android: [Serial Bluetooth Terminal][5]
 * iOS: [Bluetooth Terminal][6]
