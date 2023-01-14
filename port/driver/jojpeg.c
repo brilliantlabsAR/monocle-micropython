@@ -193,8 +193,6 @@ static int jojpeg_process_du(jojpeg_t *ctx, float *CDU, int du_stride, float *fd
     const unsigned short EOB[2] = { HTAC[0x00][0], HTAC[0x00][1] };
     const unsigned short M16zeroes[2] = { HTAC[0xF0][0], HTAC[0xF0][1] };
 
-    LOG("");
-
     // DCT rows
     for (int i=0; i<du_stride*8; i+=du_stride) {
         jojpeg_dct(CDU+i, CDU+i+1, CDU+i+2, CDU+i+3, CDU+i+4, CDU+i+5, CDU+i+6, CDU+i+7);
@@ -269,46 +267,6 @@ static inline void jojpeg_encode_block(float *Y, float *U, float *V, int x, uint
     }
 }
 
-static inline void jojpeg_encode_row_subsample(jojpeg_t *ctx)
-{
-    for (int x = 0; x < ctx->width; x += 16) {
-        float Y[256], U[256], V[256];
-
-        jojpeg_encode_block(Y, U, V, x, 16, ctx);
-
-        ctx->dcy = jojpeg_process_du(ctx, Y+0, 16, ctx->fdtable_y, ctx->dcy, YDC_HT, YAC_HT);
-        ctx->dcy = jojpeg_process_du(ctx, Y+8, 16, ctx->fdtable_y, ctx->dcy, YDC_HT, YAC_HT);
-        ctx->dcy = jojpeg_process_du(ctx, Y+128, 16, ctx->fdtable_y, ctx->dcy, YDC_HT, YAC_HT);
-        ctx->dcy = jojpeg_process_du(ctx, Y+136, 16, ctx->fdtable_y, ctx->dcy, YDC_HT, YAC_HT);
-
-        // subsample U,V
-        float subU[64], subV[64];
-        for (int yy = 0, pos = 0; yy < 8; ++yy) {
-            for (int xx = 0; xx < 8; ++xx, ++pos) {
-                int j = yy*32 + xx*2;
-                subU[pos] = (U[j+0] + U[j+1] + U[j+16] + U[j+17]) * 0.25f;
-                subV[pos] = (V[j+0] + V[j+1] + V[j+16] + V[j+17]) * 0.25f;
-            }
-        }
-
-        ctx->dcu = jojpeg_process_du(ctx, subU, 8, ctx->fdtable_uv, ctx->dcu, UVDC_HT, UVAC_HT);
-        ctx->dcv = jojpeg_process_du(ctx, subV, 8, ctx->fdtable_uv, ctx->dcv, UVDC_HT, UVAC_HT);
-    }
-}
-
-static inline void jojpeg_encode_row_nosubsample(jojpeg_t *ctx)
-{
-    for (int x = 0; x < ctx->width; x += 8) {
-        float Y[64], U[64], V[64];
-
-        jojpeg_encode_block(Y, U, V, x, 8, ctx);
-
-        ctx->dcy = jojpeg_process_du(ctx, Y, 8, ctx->fdtable_y, ctx->dcy, YDC_HT, YAC_HT);
-        ctx->dcu = jojpeg_process_du(ctx, U, 8, ctx->fdtable_uv, ctx->dcu, UVDC_HT, UVAC_HT);
-        ctx->dcv = jojpeg_process_du(ctx, V, 8, ctx->fdtable_uv, ctx->dcv, UVDC_HT, UVAC_HT);
-    }
-}
-
 static void jojpeg_write_header(jojpeg_t *ctx, int quality)
 {
     static const unsigned char head0[] = {
@@ -318,7 +276,7 @@ static void jojpeg_write_header(jojpeg_t *ctx, int quality)
     };
     const unsigned char head1[] = {
         0xFF,0xC0,0,0x11,8,(ctx->height>>8),(unsigned char)(ctx->height&0xFF),(unsigned char)(ctx->width>>8),
-        (unsigned char)(ctx->width&0xFF),3,1,(unsigned char)(ctx->subsample?0x22:0x11),0,2,0x11,1,
+        (unsigned char)(ctx->width&0xFF),3,1,(unsigned char)(0x11),0,2,0x11,1,
         3,0x11,1,0xFF,0xC4,0x01,0xA2,0
     };
     static const unsigned char head2[] = {
@@ -372,16 +330,18 @@ bool jojpeg_append_16_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len)
     ctx->g = rgb_buf + (ctx->components > 1 ? 1 : 0);
     ctx->b = rgb_buf + (ctx->components > 1 ? 2 : 0);
 
-    // encode 16x16 or 8x8 macroblocks
-    if (ctx->subsample) {
-        jojpeg_encode_row_subsample(ctx);
-        ctx->height -= 16;
-        need_more_data = (ctx->height >= 16);
-    } else {
-        jojpeg_encode_row_nosubsample(ctx);
-        ctx->height -= 8;
-        need_more_data = (ctx->height >= 8);
+    // encode 8x8 macroblocks
+    for (int x = 0; x < ctx->width; x += 8) {
+        float Y[64], U[64], V[64];
+
+        jojpeg_encode_block(Y, U, V, x, 8, ctx);
+
+        ctx->dcy = jojpeg_process_du(ctx, Y, 8, ctx->fdtable_y, ctx->dcy, YDC_HT, YAC_HT);
+        ctx->dcu = jojpeg_process_du(ctx, U, 8, ctx->fdtable_uv, ctx->dcu, UVDC_HT, UVAC_HT);
+        ctx->dcv = jojpeg_process_du(ctx, V, 8, ctx->fdtable_uv, ctx->dcv, UVDC_HT, UVAC_HT);
     }
+    ctx->height -= 8;
+    need_more_data = (ctx->height >= 8);
 
     // do the bit alignment of the EOI marker
     static const unsigned short fill_bits[] = {0x7F, 7};
@@ -399,7 +359,6 @@ void jojpeg_start(jojpeg_t *ctx, size_t width, size_t height, uint8_t components
     assert(quality <= 100);
     assert(components == 1 || components == 3 || components == 4);
 
-    ctx->subsample = (quality <= 90);
     ctx->width = width;
     ctx->height = height;
     ctx->components = components;

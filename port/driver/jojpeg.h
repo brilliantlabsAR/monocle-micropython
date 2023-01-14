@@ -24,7 +24,6 @@ typedef struct {
     // parameters
     uint16_t height, width;
     uint8_t components;
-    bool subsample;
 
     // algorithm context
     uint8_t const *r, *g, *b;
