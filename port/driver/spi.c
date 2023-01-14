@@ -125,7 +125,7 @@ static void spi_init_instance(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin
         sck_pin, mosi_pin, miso_pin, NRFX_SPIM_PIN_NOT_USED
     );
 
-    config.frequency = NRF_SPIM_FREQ_1M;
+    config.frequency = NRF_SPIM_FREQ_8M;
     config.mode      = NRF_SPIM_MODE_3;
     config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
 

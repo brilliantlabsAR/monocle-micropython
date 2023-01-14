@@ -89,9 +89,8 @@ void data_flush_ble_packet(void)
 
 void jojpeg_write(uint8_t const *jpeg_buf, size_t jpeg_len)
 {
-    LOG("jpeg_len=%d", jpeg_len);
+    PRINTF(".");
     for (size_t i = 0; i < jpeg_len; i++) {
-        PRINTF(".");
         if (ble_pos == ble_len) {
             data_flush_ble_packet();
         }
@@ -99,7 +98,6 @@ void jojpeg_write(uint8_t const *jpeg_buf, size_t jpeg_len)
         assert(ble_pos > 0);
         ble_buf[ble_pos++] = jpeg_buf[i];
     }
-    PRINTF("\r\n");
 }
 
 void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
@@ -135,7 +133,7 @@ void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
         fpga_capture_read(rgb_buf, sizeof rgb_buf);
 
         total_decoded += sizeof rgb_buf;
-        LOG("total_decoded=%d", total_decoded);
+        LOG("total_decoded=%d capture_status=0x%04X", total_decoded, fpga_capture_get_status());
 
         // enqueue the conversion, letting the callback flush the data over bluetooth
     } while (jojpeg_append_16_rows(&ctx, rgb_buf, sizeof rgb_buf * 2));

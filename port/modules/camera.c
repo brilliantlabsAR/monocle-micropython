@@ -51,7 +51,7 @@ STATIC mp_obj_t camera_capture(void)
     LOG("fpga_camera_start");
     fpga_camera_start();
     LOG("bluetooth_data_camera_capture");
-    bluetooth_data_camera_capture("camera_shot.jpg", 95);
+    bluetooth_data_camera_capture("camera_shot.jpg", 100);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(camera_capture_obj, &camera_capture);

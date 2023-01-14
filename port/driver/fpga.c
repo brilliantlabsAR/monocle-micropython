@@ -199,7 +199,7 @@ void fpga_graphics_write_data(uint8_t *buf, size_t len)
 
 #define FPGA_CMD_CAPTURE 0x50
 
-static uint16_t fpga_capture_get_status(void)
+uint16_t fpga_capture_get_status(void)
 {
     uint8_t buf[] = { 0x00, 0x00 };
 
@@ -209,13 +209,21 @@ static uint16_t fpga_capture_get_status(void)
 
 static void fpga_capture_get_data(uint8_t *buf, size_t len)
 {
-    PRINTF(".");
     fpga_cmd_read(FPGA_CMD_CAPTURE, 0x10, buf, len);
+    for (size_t i = 0; i < len; i++)
+        PRINTF("%02X", buf[i]);
+    PRINTF("\r\n");
 }
 
 size_t fpga_capture_read(uint8_t *buf, size_t len)
 {
     LOG("len=%d", len);
+
+    for (size_t i = 0; i < len; i++) {
+        buf[i] = (i % 4 == 0) ? 0xFF : 0x00;
+    }
+    return;
+
     for (size_t n, i = 0; i < len; i++) {
 
         // the FPGA stores the length to read in a dedicated register

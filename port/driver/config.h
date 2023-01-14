@@ -79,7 +79,7 @@
 
 // SPI
 
-#define SPI_MAX_READ_LEN            255  // TODO: find the appropriate size
+#define SPI_MAX_READ_LEN            255
 
 // JOJPEG
 
