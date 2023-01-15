@@ -33,8 +33,6 @@
 #include <assert.h>
 #include <string.h>
 
-#include "nrfx_log.h"
-
 #include "driver/jojpeg.h"
 
 static const unsigned char jojpeg_zigzag[] = {
@@ -322,8 +320,6 @@ bool jojpeg_append_8_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len)
 {
     assert(rgb_len == ctx->width * 8 * ctx->components);
 
-    LOG("rgb_len=%d", rgb_len);
-
     // save the r/g/b components along with their offset
     ctx->r = rgb_buf + (ctx->components > 1 ? 0 : 0);
     ctx->g = rgb_buf + (ctx->components > 1 ? 1 : 0);
@@ -343,16 +339,16 @@ bool jojpeg_append_8_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len)
         ctx->dcv = jojpeg_process_du(ctx, V, 8, ctx->fdtable_uv, ctx->dcv, UVDC_HT, UVAC_HT);
     }
 
-    // do the bit alignment of the EOI marker
-    static const unsigned short fill_bits[] = {0x7F, 7};
-    jojpeg_write_bits(ctx, fill_bits);
-    jojpeg_putc(0xFF);
-    jojpeg_putc(0xD9);
-
     if (ctx->height > 8) {
         ctx->height -= 8;
         return true;
     } else {
+        // do the bit alignment of the EOI marker
+        static const unsigned short fill_bits[] = {0x7F, 7};
+        jojpeg_write_bits(ctx, fill_bits);
+        jojpeg_putc(0xFF);
+        jojpeg_putc(0xD9);
+
         return false;
     }
 }

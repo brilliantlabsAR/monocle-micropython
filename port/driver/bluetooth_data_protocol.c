@@ -115,7 +115,7 @@ void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
 
     // TODO: remove this from the protocol? Set to 0 for now>
     // Insert the filesize
-    ble_pos += data_encode_u32(ble_buf + ble_pos, 0);
+    ble_pos += data_encode_u32(ble_buf + ble_pos, 674075);
 
     // Add the file name
     ble_pos += data_encode_str(ble_buf + ble_pos, filename);
@@ -128,8 +128,7 @@ void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
         fpga_capture_read(rgb_buf, sizeof rgb_buf);
 
         LOG("height=%d", ctx.height);
-
-        // enqueue the conversion, letting the callback flush the data over bluetooth
+    // enqueue the conversion, letting the callback flush the data over bluetooth
     } while (jojpeg_append_8_rows(&ctx, rgb_buf, sizeof rgb_buf));
 
     // the callback sets the ble_flag to BLE_MIDDLE when run, instead, here, we want
