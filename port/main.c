@@ -41,6 +41,7 @@
 #include "nrfx_log.h"
 #include "nrf_sdm.h"
 #include "nrfx_twi.h"
+#include "nrfx_systick.h"
 
 #include "driver/battery.h"
 #include "driver/bluetooth_data_protocol.h"
@@ -73,31 +74,37 @@ extern uint32_t _heap_start;
 /** This is the end of the heap as set in the nrf52832.ld file */
 extern uint32_t _heap_end;
 
-/** Help text that is shown with the help() command.  */
-const char help_text[] = {
-    "Welcome to MicroPython!\n\n"
-    "For micropython help, visit: https://docs.micropython.org\n"
-    "For hardware help, visit: https://docs.siliconwitchery.com\n\n"
-    "Control commands:\n"
-    "  Ctrl-A - enter raw REPL mode\n"
-    "  Ctrl-B - enter normal REPL mode\n"
-    "  CTRL-C - interrupt a running program\n"
-    "  Ctrl-D - reset the device\n"
-    "  Ctrl-E - enter paste mode\n\n"
-    "To list available modules, type help('modules')\n"
-    "For details on a specific module, import it, and then type help(module_name)\n"};
+/**
+ * @brief Garbage collection route for nRF.
+ */
+void gc_collect(void)
+{
+    // start the GC
+    gc_collect_start();
+
+    // Get stack pointer
+    uintptr_t sp;
+    __asm__("mov %0, sp\n" : "=r"(sp));
+
+    // Trace the stack, including the registers
+    // (since they live on the stack in this function)
+    gc_collect_root((void **)sp, ((uint32_t)&_stack_top - sp) / sizeof(uint32_t));
+
+    // end the GC
+    gc_collect_end();
+}
 
 /**
- * Called if an exception is raised outside all C exception-catching handlers.
+ * @brief Called if an exception is raised outside all C exception-catching handlers.
  */
-_Noreturn void nlr_jump_fail(void *val)
+NORETURN void nlr_jump_fail(void *val)
 {
     (void)val;
     assert(!"exception raised without any handlers for it");
 }
 
 /**
- * Main application called from Reset_Handler().
+ * @brief Main application called from Reset_Handler().
  */
 int main(void)
 {
@@ -121,10 +128,15 @@ int main(void)
 
     LOG("MAX77654");
     max77654_init();
+    nrfx_systick_delay_ms(1);
     max77654_rail_1v2(true);
+    nrfx_systick_delay_ms(1);
     max77654_rail_1v8(true);
+    nrfx_systick_delay_ms(1);
     max77654_rail_2v7(true);
+    nrfx_systick_delay_ms(100); // wait that all the chips start
     max77654_rail_10v(true);
+    nrfx_systick_delay_ms(10);
 
     LOG("SPI");
     spi_init();
@@ -184,31 +196,11 @@ int main(void)
 }
 
 /**
- * If an assert is triggered, the firmware reboots into bootloader mode
+ * @brief If an assert is triggered, the firmware reboots into bootloader mode
  * pending for a bugfix to be flashed, then finally booting to firmware.
  */
-_Noreturn void __assert_func(const char *file, int line, const char *func, const char *expr)
+NORETURN void __assert_func(const char *file, int line, const char *func, const char *expr)
 {
     LOG("%s:%d: %s: %s", file, line, func, expr);
     for (;;) __asm__("bkpt");
-}
-
-/**
- * Garbage collection route for nRF.
- */
-void gc_collect(void)
-{
-    // start the GC
-    gc_collect_start();
-
-    // Get stack pointer
-    uintptr_t sp;
-    __asm__("mov %0, sp\n" : "=r"(sp));
-
-    // Trace the stack, including the registers
-    // (since they live on the stack in this function)
-    gc_collect_root((void **)sp, ((uint32_t)&_stack_top - sp) / sizeof(uint32_t));
-
-    // end the GC
-    gc_collect_end();
 }
