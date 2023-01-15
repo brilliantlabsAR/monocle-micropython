@@ -159,8 +159,6 @@ void i2c_init_instance(nrfx_twi_t twi, uint8_t scl_pin, uint8_t sda_pin)
 // TODO: validate that 400kH speed works & increase to that
 void i2c_init(void)
 {
-    DRIVER("I2C");
-
     i2c_init_instance(i2c0, I2C0_SCL_PIN, I2C0_SDA_PIN);
     i2c_init_instance(i2c1, I2C1_SCL_PIN, I2C1_SDA_PIN);
 }

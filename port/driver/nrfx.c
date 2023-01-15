@@ -88,8 +88,6 @@ void nrfx_gpio_fpga(void)
 
 void nrfx_init(void)
 {
-    DRIVER("NRFX");
-
     uint32_t err;
 
     // NRFX SysTick

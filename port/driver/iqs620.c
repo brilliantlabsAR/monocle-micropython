@@ -425,11 +425,6 @@ uint16_t iqs620_get_count(uint8_t channel)
  */
 void iqs620_init(void)
 {
-    DRIVER("IQS620");
-    i2c_init();
-    nrfx_init();
-    timer_init();
-
     uint32_t err;
 
     // Setup the GPIO pin for touch state interrupts.

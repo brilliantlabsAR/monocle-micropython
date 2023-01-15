@@ -503,13 +503,8 @@ void ov5640_focus_init(void)
  */
 void ov5640_init(void)
 {
-    DRIVER("OV5640");
-    max77654_init();
     max77654_rail_1v8(true);
     max77654_rail_2v7(true);
-    fpga_init();
-    i2c_init();
-    timer_init();
 
     // enable 24mhz pixel clock to the ov5640, required for i²c configuration
     fpga_camera_on();

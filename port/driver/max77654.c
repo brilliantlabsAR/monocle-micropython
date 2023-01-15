@@ -619,11 +619,6 @@ void max77564_factory_ship_mode(void)
  */
 void max77654_init(void)
 {
-    DRIVER("MAX77654");
-    nrfx_init();
-    i2c_init();
-    timer_init();
-
     // verify MAX77654 on I2C bus by attempting to read Chip ID register
     ASSERT(max77654_get_cid() == MAX77654_CID_EXPECTED);
 

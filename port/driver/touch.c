@@ -347,7 +347,4 @@ void touch_callback(touch_state_t trigger)
  */
 void touch_init(void)
 {
-    DRIVER("TOUCH");
-    iqs620_init();
-    timer_init();
 }

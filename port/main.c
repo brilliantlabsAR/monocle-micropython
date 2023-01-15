@@ -40,10 +40,25 @@
 
 #include "nrfx_log.h"
 #include "nrf_sdm.h"
+#include "nrfx_twi.h"
 
-#include "driver/bluetooth_low_energy.h"
+#include "driver/battery.h"
 #include "driver/bluetooth_data_protocol.h"
+#include "driver/bluetooth_low_energy.h"
+#include "driver/config.h"
+#include "driver/dfu.h"
+#include "driver/ecx336cn.h"
+#include "driver/flash.h"
 #include "driver/fpga.h"
+#include "driver/i2c.h"
+#include "driver/iqs620.h"
+#include "driver/jojpeg.h"
+#include "driver/max77654.h"
+#include "driver/nrfx.h"
+#include "driver/ov5640.h"
+#include "driver/spi.h"
+#include "driver/timer.h"
+#include "driver/touch.h"
 
 /** Variable that holds the Softdevice NVIC state.  */
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
@@ -93,8 +108,34 @@ int main(void)
     LOG("Monocle firmware "BUILD_VERSION" "GIT_COMMIT);
 
     // Initialise drivers
+
+    LOG("BLE");
     ble_init();
+
+    LOG("NRFX");
+    nrfx_init();
+
+    LOG("I2C");
+    i2c_init();
+
+    LOG("TIMER");
+    timer_init();
+
+    LOG("MAX77654");
+    max77654_init();
+    max77654_rail_1v2(true);
+    max77654_rail_1v8(true);
+    max77654_rail_2v7(true);
+    max77654_rail_10v(true);
+
+    LOG("SPI");
+    spi_init();
+
+    LOG("FPGA");
     fpga_init();
+
+    LOG("ECX336CN");
+    ecx336cn_init();
 
     // Initialise the stack pointer for the main thread
     mp_stack_set_top(&_stack_top);

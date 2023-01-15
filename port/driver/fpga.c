@@ -245,14 +245,10 @@ size_t fpga_capture_read(uint8_t *buf, size_t len)
  */
 void fpga_init(void)
 {
-    DRIVER("FPGA");
     fpga_check_pins("before driver setup");
-    max77654_init();
     max77654_rail_1v2(true);
     max77654_rail_1v8(true);
     max77654_rail_2v7(true);
-    spi_init();
-    timer_init();
     fpga_check_pins("started dependencies");
 
     // Set the FPGA to boot from its internal flash.

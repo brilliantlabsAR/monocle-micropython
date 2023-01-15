@@ -173,9 +173,6 @@ void battery_timer_handler(void)
  */
 void battery_init(void)
 {
-    DRIVER("BATTERY");
-    nrfx_init();
-
     uint32_t err;
     nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(BATTERY_ADC_PIN, 0);
 

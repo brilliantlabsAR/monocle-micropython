@@ -206,13 +206,8 @@ void ecx336cn_awake(void)
  */
 void ecx336cn_init(void)
 {
-    DRIVER("ECX336CN");
-    max77654_init();
     max77654_rail_1v8(true);
     max77654_rail_10v(true);
-    fpga_init();
-    spi_init();
-    timer_init();
 
     // power-on sequence, see Datasheet section 9
     // 1ms after 1.8V on, device has finished initializing

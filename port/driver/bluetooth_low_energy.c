@@ -702,8 +702,6 @@ void SWI2_IRQHandler(void)
  */
 void ble_init(void)
 {
-    DRIVER("BLE");
-
     // Error code variable
     uint32_t err;
 

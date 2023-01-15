@@ -175,11 +175,7 @@ uint8_t flash_get_device_id(void)
  */
 void flash_init(void)
 {
-    DRIVER("FLASH");
-    max77654_init();
     max77654_rail_1v8(true);
-    spi_init();
-    timer_init();
 
     LOG("flash_device_id=0x%02X", flash_get_device_id());
 }

@@ -127,9 +127,6 @@ void timer_init(void)
     static nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG;
     uint32_t err;
 
-    DRIVER("TIMER");
-    nrfx_init();
-
     // Prepare the configuration structure.
     timer_config.frequency = NRF_TIMER_FREQ_125kHz;
     timer_config.mode = NRF_TIMER_MODE_TIMER;

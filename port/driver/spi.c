@@ -144,8 +144,6 @@ static void spi_init_instance(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin
  */
 void spi_init(void)
 {
-    DRIVER("SPI");
-
     spi_init_instance(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
 
     // configure CS pin for the Display (for active low)
