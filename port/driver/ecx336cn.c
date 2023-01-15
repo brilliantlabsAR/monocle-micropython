@@ -206,9 +206,6 @@ void ecx336cn_awake(void)
  */
 void ecx336cn_init(void)
 {
-    max77654_rail_1v8(true);
-    max77654_rail_10v(true);
-
     // power-on sequence, see Datasheet section 9
     // 1ms after 1.8V on, device has finished initializing
     nrfx_systick_delay_ms(100);

@@ -57,7 +57,6 @@
 #include "driver/ov5640.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
-#include "driver/touch.h"
 
 /** Variable that holds the Softdevice NVIC state.  */
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};

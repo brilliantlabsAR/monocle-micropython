@@ -46,16 +46,18 @@
 /** Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go. */
 #define RING_BUFFER_LENGTH (1024 + 45)
 
+// Reverse the byte order to be easier to declare.
 #define UUID128(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) { .uuid128 = { \
     0x##p, 0x##o, 0x##n, 0x##m, 0x##l, 0x##k, 0x##j, 0x##i, \
     0x##h, 0x##g, 0x##f, 0x##e, 0x##d, 0x##c, 0x##b, 0x##a, \
 } }
 
+// The two services involved.
 ble_uuid128_t ble_nus_uuid128 = UUID128(6E,40,00,00, B5,A3, F3,93, E0,A9, E5,0E,24,DC,CA,9E);
 ble_uuid128_t ble_raw_uuid128 = UUID128(E5,70,00,00, 7B,AC, 42,9A, B4,CE, 57,FF,90,0F,47,9D);
 
 /**
- * Holds the handles for the conenction and characteristics.
+ * @brief Holds the handles for the conenction and characteristics.
  * Convenient for use in interrupts, to get all service-specific data
  * we need to carry around.
  */
@@ -83,11 +85,8 @@ static uint32_t ram_start = (uint32_t)&_ram_start;
 /** MTU length obtained by the negotiation with the currently connected peer. */
 uint16_t ble_negotiated_mtu;
 
-
-// Ring buffer library
-
 /**
- * Ring buffers for the repl rx and tx data which goes over BLE.
+ * @brief Ring buffers for the repl rx and tx data which goes over BLE.
  */
 typedef struct {
     uint8_t buffer[RING_BUFFER_LENGTH];
@@ -124,8 +123,6 @@ static inline uint8_t ring_pop(ring_buf_t *ring)
             ring->head = 0;
     return byte;
 }
-
-// Nordic UART Service service functions
 
 /**
  * Send a buffer out, retrying continuously until it goes to completion (with success or failure).
@@ -366,6 +363,9 @@ void ble_raw_tx(uint8_t const *buf, uint16_t len)
     ble_tx(&ble_raw_service, buf, len);
 }
 
+/**
+ * @brief setup the service UUID for the raw service used for media transfer.
+ */
 void ble_configure_raw_service(ble_uuid_t *service_uuid)
 {
     uint32_t err;
@@ -392,7 +392,7 @@ void ble_configure_raw_service(ble_uuid_t *service_uuid)
 }
 
 /**
- * Setup BLE parameters adapted to this driver.
+ * @brief Setup BLE parameters adapted to this driver.
  */
 void ble_configure_softdevice(void)
 {
@@ -446,7 +446,7 @@ void ble_configure_softdevice(void)
 }
 
 /**
- * Softdevice assert handler. Called whenever softdevice crashes.
+ * @brief Softdevice assert handler. Called whenever softdevice crashes.
  */
 static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
 {
@@ -454,7 +454,7 @@ static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
 }
 
 /**
- * BLE event handler.
+ * @brief BLE event handler.
  */
 void SWI2_IRQHandler(void)
 {
@@ -696,7 +696,7 @@ void SWI2_IRQHandler(void)
 }
 
 /**
- * Initialise the bluetooth low energy driver.
+ * @brief Initialise the bluetooth low energy driver.
  * Initialises the softdevice and Bluetooth functionality.
  * It features a single GATT profile for UART communication, used by the REPL.
  */

@@ -158,7 +158,7 @@
 
 // values
 
-#define IQS620_ID_VALUE                         0x410D82
+#define IQS620_ID_VALUE                         0x41
 
 // default is 0x10 = target of 512.
 // target = 0x1E * 32 = 960, gives good results on MK11 Flex through
@@ -216,6 +216,14 @@ static void iqs620_read_reg(uint8_t addr, uint8_t *buf, unsigned len)
     // I2C read the data after the write.
     ok = i2c_read(IQS620_I2C, IQS620_ADDR, buf, len);
     ASSERT(ok);
+}
+
+static uint8_t iqs620_read_u8(uint8_t addr)
+{
+    uint8_t val;
+
+    iqs620_read_reg(addr, &val, 1);
+    return val;
 }
 
 /**
@@ -393,17 +401,6 @@ static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_
 #undef STATE
 
 /**
- * Get the product number ID.
- */
-uint32_t iqs620_get_id(void)
-{
-    uint8_t data[3] = {0};
-
-    iqs620_read_reg(IQS620_ID, data, sizeof(data));
-    return (data[0] << 16) | (data[1] << 8) | (data[2] << 0);
-}
-
-/**
  * Get the raw counts for tuning thresholds.
  * @param channel Sensor channel number to read the data from
  */
@@ -453,7 +450,7 @@ void iqs620_init(void)
     nrfx_systick_delay_ms(10);
 
     // Check that the chip responds correctly.
-    ASSERT(iqs620_get_id() == IQS620_ID_VALUE);
+    ASSERT(iqs620_read_u8(IQS620_ID) == IQS620_ID_VALUE);
 
     // Enable the TOUCH_RDY event after the reset.
     nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);

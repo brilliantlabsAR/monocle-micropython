@@ -56,22 +56,12 @@ static volatile bool m_xfer_nack = false;
  */
 static inline bool i2c_filter_error(char const *func, nrfx_err_t err)
 {
-    switch (err)
-    {
-    case NRFX_SUCCESS:
-    {
+    if (err == NRFX_SUCCESS)
         return true;
-    }
-    case NRFX_ERROR_DRV_TWI_ERR_ANACK:
-    {
+    if (err == NRFX_ERROR_DRV_TWI_ERR_ANACK)
         return false;
-    }
-    default:
-    {
-        LOG("%s, %s", func, NRFX_LOG_ERROR_STRING_GET(err));
-        return false;
-    }
-    }
+    LOG("%s, %s", func, NRFX_LOG_ERROR_STRING_GET(err));
+    return false;
 }
 
 /**
@@ -114,30 +104,39 @@ bool i2c_read(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz)
     return i2c_filter_error(__func__, nrfx_twi_xfer(&twi, &xfer, 0));
 }
 
-/**
- * For debugging, scan the twi and expect MBR3@55=0x37 & OV5640@60=0x3C.
- * @return True if all expected addresses were found.
- */
-static void i2c_scan(nrfx_twi_t twi)
+static void i2c_scan_instance(nrfx_twi_t twi)
 {
     uint8_t addr;
     uint8_t sample_data;
     bool detected_device = false;
 
-    LOG("scanning I2C%d", twi.drv_inst_idx);
+    // send an empty packet for every valid bus address
     for (addr = 1; addr <= 127; addr++)
     {
         if (i2c_read(twi, addr, &sample_data, sizeof(sample_data)))
         {
             detected_device = true;
-            LOG("I2C device found: addr=0x%02X", addr);
+            LOG("I2C device found on I2C%d: addr=0x%02X", twi.drv_inst_idx, addr);
         }
     }
+
+    // better tell explicitly than nothing is found rather than staying silent
     if (!detected_device)
-        LOG("No I2C device found");
+    {
+        LOG("No I2C device found on I2C%d", twi.drv_inst_idx);
+    }
 }
 
-void i2c_init_instance(nrfx_twi_t twi, uint8_t scl_pin, uint8_t sda_pin)
+/**
+ * Perform an I2C scan of all interfaces and log the result.
+ */
+void i2c_scan(void)
+{
+    i2c_scan_instance(i2c0);
+    i2c_scan_instance(i2c1);
+}
+
+static void i2c_init_instance(nrfx_twi_t twi, uint8_t scl_pin, uint8_t sda_pin)
 {
     uint32_t err;
     nrfx_twi_config_t config = {
@@ -150,7 +149,6 @@ void i2c_init_instance(nrfx_twi_t twi, uint8_t scl_pin, uint8_t sda_pin)
     err = nrfx_twi_init(&twi, &config, NULL, NULL);
     ASSERT(err == NRFX_SUCCESS);
     nrfx_twi_enable(&twi);
-    i2c_scan(twi);
 }
 
 /**

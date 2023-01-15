@@ -4,6 +4,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2018 Glenn Ruben Bakke
+ * Copyright (c) 2022-2023 Brilliant Labs Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -54,5 +55,7 @@ static inline void LOG_NONE(void *v, ...) { (void)v; }
 #define NRFX_LOG_HEXDUMP_WARNING(p_memory, length)
 #define NRFX_LOG_HEXDUMP_INFO(p_memory, length)
 #define NRFX_LOG_HEXDUMP_DEBUG(p_memory, length)
+
+const char *nrfx_error_code_lookup(uint32_t err_code);
 
 #endif
