@@ -53,12 +53,12 @@ CFLAGS += -mthumb
 CFLAGS += -mabi=aapcs
 CFLAGS += -fsingle-precision-constant
 CFLAGS += -Wdouble-promotion
+CFLAGS += -Wall
 CFLAGS += -mtune=cortex-m4
 CFLAGS += -mcpu=cortex-m4
 CFLAGS += -mfpu=fpv4-sp-d16
 CFLAGS += -mfloat-abi=hard
 CFLAGS += -ffunction-sections -fdata-sections
-CFLAGS += -Wall
 CFLAGS += -ansi
 CFLAGS += -std=c11
 CFLAGS += -nostdlib
@@ -109,13 +109,13 @@ DEF += -DCONFIG_NFCT_PINS_AS_GPIOS
 
 SRC += help.c
 SRC += main.c
+SRC += nrfx_log.c
 SRC += mphalport.c
 SRC += nrf$(NRF).c
 
 SRC += driver/battery.c
 SRC += driver/bluetooth_data_protocol.c
 SRC += driver/bluetooth_low_energy.c
-SRC += driver/dfu.c
 SRC += driver/ecx336cn.c
 SRC += driver/flash.c
 SRC += driver/fpga.c
@@ -127,7 +127,6 @@ SRC += driver/nrfx.c
 SRC += driver/ov5640.c
 SRC += driver/spi.c
 SRC += driver/timer.c
-SRC += driver/touch.c
 
 SRC += modules/camera.c
 SRC += modules/display.c

@@ -38,6 +38,8 @@
 
 #define ASSERT  NRFX_ASSERT
 
+#define BATTERY_MEAN_WINDOW 20
+
 /*
  * Lithium battery discharge curve, modeled from Grepow data for 1C discharge rate
  * Requirement: x-values (i.e. voltage) must be stricly increasing
@@ -83,7 +85,7 @@ static float battery_saadc_to_voltage(nrf_saadc_value_t result)
 }
 
 /**
- * Interpolate the voltage level against the discharge curve to estimate the percentage.
+ * @brief Interpolate the voltage level against the discharge curve to estimate the percentage.
  * @param voltage Voltage measured from the ADC.
  * @return Remaining battery percentage value [0..100].
  */
@@ -110,7 +112,7 @@ static uint8_t battery_voltage_to_percent(float voltage)
 }
 
 /**
- * Get current, precomputed state-of-charge of the battery.
+ * @brief Get current, precomputed state-of-charge of the battery.
  * @return Remaining percentage of the battery.
  */
 uint8_t battery_get_percent(void)
@@ -120,31 +122,27 @@ uint8_t battery_get_percent(void)
 }
 
 /**
- * Compute the mean of the 10 last elements using the travelling mean method:
+ * @brief Compute the mean of the 10 last elements using the travelling mean method:
  * an incremental averaging that includes a weighted trace of the last N elements
  * in addition to the latest value. The max weight is 10: 1/10 of modifications max
  * every time this function is called.
  * @param new The new value to blend into the mean.
  * @return The newly computed mean value.
  */
-float battery_travelling_mean(float new)
+static float battery_travelling_mean(float new)
 {
     static float mean = 0;
     static float count = 0;
 
     mean = (mean * count + new * 1) / (count + 1);
-    count = (count == 10) ? (10) : (count + 1);
+    count = (count == BATTERY_MEAN_WINDOW) ? (BATTERY_MEAN_WINDOW) : (count + 1);
     return mean;
 }
 
-void battery_timer_handler(void)
+static nrf_saadc_value_t battery_get_saadc(void)
 {
-    uint32_t err;
     nrf_saadc_value_t result;
-
-    // Reduce the frequency at which this timer is called.
-    if (++battery_timer_counter != 0) // letting it overflow
-        return;
+    uint32_t err;
 
     // Configure first ADC channel with low setup (enough for battery sensing)
     err = nrfx_saadc_simple_mode_set(1u << 0, BATTERY_ADC_RESOLUTION,
@@ -159,16 +157,36 @@ void battery_timer_handler(void)
     err = nrfx_saadc_mode_trigger();
     NRFX_ASSERT(err == NRFX_SUCCESS);
 
-    // Compute the voltage, then percentage
-    float v_inst = battery_saadc_to_voltage(result);
-    float v_mean = battery_travelling_mean(v_inst);
-    battery_percent = battery_voltage_to_percent(v_mean);
-    //LOG("%d", (int)(v_inst * 1000)); // for battery_discharge_curve.awk
-    //LOG("v_inst=%d v_mean=%d %d%%", (int)(v_inst * 1000), (int)(v_mean * 1000), battery_percent);
+    return result;
 }
 
 /**
- * Initialize the ADC.
+ * Perform an
+ */
+void battery_level_timer(void)
+{
+    // Reduce the frequency at which this timer is called.
+    if (++battery_timer_counter != 0) // letting it overflow
+        return;
+
+    // Compute the voltage, then percentage
+    float v_inst = battery_saadc_to_voltage(battery_get_saadc());
+    float v_mean = battery_travelling_mean(v_inst);
+    battery_percent = battery_voltage_to_percent(v_mean);
+
+    // For battery_discharge_curve.awk
+    //LOG("%d v_mean=%d %d%%", (int)(v_inst * 1000), (int)(v_mean * 1000), battery_percent);
+
+    // If the battery is too low, reset the device,
+    // letting the power-on init handle low-power condition.
+    if (battery_percent == 0) {
+        LOG("battery low! resetting the device then sleeping");
+        NVIC_SystemReset();
+    }
+}
+
+/**
+ * @brief Initialize the ADC.
  * This includes setting up buffering.
  */
 void battery_init(void)
@@ -184,6 +202,6 @@ void battery_init(void)
     err = nrfx_saadc_channel_config(&channel);
     ASSERT(err == NRFX_SUCCESS);
 
-    // Add a low-frequency house-cleaning timer
-    timer_add_handler(&battery_timer_handler);
+    // Add a timer handler for periodically updating the battery level value.
+    timer_add_handler(&battery_level_timer);
 }

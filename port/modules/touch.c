@@ -21,6 +21,11 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
 #include "py/obj.h"
 #include "py/qstr.h"
 #include "py/runtime.h"
@@ -28,10 +33,12 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
+#include "driver/config.h"
 #include "driver/i2c.h"
+#include "driver/iqs620.h"
 #include "driver/timer.h"
-#include "driver/touch.h"
 
+#define ASSERT  NRFX_ASSERT
 #define LEN(x) (sizeof(x) / sizeof*(x))
 
 enum {
@@ -43,18 +50,366 @@ enum {
     TOUCH_ACTION_NUM,
 };
 
+/** Number of touch buttons supported by that board */
 #define TOUCH_BUTTON_NUM 2
 
-mp_obj_t callback_list[TOUCH_BUTTON_NUM][TOUCH_ACTION_NUM];
+/** Timeout for button press (ticks) = 0.5 s */
+#define TOUCH_DELAY_SHORT_MS        500000
+
+/** Timeout for long button press (ticks) = 9.5 s + PRESS_INTERVAL = 10 s */
+#define TOUCH_DELAY_LONG_MS         9500000
+
+/*
+ * This state machine can distinguish between the various gestures.
+ * Transition to new state is triggered by a timeout or push/release event.
+ * Timer of various duration is started when entering state that has a timeout.
+ * Trigger states will reset the state back to IDLE. This happens on release
+ * for most gestures, but after TAP_INTERVAL for Tap (i.e. some delay).
+ */
+
+typedef enum {
+    TOUCH_STATE_INVALID,
+
+    TOUCH_STATE_IDLE,
+    TOUCH_STATE_0_ON,
+    TOUCH_STATE_1_ON,
+    TOUCH_STATE_0_ON_SHORT,
+    TOUCH_STATE_1_ON_SHORT,
+    TOUCH_STATE_BOTH_ON,
+    TOUCH_STATE_BOTH_ON_SHORT,
+    TOUCH_STATE_0_ON_OFF,
+    TOUCH_STATE_1_ON_OFF,
+    TOUCH_STATE_0_ON_OFF_1_ON,
+    TOUCH_STATE_1_ON_OFF_0_ON,
+
+    // '*' for button ON
+    // ' ' for button OFF
+    // 'T' for timeout
+
+    // Button 0: [**       ]
+    // Button 1: [         ]
+    TOUCH_TRIGGER_0_TAP,
+
+    // Button 0: [         ]
+    // Button 1: [**       ]
+    TOUCH_TRIGGER_1_TAP,
+
+    // Button 0: [****     ]
+    // Button 1: [         ]
+    TOUCH_TRIGGER_0_PRESS,
+
+    // Button 0: [         ]
+    // Button 1: [****     ]
+    TOUCH_TRIGGER_1_PRESS,
+
+    // Button 0: [******T  ]
+    // Button 1: [         ]
+    TOUCH_TRIGGER_0_LONG,
+
+    // Button 0: [         ]
+    // Button 1: [******T  ]
+    TOUCH_TRIGGER_1_LONG,
+
+    // Button 0: [***      ] or [*****    ] or [ ***     ] or [ ***     ]
+    // Button 1: [ ***     ]    [ ***     ]    [***      ]    [*****    ]
+    TOUCH_TRIGGER_BOTH_TAP,
+
+    // Button 0: [*****    ] or [*******  ] or [ *****   ] or [ *****   ]
+    // Button 1: [ *****   ]    [ *****   ]    [*****    ]    [*******  ]
+    TOUCH_TRIGGER_BOTH_PRESS,
+
+    // Button 0: [******T  ] or [ *****T  ]
+    // Button 1: [ *****T  ]    [******T  ]
+    TOUCH_TRIGGER_BOTH_LONG,
+
+    // Button 0: [***      ]
+    // Button 1: [    ***  ]
+    TOUCH_TRIGGER_0_1_SLIDE,
+
+    // Button 0: [    ***  ]
+    // Button 1: [***      ]
+    TOUCH_TRIGGER_1_0_SLIDE,
+
+    TOUCH_STATE_NUM,
+} touch_state_t;
+
+typedef enum {
+    TOUCH_EVENT_0_ON,
+    TOUCH_EVENT_0_OFF,
+    TOUCH_EVENT_1_ON,
+    TOUCH_EVENT_1_OFF,
+    TOUCH_EVENT_SHORT,  // timer triggered after a short delay
+    TOUCH_EVENT_LONG,   // timer triggered after a longer delay
+    TOUCH_EVENT_NUM
+} touch_event_t;
+
+touch_state_t touch_state = TOUCH_STATE_IDLE;
+const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
+    // When asserts are off, go back to IDLE state on every event.
+    [TOUCH_STATE_INVALID] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_IDLE,
+    },
+    // Starting point, also set after a TOUCH_TRIGGER_* event.
+    [TOUCH_STATE_IDLE] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_IDLE,
+    },
+    // Touched button 0.
+    [TOUCH_STATE_0_ON] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_0_ON_SHORT,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+    },
+    // Touched button 1.
+    [TOUCH_STATE_1_ON] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_1_ON_OFF,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_1_ON_SHORT,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+    },
+    // Touched button 0 and maintained for a short time.
+    [TOUCH_STATE_0_ON_SHORT] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON_SHORT,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_0_PRESS,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_0_ON_SHORT,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_0_LONG,
+    },
+    // Touched button 1 and maintained for a short time.
+    [TOUCH_STATE_1_ON_SHORT] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON_SHORT,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_1_PRESS,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_1_LONG,
+    },
+    // Touched both buttons.
+    [TOUCH_STATE_BOTH_ON] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_BOTH_TAP,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_BOTH_TAP,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+    },
+    // Touched both buttons and maintained for a short time.
+    [TOUCH_STATE_BOTH_ON_SHORT] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON_SHORT,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_BOTH_PRESS,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON_SHORT,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_BOTH_PRESS,
+        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_BOTH_LONG,
+    },
+    // Touched then released button 0.
+    [TOUCH_STATE_0_ON_OFF] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_0_ON_OFF,
+        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_0_TAP,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+    },
+    // Touched then released button 1.
+    [TOUCH_STATE_1_ON_OFF] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON_OFF,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_1_ON_OFF,
+        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_1_TAP,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+    },
+    // Touched then released button 0, then touched button 1.
+    [TOUCH_STATE_0_ON_OFF_1_ON] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_0_1_SLIDE,
+        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_0_1_SLIDE,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+    },
+    // Touched then released button 1, then touched button 0.
+    [TOUCH_STATE_1_ON_OFF_0_ON] = {
+        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_1_0_SLIDE,
+        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_1_0_SLIDE,
+        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+    },
+};
+
+static bool touch_trigger_is_on[TOUCH_STATE_NUM] = {
+    // Push and quick release.
+    [TOUCH_TRIGGER_0_TAP]      = true,
+    [TOUCH_TRIGGER_1_TAP]      = true,
+    [TOUCH_TRIGGER_BOTH_TAP]   = true,
+    // Push one for >0.5s and <10s then release.
+    [TOUCH_TRIGGER_0_PRESS]    = true,
+    [TOUCH_TRIGGER_1_PRESS]    = true,
+    [TOUCH_TRIGGER_BOTH_PRESS] = true,
+    // Push for >10s then release.
+    [TOUCH_TRIGGER_0_LONG]     = true,
+    [TOUCH_TRIGGER_1_LONG]     = true,
+    [TOUCH_TRIGGER_BOTH_LONG]  = true,
+    // Tap on one button followed by tap on other.
+    [TOUCH_TRIGGER_0_1_SLIDE]  = true,
+    [TOUCH_TRIGGER_1_0_SLIDE]  = true,
+    // Tap, followed quickly by another Tap.
+    // TODO
+};
+
+static void touch_timer_handler(void);
+
+uint32_t touch_timer_ticks;
+touch_event_t touch_timer_event;
+
+static void touch_set_timer(touch_event_t event)
+{
+    // Choose the apropriate duration depending on the event triggered.
+    switch (event)
+    {
+
+    case TOUCH_EVENT_LONG:
+    {
+        LOG("TOUCH_EVENT_LONG");
+        // No timer to configure.
+        timer_del_handler(&touch_timer_handler);
+        return;
+    }
+
+    case TOUCH_EVENT_SHORT:
+    {
+        LOG("TOUCH_EVENT_SHORT");
+        // After a short timer, extend to a long timer.
+        touch_timer_ticks = TOUCH_DELAY_LONG_MS;
+        touch_timer_event = TOUCH_EVENT_LONG;
+        break;
+    }
+
+    default:
+    {
+        LOG("default event");
+        // After a button event, setup a short timer.
+        touch_timer_ticks = TOUCH_DELAY_SHORT_MS;
+        touch_timer_event = TOUCH_EVENT_SHORT;
+        break;
+    }
+
+    }
+
+    // Submit the configuration.
+    LOG("timer_add_handler");
+    timer_add_handler(&touch_timer_handler);
+}
+
+void touch_callback(touch_state_t trigger);
+
+static void touch_next_state(touch_event_t event)
+{
+    // Update the state using the state machine encoded above.
+    touch_state = touch_state_machine[touch_state][event];
+    ASSERT(touch_state != TOUCH_STATE_INVALID);
+
+    // Handle the multiple states.
+    if (touch_trigger_is_on[touch_state])
+    {
+        // When there is a handler associated with the state, run it.
+        touch_callback(touch_state);
+
+        // If something was triggered, come back to the "IDLE" state.
+        touch_state = TOUCH_STATE_IDLE;
+
+        // And then disable the timer.
+        timer_del_handler(&touch_timer_handler);
+    }
+    else if (touch_state == TOUCH_STATE_IDLE)
+    {
+        // Idle, do not setup a timer.
+    }
+    else
+    {
+        // Intermediate states, do not go back to TOUCH_STATE_IDLE.
+        touch_set_timer(event);
+    }
+}
+
+static void touch_timer_handler(void)
+{ 
+    // If the timer's counter reaches 0
+    if (touch_timer_ticks == 0)
+    {
+        // Disable the timer for now.
+        timer_del_handler(&touch_timer_handler);
+
+        // Submit the event to the state machine.
+        LOG("touch_timer_event=%s",
+                touch_timer_event == TOUCH_EVENT_SHORT ? "SHORT" :
+                touch_timer_event == TOUCH_EVENT_LONG ? "LONG" :
+                "?");
+        touch_next_state(touch_timer_event);
+    }
+    else
+    {
+        // Not triggering yet.
+        touch_timer_ticks -= 100;
+    }
+}
+
+/** ******************************************
+ *
+ * IQS620 bindings
+ *
+ ****************************************** */
+
+void iqs620_callback_button_pressed(uint8_t button)
+{
+    LOG("button=%d", button);
+
+    if (button == 0)
+        touch_next_state(TOUCH_EVENT_0_ON);
+    if (button == 1)
+        touch_next_state(TOUCH_EVENT_1_ON);
+}
+
+void iqs620_callback_button_released(uint8_t button)
+{
+    LOG("button=%d", button);
+
+    if (button == 0)
+        touch_next_state(TOUCH_EVENT_0_OFF);
+    if (button == 1)
+        touch_next_state(TOUCH_EVENT_1_OFF);
+}
+
+/** ******************************************
+ *
+ * micropython bindings
+ *
+ ****************************************** */
+
+STATIC mp_obj_t callback_list[TOUCH_BUTTON_NUM][TOUCH_ACTION_NUM];
 
 STATIC mp_obj_t mod_touch___init__(void)
 {
     for (size_t i = 0; i < LEN(callback_list); i++)
         callback_list[0][i] = callback_list[1][i] = mp_const_none;
-
-    // dependencies:
-    touch_init();
-    timer_init();
 
     return mp_const_none;
 }

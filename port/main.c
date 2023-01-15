@@ -46,7 +46,6 @@
 #include "driver/bluetooth_data_protocol.h"
 #include "driver/bluetooth_low_energy.h"
 #include "driver/config.h"
-#include "driver/dfu.h"
 #include "driver/ecx336cn.h"
 #include "driver/flash.h"
 #include "driver/fpga.h"

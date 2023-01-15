@@ -1,6 +1,6 @@
 /*
- * This file is part of the MicroPython for Frame project:
- *      https://github.com/Itsbrilliantlabs/frame-micropython
+ * This file is part of the MicroPython for Monocle project:
+ *      https://github.com/Itsbrilliantlabs/monocle-micropython
  *
  * Authored by: Raj Nakarja / Silicon Witchery (raj@siliconwitchery.com)
  *              for Brilliant Labs Inc.

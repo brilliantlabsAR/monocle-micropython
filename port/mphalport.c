@@ -36,6 +36,7 @@
 #include "py/stream.h"
 #include "nrfx_errors.h"
 #include "nrfx_config.h"
+#include "nrf_soc.h"
 #include "driver/bluetooth_low_energy.h"
 
 #if MICROPY_PY_TIME_TICKS
@@ -224,58 +225,11 @@ void mp_hal_delay_ms(mp_uint_t ms)
         MICROPY_EVENT_POLL_HOOK
 }
 
-static const char nrfx_error_unknown[1] = "";
-
-static const char nrfx_error_success[] = "NRFX_SUCCESS";
-static const char nrfx_error_internal[] = "NRFX_ERROR_INTERNAL";
-static const char nrfx_error_no_mem[] = "NRFX_ERROR_NO_MEM";
-static const char nrfx_error_not_supported[] = "NRFX_ERROR_NOT_SUPPORTED";
-static const char nrfx_error_invalid_param[] = "NRFX_ERROR_INVALID_PARAM";
-static const char nrfx_error_invalid_state[] = "NRFX_ERROR_INVALID_STATE";
-static const char nrfx_error_invalid_length[] = "NRFX_ERROR_INVALID_LENGTH";
-static const char nrfx_error_timeout[] = "NRFX_ERROR_TIMEOUT";
-static const char nrfx_error_forbidden[] = "NRFX_ERROR_FORBIDDEN";
-static const char nrfx_error_null[] = "NRFX_ERROR_NULL";
-static const char nrfx_error_invalid_addr[] = "NRFX_ERROR_INVALID_ADDR";
-static const char nrfx_error_busy[] = "NRFX_ERROR_BUSY";
-static const char nrfx_error_already_initalized[] = "NRFX_ERROR_ALREADY_INITIALIZED";
-
-static const char *nrfx_error_strings[13] = {
-    nrfx_error_success,
-    nrfx_error_internal,
-    nrfx_error_no_mem,
-    nrfx_error_not_supported,
-    nrfx_error_invalid_param,
-    nrfx_error_invalid_state,
-    nrfx_error_invalid_length,
-    nrfx_error_timeout,
-    nrfx_error_forbidden,
-    nrfx_error_null,
-    nrfx_error_invalid_addr,
-    nrfx_error_busy,
-    nrfx_error_already_initalized
-};
-
-static const char nrfx_drv_error_twi_err_overrun[] = "NRFX_ERROR_DRV_TWI_ERR_OVERRUN";
-static const char nrfx_drv_error_twi_err_anack[] = "NRFX_ERROR_DRV_TWI_ERR_ANACK";
-static const char nrfx_drv_error_twi_err_dnack[] = "NRFX_ERROR_DRV_TWI_ERR_DNACK";
-
-static const char *nrfx_drv_error_strings[3] = {
-    nrfx_drv_error_twi_err_overrun,
-    nrfx_drv_error_twi_err_anack,
-    nrfx_drv_error_twi_err_dnack
-};
-
-const char *nrfx_error_code_lookup(uint32_t err_code)
+NORETURN void mp_hal_enter_bootloader(void)
 {
-    if (err_code >= NRFX_ERROR_BASE_NUM && err_code <= NRFX_ERROR_BASE_NUM + 13)
-    {
-        return nrfx_error_strings[err_code - NRFX_ERROR_BASE_NUM];
-    }
-    else if (err_code >= NRFX_ERROR_DRIVERS_BASE_NUM && err_code <= NRFX_ERROR_DRIVERS_BASE_NUM + 3)
-    {
-        return nrfx_drv_error_strings[err_code - NRFX_ERROR_DRIVERS_BASE_NUM];
-    }
+    // Set the persistent memory flag telling the bootloaer to go into DFU mode.
+    sd_power_gpregret_set(0, 0xB1);
 
-    return nrfx_error_unknown;
+    // Reset the CPU, giving controll to the bootloader.
+    NVIC_SystemReset();
 }

@@ -176,7 +176,7 @@ do { \
 
 #define MP_NEED_LOG2 1
 #define MICROPY_BOARD_STARTUP()
-#define MICROPY_BOARD_ENTER_BOOTLOADER(nargs, args) dfu_reboot_bootloader()
+#define MICROPY_BOARD_ENTER_BOOTLOADER(nargs, args) mp_hal_enter_bootloader()
 #define MICROPY_BOARD_EARLY_INIT()
 
 #endif
