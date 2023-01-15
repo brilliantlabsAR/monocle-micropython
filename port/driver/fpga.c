@@ -39,7 +39,7 @@
 #include "driver/spi.h"
 #include "driver/timer.h"
 
-#define ASSERT NRFX_ASSERT
+#define ASSERT      NRFX_ASSERT
 
 void fpga_check_pins(char const *msg)
 {
@@ -180,21 +180,19 @@ void fpga_graphics_swap_buffer(void)
     fpga_cmd(FPGA_CMD_GRAPHICS, 0x07);
 }
 
-void fpga_graphics_set_write_base(uint32_t base)
+void fpga_graphics_set_write_addr(uint32_t addr)
 {
-    uint8_t buf[] = {
-        (base & 0xFF000000) >> 24,
-        (base & 0x00FF0000) >> 16,
-        (base & 0x0000FF00) >> 8,
-        (base & 0x000000FF) >> 0,
-    };
+    uint8_t buf[] = { addr >> 24, addr >> 16, addr >> 8, addr >> 0 };
 
     fpga_cmd_write(FPGA_CMD_GRAPHICS, 0x10, buf, sizeof buf);
 }
 
 void fpga_graphics_write_data(uint8_t *buf, size_t len)
 {
-    fpga_cmd_write(FPGA_CMD_GRAPHICS, 0x11, buf, len);
+    assert(len % 128 == 0);
+    for (size_t i = 0; i < len; i += 128) {
+        fpga_cmd_write(FPGA_CMD_GRAPHICS, 0x11, buf + i, 128);
+    }
 }
 
 #define FPGA_CMD_CAPTURE 0x50
@@ -219,33 +217,25 @@ size_t fpga_capture_read(uint8_t *buf, size_t len)
 {
     LOG("len=%d", len);
 
-    for (size_t i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++)
+    {
         buf[i] = (i % 4 == 0) ? 0xFF : 0x00;
     }
-    return;
+    return len;
 
-    for (size_t n, i = 0; i < len; i++) {
-
+    for (size_t n, i = 0; i < len; i++)
+    {
         // the FPGA stores the length to read in a dedicated register
         n = fpga_capture_get_status() & 0x0FFF;
 
-        // if there is nothing more to read, return the length
-        if (n == 0) {
+        // if there is nothing more to read, stop now
+        if (n == 0)
+        {
             return i;
         }
 
-        // cap the read size at the remaining data to read
-        if (n > len) {
-            n = len;
-        }
-
-        // cap the read size at the max SPI buffer transaction length
-        if (n > SPI_MAX_READ_LEN) {
-            n = SPI_MAX_READ_LEN;
-        }
-
         // finally read the prepared read length from the FPGA
-        fpga_capture_get_data(buf + i, n);
+        fpga_capture_get_data(buf + i, MIN(n, len));
     }
     return len;
 }
@@ -269,13 +259,6 @@ void fpga_init(void)
     nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
     nrfx_systick_delay_ms(1);
     fpga_check_pins("set the MODE1 pin");
-
-    //// Issue a "reconfig" pulse.
-    //// Datasheet UG290E: T_recfglw >= 70 us
-    //nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, false);
-    //nrfx_systick_delay_ms(100); // 1000 times more than needed
-    //nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
-    //fpga_check_pins("issued a low FPGA_RECONFIG_N pulse");
 
     // Give the FPGA some time to boot.
     // Datasheet UG290E: T_recfgtdonel <=

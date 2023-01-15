@@ -72,14 +72,19 @@
 #define OV5640_I2C                  i2c1
 #define OV5640_ADDR                 0x3C
 
+// SPI
+
+#define SPI_MAX_XFER_LEN            255
+
 // OV5640
 
 #define OV5640_WIDTH                1280
 #define OV5640_HEIGHT               720
 
-// SPI
+// ECX664CN
 
-#define SPI_MAX_READ_LEN            255
+#define ECX336CN_WIDTH              640
+#define ECX336CN_HEIGHT             400
 
 // JOJPEG
 

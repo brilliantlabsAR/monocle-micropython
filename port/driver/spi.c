@@ -96,8 +96,11 @@ static void spi_xfer(nrfx_spim_xfer_desc_t *xfer)
  */
 void spi_read(uint8_t *buf, size_t len)
 {
-    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, len);
-    spi_xfer(&xfer);
+    for (size_t i = 0; i < len; i += SPI_MAX_XFER_LEN) {
+        size_t n = MIN(SPI_MAX_XFER_LEN, len - i);
+        nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, n);
+        spi_xfer(&xfer);
+    }
 }
 
 /**
@@ -107,8 +110,11 @@ void spi_read(uint8_t *buf, size_t len)
  */
 void spi_write(uint8_t *buf, size_t len)
 {
-    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, len);
-    spi_xfer(&xfer);
+    for (size_t i = 0; i < len; i += SPI_MAX_XFER_LEN) {
+        size_t n = MIN(SPI_MAX_XFER_LEN, len - i);
+        nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, n);
+        spi_xfer(&xfer);
+    }
 }
 
 /**

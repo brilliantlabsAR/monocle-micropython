@@ -49,7 +49,7 @@ void fpga_graphics_off(void);
 void fpga_graphics_on(void);
 void fpga_graphics_clear(void);
 void fpga_graphics_swap_buffer(void);
-void fpga_graphics_set_write_base(uint32_t base);
+void fpga_graphics_set_write_addr(uint32_t addr);
 void fpga_graphics_write_data(uint8_t *buf, size_t len);
 size_t fpga_capture_read(uint8_t *buf, size_t len);
 

@@ -24,6 +24,7 @@ typedef struct {
     // parameters
     uint16_t height, width;
     uint8_t components;
+    uint32_t quality;
 
     // algorithm context
     uint8_t const *r, *g, *b;
@@ -44,4 +45,4 @@ typedef struct {
 extern void jojpeg_write(uint8_t const *buf, size_t len);
 
 void jojpeg_start(jojpeg_t *ctx, size_t width, size_t height, uint8_t components, uint8_t quality);
-bool jojpeg_append_16_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len);
+bool jojpeg_append_8_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len);

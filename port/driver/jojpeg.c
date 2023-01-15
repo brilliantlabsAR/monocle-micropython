@@ -109,8 +109,8 @@ static const unsigned short UVAC_HT[256][2] = {
     {16352,14},{65517,16},{65518,16},{65519,16},{65520,16},{65521,16},{65522,16},{65523,16},{65524,16},{65525,16},{0,0},{0,0},{0,0},{0,0},{0,0},
     {1018,10},{32707,15},{65526,16},{65527,16},{65528,16},{65529,16},{65530,16},{65531,16},{65532,16},{65533,16},{65534,16},{0,0},{0,0},{0,0},{0,0},{0,0}
 };
-static const int YQT[] = { 16,11,10,16,24,40,51,61,12,12,14,19,26,58,60,55,14,13,16,24,40,57,69,56,14,17,22,29,51,87,80,62,18,22,37,56,68,109,103,77,24,35,55,64,81,104,113,92,49,64,78,87,103,121,120,101,72,92,95,98,112,100,103,99 };
-static const int UVQT[] = { 17,18,24,47,99,99,99,99,18,21,26,66,99,99,99,99,24,26,56,99,99,99,99,99,47,66,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99 };
+static const int64_t YQT[] = { 16,11,10,16,24,40,51,61,12,12,14,19,26,58,60,55,14,13,16,24,40,57,69,56,14,17,22,29,51,87,80,62,18,22,37,56,68,109,103,77,24,35,55,64,81,104,113,92,49,64,78,87,103,121,120,101,72,92,95,98,112,100,103,99 };
+static const int64_t UVQT[] = { 17,18,24,47,99,99,99,99,18,21,26,66,99,99,99,99,24,26,56,99,99,99,99,99,47,66,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99 };
 static const float AASF[] = { 1.0f * 2.828427125f, 1.387039845f * 2.828427125f, 1.306562965f * 2.828427125f, 1.175875602f * 2.828427125f, 1.0f * 2.828427125f, 0.785694958f * 2.828427125f, 0.541196100f * 2.828427125f, 0.275899379f * 2.828427125f };
 
 static inline void jojpeg_putc(uint8_t c)
@@ -123,7 +123,7 @@ static void jojpeg_write_bits(jojpeg_t *ctx, const unsigned short *bs)
     ctx->bit_cnt += bs[1];
     ctx->bit_buf |= bs[0] << (24 - ctx->bit_cnt);
     while (ctx->bit_cnt >= 8) {
-        unsigned char c = (ctx->bit_buf >> 16) & 255;
+        uint8_t c = (ctx->bit_buf >> 16) & 255;
         jojpeg_putc(c);
         if (c == 255) {
             jojpeg_putc(0);
@@ -177,9 +177,9 @@ static void jojpeg_dct(float *d0, float *d1, float *d2, float *d3, float *d4, fl
     *d7 = z11 - z4;
 } 
 
-static void jojpeg_calc_bits(int val, unsigned short bits[2])
+static void jojpeg_calc_bits(int64_t val, unsigned short bits[2])
 {
-    int tmp1 = val < 0 ? -val : val;
+    int64_t tmp1 = val < 0 ? -val : val;
     val = val < 0 ? val-1 : val;
     bits[1] = 1;
     while (tmp1 >>= 1) {
@@ -188,31 +188,31 @@ static void jojpeg_calc_bits(int val, unsigned short bits[2])
     bits[0] = val & ((1<<bits[1])-1);
 }
 
-static int jojpeg_process_du(jojpeg_t *ctx, float *CDU, int du_stride, float *fdtable, int DC, const unsigned short HTDC[256][2], const unsigned short HTAC[256][2])
+static int64_t jojpeg_process_du(jojpeg_t *ctx, float *CDU, int64_t du_stride, float *fdtable, int64_t DC, const unsigned short HTDC[256][2], const unsigned short HTAC[256][2])
 {
     const unsigned short EOB[2] = { HTAC[0x00][0], HTAC[0x00][1] };
     const unsigned short M16zeroes[2] = { HTAC[0xF0][0], HTAC[0xF0][1] };
 
     // DCT rows
-    for (int i=0; i<du_stride*8; i+=du_stride) {
+    for (int64_t i=0; i<du_stride*8; i+=du_stride) {
         jojpeg_dct(CDU+i, CDU+i+1, CDU+i+2, CDU+i+3, CDU+i+4, CDU+i+5, CDU+i+6, CDU+i+7);
     }
     // DCT columns
-    for (int i=0; i<8; ++i) {
+    for (int64_t i=0; i<8; ++i) {
         jojpeg_dct(CDU+i, CDU+i+du_stride, CDU+i+du_stride*2, CDU+i+du_stride*3, CDU+i+du_stride*4, CDU+i+du_stride*5, CDU+i+du_stride*6, CDU+i+du_stride*7);
     }
     // Quantize/descale/zigzag the coefficients
-    int DU[64];
-    for (int y = 0, j=0; y < 8; ++y) {
-        for (int x = 0; x < 8; ++x, ++j) {
-            int i = y*du_stride+x;
+    int64_t DU[64];
+    for (size_t y = 0, j=0; y < 8; ++y) {
+        for (size_t x = 0; x < 8; ++x, ++j) {
+            size_t i = y*du_stride+x;
             float v = CDU[i] * fdtable[j];
             DU[jojpeg_zigzag[j]] = (int)(v < 0 ? ceilf(v - 0.5f) : floorf(v + 0.5f));
         }
     }
 
     // Encode DC
-    int diff = DU[0] - DC; 
+    int64_t diff = DU[0] - DC; 
     if (diff == 0) {
         jojpeg_write_bits(ctx, HTDC[0]);
     } else {
@@ -223,7 +223,7 @@ static int jojpeg_process_du(jojpeg_t *ctx, float *CDU, int du_stride, float *fd
     }
 
     // Encode ACs
-    int end0pos = 63;
+    int64_t end0pos = 63;
     for (; end0pos > 0 && DU[end0pos] == 0; --end0pos);
 
     // end0pos = first element in reverse order !=0
@@ -231,13 +231,13 @@ static int jojpeg_process_du(jojpeg_t *ctx, float *CDU, int du_stride, float *fd
         jojpeg_write_bits(ctx, EOB);
         return DU[0];
     }
-    for (int i = 1; i <= end0pos; ++i) {
-        int startpos = i;
+    for (int64_t i = 1; i <= end0pos; ++i) {
+        int64_t startpos = i;
         for (; DU[i]==0 && i<=end0pos; ++i);
-        int nrzeroes = i-startpos;
-        if ( nrzeroes >= 16 ) {
-            int lng = nrzeroes>>4;
-            for (int nrmarker=1; nrmarker <= lng; ++nrmarker)
+        int64_t nrzeroes = i-startpos;
+        if (nrzeroes >= 16) {
+            int64_t lng = nrzeroes>>4;
+            for (int64_t nrmarker=1; nrmarker <= lng; ++nrmarker)
                 jojpeg_write_bits(ctx, M16zeroes);
             nrzeroes &= 15;
         }
@@ -252,13 +252,13 @@ static int jojpeg_process_du(jojpeg_t *ctx, float *CDU, int du_stride, float *fd
     return DU[0];
 }
 
-static inline void jojpeg_encode_block(float *Y, float *U, float *V, int x, uint8_t n, jojpeg_t *ctx)
+static inline void jojpeg_encode_block(jojpeg_t *ctx, float *Y, float *U, float *V, int64_t x, uint8_t n)
 {
-    for (int row = 0, pos = 0; row < n; ++row) {
-        for (int col = x; col < x + n; ++col, ++pos) {
-            int prow = row >= ctx->height ? ctx->height-1 : row;
-            int pcol = col >= ctx->width ? ctx->width-1 : col;
-            int p = prow * ctx->width * ctx->components + pcol * ctx->components;
+    for (int64_t row = 0, pos = 0; row < n; ++row) {
+        for (int64_t col = x; col < x + n; ++col, ++pos) {
+            int64_t prow = row >= ctx->height ? ctx->height-1 : row;
+            int64_t pcol = col >= ctx->width ? ctx->width-1 : col;
+            int64_t p = prow * ctx->width * ctx->components + pcol * ctx->components;
             float r = ctx->r[p], g = ctx->g[p], b = ctx->b[p];
             Y[pos] = +0.29900f*r +0.58700f*g +0.11400f*b - 128;
             U[pos] = -0.16874f*r -0.33126f*g +0.50000f*b;
@@ -267,7 +267,7 @@ static inline void jojpeg_encode_block(float *Y, float *U, float *V, int x, uint
     }
 }
 
-static void jojpeg_write_header(jojpeg_t *ctx, int quality)
+static void jojpeg_write_header(jojpeg_t *ctx)
 {
     static const unsigned char head0[] = {
         0xFF,0xD8,
@@ -284,15 +284,15 @@ static void jojpeg_write_header(jojpeg_t *ctx, int quality)
     };
     uint8_t table_y[64], table_uv[64];
 
-    for (int i = 0; i < 64; ++i) {
-        int yti = (YQT[i] * quality + 50) / 100;
+    for (int64_t i = 0; i < 64; ++i) {
+        int64_t yti = (YQT[i] * ctx->quality + 50) / 100;
         table_y[jojpeg_zigzag[i]] = yti < 1 ? 1 : yti > 255 ? 255 : yti;
-        int uvti  = (UVQT[i] * quality + 50) / 100;
+        int64_t uvti  = (UVQT[i] * ctx->quality + 50) / 100;
         table_uv[jojpeg_zigzag[i]] = uvti < 1 ? 1 : uvti > 255 ? 255 : uvti;
     }
 
-    for (int row = 0, k = 0; row < 8; ++row) {
-        for (int col = 0; col < 8; ++col, ++k) {
+    for (int64_t row = 0, k = 0; row < 8; ++row) {
+        for (int64_t col = 0; col < 8; ++col, ++k) {
             ctx->fdtable_y[k]  = 1 / (table_y [jojpeg_zigzag[k]] * AASF[row] * AASF[col]);
             ctx->fdtable_uv[k] = 1 / (table_uv[jojpeg_zigzag[k]] * AASF[row] * AASF[col]);
         }
@@ -318,10 +318,9 @@ static void jojpeg_write_header(jojpeg_t *ctx, int quality)
     jojpeg_write(head2, sizeof(head2));
 }
 
-bool jojpeg_append_16_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len)
+bool jojpeg_append_8_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len)
 {
-    bool need_more_data;
-    assert(rgb_len == ctx->width * 16 * ctx->components);
+    assert(rgb_len == ctx->width * 8 * ctx->components);
 
     LOG("rgb_len=%d", rgb_len);
 
@@ -330,18 +329,19 @@ bool jojpeg_append_16_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len)
     ctx->g = rgb_buf + (ctx->components > 1 ? 1 : 0);
     ctx->b = rgb_buf + (ctx->components > 1 ? 2 : 0);
 
+    ctx->bit_cnt = 0;
+    ctx->bit_buf = 0;
+
     // encode 8x8 macroblocks
-    for (int x = 0; x < ctx->width; x += 8) {
+    for (int64_t x = 0; x < ctx->width; x += 8) {
         float Y[64], U[64], V[64];
 
-        jojpeg_encode_block(Y, U, V, x, 8, ctx);
+        jojpeg_encode_block(ctx, Y, U, V, x, 8);
 
         ctx->dcy = jojpeg_process_du(ctx, Y, 8, ctx->fdtable_y, ctx->dcy, YDC_HT, YAC_HT);
         ctx->dcu = jojpeg_process_du(ctx, U, 8, ctx->fdtable_uv, ctx->dcu, UVDC_HT, UVAC_HT);
         ctx->dcv = jojpeg_process_du(ctx, V, 8, ctx->fdtable_uv, ctx->dcv, UVDC_HT, UVAC_HT);
     }
-    ctx->height -= 8;
-    need_more_data = (ctx->height >= 8);
 
     // do the bit alignment of the EOI marker
     static const unsigned short fill_bits[] = {0x7F, 7};
@@ -349,19 +349,30 @@ bool jojpeg_append_16_rows(jojpeg_t *ctx, uint8_t *rgb_buf, size_t rgb_len)
     jojpeg_putc(0xFF);
     jojpeg_putc(0xD9);
 
-    return need_more_data;
+    if (ctx->height > 8) {
+        ctx->height -= 8;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void jojpeg_start(jojpeg_t *ctx, size_t width, size_t height, uint8_t components, uint8_t quality)
 {
     assert(width > 0);
     assert(height > 0);
-    assert(quality <= 100);
     assert(components == 1 || components == 3 || components == 4);
+    assert(quality <= 100);
 
+    // reinit all previously set fields
+    memset(ctx, 0, sizeof *ctx);
+
+    // (re)configure the fields with all parameters
     ctx->width = width;
     ctx->height = height;
     ctx->components = components;
+    ctx->quality = quality < 50 ? 5000 / quality : 200 - quality * 2;
 
-    jojpeg_write_header(ctx, quality < 50 ? 5000 / quality : 200 - quality * 2);
+    // write the JPEG header
+    jojpeg_write_header(ctx);
 }

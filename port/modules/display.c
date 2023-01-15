@@ -51,7 +51,7 @@ STATIC mp_obj_t display_show(void)
 
     memset(buf, 0x55, sizeof buf);
     fpga_graphics_on();
-    fpga_graphics_set_write_base(0x0000);
+    fpga_graphics_set_write_addr(0x0000);
     fpga_graphics_write_data(buf, sizeof buf);
     fpga_graphics_swap_buffer();
     return mp_const_none;
