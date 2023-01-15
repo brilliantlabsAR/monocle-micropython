@@ -222,19 +222,7 @@ size_t fpga_capture_read(uint8_t *buf, size_t len)
  */
 void fpga_init(void)
 {
-    max77654_rail_1v2(true);
-    max77654_rail_1v8(true);
-    max77654_rail_2v7(true);
-
-    // Set the FPGA to boot from its internal flash.
-    nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
-    nrfx_systick_delay_ms(1);
-
-    // Give the FPGA some time to boot.
-    // Datasheet UG290E: T_recfgtdonel <=
-    nrfx_systick_delay_ms(100);
-
     // Reset the CSN pin, changed as it is also MODE1.
     nrf_gpio_pin_write(SPI_FPGA_CS_PIN, true);
-    nrfx_systick_delay_ms(100);
+    nrfx_systick_delay_ms(1);
 }
