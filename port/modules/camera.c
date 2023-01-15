@@ -39,9 +39,6 @@
 
 STATIC mp_obj_t mod_camera___init__(void)
 {
-    // dependencies:
-    ov5640_init();
-
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_camera___init___obj, mod_camera___init__);

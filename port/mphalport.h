@@ -48,10 +48,12 @@ int mp_hal_stdin_rx_chr(void);
 void mp_hal_stdout_tx_str(const char *str);
 void mp_hal_delay_ms(mp_uint_t ms);
 void mp_hal_delay_us(mp_uint_t us);
-const char *nrfx_error_code_lookup(uint32_t err_code);
+NORETURN void mp_hal_enter_bootloader(void);
 mp_uint_t mp_hal_ticks_ms(void);
+mp_uint_t mp_hal_ticks_us(void);
+
+// TODO: empty implementation for now. Used by machine_spi.c:69
 #define mp_hal_delay_us_fast(p)
 #define mp_hal_ticks_cpu() (0)
-NORETURN void mp_hal_enter_bootloader(void);
 
 #endif

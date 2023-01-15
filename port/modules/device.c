@@ -57,9 +57,6 @@ STATIC mp_obj_t mod_device___init__(void)
 {
     uint32_t state = NRF_POWER->RESETREAS;
 
-    // dependencies:
-    battery_init();
-
     if (state & POWER_RESETREAS_RESETPIN_Msk)
     {
         reset_cause_obj = MP_OBJ_NEW_QSTR(MP_QSTR_POWERED_ON);

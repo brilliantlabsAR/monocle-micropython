@@ -41,29 +41,6 @@
 
 #define ASSERT      NRFX_ASSERT
 
-void fpga_check_pins(char const *msg)
-{
-    static bool first = true;
-
-    if (first)
-    {
-        LOG("| INT   |       | MODE1 |       |       |");
-        LOG("| RECFG | SCK   | CSN   | MOSI  | MISO  |");
-        LOG("+-------+-------+-------+-------+-------+");
-        LOG("| P0.05 | P0.07 | P0.08 | P0.09 | P0.10 |");
-        LOG("+=======+=======+=======+=======+=======+");
-        first = false;
-    }
-    LOG("|  %3d  |  %3d  |  %3d  |  %3d  |  %3d  | %s",
-        nrf_gpio_pin_read(FPGA_RECONFIG_N_PIN),
-        nrf_gpio_pin_read(SPI2_SCK_PIN),
-        nrf_gpio_pin_read(FPGA_MODE1_PIN),
-        nrf_gpio_pin_read(SPI2_MOSI_PIN),
-        nrf_gpio_pin_read(SPI2_MISO_PIN),
-        msg
-    );
-}
-
 static inline void fpga_cmd(uint8_t cmd1, uint8_t cmd2)
 {
     spi_chip_select(SPI_FPGA_CS_PIN);
@@ -245,24 +222,19 @@ size_t fpga_capture_read(uint8_t *buf, size_t len)
  */
 void fpga_init(void)
 {
-    fpga_check_pins("before driver setup");
     max77654_rail_1v2(true);
     max77654_rail_1v8(true);
     max77654_rail_2v7(true);
-    fpga_check_pins("started dependencies");
 
     // Set the FPGA to boot from its internal flash.
     nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
     nrfx_systick_delay_ms(1);
-    fpga_check_pins("set the MODE1 pin");
 
     // Give the FPGA some time to boot.
     // Datasheet UG290E: T_recfgtdonel <=
     nrfx_systick_delay_ms(100);
-    fpga_check_pins("waited configuration delay");
 
     // Reset the CSN pin, changed as it is also MODE1.
     nrf_gpio_pin_write(SPI_FPGA_CS_PIN, true);
     nrfx_systick_delay_ms(100);
-    fpga_check_pins("done");
 }

@@ -38,25 +38,23 @@
 
 STATIC mp_obj_t mod_display___init__(void)
 {
-    // dependencies:
-    ecx336cn_init();
-
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_display___init___obj, mod_display___init__);
 
-STATIC mp_obj_t display_show(void)
+STATIC mp_obj_t display_show(mp_obj_t row_num_in)
 {
-    uint8_t buf[128];
+    mp_int_t row_num = mp_obj_get_int(row_num_in);
+    uint8_t row_buf[ECX336CN_WIDTH * 3];
 
-    memset(buf, 0x55, sizeof buf);
+    memset(row_buf, 0x55, sizeof row_buf);
     fpga_graphics_on();
-    fpga_graphics_set_write_addr(0x0000);
-    fpga_graphics_write_data(buf, sizeof buf);
+    fpga_graphics_set_write_addr(row_num * sizeof row_buf);
+    fpga_graphics_write_data(row_buf, sizeof row_buf);
     fpga_graphics_swap_buffer();
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_0(display_show_obj, &display_show);
+MP_DEFINE_CONST_FUN_OBJ_1(display_show_obj, &display_show);
 
 STATIC mp_obj_t display_brightness(mp_obj_t brightness_in)
 {

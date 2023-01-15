@@ -41,11 +41,6 @@ enum {
 
 STATIC mp_obj_t mod_led___init__(void)
 {
-    max77654_init();
-    max77654_rail_vled(true);
-
-    max77654_led_red(false);
-    max77654_led_green(false);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_led___init___obj, mod_led___init__);

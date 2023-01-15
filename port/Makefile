@@ -107,7 +107,6 @@ DEF += -DBUILD_VERSION='"$(BUILD_VERSION)"'
 # https://github.com/sandeepmistry/arduino-nRF5/issues/206
 DEF += -DCONFIG_NFCT_PINS_AS_GPIOS
 
-SRC += help.c
 SRC += main.c
 SRC += nrfx_log.c
 SRC += mphalport.c

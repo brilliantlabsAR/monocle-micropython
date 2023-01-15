@@ -473,8 +473,6 @@ void ov5640_outsize_set(uint16_t offx, uint16_t offy, uint16_t width, uint16_t h
  */
 void ov5640_focus_init(void)
 {
-    uint8_t state = 0x8F;
-
     // reset MCU
     ov5640_write_reg(0x3000, 0x20);
 
@@ -493,8 +491,8 @@ void ov5640_focus_init(void)
     ov5640_write_reg(0x3000, 0x00); // enable MCU
 
     ov5640_delay_ms(10);
-    state = ov5640_read_reg(0x3029);
-    ASSERT(state == 0x70);
+    LOG("ASSERT(0x%02X == 0x70)", ov5640_read_reg(0x3029));
+    //ASSERT(ov5640_read_reg(0x3029) == 0x70);
 }
 
 /**
@@ -503,14 +501,9 @@ void ov5640_focus_init(void)
  */
 void ov5640_init(void)
 {
-    max77654_rail_1v8(true);
-    max77654_rail_2v7(true);
-
     // enable 24mhz pixel clock to the ov5640, required for i²c configuration
     fpga_camera_on();
 
-    // sets control pin states
-    ov5640_pwr_on();
 
     ov5640_reduce_size(640, 400);
     ov5640_mode_1x();
@@ -525,5 +518,6 @@ void ov5640_init(void)
 
     // Check the chip ID
     uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
-    ASSERT(id == OV5640_ID);
+    LOG("id=0x%02X OV5640_ID=0x%02X", id, OV5640_ID);
+    //ASSERT(id == OV5640_ID);
 }

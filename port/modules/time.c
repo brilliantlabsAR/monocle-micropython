@@ -41,8 +41,6 @@ uint64_t time_zone_offset;
 
 STATIC mp_obj_t time___init__(void)
 {
-    nrfx_init();
-    timer_init();
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(time___init___obj, time___init__);
