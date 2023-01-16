@@ -144,10 +144,10 @@ uint8_t ecx336cn_config[] = {
 
 static inline const void ecx336cn_write_byte(uint8_t addr, uint8_t data)
 {
-    spi_chip_select(SPI_DISP_CS_PIN);
+    spi_chip_select(ECX336CN_CS_N_PIN);
     spi_write(&addr, 1);
     spi_write(&data, 1);
-    spi_chip_deselect(SPI_DISP_CS_PIN);
+    spi_chip_deselect(ECX336CN_CS_N_PIN);
 }
 
 static inline uint8_t ecx336cn_read_byte(uint8_t addr)
@@ -157,17 +157,17 @@ static inline uint8_t ecx336cn_read_byte(uint8_t addr)
     ecx336cn_write_byte(0x80, 0x01);
     ecx336cn_write_byte(0x81, addr);
 
-    spi_chip_select(SPI_DISP_CS_PIN);
+    spi_chip_select(ECX336CN_CS_N_PIN);
     spi_write(&addr, 1);
     spi_read(&data, 1);
-    spi_chip_deselect(SPI_DISP_CS_PIN);
+    spi_chip_deselect(ECX336CN_CS_N_PIN);
 
     return data;
 }
 
 void ecx336cn_deinit(void)
 {
-    nrf_gpio_cfg_default(SPI_DISP_CS_PIN);
+    nrf_gpio_cfg_default(ECX336CN_CS_N_PIN);
     nrf_gpio_cfg_default(ECX336CN_XCLR_PIN);
 }
 

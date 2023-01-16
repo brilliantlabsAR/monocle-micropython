@@ -52,40 +52,20 @@
 
 #define FLASH_STATUS_BUSY_MASK      0x01
 
-/**
- * Set the CS pin configured with #define SPI_FLASH_CS_PIN
- */
-static inline void flash_chip_select(void)
-{
-    nrfx_systick_delay_us(10);
-    nrf_gpio_pin_clear(SPI_FLASH_CS_PIN);
-    nrfx_systick_delay_us(10);
-}
-
-/**
- * Clear the CS pin configured with #define SPI_FLASH_CS_PIN
- */
-static inline void flash_chip_deselect(void)
-{
-    nrfx_systick_delay_us(10);
-    nrf_gpio_pin_set(SPI_FLASH_CS_PIN);
-    nrfx_systick_delay_us(10);
-}
-
 static inline void flash_cmd_input(uint8_t cmd, uint8_t *buf, size_t len)
 {
-    flash_chip_select();
+    spi_chip_select(FLASH_CS_N_PIN);
     spi_write(&cmd, 1);
     spi_read(buf, len);
-    flash_chip_deselect();
+    spi_chip_deselect(FLASH_CS_N_PIN);
 }
 
 static inline void flash_cmd_output(uint8_t cmd, uint8_t *buf, size_t len)
 {
-    flash_chip_select();
+    spi_chip_select(FLASH_CS_N_PIN);
     spi_write(&cmd, 1);
     spi_write(buf, len);
-    flash_chip_deselect();
+    spi_chip_deselect(FLASH_CS_N_PIN);
 }
 
 /**
@@ -130,10 +110,10 @@ void flash_program_page(uint32_t addr, uint8_t page[FLASH_PAGE_SIZE])
 
     flash_enable_write();
 
-    flash_chip_select();
+    spi_chip_select(FLASH_CS_N_PIN);
     spi_write(cmds, sizeof cmds);
     spi_read(page, FLASH_PAGE_SIZE);
-    flash_chip_deselect();
+    spi_chip_deselect(FLASH_CS_N_PIN);
 
     flash_wait_completion();
 }
@@ -148,10 +128,10 @@ void flash_read(uint32_t addr, uint8_t *buf, size_t len)
 {
     uint8_t cmds[] = { FLASH_CMD_READ, addr >> 16, addr >> 8, addr >> 0 };
 
-    flash_chip_select();
+    spi_chip_select(FLASH_CS_N_PIN);
     spi_write(cmds, sizeof cmds);
     spi_read(buf, len);
-    flash_chip_deselect();
+    spi_chip_deselect(FLASH_CS_N_PIN);
 }
 
 /**

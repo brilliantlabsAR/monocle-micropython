@@ -44,29 +44,29 @@
 
 static inline void fpga_cmd(uint8_t cmd1, uint8_t cmd2)
 {
-    spi_chip_select(SPI_FPGA_CS_PIN);
+    spi_chip_select(FPGA_CS_N_PIN);
     spi_write(&cmd1, 1);
     spi_write(&cmd2, 1);
-    spi_chip_deselect(SPI_FPGA_CS_PIN);
+    spi_chip_deselect(FPGA_CS_N_PIN);
 }
 
 static inline void fpga_cmd_write(uint8_t cmd1, uint8_t cmd2, uint8_t *buf, size_t len)
 {
-    LOG("cmd1=0x%02X cmd2=0x%02X buf[]={ 0x%02X, ... (x%d) }", cmd1, cmd2, buf[0], len);
-    spi_chip_select(SPI_FPGA_CS_PIN);
+    //LOG("cmd1=0x%02X cmd2=0x%02X buf[]={ 0x%02X, ... (x%d) }", cmd1, cmd2, buf[0], len);
+    spi_chip_select(FPGA_CS_N_PIN);
     spi_write(&cmd1, 1);
     spi_write(&cmd2, 1);
     spi_read(buf, len);
-    spi_chip_deselect(SPI_FPGA_CS_PIN);
+    spi_chip_deselect(FPGA_CS_N_PIN);
 }
 
 static inline void fpga_cmd_read(uint8_t cmd1, uint8_t cmd2, uint8_t *buf, size_t len)
 {
-    spi_chip_select(SPI_FPGA_CS_PIN);
+    spi_chip_select(FPGA_CS_N_PIN);
     spi_write(&cmd1, 1);
     spi_write(&cmd2, 1);
     spi_read(buf, len);
-    spi_chip_deselect(SPI_FPGA_CS_PIN);
+    spi_chip_deselect(FPGA_CS_N_PIN);
 }
 
 #define FPGA_CMD_SYSTEM 0x00
@@ -216,12 +216,11 @@ size_t fpga_capture_read(uint8_t *buf, size_t len)
  */
 void fpga_init(void)
 {
-    // Reset the CSN pin, changed as it is also MODE1.
-    nrf_gpio_pin_write(SPI_FPGA_CS_PIN, true);
-
-    // Make sure the FPGA gets plenty of time to wait.
-    nrfx_systick_delay_ms(10);
+    // Reset the CS_N pin, changed as it is also MODE1.
+    spi_chip_deselect(FPGA_CS_N_PIN);
 
     // enable 24mhz pixel clock to the ov5640, required for i²c configuration
     fpga_camera_on();
+
+    LOG("version=0x%06X", fpga_system_version());
 }
