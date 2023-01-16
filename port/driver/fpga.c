@@ -194,12 +194,6 @@ size_t fpga_capture_read(uint8_t *buf, size_t len)
 {
     LOG("len=%d", len);
 
-    for (size_t i = 0; i < len; i++)
-    {
-        buf[i] = (i % 4 == 0) ? 0xFF : 0x00;
-    }
-    return len;
-
     for (size_t n, i = 0; i < len; i++)
     {
         // the FPGA stores the length to read in a dedicated register
