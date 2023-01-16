@@ -1,6 +1,12 @@
 Changelog
 =========
 
+v23.016.1142
+------------
+- Refactor: reduce the number of drivers: added to modles
+- Refactor: turn into a fixed startup sequence.
+- Feature: add (for now invalid) camera output to jpeg (90s or more!+)
+
 v23.013.2251
 ------------
 - Bugfix for the display on the new MK12 board suggested by Venkat.
