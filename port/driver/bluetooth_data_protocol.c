@@ -35,9 +35,9 @@
 #include "driver/bluetooth_low_energy.h"
 #include "driver/config.h"
 #include "driver/fpga.h"
-#include "driver/jojpeg.h"
 #include "driver/ov5640.h"
 #include "driver/timer.h"
+#include "libjojpeg.h"
 
 // List of flags to append in the header when we send file chunks over BLE
 enum {

@@ -37,25 +37,56 @@
 #include "driver/max77654.h"
 #include "driver/spi.h"
 
+#include "libgfx.h"
+
+#define LEN(x) (sizeof(x) / sizeof*(x))
+
 STATIC mp_obj_t mod_display___init__(void)
 {
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_display___init___obj, mod_display___init__);
 
-STATIC mp_obj_t display_show(mp_obj_t row_num_in)
+STATIC mp_obj_t display_show(void)
 {
-    mp_int_t row_num = mp_obj_get_int(row_num_in);
-    uint8_t row_buf[ECX336CN_WIDTH * 3];
+    uint8_t yuv422_buf[ECX336CN_WIDTH * 2];
+    gfx_obj_t objs[] = {
+        {
+            .type = GFX_TYPE_RECTANGLE,
+            .x = 20,
+            .y = 40,
+            .width = 350 + 20,
+            .height = 60,
+            .yuv444 = { 0x30, 0x30, 0x30 },
+        }, {
+            .type = GFX_TYPE_LINE,
+            .x = 20,
+            .y = 40,
+            .width = 350 + 20,
+            .height = 0,
+            .yuv444 = { 0xFF, 0x00, 0x00 },
+        }, {
+            .type = GFX_TYPE_TEXTBOX,
+            .x = 20 + 10,
+            .y = 40 + 10,
+            .width = 350,
+            .height = 60,
+            .yuv444 = { 0xFF, 0xFF, 0xFF },
+        }
+    };
 
-    memset(row_buf, 0x55, sizeof row_buf);
     fpga_graphics_on();
-    fpga_graphics_set_write_addr(row_num * sizeof row_buf);
-    fpga_graphics_write_data(row_buf, sizeof row_buf);
+
+    for (size_t y = 0; y < OV5640_HEIGHT; y++) {
+        gfx_render_row(yuv422_buf, sizeof yuv422_buf, y, objs, LEN(objs));
+        fpga_graphics_set_write_addr(y * sizeof yuv422_buf);
+        fpga_graphics_write_data(yuv422_buf, sizeof yuv422_buf);
+    }
+
     fpga_graphics_swap_buffer();
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_1(display_show_obj, &display_show);
+MP_DEFINE_CONST_FUN_OBJ_0(display_show_obj, &display_show);
 
 STATIC mp_obj_t display_brightness(mp_obj_t brightness_in)
 {

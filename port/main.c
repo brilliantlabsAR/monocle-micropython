@@ -53,7 +53,6 @@
 #include "driver/fpga.h"
 #include "driver/i2c.h"
 #include "driver/iqs620.h"
-#include "driver/jojpeg.h"
 #include "driver/max77654.h"
 #include "driver/nrfx.h"
 #include "driver/ov5640.h"
@@ -129,7 +128,7 @@ int main(void)
     spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
 
     LOG("TIMER");
-    //timer_init();
+    timer_init();
 
     LOG("MAX77654");
     max77654_init();

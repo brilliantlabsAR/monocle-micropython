@@ -86,9 +86,13 @@
 #define ECX336CN_WIDTH              640
 #define ECX336CN_HEIGHT             400
 
-// JOJPEG
+// LIGJOJPEG
 
 #define JOJPEG_WIDTH_MAX            OV5640_WIDTH
+
+// LIGGFX
+
+#define GFX_OBJ_NUM
 
 // Driver declaration
 
