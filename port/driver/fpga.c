@@ -192,12 +192,11 @@ static void fpga_capture_get_data(uint8_t *buf, size_t len)
 
 size_t fpga_capture_read(uint8_t *buf, size_t len)
 {
-    LOG("len=%d", len);
-
     for (size_t n, i = 0; i < len; i++)
     {
         // the FPGA stores the length to read in a dedicated register
         n = fpga_capture_get_status() & 0x0FFF;
+        LOG("len=%d n=%d", len, n);
 
         // if there is nothing more to read, stop now
         if (n == 0)
@@ -219,4 +218,7 @@ void fpga_init(void)
     // Reset the CSN pin, changed as it is also MODE1.
     nrf_gpio_pin_write(SPI_FPGA_CS_PIN, true);
     nrfx_systick_delay_ms(1);
+
+    // enable 24mhz pixel clock to the ov5640, required for i²c configuration
+    fpga_camera_on();
 }

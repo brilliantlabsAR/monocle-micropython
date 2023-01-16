@@ -36,7 +36,6 @@
 #include "nrfx_twi.h"
 
 #include "driver/config.h"
-#include "driver/fpga.h"
 #include "driver/i2c.h"
 #include "driver/max77654.h"
 #include "driver/ov5640_data.h"
@@ -501,10 +500,6 @@ void ov5640_focus_init(void)
  */
 void ov5640_init(void)
 {
-    // enable 24mhz pixel clock to the ov5640, required for i²c configuration
-    fpga_camera_on();
-
-
     ov5640_reduce_size(640, 400);
     ov5640_mode_1x();
 
@@ -518,6 +513,5 @@ void ov5640_init(void)
 
     // Check the chip ID
     uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
-    LOG("id=0x%02X OV5640_ID=0x%02X", id, OV5640_ID);
-    //ASSERT(id == OV5640_ID);
+    ASSERT(id == OV5640_ID);
 }
