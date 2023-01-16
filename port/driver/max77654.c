@@ -33,8 +33,6 @@
 #include "driver/config.h"
 #include "driver/i2c.h"
 #include "driver/max77654.h"
-#include "driver/nrfx.h"
-#include "driver/timer.h"
 
 #define ASSERT  NRFX_ASSERT
 #define LEN(x)  (sizeof x / sizeof *x)

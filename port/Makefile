@@ -121,7 +121,6 @@ SRC += driver/fpga.c
 SRC += driver/i2c.c
 SRC += driver/iqs620.c
 SRC += driver/max77654.c
-SRC += driver/nrfx.c
 SRC += driver/ov5640.c
 SRC += driver/spi.c
 SRC += driver/timer.c

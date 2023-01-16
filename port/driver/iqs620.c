@@ -40,7 +40,6 @@
 #include "driver/config.h"
 #include "driver/i2c.h"
 #include "driver/iqs620.h"
-#include "driver/nrfx.h"
 #include "driver/timer.h"
 
 #define ASSERT  NRFX_ASSERT

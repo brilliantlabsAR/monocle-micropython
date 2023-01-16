@@ -33,7 +33,6 @@
 
 #include "driver/battery.h"
 #include "driver/config.h"
-#include "driver/nrfx.h"
 #include "driver/timer.h"
 
 #define ASSERT  NRFX_ASSERT

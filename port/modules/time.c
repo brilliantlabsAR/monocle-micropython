@@ -33,7 +33,6 @@
 
 #include "nrfx_systick.h"
 
-#include "driver/nrfx.h"
 #include "driver/timer.h"
 
 uint64_t time_at_init;

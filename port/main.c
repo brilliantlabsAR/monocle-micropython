@@ -43,6 +43,8 @@
 #include "nrfx_twi.h"
 #include "nrfx_spim.h"
 #include "nrfx_systick.h"
+#include "nrfx_gpiote.h"
+#include "nrfx_saadc.h"
 
 #include "driver/battery.h"
 #include "driver/bluetooth_data_protocol.h"
@@ -54,7 +56,6 @@
 #include "driver/i2c.h"
 #include "driver/iqs620.h"
 #include "driver/max77654.h"
-#include "driver/nrfx.h"
 #include "driver/ov5640.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
@@ -124,7 +125,9 @@ int main(void)
     // Start the drivers that only rely on the MCU peripherals.
 
     LOG("NRFX");
-    nrfx_init();
+    nrfx_systick_init();
+    nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
+    nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
 
     LOG("TIMER");
     timer_init();
@@ -144,7 +147,7 @@ int main(void)
     // Set to 0V on boot (datasheet p.11)
     nrf_gpio_pin_write(ECX336CN_XCLR_PIN, false);
     nrf_gpio_cfg_output(ECX336CN_XCLR_PIN);
-    spi_chip_deselect(SPI_DISP_CS_PIN);
+    spi_chip_deselect(ECX336CN_CS_N_PIN);
 
     LOG("GPIO (FPGA)");
     // MODE1 set low for AUTOBOOT from FPGA internal flash
@@ -156,8 +159,8 @@ int main(void)
 
     LOG("GPIO (FLASH)");
     // The FPGA might try to access this chip, let it do so.
-    nrf_gpio_pin_write(SPI_FLASH_CS_PIN, true);
-    nrf_gpio_cfg_output(SPI_FLASH_CS_PIN);
+    nrf_gpio_pin_write(FLASH_CS_N_PIN, true);
+    nrf_gpio_cfg_output(FLASH_CS_N_PIN);
 
     // Setup the power rails over I2C through the PMIC.  This will first power
     // off everything as part of the PMIC's init(), then we power the rails one
@@ -176,7 +179,7 @@ int main(void)
     max77654_rail_vled(true);
     nrfx_systick_delay_ms(400);
     max77654_rail_10v(true);
-    nrfx_systick_delay_ms(200);
+    nrfx_systick_delay_ms(1000);
 
     // Now we can setup the various peripherals over SPI, starting by the FPGA
     // upon which the other depend for their configuration.
@@ -186,6 +189,11 @@ int main(void)
 
     LOG("FPGA");
     fpga_init();
+
+    // The FPGA only starts the display and camera clocks now, which are used
+    // so these devices only get an opportunity to be booted now, they need 
+    // a bit more tiem.
+    nrfx_systick_delay_ms(1000);
 
     LOG("ECX336CN");
     ecx336cn_init();
