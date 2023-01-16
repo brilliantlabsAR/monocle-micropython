@@ -27,5 +27,5 @@
  * every 5 samples will be averaged, and the battery voltage and SoC updated.
  */
 
-void battery_init(void);
+void battery_init(uint8_t adc_pin);
 uint8_t battery_get_percent(void);

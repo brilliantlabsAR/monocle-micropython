@@ -53,7 +53,7 @@ STATIC mp_obj_t fpga_read(mp_obj_t addr_in, mp_obj_t len_in)
     size_t len = mp_obj_get_int(len_in);
 
     // Allocate a buffer for reading data into
-    uint8_t *out_data = m_malloc(len);
+    uint8_t *buf = m_malloc(len);
 
     // Create a list where we'll return the bytes
     mp_obj_t return_list = mp_obj_new_list(0, NULL);
@@ -61,17 +61,17 @@ STATIC mp_obj_t fpga_read(mp_obj_t addr_in, mp_obj_t len_in)
     // Read on the SPI using the command and address given
     spi_chip_select(SPI_FPGA_CS_PIN);
     spi_write_u16(addr);
-    spi_read(out_data, len);
+    spi_read(buf, len);
     spi_chip_deselect(SPI_FPGA_CS_PIN);
 
     // Copy the read bytes into the list object
     for (size_t i = 0; i < len; i++)
     {
-        mp_obj_list_append(return_list, MP_OBJ_NEW_SMALL_INT(out_data[i]));
+        mp_obj_list_append(return_list, MP_OBJ_NEW_SMALL_INT(buf[i]));
     }
 
     // Free the temporary buffer
-    m_free(out_data);
+    m_free(buf);
 
     // Return the list
     return MP_OBJ_FROM_PTR(return_list);
@@ -88,21 +88,21 @@ STATIC mp_obj_t fpga_write(mp_obj_t addr_in, mp_obj_t list_in)
     mp_obj_list_get(list_in, &len, &list);
 
     // Create a contiguous region with the bytes to read in.
-    uint8_t *in_data = m_malloc(len);
+    uint8_t *buf = m_malloc(len);
 
     // Copy the write bytes into the a continuous buffer
     for (size_t i = 0; i < len; i++)
     {
-        in_data[i] = mp_obj_get_int(list[i]);
+        buf[i] = mp_obj_get_int(list[i]);
     }
 
     spi_chip_select(SPI_FPGA_CS_PIN);
     spi_write_u16(addr);
-    spi_write(in_data, len);
+    spi_write(buf, len);
     spi_chip_deselect(SPI_FPGA_CS_PIN);
 
     // Free the temporary buffer
-    m_free(in_data);
+    m_free(buf);
 
     return mp_const_none;
 }

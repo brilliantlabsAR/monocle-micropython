@@ -31,6 +31,8 @@
 #include "libgfx.h"
 #include "font.h"
 
+#include "nrfx_log.h"
+
 #define LEN(x)  (sizeof(x) / sizeof*(x))
 
 typedef struct
@@ -180,7 +182,6 @@ static void gfx_render_ellipsis(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t
     // TODO implement ellipsis
 }
 
-
 void gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj_list, size_t obj_num)
 {
     for (size_t i = 0; i < obj_num; i++) {
@@ -191,19 +192,20 @@ void gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_
         }
 
         switch (obj->type) {
-        case GFX_TYPE_NULL:
-            // the drawing slot is not populated
-            continue;
         case GFX_TYPE_RECTANGLE:
+        LOG("GFX_TYPE_RECTANGLE");
             gfx_render_rectangle(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_LINE:
+        LOG("GFX_TYPE_LINE");
             gfx_render_line(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_TEXTBOX:
+        LOG("GFX_TYPE_TEXTBOX");
             gfx_render_textbox(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_ELLIPSIS:
+        LOG("GFX_TYPE_ELLIPSIS");
             gfx_render_ellipsis(yuv422_buf, yuv422_len, y, obj);
             break;
         default:

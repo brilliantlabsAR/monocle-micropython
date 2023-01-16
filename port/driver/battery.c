@@ -189,15 +189,15 @@ void battery_level_timer(void)
  * @brief Initialize the ADC.
  * This includes setting up buffering.
  */
-void battery_init(void)
+void battery_init(uint8_t adc_pin)
 {
     uint32_t err;
-    nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(BATTERY_ADC_PIN, 0);
+    nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(adc_pin, 0);
 
     channel.channel_config.reference = BATTERY_ADC_REFERENCE;
     channel.channel_config.gain = BATTERY_SAADC_GAIN_CONF;
 
-    nrf_gpio_cfg_input(BATTERY_ADC_PIN, NRF_GPIO_PIN_NOPULL);
+    nrf_gpio_cfg_input(adc_pin, NRF_GPIO_PIN_NOPULL);
 
     err = nrfx_saadc_channel_config(&channel);
     ASSERT(err == NRFX_SUCCESS);

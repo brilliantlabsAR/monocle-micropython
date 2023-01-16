@@ -480,6 +480,7 @@ void max77654_rail_1v8(bool on)
     LOG("%s", on ? "on" : "off");
     max77654_write(MAX77654_CNFG_LDO0_B,
       MAX77654_CNFG_LDO_B_MD | MAX77654_CNFG_LDO_B_ADE | en);
+    nrfx_systick_delay_ms(1);
 }
 
 /**
@@ -493,6 +494,7 @@ void max77654_rail_2v7(bool on)
     LOG("%s", on ? "on" : "off");
     max77654_write(MAX77654_CNFG_SBB0_B,
       MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | en);
+    nrfx_systick_delay_ms(1);
 }
 
 /**
@@ -506,6 +508,7 @@ void max77654_rail_1v2(bool on)
     LOG("%s", on ? "on" : "off");
     max77654_write(MAX77654_CNFG_SBB2_B,
       MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | en);
+    nrfx_systick_delay_ms(1);
 }
 
 /**
@@ -517,9 +520,9 @@ void max77654_rail_10v(bool on)
     uint8_t en = on ? MAX77654_DO : 0;
 
     LOG("%s", on ? "on" : "off");
-
     // wait a bit that the power stabilise before starting the 10V
     max77654_write(MAX77654_CNFG_GPIO2, MAX77654_DRV | en); 
+    nrfx_systick_delay_ms(1);
 }
 
 /**
@@ -531,6 +534,7 @@ void max77654_rail_vled(bool on)
 
     LOG("%s", on ? "on" : "off");
     max77654_write(MAX77654_CNFG_LDO1_B, MAX77654_CNFG_LDO_B_ADE | en);
+    nrfx_systick_delay_ms(1);
 }
 
 /**
@@ -539,10 +543,10 @@ void max77654_rail_vled(bool on)
 void max77654_power_off(void)
 {
     max77654_rail_10v(false);
+    max77654_rail_vled(false);
     max77654_rail_2v7(false);
     max77654_rail_1v8(false);
     max77654_rail_1v2(false);
-    max77654_rail_vled(false);
 }
 
 // open-drain, set low, LED on

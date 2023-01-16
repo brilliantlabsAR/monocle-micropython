@@ -57,21 +57,21 @@ STATIC mp_obj_t display_show(void)
             .y = 40,
             .width = 350 + 20,
             .height = 60,
-            .yuv444 = { 0x30, 0x30, 0x30 },
+            .yuv444 = { GFX_RGB_TO_YUV444(0x30, 0x30, 0x30) },
         }, {
             .type = GFX_TYPE_LINE,
             .x = 20,
             .y = 40,
             .width = 350 + 20,
             .height = 0,
-            .yuv444 = { 0xFF, 0x00, 0x00 },
+            .yuv444 = { GFX_RGB_TO_YUV444(0xFF, 0x00, 0x00) },
         }, {
             .type = GFX_TYPE_TEXTBOX,
             .x = 20 + 10,
             .y = 40 + 10,
             .width = 350,
             .height = 60,
-            .yuv444 = { 0xFF, 0xFF, 0xFF },
+            .yuv444 = { GFX_RGB_TO_YUV444(0xFF, 0xFF, 0xFF) },
         }
     };
 
@@ -79,6 +79,7 @@ STATIC mp_obj_t display_show(void)
 
     for (size_t y = 0; y < OV5640_HEIGHT; y++) {
         gfx_render_row(yuv422_buf, sizeof yuv422_buf, y, objs, LEN(objs));
+        memset(yuv422_buf, 0x00, sizeof yuv422_buf);
         fpga_graphics_set_write_addr(y * sizeof yuv422_buf);
         fpga_graphics_write_data(yuv422_buf, sizeof yuv422_buf);
     }
