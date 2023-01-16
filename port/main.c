@@ -41,6 +41,7 @@
 #include "nrfx_log.h"
 #include "nrf_sdm.h"
 #include "nrfx_twi.h"
+#include "nrfx_spim.h"
 #include "nrfx_systick.h"
 
 #include "driver/battery.h"
@@ -110,7 +111,7 @@ int main(void)
 {
     // All logging through SEGGER RTT interface
     SEGGER_RTT_Init();
-    LOG("Monocle firmware "BUILD_VERSION" "GIT_COMMIT);
+    PRINTF("\r\n" "Brilliant Monocle " BUILD_VERSION " " GIT_COMMIT "\r\n\r\n");
 
     // Initialise drivers
 
@@ -121,15 +122,19 @@ int main(void)
     nrfx_init();
 
     LOG("I2C");
-    i2c_init();
+    i2c_init(i2c0, I2C0_SCL_PIN, I2C0_SDA_PIN);
+    i2c_init(i2c1, I2C1_SCL_PIN, I2C1_SDA_PIN);
+
+    LOG("SPI");
+    spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
 
     LOG("TIMER");
-    timer_init();
+    //timer_init();
 
     LOG("MAX77654");
     max77654_init();
     nrfx_systick_delay_ms(1);
-    max77654_rail_1v2(true);
+    max77654_rail_1v2(true); // TODO: we are turning the FPGA rail off to debug the flash
     nrfx_systick_delay_ms(1);
     max77654_rail_1v8(true);
     nrfx_systick_delay_ms(1);
@@ -138,14 +143,13 @@ int main(void)
     max77654_rail_10v(true);
     nrfx_systick_delay_ms(10);
 
-    LOG("SPI");
-    spi_init();
-
     LOG("FPGA");
     fpga_init();
 
     LOG("ECX336CN");
     ecx336cn_init();
+
+    LOG("setup done");
 
     // Initialise the stack pointer for the main thread
     mp_stack_set_top(&_stack_top);
@@ -195,10 +199,6 @@ int main(void)
     NVIC_SystemReset();
 }
 
-/**
- * @brief If an assert is triggered, the firmware reboots into bootloader mode
- * pending for a bugfix to be flashed, then finally booting to firmware.
- */
 NORETURN void __assert_func(const char *file, int line, const char *func, const char *expr)
 {
     LOG("%s:%d: %s: %s", file, line, func, expr);

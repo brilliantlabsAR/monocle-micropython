@@ -41,6 +41,7 @@
 #include "driver/ov5640_data.h"
 #include "driver/ov5640.h"
 #include "driver/timer.h"
+#include "driver/fpga.h"
 
 #define ASSERT NRFX_ASSERT
 #define LEN(x) (sizeof (x) / sizeof *(x))
@@ -500,6 +501,10 @@ void ov5640_focus_init(void)
  */
 void ov5640_init(void)
 {
+    fpga_camera_on();
+    nrfx_systick_delay_ms(10);
+    i2c_scan(i2c1);
+
     ov5640_reduce_size(640, 400);
     ov5640_mode_1x();
 

@@ -40,14 +40,10 @@ extern void  main(void) __attribute__((noreturn));
 extern void SystemInit(void);
 
 void Default_HardFault_Handler(void) {
-    // __assert_func() will at the end provoke a reboot into bootloader mode
-    // which permits firmware failure to fallback to bootloader mode.
     assert(!"HardFault_Handler");
 }
 
 void Default_Handler(void) {
-    // __assert_func() will at the end provoke a reboot into bootloader mode
-    // which permits firmware failure to fallback to bootloader mode.
     assert(!"Default_Handler");
 }
 

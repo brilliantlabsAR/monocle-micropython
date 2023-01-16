@@ -30,6 +30,7 @@
 #include <stdint.h>
 
 #include "nrf_gpio.h"
+#include "nrfx_spim.h"
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
 

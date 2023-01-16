@@ -36,6 +36,21 @@
  * Prepare GPIO pins before the various chips receives power.
  */
 
+void nrfx_gpio_spi(void)
+{
+    // configure CS pin for the Display (for active low)
+    nrf_gpio_pin_set(SPI_DISP_CS_PIN);
+    nrf_gpio_cfg_output(SPI_DISP_CS_PIN);
+
+    // for now, pull high to disable external flash chip
+    nrf_gpio_pin_set(SPI_FLASH_CS_PIN);
+    nrf_gpio_cfg_output(SPI_FLASH_CS_PIN);
+
+    // for now, pull high to disable external flash chip
+    nrf_gpio_pin_set(SPI_FPGA_CS_PIN);
+    nrf_gpio_cfg_output(SPI_FPGA_CS_PIN);
+}
+
 void nrfx_gpio_ov5640(void)
 {
     // Set to 0V = hold camera in reset.
@@ -52,13 +67,6 @@ void nrfx_gpio_ecx336cn(void)
     // Set to 0V on boot (datasheet p.11)
     nrf_gpio_pin_write(ECX336CN_XCLR_PIN, 0);
     nrf_gpio_cfg_output(ECX336CN_XCLR_PIN);
-}
-
-void nrf_gpio_flash(void)
-{
-    // Prepare the SPI_CS pin for the flash.
-    nrf_gpio_pin_set(SPI_FLASH_CS_PIN);
-    nrf_gpio_cfg_output(SPI_FLASH_CS_PIN);
 }
 
 void nrfx_gpio_fpga(void)
@@ -103,6 +111,6 @@ void nrfx_init(void)
     // GPIO
     nrfx_gpio_ov5640();
     nrfx_gpio_ecx336cn();
-    nrf_gpio_flash();
+    nrfx_gpio_spi();
     nrfx_gpio_fpga();
 }

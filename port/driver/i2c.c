@@ -104,7 +104,10 @@ bool i2c_read(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz)
     return i2c_filter_error(__func__, nrfx_twi_xfer(&twi, &xfer, 0));
 }
 
-static void i2c_scan_instance(nrfx_twi_t twi)
+/**
+ * Perform an I2C scan of an interface and log the result.
+ */
+void i2c_scan(nrfx_twi_t twi)
 {
     uint8_t addr;
     uint8_t sample_data;
@@ -127,16 +130,7 @@ static void i2c_scan_instance(nrfx_twi_t twi)
     }
 }
 
-/**
- * Perform an I2C scan of all interfaces and log the result.
- */
-void i2c_scan(void)
-{
-    i2c_scan_instance(i2c0);
-    i2c_scan_instance(i2c1);
-}
-
-static void i2c_init_instance(nrfx_twi_t twi, uint8_t scl_pin, uint8_t sda_pin)
+void i2c_init(nrfx_twi_t twi, uint8_t scl_pin, uint8_t sda_pin)
 {
     uint32_t err;
     nrfx_twi_config_t config = {
@@ -149,14 +143,4 @@ static void i2c_init_instance(nrfx_twi_t twi, uint8_t scl_pin, uint8_t sda_pin)
     err = nrfx_twi_init(&twi, &config, NULL, NULL);
     ASSERT(err == NRFX_SUCCESS);
     nrfx_twi_enable(&twi);
-}
-
-/**
- * Configure the hardware I2C instance as well as software-based I2C instance.
- */
-// TODO: validate that 400kH speed works & increase to that
-void i2c_init(void)
-{
-    i2c_init_instance(i2c0, I2C0_SCL_PIN, I2C0_SDA_PIN);
-    i2c_init_instance(i2c1, I2C1_SCL_PIN, I2C1_SDA_PIN);
 }

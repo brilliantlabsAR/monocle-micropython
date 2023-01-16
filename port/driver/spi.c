@@ -31,16 +31,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "driver/config.h"
-#include "driver/spi.h"
 #include "nrfx_log.h"
 #include "nrfx_spim.h"
 #include "nrfx_systick.h"
 
+#include "driver/config.h"
+#include "driver/spi.h"
+
 #define ASSERT  NRFX_ASSERT
 
 // SPI instance
-static const nrfx_spim_t spi2 = NRFX_SPIM_INSTANCE(2);
+const nrfx_spim_t spi2 = NRFX_SPIM_INSTANCE(2);
 
 // Indicate that SPI completed the transfer from the interrupt handler to main loop.
 static volatile bool m_xfer_done = true;
@@ -124,7 +125,7 @@ void spi_write(uint8_t *buf, size_t len)
  * @param MOSI_pin SPI MOSI pin used with it.
  * @param MISO_pin SPI MISO pin used with it.
  */
-static void spi_init_instance(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_pin)
+void spi_init(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_pin)
 {
     uint32_t err;
     nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
@@ -137,24 +138,4 @@ static void spi_init_instance(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin
 
     err = nrfx_spim_init(&spi2, &config, spim_event_handler, NULL);
     ASSERT(err == NRFX_SUCCESS);
-}
-
-/**
- * Configure the SPI peripheral.
- */
-void spi_init(void)
-{
-    spi_init_instance(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
-
-    // configure CS pin for the Display (for active low)
-    nrf_gpio_pin_set(SPI_DISP_CS_PIN);
-    nrf_gpio_cfg_output(SPI_DISP_CS_PIN);
-
-    // for now, pull high to disable external flash chip
-    nrf_gpio_pin_set(SPI_FLASH_CS_PIN);
-    nrf_gpio_cfg_output(SPI_FLASH_CS_PIN);
-
-    // for now, pull high to disable external flash chip
-    nrf_gpio_pin_set(SPI_FPGA_CS_PIN);
-    nrf_gpio_cfg_output(SPI_FPGA_CS_PIN);
 }

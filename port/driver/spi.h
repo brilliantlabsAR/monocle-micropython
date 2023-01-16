@@ -25,7 +25,9 @@
  * Wrapper over the NRFX SPIM driver.
  */
 
-void spi_init(void);
+extern const nrfx_spim_t spi2;
+
+void spi_init(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_pin);
 void spi_uninit(void);
 void spi_chip_select(uint8_t cs_pin);
 void spi_chip_deselect(uint8_t cs_pin);

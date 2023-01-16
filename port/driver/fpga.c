@@ -30,6 +30,7 @@
 #include <stdint.h>
 
 #include "nrfx_systick.h"
+#include "nrfx_spim.h"
 #include "nrfx_log.h"
 
 #include "driver/config.h"
@@ -217,7 +218,9 @@ void fpga_init(void)
 {
     // Reset the CSN pin, changed as it is also MODE1.
     nrf_gpio_pin_write(SPI_FPGA_CS_PIN, true);
-    nrfx_systick_delay_ms(1);
+
+    // Make sure the FPGA gets plenty of time to wait.
+    nrfx_systick_delay_ms(10);
 
     // enable 24mhz pixel clock to the ov5640, required for i²c configuration
     fpga_camera_on();

@@ -90,7 +90,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_device___init___obj, mod_device___init__);
 STATIC mp_obj_t device_update(const mp_obj_t reboot)
 {
     if (mp_obj_is_true(reboot))
-        MICROPY_BOARD_ENTER_BOOTLOADER(0, NULL);
+        mp_hal_enter_bootloader();
     return mp_const_true;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(device_update_obj, device_update);

@@ -28,6 +28,7 @@
 #include "py/runtime.h"
 
 #include "nrfx_log.h"
+#include "nrfx_spim.h"
 
 #include "driver/bluetooth_data_protocol.h"
 #include "driver/config.h"

@@ -28,6 +28,7 @@
 #include "py/runtime.h"
 
 #include "nrfx_log.h"
+#include "nrfx_spim.h"
 
 #include "driver/config.h"
 #include "driver/fpga.h"
