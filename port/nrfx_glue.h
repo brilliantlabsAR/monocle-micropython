@@ -37,7 +37,7 @@
 #define ARRAY_SIZE MP_ARRAY_SIZE
 #endif
 
-#define NRFX_ASSERT(exp) do if (!(exp)) __asm__("bkpt"); while (0)
+#define NRFX_ASSERT             assert
 #define NRFX_STATIC_ASSERT(exp) _Static_assert(exp, #exp)
 
 void mp_hal_delay_us(mp_uint_t us);

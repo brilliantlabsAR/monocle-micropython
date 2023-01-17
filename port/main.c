@@ -75,6 +75,9 @@ extern uint32_t _heap_start;
 /** This is the end of the heap as set in the nrf52832.ld file */
 extern uint32_t _heap_end;
 
+/** Encode the number of the peripheral that starts as a blinking pattern. */
+uint8_t assert_blink_num;
+
 /**
  * @brief Garbage collection route for nRF.
  */
@@ -102,6 +105,35 @@ NORETURN void nlr_jump_fail(void *val)
 {
     (void)val;
     assert(!"exception raised without any handlers for it");
+}
+
+void ble_on_connect(void)
+{
+    max77654_led_green(false);
+}
+
+void assert_blink(uint8_t num)
+{
+    for (size_t i = 0; i < num; i++)
+    {
+        max77654_led_red(true);
+        nrfx_systick_delay_ms(100);
+        max77654_led_red(false);
+        nrfx_systick_delay_ms(200);
+    }
+}
+
+NORETURN void __assert_func(const char *file, int line, const char *func, const char *expr)
+{
+    // upon an assert failure, alert that something went wrong
+    for (;;)
+    {
+        // repeatedly display the error message, which helps a bit with RTT
+        LOG("%s:%d: %s: %s", file, line, func, expr);
+
+        assert_blink(assert_blink_num);
+        nrfx_systick_delay_ms(1000);
+    }
 }
 
 /**
@@ -134,6 +166,9 @@ int main(void)
         nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
     }
 
+    // Start the generic timer, used for various periodic software tasks.
+    // Other drivers will be adding callbacks to it
+
     LOG("TIMER");
     {
         timer_init();
@@ -157,6 +192,7 @@ int main(void)
         // Set to 0V = hold camera in reset.
         nrf_gpio_pin_write(OV5640_RESETB_N_PIN, false);
         nrf_gpio_cfg_output(OV5640_RESETB_N_PIN);
+
         // Set to 0V = not asserted.
         nrf_gpio_pin_write(OV5640_PWDN_PIN, false);
         nrf_gpio_cfg_output(OV5640_PWDN_PIN);
@@ -186,22 +222,17 @@ int main(void)
         // The FPGA might try to access this chip, let it do so.
         nrf_gpio_pin_write(FLASH_CS_N_PIN, true);
         nrf_gpio_cfg_output(FLASH_CS_N_PIN);
-
-        // Setup the power rails over I2C through the PMIC.  This will first power
-        // off everything as part of the PMIC's init(), then we power the rails one
-        // by one and wait that each chip started before configuring them.
-        // Do not start the 10V power rail yet.
     }
+
+    // Setup the power rails over I2C through the PMIC.  This will first power
+    // off everything as part of the PMIC's init(), then we power the rails one
+    // by one and wait that each chip started before configuring them.
+    // Do not start the 10V power rail yet.
 
     LOG("I2C");
     {
         i2c_init(i2c0, I2C0_SCL_PIN, I2C0_SDA_PIN);
         i2c_init(i2c1, I2C1_SCL_PIN, I2C1_SDA_PIN);
-    }
-
-    LOG("SPI");
-    {
-        spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
     }
 
     LOG("MAX77654");
@@ -211,6 +242,7 @@ int main(void)
         max77654_rail_1v8(true);
         max77654_rail_2v7(true);
         max77654_rail_vled(true);
+
         // Wait the power rail to stabilize, and other chips to boot.
         nrfx_systick_delay_ms(300);
         max77654_rail_10v(true);
@@ -220,29 +252,44 @@ int main(void)
     // Now we can setup the various peripherals over SPI, starting by the FPGA
     // upon which the other depend for their configuration.
 
-    LOG("FPGA");
+    LOG("SPI");
+    {
+        spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
+    }
+
+    LOG("FPGA"); assert_blink_num = 2;
     {
         fpga_init();
     }
 
-    LOG("ECX336CN");
+    LOG("ECX336CN"); assert_blink_num = 3;
     {
         ecx336cn_init();
     }
 
-    LOG("OV5540");
+    LOG("OV5540"); assert_blink_num = 4;
     {
         ov5640_init();
     }
 
     // Finally initiate user-input related peripherals, which do not make
     // sense until everything else is setup.
-    LOG("IQS620");
+
+    LOG("IQS620"); assert_blink_num = 5;
     {
         iqs620_init();
     }
 
-    LOG("setup done");
+    LOG("FLASH"); assert_blink_num = 6;
+    {
+
+    }
+
+    LOG("DONE"); assert_blink_num = 10;
+    {
+        // Let the user know everything is ready and that the device
+        max77654_led_green(true);
+    }
 
     // Initialise the stack pointer for the main thread
     mp_stack_set_top(&_stack_top);
@@ -290,10 +337,4 @@ int main(void)
 
     // Reset chip
     NVIC_SystemReset();
-}
-
-NORETURN void __assert_func(const char *file, int line, const char *func, const char *expr)
-{
-    LOG("%s:%d: %s: %s", file, line, func, expr);
-    for (;;) __asm__("bkpt");
 }

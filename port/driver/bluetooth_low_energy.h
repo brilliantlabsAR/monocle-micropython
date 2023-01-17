@@ -30,6 +30,9 @@
 
 extern uint16_t ble_negotiated_mtu;
 
+extern void ble_on_connect(void);
+extern void ble_on_disconnect(void);
+
 void ble_init(void);
 void ble_nus_tx(char const *buf, size_t len);
 void ble_raw_tx(uint8_t const *buf, uint16_t len);
