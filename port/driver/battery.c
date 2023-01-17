@@ -76,6 +76,10 @@ static uint8_t battery_percent;
 // Reduces the frequency of battery sensing.
 static uint8_t battery_timer_counter;
 
+// Variables for computing the travelling mean
+static float battery_mean_value;
+static float battery_mean_count;
+
 static float battery_saadc_to_voltage(nrf_saadc_value_t result)
 {
     // V*GAIN / REFERENCE = RESULT / 2^RESOLUTION
@@ -133,12 +137,17 @@ uint8_t battery_get_percent(void)
  */
 static float battery_travelling_mean(float new)
 {
-    static float mean = 0;
-    static float count = 0;
+    // compute the average by replicating the mean by the accumulated number of values
+    battery_mean_value =
+        battery_mean_value * battery_mean_count + new
+        / (battery_mean_count + 1);
 
-    mean = (mean * count + new * 1) / (count + 1);
-    count = (count == BATTERY_MEAN_WINDOW) ? (BATTERY_MEAN_WINDOW) : (count + 1);
-    return mean;
+    // we want a travelling mean, so always give the last number 1/10th of the significance
+    if (battery_mean_count < BATTERY_MEAN_WINDOW)
+        battery_mean_count++;
+
+    // return
+    return battery_mean_value;
 }
 
 static nrf_saadc_value_t battery_get_saadc(void)
@@ -194,7 +203,7 @@ void battery_level_timer(void)
     // put the device into deep sleep mode with periodic wakeup from RTC.
     if (battery_percent == 0)
     {
-        LOG("battery_percent=%d%% sleeping...", battery_percent);
+        //LOG("battery_percent=%d%% sleeping...", battery_percent);
         //NVIC_SystemReset();
     }
 }
@@ -215,6 +224,9 @@ void battery_init(uint8_t adc_pin)
 
     err = nrfx_saadc_channel_config(&channel);
     ASSERT(err == NRFX_SUCCESS);
+
+    // Flush a few ADC values before actually reading
+    battery_get_saadc();
 
     // Add a timer handler for periodically updating the battery level value.
     timer_add_handler(&battery_level_timer);

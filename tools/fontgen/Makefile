@@ -1,4 +1,4 @@
-FONTS = font_13.txt font_7.txt font_8.txt
+FONTS = font_26.txt font_13.txt font_7.txt font_8.txt
 
 
 all: font.c font.h

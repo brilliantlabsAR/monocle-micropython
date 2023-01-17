@@ -41,15 +41,12 @@ typedef struct
     uint8_t const *bitmap;
 } gfx_glyph_t;
 
-uint8_t const *gfx_font = font_13;
+uint8_t const *gfx_font = font_26;
 
 static inline void gfx_draw_pixel(uint8_t *yuv422_buf, uint16_t x, uint8_t yuv444[3])
 {
-    static bool odd = 0;
-
     yuv422_buf[0] = yuv444[0];
-    yuv422_buf[1] = yuv444[1 + odd];
-    odd = !odd;
+    yuv422_buf[1] = yuv444[1 + x % 2];
 }
 
 static inline void gfx_draw_segment(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t beg, uint16_t end, uint8_t yuv444[3])
@@ -182,6 +179,14 @@ static void gfx_render_ellipsis(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t
     // TODO implement ellipsis
 }
 
+void gfx_fill_black(uint8_t *yuv422_buf, size_t yuv422_len)
+{
+    for (size_t i = 0; i < yuv422_len; i++)
+    {
+        yuv422_buf[i] = (i % 2 == 0) ? 0x80 : 0x00;
+    }
+}
+
 void gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj_list, size_t obj_num)
 {
     for (size_t i = 0; i < obj_num; i++) {
@@ -193,20 +198,17 @@ void gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_
 
         switch (obj->type) {
         case GFX_TYPE_RECTANGLE:
-        LOG("GFX_TYPE_RECTANGLE");
+        LOG("GFX_TYPE_RECTANGLE len=%d y=%d obj={x=%d y=%d w=%d h=%d}", yuv422_len, y, obj->x, obj->y, obj->width, obj->height);
             gfx_render_rectangle(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_LINE:
-        LOG("GFX_TYPE_LINE");
-            gfx_render_line(yuv422_buf, yuv422_len, y, obj);
+        LOG("GFX_TYPE_LINE y=%d obj={x=%d y=%d w=%d h=%d}", yuv422_len, y, obj->x, obj->y, obj->width, obj->height);            gfx_render_line(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_TEXTBOX:
-        LOG("GFX_TYPE_TEXTBOX");
-            gfx_render_textbox(yuv422_buf, yuv422_len, y, obj);
+        LOG("GFX_TYPE_TEXTBOX y=%d obj={x=%d y=%d w=%d h=%d}", yuv422_len, y, obj->x, obj->y, obj->width, obj->height);            gfx_render_textbox(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_ELLIPSIS:
-        LOG("GFX_TYPE_ELLIPSIS");
-            gfx_render_ellipsis(yuv422_buf, yuv422_len, y, obj);
+        LOG("GFX_TYPE_ELLIPSIS y=%d obj={x=%d y=%d w=%d h=%d}", yuv422_len, y, obj->x, obj->y, obj->width, obj->height);            gfx_render_ellipsis(yuv422_buf, yuv422_len, y, obj);
             break;
         default:
             assert(!"unknown type");

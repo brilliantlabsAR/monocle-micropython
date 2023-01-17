@@ -44,3 +44,4 @@ typedef struct
 
 void gfx_set_color(gfx_obj_t *gfx, uint16_t line_num, gfx_obj_t *obj_list, size_t obj_num);
 void gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj_list, size_t obj_num);
+void gfx_fill_black(uint8_t *yuv422_buf, size_t yuv422_len);
