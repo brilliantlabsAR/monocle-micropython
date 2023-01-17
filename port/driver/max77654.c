@@ -410,7 +410,7 @@ struct { uint8_t addr, data; } max77654_conf[] = {
     // ICHGIN_LIM_DEF=0: clear this bit so dev brd "M" OTP matches "B" OTP of 0, that is ICHGIN_LIM scale starts at 95mA
     // ICHGIN_LIM assumes CNFG_SBB_TOP.ICHGIN_LIM_DEF = 0
     // Drive strength, slow down to reduce EMI (but reduces efficiency)
-    { MAX77654_CNFG_SBB_TOP, 0x02 },
+    { MAX77654_CNFG_SBB_TOP, 0x00 },
 
     // GPIO configuration
 

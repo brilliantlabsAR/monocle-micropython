@@ -75,46 +75,6 @@ extern uint32_t _heap_start;
 /** This is the end of the heap as set in the nrf52832.ld file */
 extern uint32_t _heap_end;
 
-void nrfx_gpio_spi(void)
-{
-    // configure CS pin for the Display (for active low)
-    nrf_gpio_pin_set(ECX336CN_CS_N_PIN);
-    nrf_gpio_cfg_output(ECX336CN_CS_N_PIN);
-
-    // for now, pull high to disable external flash chip
-    nrf_gpio_pin_set(FLASH_CS_N_PIN);
-    nrf_gpio_cfg_output(FLASH_CS_N_PIN);
-
-    // for now, pull high to disable external flash chip
-    nrf_gpio_pin_set(FPGA_CS_N_PIN);
-    nrf_gpio_cfg_output(FPGA_CS_N_PIN);
-}
-
-void nrfx_gpio_fpga(void)
-{
-    // MODE1 set low for AUTOBOOT from FPGA internal flash
-    nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
-    nrf_gpio_cfg(
-        FPGA_MODE1_PIN,
-        NRF_GPIO_PIN_DIR_OUTPUT,
-        NRF_GPIO_PIN_INPUT_CONNECT,
-        NRF_GPIO_PIN_NOPULL,
-        NRF_GPIO_PIN_S0S1,
-        NRF_GPIO_PIN_NOSENSE
-    );
-
-    // Let the FPGA start as soon as it has the power on.
-    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
-    nrf_gpio_cfg(
-        FPGA_RECONFIG_N_PIN,
-        NRF_GPIO_PIN_DIR_OUTPUT,
-        NRF_GPIO_PIN_INPUT_CONNECT,
-        NRF_GPIO_PIN_NOPULL,
-        NRF_GPIO_PIN_S0S1,
-        NRF_GPIO_PIN_NOSENSE
-    );
-}
-
 /**
  * @brief Garbage collection route for nRF.
  */
@@ -160,96 +120,127 @@ int main(void)
     // host application gets started, this device would be likely ready.
 
     LOG("BLE");
-    ble_init();
+    {
+        ble_init();
+    }
 
     // Start the drivers that only rely on the MCU peripherals.
 
     LOG("NRFX");
-    nrfx_gpio_spi();
-    nrfx_gpio_fpga();
-
-    nrfx_systick_init();
-    nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
-    nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
+    {
+        // Init the built-in peripherals
+        nrfx_systick_init();
+        nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
+        nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
+    }
 
     LOG("TIMER");
-    timer_init();
+    {
+        timer_init();
+    }
 
     // Initialize the battery eary as it would check the remaining power
     // and eventually decide to go to sleep if too low.
 
     LOG("BATTERY");
-    battery_init(MAX77654_ADC_PIN);
+    {
+        battery_init(MAX77654_ADC_PIN);
+    }
 
     // Setup the GPIO states before powering-on the chips,
     // to provide particular pin state at each chip's bootup.
 
-    LOG("GPIO (OV5640");
-    // Set to 0V = hold camera in reset.
-    nrf_gpio_pin_write(OV5640_RESETB_N_PIN, false);
-    nrf_gpio_cfg_output(OV5640_RESETB_N_PIN);
-    // Set to 0V = not asserted.
-    nrf_gpio_pin_write(OV5640_PWDN_PIN, false);
-    nrf_gpio_cfg_output(OV5640_PWDN_PIN);
+    LOG("GPIO");
+    {
+        // OV5640
 
-    LOG("GPIO (ECX336CN)");
-    // Set to 0V on boot (datasheet p.11)
-    nrf_gpio_pin_write(ECX336CN_XCLR_PIN, false);
-    nrf_gpio_cfg_output(ECX336CN_XCLR_PIN);
-    spi_chip_deselect(ECX336CN_CS_N_PIN);
+        // Set to 0V = hold camera in reset.
+        nrf_gpio_pin_write(OV5640_RESETB_N_PIN, false);
+        nrf_gpio_cfg_output(OV5640_RESETB_N_PIN);
+        // Set to 0V = not asserted.
+        nrf_gpio_pin_write(OV5640_PWDN_PIN, false);
+        nrf_gpio_cfg_output(OV5640_PWDN_PIN);
 
-    LOG("GPIO (FPGA)");
-    // MODE1 set low for AUTOBOOT from FPGA internal flash
-    nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
-    nrf_gpio_cfg_output(FPGA_MODE1_PIN);
-    // Let the FPGA start as soon as it has the power on.
-    nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
-    nrf_gpio_cfg_output(FPGA_RECONFIG_N_PIN);
+        // ECX336CN
 
-    LOG("GPIO (FLASH)");
-    // The FPGA might try to access this chip, let it do so.
-    nrf_gpio_pin_write(FLASH_CS_N_PIN, true);
-    nrf_gpio_cfg_output(FLASH_CS_N_PIN);
+        // configure CS pin for the Display (for active low)
+        nrf_gpio_pin_set(ECX336CN_CS_N_PIN);
+        nrf_gpio_cfg_output(ECX336CN_CS_N_PIN);
 
-    // Setup the power rails over I2C through the PMIC.  This will first power
-    // off everything as part of the PMIC's init(), then we power the rails one
-    // by one and wait that each chip started before configuring them.
-    // Do not start the 10V power rail yet.
+        // Set low on boot (datasheet p.11)
+        nrf_gpio_pin_write(ECX336CN_XCLR_PIN, false);
+        nrf_gpio_cfg_output(ECX336CN_XCLR_PIN);
+
+        // FPGA
+
+        // MODE1 set low for AUTOBOOT from FPGA internal flash
+        nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
+        nrf_gpio_cfg_output(FPGA_MODE1_PIN);
+
+        // Let the FPGA start as soon as it has the power on.
+        nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
+        nrf_gpio_cfg_output(FPGA_RECONFIG_N_PIN);
+
+        // FLASH
+
+        // The FPGA might try to access this chip, let it do so.
+        nrf_gpio_pin_write(FLASH_CS_N_PIN, true);
+        nrf_gpio_cfg_output(FLASH_CS_N_PIN);
+
+        // Setup the power rails over I2C through the PMIC.  This will first power
+        // off everything as part of the PMIC's init(), then we power the rails one
+        // by one and wait that each chip started before configuring them.
+        // Do not start the 10V power rail yet.
+    }
 
     LOG("I2C");
-    i2c_init(i2c0, I2C0_SCL_PIN, I2C0_SDA_PIN);
-    i2c_init(i2c1, I2C1_SCL_PIN, I2C1_SDA_PIN);
+    {
+        i2c_init(i2c0, I2C0_SCL_PIN, I2C0_SDA_PIN);
+        i2c_init(i2c1, I2C1_SCL_PIN, I2C1_SDA_PIN);
+    }
 
     LOG("SPI");
-    spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
+    {
+        spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
+    }
 
     LOG("MAX77654");
-    max77654_init();
-    max77654_rail_1v2(true);
-    max77654_rail_1v8(true);
-    max77654_rail_2v7(true);
-    max77654_rail_vled(true);
-    // Wait the power rail to stabilize, and other chips to boot.
-    nrfx_systick_delay_ms(300);
-    max77654_rail_10v(true);
-    nrfx_systick_delay_ms(10);
+    {
+        max77654_init();
+        max77654_rail_1v2(true);
+        max77654_rail_1v8(true);
+        max77654_rail_2v7(true);
+        max77654_rail_vled(true);
+        // Wait the power rail to stabilize, and other chips to boot.
+        nrfx_systick_delay_ms(300);
+        max77654_rail_10v(true);
+        nrfx_systick_delay_ms(10);
+    }
 
     // Now we can setup the various peripherals over SPI, starting by the FPGA
     // upon which the other depend for their configuration.
 
     LOG("FPGA");
-    fpga_init();
+    {
+        fpga_init();
+    }
 
     LOG("ECX336CN");
-    ecx336cn_init();
+    {
+        ecx336cn_init();
+    }
 
     LOG("OV5540");
-    ov5640_init();
+    {
+        ov5640_init();
+    }
 
     // Finally initiate user-input related peripherals, which do not make
     // sense until everything else is setup.
     LOG("IQS620");
-    iqs620_init();
+    {
+        iqs620_init();
+    }
 
     LOG("setup done");
 
