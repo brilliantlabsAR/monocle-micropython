@@ -1,9 +1,13 @@
 Changelog
 =========
 
+v23.017.2227
+------------
+- Feature: rendering library working and flushing to the screen.
+
 v23.017.1326
 ------------
-- Set SPI to a low speed until the display is figured out.
+- Bugfix: Set SPI to a low speed until the display is figured out.
 
 v23.017.1219
 ------------
