@@ -41,15 +41,9 @@
 #include "driver/ov5640_data.h"
 #include "driver/ov5640.h"
 #include "driver/timer.h"
-#include "driver/fpga.h"
 
 #define ASSERT NRFX_ASSERT
 #define LEN(x) (sizeof (x) / sizeof *(x))
-
-static inline void ov5640_delay_ms(uint32_t ms)
-{
-    nrfx_systick_delay_ms(ms);
-}
 
 /**
  * Swap the byte order.
@@ -158,17 +152,17 @@ void ov5640_pwr_on(void)
     // step (1) --though already done in ov5640_init(), keep in case of re-try
     ov5640_set_power(false);
     ov5640_set_reset(true);
-    ov5640_delay_ms(5);
+    nrfx_systick_delay_ms(5);
     // step (2): 1.8V is already on
     // step (3), 2.8V is already on
     // step (4)
-    ov5640_delay_ms(8);
+    nrfx_systick_delay_ms(8);
     ov5640_set_power(true);
     // step (5)
-    ov5640_delay_ms(2);
+    nrfx_systick_delay_ms(2);
     ov5640_set_reset(false);
     // step (6)
-    ov5640_delay_ms(20);
+    nrfx_systick_delay_ms(20);
 
     ov5640_write_reg(0x3103, 0x11);    // system clock from pad, bit[1]
     ov5640_write_reg(0x3008, 0x82);
@@ -489,10 +483,6 @@ void ov5640_focus_init(void)
     ov5640_write_reg(0x3028, 0x00); // ?
     ov5640_write_reg(0x3029, 0x7F); // ?
     ov5640_write_reg(0x3000, 0x00); // enable MCU
-
-    ov5640_delay_ms(10);
-    LOG("ASSERT(0x%02X == 0x70)", ov5640_read_reg(0x3029));
-    //ASSERT(ov5640_read_reg(0x3029) == 0x70);
 }
 
 /**
@@ -501,9 +491,11 @@ void ov5640_focus_init(void)
  */
 void ov5640_init(void)
 {
-    fpga_camera_on();
-    nrfx_systick_delay_ms(10);
     i2c_scan(i2c1);
+
+    // Check the chip ID
+    uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
+    ASSERT(id == OV5640_ID);
 
     ov5640_reduce_size(640, 400);
     ov5640_mode_1x();
@@ -515,8 +507,4 @@ void ov5640_init(void)
     ov5640_contrast(3);
     ov5640_sharpness(33);
     ov5640_flip(true);
-
-    // Check the chip ID
-    uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
-    ASSERT(id == OV5640_ID);
 }
