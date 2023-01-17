@@ -41,17 +41,17 @@ typedef struct
     uint8_t const *bitmap;
 } gfx_glyph_t;
 
-uint8_t const *gfx_font = font_26;
+uint8_t const *gfx_font = font_50;
 
 static inline void gfx_draw_pixel(uint8_t *yuv422_buf, uint16_t x, uint8_t yuv444[3])
 {
-    yuv422_buf[0] = yuv444[1 + x % 2];
-    yuv422_buf[1] = yuv444[0];
+    yuv422_buf[x * 2 + 0] = yuv444[1 + x % 2];
+    yuv422_buf[x * 2 + 1] = yuv444[0];
 }
 
 static inline void gfx_draw_segment(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t beg, uint16_t end, uint8_t yuv444[3])
 {
-    for (size_t len = yuv422_len / 3, x = beg; x < end && x < len; x++) {
+    for (size_t len = yuv422_len / 2, x = beg; x < end && x < len; x++) {
         gfx_draw_pixel(yuv422_buf, x, yuv444);
     }
 }
@@ -130,16 +130,16 @@ static inline bool gfx_get_glyph_bit(gfx_glyph_t *glyph, uint16_t x, uint16_t y)
     return glyph->bitmap[i / 8] & 1 << (i % 8);
 }
 
-static size_t gfx_draw_glyph(uint8_t *yuv422_buf, size_t yuv422_len, gfx_glyph_t *glyph, uint16_t y, uint8_t yuv[3])
+static size_t gfx_draw_glyph(uint8_t *yuv422_buf, size_t yuv422_len, gfx_glyph_t *glyph, uint16_t y, uint8_t yuv444[3])
 {
     // for each vertical position
-    for (uint16_t x = 0; x < glyph->width && x * 3 < yuv422_len; x++) {
+    for (uint16_t x = 0; x < glyph->width && x < yuv422_len / 2; x++) {
 
         // check if the bit is set
         if (gfx_get_glyph_bit(glyph, x, y) == true) {
 
             // and only if so, fill the buffer with it
-            gfx_draw_pixel(yuv422_buf, x, yuv);
+            gfx_draw_pixel(yuv422_buf, x, yuv444);
         }
     }
     return glyph->width;
@@ -147,7 +147,7 @@ static size_t gfx_draw_glyph(uint8_t *yuv422_buf, size_t yuv422_len, gfx_glyph_t
 
 static void gfx_render_textbox(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj)
 {
-    char const *txt = "welcome aboard, remember to look around";
+    char const *txt = "welcome";
     uint16_t x_beg = obj->x;
     uint16_t x_end = obj->x + obj->width;
     uint16_t space_width = 2;
@@ -164,13 +164,13 @@ static void gfx_render_textbox(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t 
         glyph = gfx_get_glyph(gfx_font, *txt++);
 
         // stop if we are about to overflow the textbox
-        if (x >= x_end || x * 3 > yuv422_len)
+        if (x >= x_end || x * 2 > yuv422_len)
             break;
 
         // render the glyph, reduce the buffer to only the section to
         // draw into, vertical is adjusted to be height within the glyph
-        n = gfx_draw_glyph(yuv422_buf + x*3, yuv422_len, &glyph, y - obj->y, obj->yuv444);
-        n += space_width;
+        n = gfx_draw_glyph(yuv422_buf + x*2, yuv422_len, &glyph, y - obj->y, obj->yuv444);
+        n += space_width * 2;
     }
 }
 
@@ -198,17 +198,16 @@ void gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_
 
         switch (obj->type) {
         case GFX_TYPE_RECTANGLE:
-        LOG("GFX_TYPE_RECTANGLE len=%d y=%d obj={x=%d y=%d w=%d h=%d}", yuv422_len, y, obj->x, obj->y, obj->width, obj->height);
             gfx_render_rectangle(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_LINE:
-        LOG("GFX_TYPE_LINE y=%d obj={x=%d y=%d w=%d h=%d}", yuv422_len, y, obj->x, obj->y, obj->width, obj->height);            gfx_render_line(yuv422_buf, yuv422_len, y, obj);
+            gfx_render_line(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_TEXTBOX:
-        LOG("GFX_TYPE_TEXTBOX y=%d obj={x=%d y=%d w=%d h=%d}", yuv422_len, y, obj->x, obj->y, obj->width, obj->height);            gfx_render_textbox(yuv422_buf, yuv422_len, y, obj);
+            gfx_render_textbox(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_ELLIPSIS:
-        LOG("GFX_TYPE_ELLIPSIS y=%d obj={x=%d y=%d w=%d h=%d}", yuv422_len, y, obj->x, obj->y, obj->width, obj->height);            gfx_render_ellipsis(yuv422_buf, yuv422_len, y, obj);
+            gfx_render_ellipsis(yuv422_buf, yuv422_len, y, obj);
             break;
         default:
             assert(!"unknown type");

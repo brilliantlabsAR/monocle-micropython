@@ -12,7 +12,7 @@
 typedef struct glyph glyph_t;
 
 enum config {
-	GLYPH_MAX_SIZE = 32*16,
+	GLYPH_MAX_SIZE = 128*64,
 	ASCII_FIRST = ' ',
 };
 
