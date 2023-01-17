@@ -70,6 +70,9 @@ STATIC mp_obj_t fpga_read(mp_obj_t addr_in, mp_obj_t len_in)
         mp_obj_list_append(return_list, MP_OBJ_NEW_SMALL_INT(buf[i]));
     }
 
+    // Flush the buffer over SPI
+    fpga_cmd_write(addr, buf, len);
+
     // Free the temporary buffer
     m_free(buf);
 
@@ -96,10 +99,8 @@ STATIC mp_obj_t fpga_write(mp_obj_t addr_in, mp_obj_t list_in)
         buf[i] = mp_obj_get_int(list[i]);
     }
 
-    spi_chip_select(FPGA_CS_N_PIN);
-    spi_write_u16(addr);
-    spi_write(buf, len);
-    spi_chip_deselect(FPGA_CS_N_PIN);
+    // Fetch the buffer content from SPI
+    fpga_cmd_write(addr, buf, len);
 
     // Free the temporary buffer
     m_free(buf);
