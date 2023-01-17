@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v23.017.1219
+------------
+- Feature: add a blinking LED codes for the various failure modes for the factory, to remove boards who failed.
+
 v23.016.1142
 ------------
 - Refactor: reduce the number of drivers: added to modles
