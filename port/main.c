@@ -174,14 +174,6 @@ int main(void)
         timer_init();
     }
 
-    // Initialize the battery eary as it would check the remaining power
-    // and eventually decide to go to sleep if too low.
-
-    LOG("BATTERY");
-    {
-        battery_init(MAX77654_ADC_PIN);
-    }
-
     // Setup the GPIO states before powering-on the chips,
     // to provide particular pin state at each chip's bootup.
 
@@ -247,6 +239,14 @@ int main(void)
         nrfx_systick_delay_ms(300);
         max77654_rail_10v(true);
         nrfx_systick_delay_ms(10);
+    }
+
+    // Initialize the battery now that the MAX77654 is configured,
+    // and check the battery level immediately.
+
+    LOG("BATTERY");
+    {
+        battery_init(MAX77654_ADC_PIN);
     }
 
     // Now we can setup the various peripherals over SPI, starting by the FPGA

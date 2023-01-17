@@ -49,7 +49,7 @@ static volatile bool m_xfer_done = true;
 /**
  * SPI event handler
  */
-void spim_event_handler(nrfx_spim_evt_t const * p_event, void *p_context)
+void spim_event_handler(nrfx_spim_evt_t const *p_event, void *p_context)
 {
     // NOTE: there is only one event type: NRFX_SPIM_EVENT_DONE
     // so no need for case statement
@@ -74,7 +74,7 @@ void spi_chip_deselect(uint8_t cs_pin)
     nrf_gpio_pin_set(cs_pin);
 }
 
-static void spi_xfer(nrfx_spim_xfer_desc_t *xfer)
+static void spi_xfer_chunk(nrfx_spim_xfer_desc_t *xfer)
 {
     uint32_t err;
 
@@ -91,35 +91,38 @@ static void spi_xfer(nrfx_spim_xfer_desc_t *xfer)
 }
 
 /**
- * Write a buffer over SPI, and read the result back to the same buffer.
- * @param buf Data buffer to send, starting one byte just before that pointer (compatibility hack).
- * @param len Length of the buffer (buf[-1] excluded).
+ * @brief Read a buffer over SPI.
+ *
+ * @param buf Data buffer to send.
+ * @param len Length of the buffer.
  */
 void spi_read(uint8_t *buf, size_t len)
 {
-    for (size_t i = 0; i < len; i += SPI_MAX_XFER_LEN) {
-        size_t n = MIN(SPI_MAX_XFER_LEN, len - i);
+    for (size_t n = 0; len > 0; len -= n, buf += n) {
+        n = MIN(SPI_MAX_XFER_LEN, len);
         nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, n);
-        spi_xfer(&xfer);
+        spi_xfer_chunk(&xfer);
     }
 }
 
 /**
- * Write a buffer over SPI, and read the result back to the same buffer.
- * @param buf Data buffer to send, starting one byte just before that pointer (compatibility hack).
+ * @brief Write a buffer over SPI.
+ *
+ * @param buf Data buffer to receive.
  * @param len Length of the buffer (buf[-1] excluded).
  */
-void spi_write(uint8_t *buf, size_t len)
+void spi_write(uint8_t const *buf, size_t len)
 {
-    for (size_t i = 0; i < len; i += SPI_MAX_XFER_LEN) {
-        size_t n = MIN(SPI_MAX_XFER_LEN, len - i);
+    for (size_t n = 0; len > 0; len -= n, buf += n) {
+        n = MIN(SPI_MAX_XFER_LEN, len);
         nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, n);
-        spi_xfer(&xfer);
+        spi_xfer_chunk(&xfer);
     }
 }
 
 /**
- * Initialise an SPI master interface with defaults values.
+ * @brief Initialise an SPI master interface with defaults values.
+ *
  * @param spi The instance to configure.
  * @param sck_pin SPI SCK pin used with it.
  * @param MOSI_pin SPI MOSI pin used with it.
@@ -132,7 +135,7 @@ void spi_init(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_p
         sck_pin, mosi_pin, miso_pin, NRFX_SPIM_PIN_NOT_USED
     );
 
-    config.frequency = NRF_SPIM_FREQ_1M;
+    config.frequency = NRF_SPIM_FREQ_4M;
     config.mode      = NRF_SPIM_MODE_3;
     config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
 

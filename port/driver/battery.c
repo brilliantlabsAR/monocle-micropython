@@ -92,7 +92,9 @@ static uint8_t battery_voltage_to_percent(float voltage)
 {
     // Above the max is considered 100%.
     if (voltage > battery_discharge_curve[0])
+    {
         return 100;
+    }
 
     // Search for the first value below the measured voltage.
     for (size_t i = 0; i < NRFX_ARRAY_SIZE(battery_discharge_curve); i++)
@@ -117,6 +119,7 @@ static uint8_t battery_voltage_to_percent(float voltage)
 uint8_t battery_get_percent(void)
 {
     // Everything is handled by the ADC callback above.
+    // no need to disable interrupts, as it is an uint8_t: atomic operation.
     return battery_percent;
 }
 
@@ -154,19 +157,21 @@ static nrf_saadc_value_t battery_get_saadc(void)
 
     // Start the trigger chain: the callback will trigger another callback
     err = nrfx_saadc_mode_trigger();
-    NRFX_ASSERT(err == NRFX_SUCCESS);
+    ASSERT(err == NRFX_SUCCESS);
 
     return result;
 }
 
 /**
- * Perform an
+ * @brief Perform an ADC conversion to sense the battery level, and compute the mean value.
  */
-void battery_level_timer(void)
+static void battery_update_percent(void)
 {
     // Reduce the frequency at which this timer is called.
     if (++battery_timer_counter != 0) // letting it overflow
+    {
         return;
+    }
 
     // Compute the voltage, then percentage
     float v_inst = battery_saadc_to_voltage(battery_get_saadc());
@@ -175,12 +180,22 @@ void battery_level_timer(void)
 
     // For battery_discharge_curve.awk
     //LOG("%d v_mean=%d %d%%", (int)(v_inst * 1000), (int)(v_mean * 1000), battery_percent);
+}
 
-    // If the battery is too low, reset the device,
-    // letting the power-on init handle low-power condition.
-    if (battery_percent == 0) {
-        LOG("battery low! resetting the device then sleeping");
-        NVIC_SystemReset();
+/**
+ * @brief Function to execute periodically to update and check the battery level.
+ */
+void battery_level_timer(void)
+{
+    // make an ADC readings to set the global "battery_percent"
+    battery_update_percent();
+
+    // If the battery is below threshold (set by calibrating the "0" value),
+    // put the device into deep sleep mode with periodic wakeup from RTC.
+    if (battery_percent == 0)
+    {
+        LOG("battery_percent=%d%% sleeping...", battery_percent);
+        //NVIC_SystemReset();
     }
 }
 

@@ -43,7 +43,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_fpga___init___obj, mod_fpga___init__);
 
 static inline void spi_write_u16(uint16_t u16)
 {
-    uint8_t buf[] = { u16 >> 8, u16 >> 0, };
+    uint8_t buf[2] = { u16 >> 8, u16 >> 0 };
     spi_write(buf, sizeof buf);
 }
 
@@ -110,7 +110,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(fpga_write_obj, &fpga_write);
 
 STATIC mp_obj_t fpga_status(void)
 {
-    return MP_OBJ_NEW_SMALL_INT(fpga_system_id());
+    return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(fpga_status_obj, &fpga_status);
 

@@ -45,7 +45,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_camera___init___obj, mod_camera___init__);
 
 STATIC mp_obj_t camera_capture(void)
 {
-    fpga_camera_capture();
+    fpga_cmd(FPGA_CAMERA_CAPTURE);
     bluetooth_data_camera_capture("camera_shot.jpg", 100);
     return mp_const_none;
 }
@@ -53,16 +53,16 @@ MP_DEFINE_CONST_FUN_OBJ_0(camera_capture_obj, &camera_capture);
 
 STATIC mp_obj_t camera_live(void)
 {
-    fpga_camera_start();
-    fpga_live_video_start();
-    fpga_live_video_replay();
+    fpga_cmd(FPGA_CAMERA_START);
+    fpga_cmd(FPGA_LIVEVIDEO_START);
+    fpga_cmd(FPGA_LIVEVIDEO_REPLAY);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(camera_live_obj, &camera_live);
 
 STATIC mp_obj_t camera_stop(void)
 {
-    fpga_camera_stop();
+    fpga_cmd(FPGA_CAMERA_STOP);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(camera_stop_obj, &camera_stop);

@@ -49,7 +49,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_display___init___obj, mod_display___init__)
 
 STATIC mp_obj_t display_show(void)
 {
-    uint8_t yuv422_buf[ECX336CN_WIDTH * 2];
     gfx_obj_t objs[] = {
         {
             .type = GFX_TYPE_RECTANGLE,
@@ -74,17 +73,22 @@ STATIC mp_obj_t display_show(void)
             .yuv444 = { GFX_RGB_TO_YUV444(0xFF, 0xFF, 0xFF) },
         }
     };
+    uint8_t yuv422_buf[ECX336CN_WIDTH * 2];
 
-    fpga_graphics_on();
+    memset(yuv422_buf, 0x00, sizeof yuv422_buf);
+
+    fpga_cmd(FPGA_GRAPHICS_ON);
 
     for (size_t y = 0; y < OV5640_HEIGHT; y++) {
+        uint32_t u32 = y * sizeof yuv422_buf;
+        uint8_t base[sizeof u32] = { u32 << 24, u32 << 16, u32 << 8, u32 << 0 };
+
         gfx_render_row(yuv422_buf, sizeof yuv422_buf, y, objs, LEN(objs));
-        memset(yuv422_buf, 0x00, sizeof yuv422_buf);
-        fpga_graphics_set_write_addr(y * sizeof yuv422_buf);
-        fpga_graphics_write_data(yuv422_buf, sizeof yuv422_buf);
+        fpga_cmd_write(FPGA_GRAPHICS_BASE, base, sizeof base);
+        fpga_cmd_write(FPGA_GRAPHICS_DATA, yuv422_buf, sizeof yuv422_buf);
     }
 
-    fpga_graphics_swap_buffer();
+    //fpga_cmd(FPGA_GRAPHICS_SWAP);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_0(display_show_obj, &display_show);
