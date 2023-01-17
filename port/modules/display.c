@@ -56,7 +56,7 @@ STATIC mp_obj_t display_show(void)
             .y = 40,
             .width = 350 + 20,
             .height = 60,
-            .yuv444 = { GFX_RGB_TO_YUV444(0x30, 0x30, 0x30) },
+            .yuv444 = { GFX_RGB_TO_YUV444(0xFF, 0xFF, 0xFF) },
         }, {
             .type = GFX_TYPE_LINE,
             .x = 20,
@@ -70,7 +70,7 @@ STATIC mp_obj_t display_show(void)
             .y = 40 + 10,
             .width = 350,
             .height = 60,
-            .yuv444 = { GFX_RGB_TO_YUV444(0xFF, 0xFF, 0xFF) },
+            .yuv444 = { GFX_RGB_TO_YUV444(0xFF, 0x00, 0x00) },
         }
     };
     fpga_cmd(FPGA_GRAPHICS_ON);

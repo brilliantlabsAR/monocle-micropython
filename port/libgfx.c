@@ -45,8 +45,8 @@ uint8_t const *gfx_font = font_26;
 
 static inline void gfx_draw_pixel(uint8_t *yuv422_buf, uint16_t x, uint8_t yuv444[3])
 {
-    yuv422_buf[0] = yuv444[0];
-    yuv422_buf[1] = yuv444[1 + x % 2];
+    yuv422_buf[0] = yuv444[1 + x % 2];
+    yuv422_buf[1] = yuv444[0];
 }
 
 static inline void gfx_draw_segment(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t beg, uint16_t end, uint8_t yuv444[3])

@@ -1,4 +1,2 @@
-import led
-
-def red():
-    led.on(led.RED)
+import display
+display.show()
