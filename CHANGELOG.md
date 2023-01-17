@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v23.017.1326
+------------
+- Set SPI to a low speed until the display is figured out.
+
 v23.017.1219
 ------------
 - Feature: add a blinking LED codes for the various failure modes for the factory, to remove boards who failed.
