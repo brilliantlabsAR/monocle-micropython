@@ -88,6 +88,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: fgpa_bitstream.fs
+          asset_path: fpga_bitstream.fs
           asset_name: brilliant-monocle-${{ github.ref_name }}.fs
           asset_content_type: text/plain
