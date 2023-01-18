@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v23.018.1840
+------------
+- Feature: low power mode when charging in the case.
+
 v23.017.2227
 ------------
 - Feature: rendering library working and flushing to the screen.
