@@ -80,11 +80,6 @@ extern uint32_t _heap_end;
 /** Encode the number of the peripheral that starts as a blinking pattern. */
 static uint8_t assert_blink_num;
 
-/** RTC parameters used for the instance that wakes us up under poweroff mode. */
-static nrfx_rtc_config_t config = NRFX_RTC_DEFAULT_CONFIG;
-static nrfx_rtc_t rtc1 = NRFX_RTC_INSTANCE(1);
-#define RTC1 (&rtc1)
-
 /**
  * @brief Garbage collection route for nRF.
  */
@@ -143,43 +138,25 @@ NORETURN void __assert_func(const char *file, int line, const char *func, const 
     }
 }
 
-static void charging_status_check(void)
-{
-    uint32_t err;
-
-    if (max77654_is_charging())
-    {
-        LOG("turning the board off with an RTC wakeup enabled");
-
-        // Enable the RTC to wake us back from power off mode.
-        assert(err = NRFX_SUCCESS);
-        nrfx_rtc_enable(RTC1);
-
-        nrf_gpio_cfg_sense_input(IQS620_TOUCH_RDY_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
-
-        max77654_power_off();
-
-        // Charging is ongoing, going to sleep
-        err = sd_power_system_off();
-        assert(err = NRFX_SUCCESS);
-    }
-}
-
-static void charging_status_rtc_handler(nrfx_rtc_int_type_t event)
-{
-    LOG("RTC handler");
-    (void)event;
-    nrfx_rtc_enable(RTC1);
-}
-
 void charging_status_timer_task(void)
 {
     static uint8_t prescaler = 0;
 
-    // Divide the timer frequency a bit.
-    if (prescaler++ == 0) // let it overflow
+    // Divide the timer frequency a bit, let it overflow
+    // then check for the PMIC charge status.
+    if (prescaler++ == 0 && max77654_is_charging())
     {
-        charging_status_check();
+        uint32_t err;
+
+        // Wakeup from events of IQS620 touch controller .
+        nrf_gpio_cfg_sense_input(IQS620_TOUCH_RDY_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
+
+        // Power everything around off.
+        max77654_power_off();
+
+        // Power ourself off
+        err = sd_power_system_off();
+        assert(err = NRFX_SUCCESS);
     }
 }
 
@@ -204,16 +181,10 @@ int main(void)
 
     LOG("NRFX");
     {
-        uint32_t err;
-
         // Init the built-in peripherals
         nrfx_systick_init();
         nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
         nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
-
-        // Setup an RTC to wake-up from power-off state
-        err = nrfx_rtc_init(RTC1, &config, charging_status_rtc_handler);
-        assert(err = NRFX_SUCCESS);
     }
 
     // Turn on the SoftDevice early to allow use of softdevice-dependent calls
@@ -293,6 +264,7 @@ int main(void)
 
     LOG("BATTERY");
     {
+        // Periodically check the charger connection status.
         timer_add_task(charging_status_timer_task);
 
         battery_init(MAX77654_ADC_PIN);
