@@ -40,7 +40,6 @@
 #include "driver/config.h"
 #include "driver/i2c.h"
 #include "driver/iqs620.h"
-#include "driver/timer.h"
 
 // registers
 
@@ -171,15 +170,8 @@
 // Last known state of the buttons.
 static uint8_t iqs620_button_0_state;       
 static uint8_t iqs620_button_1_state;       
-
-/**
- * Workaround the fact taht nordic returns an ENUM instead of a simple integer.
- */
-static inline void check(char const *func, nrfx_err_t err)
-{
-    if (err != NRFX_SUCCESS)
-        LOG("%s: %s", func, NRFX_LOG_ERROR_STRING_GET(err));
-}
+static bool iqs620_enabled;
+static bool iqs620_triggered;
 
 /**
  * Configure a register with given value.
@@ -302,26 +294,6 @@ typedef enum
 } iqs620_state_t;
 
 /**
- * Callback to override to react to button 0 or 1 press event.
- * @param button The button number.
- */
-__attribute__((weak))
-void iqs620_callback_button_pressed(uint8_t button)
-{
-    LOG("button=0x%02X", button);
-}
-
-/**
- * Callback to override to react to button 0 or 1 press event.
- * @param button The button number.
- */
-__attribute__((weak))
-void iqs620_callback_button_released(uint8_t button)
-{
-    LOG("button=0x%02X", button);
-}
-
-/**
  * Trigger
  *
  * Proximity is just here to debounce the touch event: switching quickly
@@ -370,49 +342,51 @@ static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_
 {
     assert(pin == IQS620_TOUCH_RDY_PIN);
 
+    // Set the triggered state, used for waiting an event from the IQS620 chip.
+    if (!iqs620_enabled) {
+        iqs620_triggered = true;
+        return;
+    }
+
     uint8_t events;
     iqs620_read_reg(IQS620_GLOBAL_EVENTS, &events, 1);
-    LOG("events=0x%02x", events);
 
     if (events & IQS620_GLOBAL_EVENTS_PROX)
     {
         uint8_t proxflags;
         iqs620_read_reg(IQS620_PROX_FUSION_FLAGS, &proxflags, 1);
-        LOG("proxflags=0x%02x", proxflags);
         iqs620_process_state(0, &iqs620_button_0_state, STATE(proxflags, 0));
         iqs620_process_state(1, &iqs620_button_1_state, STATE(proxflags, 1));
-    }
-    if (events & IQS620_GLOBAL_EVENTS_SYS)
-    {
-        uint8_t sysflags;
-        iqs620_read_reg(IQS620_SYS_FLAGS, &sysflags, 1);
-        LOG("sysflags=0x%02x", sysflags);
-        if (sysflags & IQS620_SYS_FLAGS_RESET_HAPPENED)
-        {
-            LOG("reset detected, reconfiguring");
-            iqs620_configure();
-        }
     }
 }
 
 #undef STATE
 
 /**
- * Get the raw counts for tuning thresholds.
- * @param channel Sensor channel number to read the data from
+ * Enable the interrupt handler.
  */
-uint16_t iqs620_get_count(uint8_t channel)
+void iqs620_enable(void)
 {
-    uint16_t count;
-    uint8_t data[2];
-
-    // Read 2 bytes from the base address of the channel count register
-    iqs620_read_reg(channel * 2 + IQS620_CHANNEL_COUNT_0_LO, data, sizeof(data));
-
-    count = data[1] << 8 | data[0] << 0;
-    LOG("channel=%d count=%d", channel, count);
-    return (count);
+    __disable_irq();
+    iqs620_enabled = true;
+    __enable_irq();
 }
+
+void iqs620_wait(void)
+{
+    // watch the interrupt boolean flag while waiting for an event
+    while (!iqs620_triggered)
+    {
+        // the interrupt is set by GPIOTE by iqs620_init()
+        __WFI();
+    }
+
+    // clear the flag: we caught the event
+    __disable_irq();
+    iqs620_triggered = false;
+    __enable_irq();
+}
+
 
 /**
  * Initialise the chip as well as the iqs620 instance.
@@ -448,6 +422,9 @@ void iqs620_init(void)
 
     // Check that the chip responds correctly.
     assert(iqs620_read_u8(IQS620_ID) == IQS620_ID_VALUE);
+
+    // Configure all needed registers.
+    iqs620_configure();
 
     // Enable the TOUCH_RDY event after the reset.
     nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);

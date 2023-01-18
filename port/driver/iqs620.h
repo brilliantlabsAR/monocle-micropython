@@ -34,6 +34,7 @@
  */
 
 void iqs620_init(void);
+void iqs620_enable(void);
 void iqs620_reset(void);
 void iqs620_callback_button_pressed(uint8_t button);
 void iqs620_callback_button_released(uint8_t button);

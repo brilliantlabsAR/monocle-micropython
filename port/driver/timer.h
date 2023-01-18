@@ -25,9 +25,9 @@
  * Wrapper around NRFX timers for sharing a single periodic timer.
  */
 
-typedef void timer_handler_t(void);
+typedef void timer_task_t(void);
 
 void timer_init(void);
-void timer_add_handler(timer_handler_t *handler);
-void timer_del_handler(timer_handler_t *handler);
+void timer_add_task(timer_task_t *fn);
+void timer_del_task(timer_task_t *fn);
 uint64_t timer_get_uptime_ms(void);

@@ -206,6 +206,6 @@ void battery_init(uint8_t adc_pin)
     err = nrfx_saadc_channel_config(&channel);
     assert(err == NRFX_SUCCESS);
 
-    // Add a timer handler for periodically updating the battery level value.
-    timer_add_handler(&battery_level_timer);
+    // Add a timer task for periodically updating the battery level value.
+    timer_add_task(&battery_level_timer);
 }

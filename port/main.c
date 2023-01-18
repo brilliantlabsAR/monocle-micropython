@@ -138,6 +138,37 @@ NORETURN void __assert_func(const char *file, int line, const char *func, const 
     }
 }
 
+static void check_charging_status(void)
+{
+    uint32_t err;
+
+    if (max77654_is_charging()) {
+
+        // Setup an RTC to wake-up from power-off state
+        nrfx_rtc_config_t config = NRFX_RTC_DEFAULT_CONFIG;
+        nrfx_rtc_t rtc0 = NRFX_RTC_INSTANCE(0);
+        err = nrfx_rtc_init(&rtc0, &config, NULL);
+        assert(err = NRFX_SUCCESS);
+        err = nrfx_rtc_init(&rtc0, &config, NULL);
+        assert(err = NRFX_SUCCESS);
+
+        LOG("charging is ongoing, going to sleep");
+        err = sd_power_system_off();
+        assert(err = NRFX_SUCCESS);
+    }
+}
+
+void timer_task_charging_status(void)
+{
+    static uint8_t prescaler = 0;
+
+    // Divide the timer frequency a bit.
+    if (prescaler++ == 0) // let it overflow
+    {
+        check_charging_status();
+    }
+}
+
 /**
  * @brief Main application called from Reset_Handler().
  */
@@ -236,27 +267,21 @@ int main(void)
         max77654_init();
     }
 
+    // Initiate user-input peripherals, which do not make
+    // sense until everything else is setup.
+
+    LOG("IQS620"); assert_blink_num = 5;
+    {
+        iqs620_init();
+    }
+
     // Initialize the battery now that the MAX77654 is configured,
     // and check the battery charge status immediately.
 
     LOG("BATTERY");
     {
-        if (max77654_is_charging())
-        {
-            uint32_t err;
+        timer_add_task(check_charging_status);
 
-            // Setup an RTC to wake-up from power-off state
-            nrfx_rtc_config_t config = NRFX_RTC_DEFAULT_CONFIG;
-            nrfx_rtc_t rtc0 = NRFX_RTC_INSTANCE(0);
-            err = nrfx_rtc_init(&rtc0, &config, NULL);
-            assert(err = NRFX_SUCCESS);
-            err = nrfx_rtc_init(&rtc0, &config, NULL);
-            assert(err = NRFX_SUCCESS);
-
-            LOG("charging is ongoing, going to sleep");
-            err = sd_power_system_off();
-            assert(err = NRFX_SUCCESS);
-        }
         battery_init(MAX77654_ADC_PIN);
     }
 
@@ -307,21 +332,16 @@ int main(void)
         ov5640_init();
     }
 
-    // Finally initiate user-input related peripherals, which do not make
-    // sense until everything else is setup.
-
-    LOG("IQS620"); assert_blink_num = 5;
-    {
-        iqs620_init();
-    }
-
     LOG("FLASH"); assert_blink_num = 6;
     {
-
+        flash_init();
     }
 
     LOG("DONE"); assert_blink_num = 10;
     {
+        // Enable user interaction touch buttons only now that it started.
+        iqs620_enable();
+
         // Let the user know everything is ready and that the device
         max77654_led_green(true);
     }

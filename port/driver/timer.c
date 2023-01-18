@@ -38,7 +38,7 @@
 #include "driver/timer.h"
 
 static nrfx_timer_t timer = NRFX_TIMER_INSTANCE(TIMER_INSTANCE);
-static timer_handler_t *timer_handlers_list[TIMER_MAX_HANDLERS];
+static timer_task_t *timer_tasks_list[TIMER_MAX_HANDLERS];
 static volatile uint64_t timer_uptime_ms;
 
 /**
@@ -54,31 +54,31 @@ static void timer_event_handler(nrf_timer_event_t event, void *ctx)
 
     // call all timer functions
     for (size_t i = 0; i < TIMER_MAX_HANDLERS; i++)
-        if (timer_handlers_list[i] != NULL)
-            timer_handlers_list[i]();
+        if (timer_tasks_list[i] != NULL)
+            timer_tasks_list[i]();
 }
 
 /**
- * Get a pointer within the array of handlers, for modification purposes.
- * @param ptr A pointer to a function handler, or eventually NULL.
+ * Get a pointer within the array of tasks, for modification purposes.
+ * @param fn A pointer to a function, or eventually NULL.
  */
-static timer_handler_t **timer_get_handler_slot(timer_handler_t *ptr)
+static timer_task_t **timer_get_task_slot(timer_task_t *fn)
 {
     for (size_t i = 0 ; i < TIMER_MAX_HANDLERS; i++)
-        if (timer_handlers_list[i] == ptr)
-            return &timer_handlers_list[i];
+        if (timer_tasks_list[i] == fn)
+            return &timer_tasks_list[i];
     return NULL;
 }
 
 /**
- * Remove a function from the list of timer handlers to execute.
- * @param ptr Function pointer of the timer that was previously added.
+ * Remove a function from the list of timer tasks to execute.
+ * @param fn Function pointer of the timer that was previously added.
  */
-void timer_del_handler(timer_handler_t *ptr)
+void timer_del_task(timer_task_t *fn)
 {
-    timer_handler_t **slot;
+    timer_task_t **slot;
 
-    slot = timer_get_handler_slot(ptr);
+    slot = timer_get_task_slot(fn);
     if (slot == NULL)
         return;
 
@@ -87,21 +87,21 @@ void timer_del_handler(timer_handler_t *ptr)
     __enable_irq();
 }
 
-void timer_add_handler(timer_handler_t *ptr)
+void timer_add_task(timer_task_t *fn)
 {
-    timer_handler_t **slot;
+    timer_task_t **slot;
 
-    LOG("0x%p", ptr);
+    LOG("0x%p", fn);
 
     // Check if the timer is already configured.
-    if (timer_get_handler_slot(ptr) != NULL)
+    if (timer_get_task_slot(fn) != NULL)
         return;
 
-    slot = timer_get_handler_slot(NULL);
+    slot = timer_get_task_slot(NULL);
     assert(slot != NULL); // misconfiguration of TIMER_MAX_HANDLERS
 
     __disable_irq();
-    *slot = ptr;
+    *slot = fn;
     __enable_irq();
 }
 
@@ -136,6 +136,6 @@ void timer_init(void)
     nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 125,
             NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
 
-    // Start the timer, letting timer_add_handler() append more of them while running.
+    // Start the timer, letting timer_add_task() append more of them while running.
     nrfx_timer_enable(&timer);
 }
