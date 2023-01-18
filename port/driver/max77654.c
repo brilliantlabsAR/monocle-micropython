@@ -343,8 +343,8 @@ bool max77654_is_charging(void)
     uint8_t val;
 
     // Read the charge status, featuring many modes.
-    val = max77654_read((MAX77654_STAT_CHG_B) & MAX77654_CHG_DTLS_Msk);
-    LOG("MAX77654 Status = 0x%02X.", val);
+    val = max77654_read(MAX77654_STAT_CHG_B) & MAX77654_CHG_DTLS_Msk;
+    LOG("MAX77654_CHG_DTLS_Msk=0x%02X", val);
 
     switch (val)
     {

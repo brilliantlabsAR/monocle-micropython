@@ -78,7 +78,12 @@ extern uint32_t _heap_start;
 extern uint32_t _heap_end;
 
 /** Encode the number of the peripheral that starts as a blinking pattern. */
-uint8_t assert_blink_num;
+static uint8_t assert_blink_num;
+
+/** RTC parameters used for the instance that wakes us up under poweroff mode. */
+static nrfx_rtc_config_t config = NRFX_RTC_DEFAULT_CONFIG;
+static nrfx_rtc_t rtc0 = NRFX_RTC_INSTANCE(0);
+#define RTC0 (&rtc0)
 
 /**
  * @brief Garbage collection route for nRF.
@@ -138,34 +143,36 @@ NORETURN void __assert_func(const char *file, int line, const char *func, const 
     }
 }
 
-static void check_charging_status(void)
+static void charging_status_check(void)
 {
     uint32_t err;
 
-    if (max77654_is_charging()) {
+    if (max77654_is_charging())
+    {
+        // Enable the RTC to wake us back from power off mode.
+        uint32_t val = nrfx_rtc_counter_get(RTC0) + 1000000;
+        //nrfx_rtc_cc_set(RTC0, 0, val, true);
 
-        // Setup an RTC to wake-up from power-off state
-        nrfx_rtc_config_t config = NRFX_RTC_DEFAULT_CONFIG;
-        nrfx_rtc_t rtc0 = NRFX_RTC_INSTANCE(0);
-        err = nrfx_rtc_init(&rtc0, &config, NULL);
-        assert(err = NRFX_SUCCESS);
-        err = nrfx_rtc_init(&rtc0, &config, NULL);
-        assert(err = NRFX_SUCCESS);
-
-        LOG("charging is ongoing, going to sleep");
+        // Charging is ongoing, going to sleep
         err = sd_power_system_off();
         assert(err = NRFX_SUCCESS);
     }
 }
 
-void timer_task_charging_status(void)
+static void charging_status_rtc_handler(nrfx_rtc_int_type_t event)
+{
+    (void)event;
+    nrfx_rtc_cc_disable(RTC0, 0);
+}
+
+void charging_status_timer_task(void)
 {
     static uint8_t prescaler = 0;
 
     // Divide the timer frequency a bit.
     if (prescaler++ == 0) // let it overflow
     {
-        check_charging_status();
+        charging_status_check();
     }
 }
 
@@ -184,10 +191,16 @@ int main(void)
 
     LOG("NRFX");
     {
+        uint32_t err;
+
         // Init the built-in peripherals
         nrfx_systick_init();
         nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
         nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
+
+        // Setup an RTC to wake-up from power-off state
+        err = nrfx_rtc_init(RTC0, &config, charging_status_rtc_handler);
+        assert(err = NRFX_SUCCESS);
     }
 
     // Turn on the SoftDevice early to allow use of softdevice-dependent calls
@@ -196,14 +209,6 @@ int main(void)
     LOG("SOFTDEVICE");
     {
         ble_enable_softdevice();
-    }
-
-    // Start the generic timer, used for various periodic software tasks.
-    // Other drivers will be adding callbacks to it
-
-    LOG("TIMER");
-    {
-        timer_init();
     }
 
     // Setup the GPIO states before powering-on the chips,
@@ -280,7 +285,7 @@ int main(void)
 
     LOG("BATTERY");
     {
-        timer_add_task(check_charging_status);
+        timer_add_task(charging_status_timer_task);
 
         battery_init(MAX77654_ADC_PIN);
     }
@@ -327,6 +332,7 @@ int main(void)
         ecx336cn_init();
     }
 
+#if 0 // TODO debug
     LOG("OV5540"); assert_blink_num = 4;
     {
         ov5640_init();
@@ -336,6 +342,7 @@ int main(void)
     {
         flash_init();
     }
+#endif
 
     LOG("DONE"); assert_blink_num = 10;
     {
@@ -344,6 +351,10 @@ int main(void)
 
         // Let the user know everything is ready and that the device
         max77654_led_green(true);
+
+        // Start the generic timer, used for various periodic software tasks.
+        // Other drivers added function callbacks to its task table above.
+        timer_init();
     }
 
     // Initialise the stack pointer for the main thread
