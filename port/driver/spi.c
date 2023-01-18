@@ -34,6 +34,7 @@
 #include "nrfx_log.h"
 #include "nrfx_spim.h"
 #include "nrfx_systick.h"
+#include "nrf_soc.h"
 
 #include "driver/config.h"
 #include "driver/spi.h"
@@ -78,7 +79,7 @@ static void spi_xfer_chunk(nrfx_spim_xfer_desc_t *xfer)
 
     // wait for any pending SPI operation to complete
     while (!m_xfer_done)
-        __WFE();
+        sd_app_evt_wait();
 
     // Start the transaction and wait for the interrupt handler to warn us it is done.
     m_xfer_done = false;

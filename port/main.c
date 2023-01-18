@@ -82,8 +82,8 @@ static uint8_t assert_blink_num;
 
 /** RTC parameters used for the instance that wakes us up under poweroff mode. */
 static nrfx_rtc_config_t config = NRFX_RTC_DEFAULT_CONFIG;
-static nrfx_rtc_t rtc0 = NRFX_RTC_INSTANCE(0);
-#define RTC0 (&rtc0)
+static nrfx_rtc_t rtc1 = NRFX_RTC_INSTANCE(1);
+#define RTC1 (&rtc1)
 
 /**
  * @brief Garbage collection route for nRF.
@@ -149,9 +149,15 @@ static void charging_status_check(void)
 
     if (max77654_is_charging())
     {
+        LOG("turning the board off with an RTC wakeup enabled");
+
         // Enable the RTC to wake us back from power off mode.
-        uint32_t val = nrfx_rtc_counter_get(RTC0) + 1000000;
-        //nrfx_rtc_cc_set(RTC0, 0, val, true);
+        assert(err = NRFX_SUCCESS);
+        nrfx_rtc_enable(RTC1);
+
+        nrf_gpio_cfg_sense_input(IQS620_TOUCH_RDY_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
+
+        max77654_power_off();
 
         // Charging is ongoing, going to sleep
         err = sd_power_system_off();
@@ -161,8 +167,9 @@ static void charging_status_check(void)
 
 static void charging_status_rtc_handler(nrfx_rtc_int_type_t event)
 {
+    LOG("RTC handler");
     (void)event;
-    nrfx_rtc_cc_disable(RTC0, 0);
+    nrfx_rtc_enable(RTC1);
 }
 
 void charging_status_timer_task(void)
@@ -189,6 +196,12 @@ int main(void)
 
     // Start the drivers that only rely on the MCU peripherals.
 
+    LOG("SOFTDEVICE");
+    {
+        ble_enable_softdevice();
+        ble_init();
+    }
+
     LOG("NRFX");
     {
         uint32_t err;
@@ -199,17 +212,12 @@ int main(void)
         nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
 
         // Setup an RTC to wake-up from power-off state
-        err = nrfx_rtc_init(RTC0, &config, charging_status_rtc_handler);
+        err = nrfx_rtc_init(RTC1, &config, charging_status_rtc_handler);
         assert(err = NRFX_SUCCESS);
     }
 
     // Turn on the SoftDevice early to allow use of softdevice-dependent calls
     // before the full Bluetooth Low Energy stack is setup (to save power).
-
-    LOG("SOFTDEVICE");
-    {
-        ble_enable_softdevice();
-    }
 
     // Setup the GPIO states before powering-on the chips,
     // to provide particular pin state at each chip's bootup.
@@ -311,7 +319,6 @@ int main(void)
 
     LOG("BLE");
     {
-        ble_init();
     }
 
     // Now we can setup the various peripherals over SPI, starting by the FPGA
@@ -371,9 +378,6 @@ int main(void)
 
     // Initialise the readline module for REPL
     readline_init0();
-
-    // If main.py exits, fallback to a REPL.
-    //pyexec_frozen_module("main.py");
 
     // REPL mode can change, or it can request a soft reset
     for (int stop = false; !stop;)
