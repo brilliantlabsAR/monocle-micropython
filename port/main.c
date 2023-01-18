@@ -265,6 +265,7 @@ int main(void)
     LOG("BATTERY");
     {
         // Periodically check the charger connection status.
+        charging_status_timer_task();
         timer_add_task(charging_status_timer_task);
 
         battery_init(MAX77654_ADC_PIN);
@@ -311,8 +312,7 @@ int main(void)
         ecx336cn_init();
     }
 
-#if 0 // TODO debug
-    LOG("OV5540"); assert_blink_num = 4;
+    LOG("OV5640"); assert_blink_num = 4;
     {
         ov5640_init();
     }
@@ -321,7 +321,6 @@ int main(void)
     {
         flash_init();
     }
-#endif
 
     LOG("DONE"); assert_blink_num = 10;
     {
