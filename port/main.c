@@ -45,6 +45,8 @@
 #include "nrfx_systick.h"
 #include "nrfx_gpiote.h"
 #include "nrfx_saadc.h"
+#include "nrfx_rtc.h"
+#include "nrfx_glue.h"
 
 #include "driver/battery.h"
 #include "driver/bluetooth_data_protocol.h"
@@ -145,16 +147,7 @@ int main(void)
     SEGGER_RTT_Init();
     PRINTF("\r\n" "Brilliant Monocle " BUILD_VERSION " " GIT_COMMIT "\r\n\r\n");
 
-    // Initialise drivers
-
-    // Start by the Bluetooth driver, which will let the user scan for
-    // a network, and by the time the negociation would happen, and the
-    // host application gets started, this device would be likely ready.
-
-    LOG("BLE");
-    {
-        ble_init();
-    }
+    // Initialise SoftDevice, used as an intermediate layer for many things below.
 
     // Start the drivers that only rely on the MCU peripherals.
 
@@ -164,6 +157,14 @@ int main(void)
         nrfx_systick_init();
         nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
         nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
+    }
+
+    // Turn on the SoftDevice early to allow use of softdevice-dependent calls
+    // before the full Bluetooth Low Energy stack is setup (to save power).
+
+    LOG("SOFTDEVICE");
+    {
+        ble_enable_softdevice();
     }
 
     // Start the generic timer, used for various periodic software tasks.
@@ -227,9 +228,42 @@ int main(void)
         i2c_init(i2c1, I2C1_SCL_PIN, I2C1_SDA_PIN);
     }
 
+    // Setup all registers for the MAX77654 power chip.
+    // This will turn off all power rails if not already done.
+
     LOG("MAX77654");
     {
         max77654_init();
+    }
+
+    // Initialize the battery now that the MAX77654 is configured,
+    // and check the battery charge status immediately.
+
+    LOG("BATTERY");
+    {
+        if (max77654_is_charging())
+        {
+            uint32_t err;
+
+            // Setup an RTC to wake-up from power-off state
+            nrfx_rtc_config_t config = NRFX_RTC_DEFAULT_CONFIG;
+            nrfx_rtc_t rtc0 = NRFX_RTC_INSTANCE(0);
+            err = nrfx_rtc_init(&rtc0, &config, NULL);
+            assert(err = NRFX_SUCCESS);
+            err = nrfx_rtc_init(&rtc0, &config, NULL);
+            assert(err = NRFX_SUCCESS);
+
+            LOG("charging is ongoing, going to sleep");
+            err = sd_power_system_off();
+            assert(err = NRFX_SUCCESS);
+        }
+        battery_init(MAX77654_ADC_PIN);
+    }
+
+    // power on everything and wait 
+
+    LOG("POWER");
+    {
         max77654_rail_1v2(true);
         max77654_rail_1v8(true);
         max77654_rail_2v7(true);
@@ -241,12 +275,13 @@ int main(void)
         nrfx_systick_delay_ms(10);
     }
 
-    // Initialize the battery now that the MAX77654 is configured,
-    // and check the battery level immediately.
+    // Start by the Bluetooth driver, which will let the user scan for
+    // a network, and by the time the negociation would happen, and the
+    // host application gets started, this firmware would be likely ready.
 
-    LOG("BATTERY");
+    LOG("BLE");
     {
-        battery_init(MAX77654_ADC_PIN);
+        ble_init();
     }
 
     // Now we can setup the various peripherals over SPI, starting by the FPGA

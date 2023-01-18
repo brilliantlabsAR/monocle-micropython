@@ -42,7 +42,6 @@
 #include "driver/ov5640.h"
 #include "driver/timer.h"
 
-#define ASSERT NRFX_ASSERT
 #define LEN(x) (sizeof (x) / sizeof *(x))
 
 /**
@@ -495,7 +494,7 @@ void ov5640_init(void)
 
     // Check the chip ID
     uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
-    ASSERT(id == OV5640_ID);
+    assert(id == OV5640_ID);
 
     ov5640_reduce_size(640, 400);
     ov5640_mode_1x();

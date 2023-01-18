@@ -40,8 +40,6 @@
 #include "driver/spi.h"
 #include "driver/timer.h"
 
-#define ASSERT      NRFX_ASSERT
-
 void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len)
 {
     uint8_t cmd_buf[2] = { cmd >> 8, cmd >> 0 };

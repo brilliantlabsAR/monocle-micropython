@@ -48,8 +48,6 @@
 #include "driver/spi.h"
 #include "driver/timer.h"
 
-#define ASSERT  NRFX_ASSERT
-
 static bool power_halt_on_error;
 static uint32_t power_errors;
 static uint32_t power_test_num;
@@ -77,7 +75,7 @@ static void power_check_errors(void)
         for (uint8_t i = 0; i <= power_test_num; i++)
             if (power_errors & (1u << i))
                 power_blink_num(i);
-        ASSERT(!"hardware could not be entirely initialized");
+        assert(!"hardware could not be entirely initialized");
     }
 }
 

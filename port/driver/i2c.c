@@ -40,8 +40,6 @@
 #include "driver/config.h"
 #include "driver/i2c.h"
 
-#define ASSERT  NRFX_ASSERT
-
 nrfx_twi_t const i2c0 = NRFX_TWI_INSTANCE(0);
 nrfx_twi_t const i2c1 = NRFX_TWI_INSTANCE(1);
 
@@ -141,6 +139,6 @@ void i2c_init(nrfx_twi_t twi, uint8_t scl_pin, uint8_t sda_pin)
     };
 
     err = nrfx_twi_init(&twi, &config, NULL, NULL);
-    ASSERT(err == NRFX_SUCCESS);
+    assert(err == NRFX_SUCCESS);
     nrfx_twi_enable(&twi);
 }

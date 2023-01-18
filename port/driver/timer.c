@@ -37,8 +37,6 @@
 #include "driver/config.h"
 #include "driver/timer.h"
 
-#define ASSERT  NRFX_ASSERT
-
 static nrfx_timer_t timer = NRFX_TIMER_INSTANCE(TIMER_INSTANCE);
 static timer_handler_t *timer_handlers_list[TIMER_MAX_HANDLERS];
 static volatile uint64_t timer_uptime_ms;
@@ -132,7 +130,7 @@ void timer_init(void)
     timer_config.bit_width = NRF_TIMER_BIT_WIDTH_8;
 
     err = nrfx_timer_init(&timer, &timer_config, timer_event_handler);
-    ASSERT(err == NRFX_SUCCESS);
+    assert(err == NRFX_SUCCESS);
 
     // Raise an interrupt every 1ms: 125 kHz / 125
     nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 125,

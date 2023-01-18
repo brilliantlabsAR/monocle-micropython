@@ -35,8 +35,6 @@
 #include "driver/config.h"
 #include "driver/timer.h"
 
-#define ASSERT  NRFX_ASSERT
-
 #define BATTERY_MEAN_WINDOW 20
 
 /*
@@ -158,15 +156,15 @@ static nrf_saadc_value_t battery_get_saadc(void)
     // Configure first ADC channel with low setup (enough for battery sensing)
     err = nrfx_saadc_simple_mode_set(1u << 0, BATTERY_ADC_RESOLUTION,
         NRF_SAADC_OVERSAMPLE_DISABLED, NULL);
-    ASSERT(err == NRFX_SUCCESS);
+    assert(err == NRFX_SUCCESS);
 
     // Add a buffer for the NRFX SDK to fill
     err = nrfx_saadc_buffer_set(&result, 1);
-    ASSERT(err == NRFX_SUCCESS);
+    assert(err == NRFX_SUCCESS);
 
     // Start the trigger chain: the callback will trigger another callback
     err = nrfx_saadc_mode_trigger();
-    ASSERT(err == NRFX_SUCCESS);
+    assert(err == NRFX_SUCCESS);
 
     return result;
 }
@@ -174,7 +172,7 @@ static nrf_saadc_value_t battery_get_saadc(void)
 /**
  * @brief Perform an ADC conversion to sense the battery level, and compute the mean value.
  */
-static void battery_update_percent(void)
+void battery_level_timer(void)
 {
     // Reduce the frequency at which this timer is called.
     if (++battery_timer_counter != 0) // letting it overflow
@@ -192,23 +190,6 @@ static void battery_update_percent(void)
 }
 
 /**
- * @brief Function to execute periodically to update and check the battery level.
- */
-void battery_level_timer(void)
-{
-    // make an ADC readings to set the global "battery_percent"
-    battery_update_percent();
-
-    // If the battery is below threshold (set by calibrating the "0" value),
-    // put the device into deep sleep mode with periodic wakeup from RTC.
-    if (battery_percent == 0)
-    {
-        //LOG("battery_percent=%d%% sleeping...", battery_percent);
-        //NVIC_SystemReset();
-    }
-}
-
-/**
  * @brief Initialize the ADC.
  * This includes setting up buffering.
  */
@@ -223,10 +204,7 @@ void battery_init(uint8_t adc_pin)
     nrf_gpio_cfg_input(adc_pin, NRF_GPIO_PIN_NOPULL);
 
     err = nrfx_saadc_channel_config(&channel);
-    ASSERT(err == NRFX_SUCCESS);
-
-    // Flush a few ADC values before actually reading
-    battery_get_saadc();
+    assert(err == NRFX_SUCCESS);
 
     // Add a timer handler for periodically updating the battery level value.
     timer_add_handler(&battery_level_timer);

@@ -34,7 +34,6 @@
 #include "driver/i2c.h"
 #include "driver/max77654.h"
 
-#define ASSERT  NRFX_ASSERT
 #define LEN(x)  (sizeof x / sizeof *x)
 
 /** Allowable charge current in mA; to protect battery, disallow any higher setting (even if configurable). */
@@ -290,19 +289,6 @@
 #define MAX77654_CNFG_LDO_B_EN_ON       (0x06 << 0)
 
 /**
- * Configure a register value over I2C.
- * @param addr Address of the register.
- * @param data Value to write.
- */
-void max77654_write(uint8_t addr, uint8_t data)
-{
-    uint8_t buf[] = { addr, data };
-
-    if (!i2c_write(MAX77654_I2C, MAX77654_ADDR, buf, sizeof buf))
-        ASSERT(!"I2C write failed");
-}
-
-/**
  * Read a register value over I2C.
  * @param addr Address of the register.
  * @return The value returned.
@@ -312,10 +298,23 @@ uint8_t max77654_read(uint8_t addr)
     uint8_t val;
 
     if (!i2c_write(MAX77654_I2C, MAX77654_ADDR, &addr, 1))
-        ASSERT(!"I2C write failed");
+        assert(!"I2C write failed");
     if (!i2c_read(MAX77654_I2C, MAX77654_ADDR, &val, 1))
-        ASSERT(!"I2C read failed");
+        assert(!"I2C read failed");
     return val;
+}
+
+/**
+ * Configure a register value over I2C.
+ * @param addr Address of the register.
+ * @param data Value to write.
+ */
+void max77654_write(uint8_t addr, uint8_t data)
+{
+    uint8_t buf[] = { addr, data };
+
+    if (!i2c_write(MAX77654_I2C, MAX77654_ADDR, buf, sizeof buf))
+        assert(!"I2C write failed");
 }
 
 /**
@@ -333,6 +332,34 @@ uint8_t max77654_get_cid(void)
     cid = bit4 | (reg & MAX77654_CID_Msk);
     LOG("MAX77654 CID = 0x%02X.", cid);
     return cid;
+}
+
+/**
+ * Check the battery status.
+ * @return True if the battery is currently charging.
+ */
+bool max77654_is_charging(void)
+{
+    uint8_t val;
+
+    // Read the charge status, featuring many modes.
+    val = max77654_read((MAX77654_STAT_CHG_B) & MAX77654_CHG_DTLS_Msk);
+    LOG("MAX77654 Status = 0x%02X.", val);
+
+    switch (val)
+    {
+    // All the possible states which mean "charging".
+    case MAX77654_CHG_DTLS_PRE_Q:
+    case MAX77654_CHG_DTLS_FAST_CC:
+    case MAX77654_CHG_DTLS_FAST_CC_J:
+    case MAX77654_CHG_DTLS_FAST_CV:
+    case MAX77654_CHG_DTLS_FAST_CV_J:
+    case MAX77654_CHG_DTLS_TOP_OFF:
+    {
+        return true;
+    }
+    }
+    return false;
 }
 
 /**
@@ -619,7 +646,7 @@ void max77564_factory_ship_mode(void)
 void max77654_init(void)
 {
     // verify MAX77654 on I2C bus by attempting to read Chip ID register
-    ASSERT(max77654_get_cid() == MAX77654_CID_EXPECTED);
+    assert(max77654_get_cid() == MAX77654_CID_EXPECTED);
 
     for (size_t i = 0; i < LEN(max77654_conf); i++)
         max77654_write(max77654_conf[i].addr, max77654_conf[i].data);
@@ -634,8 +661,8 @@ void max77654_init(void)
     max77654_update(MAX77654_CNFG_CHG_F, cc_to_hw(70), MAX77654_CHG_CC_JEITA_Msk);
 
     // MAX77654_CNFG_CHG_G: charge voltage 4.3V, not in USB suspend mode
-    ASSERT(4300 >= MAX77654_CHG_CV_MIN);
-    ASSERT(4300 <= MAX77654_CHG_CV_MAX);
+    assert(4300 >= MAX77654_CHG_CV_MIN);
+    assert(4300 <= MAX77654_CHG_CV_MAX);
     max77654_update(MAX77654_CNFG_CHG_G, cv_to_hw(4300), MAX77654_CHG_CV_Msk);
 
     // MAX77654_CNFG_CHG_H: JEITA charge voltage = 4.3V, Thermistor enabled

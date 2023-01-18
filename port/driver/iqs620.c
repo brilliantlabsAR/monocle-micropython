@@ -42,8 +42,6 @@
 #include "driver/iqs620.h"
 #include "driver/timer.h"
 
-#define ASSERT  NRFX_ASSERT
-
 // registers
 
 #define IQS620_ID                               0x00
@@ -194,7 +192,7 @@ static void iqs620_write_reg(uint8_t addr, uint8_t data)
     bool ok;
 
     ok = i2c_write(IQS620_I2C, IQS620_ADDR, buf, sizeof(buf));
-    ASSERT(ok);
+    assert(ok);
 }
 
 /**
@@ -210,11 +208,11 @@ static void iqs620_read_reg(uint8_t addr, uint8_t *buf, unsigned len)
 
     // I2C write for the register address (without stop)
     ok = i2c_write_no_stop(IQS620_I2C, IQS620_ADDR, &addr, 1);
-    ASSERT(ok);
+    assert(ok);
 
     // I2C read the data after the write.
     ok = i2c_read(IQS620_I2C, IQS620_ADDR, buf, len);
-    ASSERT(ok);
+    assert(ok);
 }
 
 static uint8_t iqs620_read_u8(uint8_t addr)
@@ -370,7 +368,7 @@ static void iqs620_process_state(uint8_t button, iqs620_state_t *old, iqs620_sta
  */
 static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
-    ASSERT(pin == IQS620_TOUCH_RDY_PIN);
+    assert(pin == IQS620_TOUCH_RDY_PIN);
 
     uint8_t events;
     iqs620_read_reg(IQS620_GLOBAL_EVENTS, &events, 1);
@@ -437,7 +435,7 @@ void iqs620_init(void)
     nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_HITOLO(true);
     config.pull = NRF_GPIO_PIN_PULLUP;
     err = nrfx_gpiote_in_init(IQS620_TOUCH_RDY_PIN, &config, iqs620_touch_rdy_handler);
-    ASSERT(err == NRFX_SUCCESS);
+    assert(err == NRFX_SUCCESS);
 
     // Disable the TOUCH_RDY event during reset.
     nrfx_gpiote_in_event_disable(IQS620_TOUCH_RDY_PIN);
@@ -449,7 +447,7 @@ void iqs620_init(void)
     nrfx_systick_delay_ms(10);
 
     // Check that the chip responds correctly.
-    ASSERT(iqs620_read_u8(IQS620_ID) == IQS620_ID_VALUE);
+    assert(iqs620_read_u8(IQS620_ID) == IQS620_ID_VALUE);
 
     // Enable the TOUCH_RDY event after the reset.
     nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);

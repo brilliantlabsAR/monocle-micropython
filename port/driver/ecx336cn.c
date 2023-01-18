@@ -43,7 +43,6 @@
 #include "driver/spi.h"
 #include "driver/timer.h"
 
-#define ASSERT  NRFX_ASSERT
 #define LEN(x)  (sizeof(x) / sizeof*(x))
 
 uint8_t ecx336cn_config[] = {
@@ -178,7 +177,7 @@ void ecx336cn_deinit(void)
 void ecx336cn_set_luminance(ecx336cn_luminance_t level)
 {
     // maximum value value is 4
-    ASSERT(level <= 4);
+    assert(level <= 4);
 
     // LUMINANCE is register 0x05[3:0]; preserve other bits
     ecx336cn_write_byte(0x05, (ecx336cn_read_byte(0x05) & 0xF8) | level);
@@ -227,6 +226,6 @@ void ecx336cn_init(void)
     // and that 0x2A has been restored
     LOG("0x29=0x%02X 0x2A=0x%02X", ecx336cn_read_byte(0x29), ecx336cn_read_byte(0x2A));
     // TODO: the SPI line cannot be read back!
-    //ASSERT(ecx336cn_read_byte(0x29) == 0x0B);
-    //ASSERT(ecx336cn_read_byte(0x2A) == 0xBE);
+    //assert(ecx336cn_read_byte(0x29) == 0x0B);
+    //assert(ecx336cn_read_byte(0x2A) == 0xBE);
 }

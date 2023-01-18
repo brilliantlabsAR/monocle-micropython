@@ -40,8 +40,6 @@
 #include "driver/spi.h"
 #include "driver/timer.h"
 
-#define ASSERT NRFX_ASSERT
-
 #define FLASH_CMD_PROGRAM_PAGE      0x02
 #define FLASH_CMD_READ              0x03
 #define FLASH_CMD_ENABLE_WRITE      0x06
@@ -106,7 +104,7 @@ void flash_program_page(uint32_t addr, uint8_t page[FLASH_PAGE_SIZE])
 {
     uint8_t cmds[] = { FLASH_CMD_PROGRAM_PAGE, addr >> 16, addr >> 8, addr >> 0 };
 
-    ASSERT(addr % FLASH_PAGE_SIZE == 0);
+    assert(addr % FLASH_PAGE_SIZE == 0);
 
     flash_enable_write();
 

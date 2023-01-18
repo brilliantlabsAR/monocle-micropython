@@ -38,8 +38,6 @@
 #include "driver/config.h"
 #include "driver/spi.h"
 
-#define ASSERT  NRFX_ASSERT
-
 // SPI instance
 const nrfx_spim_t spi2 = NRFX_SPIM_INSTANCE(2);
 
@@ -85,7 +83,7 @@ static void spi_xfer_chunk(nrfx_spim_xfer_desc_t *xfer)
     // Start the transaction and wait for the interrupt handler to warn us it is done.
     m_xfer_done = false;
     err = nrfx_spim_xfer(&spi2, xfer, 0);
-    ASSERT(err == NRFX_SUCCESS);
+    assert(err == NRFX_SUCCESS);
     while (!m_xfer_done)
         __WFE();
 }
@@ -140,5 +138,5 @@ void spi_init(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_p
     config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
 
     err = nrfx_spim_init(&spi2, &config, spim_event_handler, NULL);
-    ASSERT(err == NRFX_SUCCESS);
+    assert(err == NRFX_SUCCESS);
 }
