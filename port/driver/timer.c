@@ -37,9 +37,22 @@
 #include "driver/config.h"
 #include "driver/timer.h"
 
+#define LEN(x) (sizeof(x) / sizeof*(x))
+
+timer_task_t *timer_1ms[TIMER_MAX_TASKS];
+timer_task_t *timer_500ms[TIMER_MAX_TASKS];
+
 static nrfx_timer_t timer = NRFX_TIMER_INSTANCE(TIMER_INSTANCE);
-static timer_task_t *timer_tasks_list[TIMER_MAX_HANDLERS];
 static volatile uint64_t timer_uptime_ms;
+uint16_t timer_divider_500ms;
+
+static void timer_call_handlers(timer_task_t **list, size_t task_num)
+{
+    // call all timer functions that are populted onto the list
+    for (size_t i = 0; i < task_num; i++)
+        if (list[i] != NULL)
+            list[i]();
+}
 
 /**
  * The timer hander that dispatches the timer to all the other functions.
@@ -52,33 +65,34 @@ static void timer_event_handler(nrf_timer_event_t event, void *ctx)
     // update the current time since timer_init in millisecond.
     timer_uptime_ms++;
 
-    // call all timer functions
-    for (size_t i = 0; i < TIMER_MAX_HANDLERS; i++)
-        if (timer_tasks_list[i] != NULL)
-            timer_tasks_list[i]();
+    if (timer_divider_500ms++ == 500) {
+        timer_divider_500ms = 0;
+        timer_call_handlers(timer_500ms, LEN(timer_500ms));
+    }
+    timer_call_handlers(timer_1ms, LEN(timer_1ms));
 }
 
 /**
- * Get a pointer within the array of tasks, for modification purposes.
+ * Get a pointer within the array of task, for modification purposes.
  * @param fn A pointer to a function, or eventually NULL.
  */
-static timer_task_t **timer_get_task_slot(timer_task_t *fn)
+static timer_task_t **timer_get_task_slot(timer_task_t **list, timer_task_t *fn)
 {
-    for (size_t i = 0 ; i < TIMER_MAX_HANDLERS; i++)
-        if (timer_tasks_list[i] == fn)
-            return &timer_tasks_list[i];
+    for (size_t i = 0 ; i < TIMER_MAX_TASKS; i++)
+        if (list[i] == fn)
+            return &list[i];
     return NULL;
 }
 
 /**
- * Remove a function from the list of timer tasks to execute.
+ * Remove a function from the list of timer task to execute.
  * @param fn Function pointer of the timer that was previously added.
  */
-void timer_del_task(timer_task_t *fn)
+void timer_del_task(timer_task_t **list, timer_task_t *fn)
 {
     timer_task_t **slot;
 
-    slot = timer_get_task_slot(fn);
+    slot = timer_get_task_slot(list, fn);
     if (slot == NULL)
         return;
 
@@ -87,17 +101,17 @@ void timer_del_task(timer_task_t *fn)
     __enable_irq();
 }
 
-void timer_add_task(timer_task_t *fn)
+void timer_add_task(timer_task_t **list, timer_task_t *fn)
 {
     timer_task_t **slot;
 
     LOG("0x%p", fn);
 
     // Check if the timer is already configured.
-    if (timer_get_task_slot(fn) != NULL)
+    if (timer_get_task_slot(list, fn) != NULL)
         return;
 
-    slot = timer_get_task_slot(NULL);
+    slot = timer_get_task_slot(list, NULL);
     assert(slot != NULL); // misconfiguration of TIMER_MAX_HANDLERS
 
     __disable_irq();

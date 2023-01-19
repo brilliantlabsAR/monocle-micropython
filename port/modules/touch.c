@@ -290,7 +290,7 @@ static void touch_set_timer(touch_event_t event)
     {
         LOG("TOUCH_EVENT_LONG");
         // No timer to configure.
-        timer_del_task(&touch_timer_task);
+        timer_del_task(timer_1ms, touch_timer_task);
         return;
     }
 
@@ -316,7 +316,7 @@ static void touch_set_timer(touch_event_t event)
 
     // Submit the configuration.
     LOG("timer_add_task");
-    timer_add_task(&touch_timer_task);
+    timer_add_task(timer_1ms, touch_timer_task);
 }
 
 void touch_callback(touch_state_t trigger);
@@ -337,7 +337,7 @@ static void touch_next_state(touch_event_t event)
         touch_state = TOUCH_STATE_IDLE;
 
         // And then disable the timer.
-        timer_del_task(&touch_timer_task);
+        timer_del_task(timer_1ms, touch_timer_task);
     }
     else if (touch_state == TOUCH_STATE_IDLE)
     {
@@ -356,7 +356,7 @@ static void touch_timer_task(void)
     if (touch_timer_ticks == 0)
     {
         // Disable the timer for now.
-        timer_del_task(&touch_timer_task);
+        timer_del_task(timer_1ms, touch_timer_task);
 
         // Submit the event to the state machine.
         LOG("touch_timer_event=%s",

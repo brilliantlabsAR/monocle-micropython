@@ -71,9 +71,6 @@ static float battery_discharge_curve[10 + 1] = {
 // Stores battery state-of-charge, expressed in percent (0-100)
 static uint8_t battery_percent;
 
-// Reduces the frequency of battery sensing.
-static uint8_t battery_timer_counter;
-
 // Variables for computing the travelling mean
 static float battery_mean_value;
 static float battery_mean_count;
@@ -174,12 +171,6 @@ static nrf_saadc_value_t battery_get_saadc(void)
  */
 void battery_level_timer(void)
 {
-    // Reduce the frequency at which this timer is called.
-    if (++battery_timer_counter != 0) // letting it overflow
-    {
-        return;
-    }
-
     // Compute the voltage, then percentage
     float v_inst = battery_saadc_to_voltage(battery_get_saadc());
     float v_mean = battery_travelling_mean(v_inst);
@@ -207,5 +198,5 @@ void battery_init(uint8_t adc_pin)
     assert(err == NRFX_SUCCESS);
 
     // Add a timer task for periodically updating the battery level value.
-    timer_add_task(&battery_level_timer);
+    timer_add_task(timer_500ms, &battery_level_timer);
 }

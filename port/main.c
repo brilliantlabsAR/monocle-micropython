@@ -138,13 +138,17 @@ NORETURN void __assert_func(const char *file, int line, const char *func, const 
     }
 }
 
-void charging_status_timer_task(void)
+void charge_status_timer(void)
 {
-    static uint8_t prescaler = 0;
+    LOG("max77654_is_charging=%d", max77654_is_charging());
+    LOG("max77654_is_charging=%d", max77654_is_charging());
+    LOG("max77654_is_charging=%d", max77654_is_charging());
+    LOG("max77654_is_charging=%d", max77654_is_charging());
+    LOG("max77654_is_charging=%d", max77654_is_charging());
 
     // Divide the timer frequency a bit, let it overflow
     // then check for the PMIC charge status.
-    if (prescaler++ == 0 && max77654_is_charging())
+    if (max77654_is_charging())
     {
         uint32_t err;
 
@@ -158,6 +162,8 @@ void charging_status_timer_task(void)
         err = sd_power_system_off();
         assert(err = NRFX_SUCCESS);
     }
+
+    LOG("we are not charging");
 }
 
 /**
@@ -265,11 +271,13 @@ int main(void)
     LOG("BATTERY");
     {
         // Periodically check the charger connection status.
-        charging_status_timer_task();
-        timer_add_task(charging_status_timer_task);
+        charge_status_timer();
+        timer_add_task(timer_500ms, charge_status_timer);
 
         battery_init(MAX77654_ADC_PIN);
     }
+
+    nrfx_systick_delay_ms(10000);
 
     // power on everything and wait 
 
