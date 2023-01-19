@@ -1,7 +1,7 @@
 Changelog
 =========
 
-v23.019.1521
+v23.019.1621
 ------------
 - Bugfix: Correctly shut down the nRF52832.
   The prototypes using the previous release might have been damaged.
