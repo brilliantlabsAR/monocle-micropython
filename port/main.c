@@ -110,11 +110,6 @@ NORETURN void nlr_jump_fail(void *val)
     assert(!"exception raised without any handlers for it");
 }
 
-void ble_on_connect(void)
-{
-    max77654_led_green(false);
-}
-
 void blink(uint8_t num)
 {
     for (size_t i = 0; i < num; i++)
@@ -263,15 +258,6 @@ int main(void)
         battery_init(MAX77654_ADC_PIN);
     }
 
-    // Initiate user-input peripherals, which do not make
-    // sense until everything else is setup.
-
-    LOG("IQS620"); assert_blink_num = 5;
-    {
-        nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
-        iqs620_init();
-    }
-
     // Start by the Bluetooth driver, which will let the user scan for
     // a network, and by the time the negociation would happen, and the
     // host application gets started, this firmware would be likely ready.
@@ -279,6 +265,15 @@ int main(void)
     LOG("BLE");
     {
         ble_init();
+    }
+
+    // Initiate user-input peripherals, which do not make
+    // sense until everything else is setup.
+
+    LOG("IQS620"); assert_blink_num = 5;
+    {
+        nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
+        iqs620_init();
     }
 
     // power on everything and wait 

@@ -529,8 +529,6 @@ void SWI2_IRQHandler(void)
             err = sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0);
             assert(!err);
 
-            // hook to execute a short extra action, sucht as toggling a LED
-            ble_on_connect();
             break;
         }
 
