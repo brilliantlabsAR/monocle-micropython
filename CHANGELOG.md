@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v23.019.1521
+------------
+- Bugfix: Correctly shut down the nRF52832.
+  The prototypes using the previous release might have been damaged.
+
 v23.018.1840
 ------------
 - Feature: low power mode when charging in the case.
