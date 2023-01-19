@@ -62,7 +62,7 @@ static void timer_event_handler(nrf_timer_event_t event, void *ctx)
     (void)event;
     (void)ctx;
 
-    // update the current time since timer_init in millisecond.
+    // update the current time since timer_start in millisecond.
     timer_uptime_ms++;
 
     if (timer_divider_500ms++ == 500) {
@@ -120,7 +120,7 @@ void timer_add_task(timer_task_t **list, timer_task_t *fn)
 }
 
 /**
- * Get the time elapsed since timer_init();
+ * Get the time elapsed since timer_start();
  * @return The uptime in seconds.
  */
 uint64_t timer_get_uptime_ms(void)
@@ -133,7 +133,7 @@ uint64_t timer_get_uptime_ms(void)
     return uptime_ms;
 }
 
-void timer_init(void)
+void timer_start(void)
 {
     static nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG;
     uint32_t err;

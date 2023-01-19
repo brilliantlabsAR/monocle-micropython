@@ -35,11 +35,14 @@
 #include "nrfx_gpiote.h"
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
+#include "nrfx_glue.h"
 #include "nrfx_twi.h"
 
 #include "driver/config.h"
 #include "driver/i2c.h"
 #include "driver/iqs620.h"
+
+#define LEN(x) (sizeof(x) / sizeof*(x))
 
 // registers
 
@@ -162,14 +165,14 @@
 #define IQS620_ATI_TARGET                       0x1E
 
 // 0=default (22), 1=most sensitive, 255=least sensitive
-#define IQS620_PROX_THRESHOLD                   10         
+#define IQS620_PROX_THRESHOLD                   10
 
 // 0=default (27), 1=most sensitive, 255=least sensitive
-#define IQS620_TOUCH_THRESHOLD                  10         
+#define IQS620_TOUCH_THRESHOLD                  10
 
 // Last known state of the buttons.
-static uint8_t iqs620_button_0_state;       
-static uint8_t iqs620_button_1_state;       
+static uint8_t iqs620_button_0_state;
+static uint8_t iqs620_button_1_state;
 static bool iqs620_enabled;
 static bool iqs620_triggered;
 
@@ -215,66 +218,67 @@ static uint8_t iqs620_read_u8(uint8_t addr)
     return val;
 }
 
+_Static_assert(IQS620_PROX_THRESHOLD > 0, "config register");
+_Static_assert(IQS620_TOUCH_THRESHOLD > 0, "config register");
+
 /**
  * Configure the IQS620 to get it ready to work.
  */
-static void iqs620_configure(void)
+static struct { uint8_t addr, data; } iqs620_conf[] =
 {
     // acknowledge any pending resets, switch to event mode, comms enabled in ATI
-    iqs620_write_reg(IQS620_SYS_SETTINGS, IQS620_SYS_SETTINGS_ACK_RESET |
-        IQS620_SYS_SETTINGS_EVENT_MODE | IQS620_SYS_SETTINGS_COMMS_ATI);
+    { IQS620_SYS_SETTINGS,
+	IQS620_SYS_SETTINGS_ACK_RESET | IQS620_SYS_SETTINGS_EVENT_MODE | IQS620_SYS_SETTINGS_COMMS_ATI },
 
     // enable channels 0 and 1 for capacitive prox/touch sensing
-    iqs620_write_reg(IQS620_ACTIVE_CHANNELS, (1 << 1) | (1 << 0));
+    { IQS620_ACTIVE_CHANNELS, (1 << 1) | (1 << 0) },
 
     // auto power mode, ULP disabled, 1/16 normal power update rate
-    iqs620_write_reg(IQS620_POWER_MODE,
-        IQS620_POWER_MODE_AUTO | IQS620_POWER_MODE_NP_RATE_1_16);
+    { IQS620_POWER_MODE,
+        IQS620_POWER_MODE_AUTO | IQS620_POWER_MODE_NP_RATE_1_16 },
 
     // set up channel 0 to process RX 0
-    iqs620_write_reg(IQS620_PROX_FUSION_0_0,
-        IQS620_PROX_FUSION_0_CS_MODE | IQS620_PROX_FUSION_0_CS_RX_0);
+    { IQS620_PROX_FUSION_0_0,
+        IQS620_PROX_FUSION_0_CS_MODE | IQS620_PROX_FUSION_0_CS_RX_0 },
 
     // set up channel 1 to process RX 1
-    iqs620_write_reg(IQS620_PROX_FUSION_0_1,
-        IQS620_PROX_FUSION_0_CS_MODE | IQS620_PROX_FUSION_0_CS_RX_1);
+    { IQS620_PROX_FUSION_0_1,
+        IQS620_PROX_FUSION_0_CS_MODE | IQS620_PROX_FUSION_0_CS_RX_1 },
 
     // channel 0 cap size 15 pF, full-ATI mode
-    iqs620_write_reg(IQS620_PROX_FUSION_1_0,
-        IQS620_PROX_FUSION_1_CAP_15PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL);
+    { IQS620_PROX_FUSION_1_0,
+        IQS620_PROX_FUSION_1_CAP_15PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL },
 
     // channel 1 cap size 15 pF, full-ATI mode
-    iqs620_write_reg(IQS620_PROX_FUSION_1_1,
-        IQS620_PROX_FUSION_1_CAP_15PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL);
+    { IQS620_PROX_FUSION_1_1,
+        IQS620_PROX_FUSION_1_CAP_15PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL },
 
     // channel 0 cap sensing ATI base & target (default 0xD0: base=200, target=512 is not sensitive enough)
-    iqs620_write_reg(IQS620_PROX_FUSION_2_0,
+    { IQS620_PROX_FUSION_2_0,
         // base=75, target as configured
-        IQS620_PROX_FUSION_2_ATI_BASE_75 | IQS620_ATI_TARGET);
+        IQS620_PROX_FUSION_2_ATI_BASE_75 | IQS620_ATI_TARGET },
 
     // channel 1 cap sensing ATI base & target (default 0xD0: base=200, target=512 is not sensitive enough)
-    iqs620_write_reg(IQS620_PROX_FUSION_2_1,
+    { IQS620_PROX_FUSION_2_1,
         // base=75, target as configured
-        IQS620_PROX_FUSION_2_ATI_BASE_75 | IQS620_ATI_TARGET);
+        IQS620_PROX_FUSION_2_ATI_BASE_75 | IQS620_ATI_TARGET },
 
-    if (IQS620_PROX_THRESHOLD != 0)
-    {
-        // set prox detection threshold for channels 0 and 1
-        iqs620_write_reg(IQS620_PROX_THRESHOLD_0, IQS620_PROX_THRESHOLD);
-        iqs620_write_reg(IQS620_PROX_THRESHOLD_1, IQS620_PROX_THRESHOLD);
-    }
+    // set prox detection threshold for channels 0 and 1
+    { IQS620_PROX_THRESHOLD_0,
+        IQS620_PROX_THRESHOLD },
+    { IQS620_PROX_THRESHOLD_1,
+        IQS620_PROX_THRESHOLD },
 
-    if (IQS620_TOUCH_THRESHOLD != 0)
-    {
-        // set touch detection threshold for channels 0 and 1
-        iqs620_write_reg(IQS620_TOUCH_THRESHOLD_0, IQS620_TOUCH_THRESHOLD);
-        iqs620_write_reg(IQS620_TOUCH_THRESHOLD_1, IQS620_TOUCH_THRESHOLD);
-    }
+    // set touch detection threshold for channels 0 and 1
+    { IQS620_TOUCH_THRESHOLD_0,
+        IQS620_TOUCH_THRESHOLD },
+    { IQS620_TOUCH_THRESHOLD_1,
+        IQS620_TOUCH_THRESHOLD },
 
     // event mode, comms enabled in ATI, redo ATI
-    iqs620_write_reg(IQS620_SYS_SETTINGS, IQS620_SYS_SETTINGS_EVENT_MODE |
-        IQS620_SYS_SETTINGS_COMMS_ATI | IQS620_SYS_SETTINGS_REDO_ATI);
-}
+    { IQS620_SYS_SETTINGS,
+	IQS620_SYS_SETTINGS_EVENT_MODE | IQS620_SYS_SETTINGS_COMMS_ATI | IQS620_SYS_SETTINGS_REDO_ATI },
+};
 
 /**
  * State of one button.
@@ -424,7 +428,10 @@ void iqs620_init(void)
     assert(iqs620_read_u8(IQS620_ID) == IQS620_ID_VALUE);
 
     // Configure all needed registers.
-    iqs620_configure();
+    for (size_t i = 0; i < LEN(iqs620_conf); i++)
+    {
+	iqs620_write_reg(iqs620_conf[i].addr, iqs620_conf[i].data);
+    }
 
     // Enable the TOUCH_RDY event after the reset.
     nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);

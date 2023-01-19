@@ -107,7 +107,6 @@
 
 #define MAX77654_INT_CHG                0x01 // RC
 #define MAX77654_STAT_CHG_A             0x02 // RO
-
 #define MAX77654_STAT_CHG_B             0x03 // RO
 #define MAX77654_CHG_DTLS_Msk           (0x0F << 4)
 #define MAX77654_CHG_DTLS_OFF           (0x00 << 4) // Off
@@ -288,12 +287,117 @@
 #define MAX77654_CNFG_LDO_B_EN_OFF      (0x04 << 0)
 #define MAX77654_CNFG_LDO_B_EN_ON       (0x06 << 0)
 
+/** Initial configuration sent over I2C. */
+struct { uint8_t addr, data; } max77654_conf[] = {
+    // Power Rail Configuration
+
+    // Power Rail: 2.7V
+    // set SBB0 to 2.7V, buck, 333mA, active discharge, OFF
+    { MAX77654_CNFG_SBB0_A,
+        MAX77654_CNFG_SBB_A_TV_2V7 },
+    { MAX77654_CNFG_SBB0_B,
+        MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_OFF },
+
+    // Power Rail: 1.8V always on
+    // set SBB1 to 1.8V, buck, 333mA, active discharge, ON
+    { MAX77654_CNFG_SBB1_B,
+        MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_ON },
+
+    // Power Rail: 1.2V
+    // set SBB2 to 1.2V, buck, 333mA, active discharge, OFF
+    { MAX77654_CNFG_SBB2_A,
+        MAX77654_CNFG_SBB_A_TV_1V2 },
+    { MAX77654_CNFG_SBB2_B,
+        MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_OFF },
+
+    // Power Rail: 1.8VDC_SW, 1.8V switched set LDO0 as load switch,
+    // Active Discharge, OFF
+    // Not needed; just in case mode set to LDO by mistake.
+    { MAX77654_CNFG_LDO0_A,
+        MAX77654_CNFG_LDO_A_TV_1V8 },
+    { MAX77654_CNFG_LDO0_B,
+        MAX77654_CNFG_LDO_B_MD | MAX77654_CNFG_LDO_B_ADE | MAX77654_CNFG_LDO_B_EN_OFF },
+
+    // Power Rail: VLED, 2.7V
+    // set LDO1 to LDO at 2.7V, Active Discharge, OFF
+    { MAX77654_CNFG_LDO1_A,
+        MAX77654_CNFG_LDO_A_TV_2V7 },
+    { MAX77654_CNFG_LDO1_B,
+        MAX77654_CNFG_LDO_B_ADE | MAX77654_CNFG_LDO_B_EN_OFF },
+
+    // ICHGIN_LIM_DEF=0: clear this bit so dev brd "M" OTP matches "B" OTP of 0, that is ICHGIN_LIM scale starts at 95mA
+    // ICHGIN_LIM assumes CNFG_SBB_TOP.ICHGIN_LIM_DEF = 0
+    // Drive strength, slow down to reduce EMI (but reduces efficiency)
+    { MAX77654_CNFG_SBB_TOP,
+        0x00 },
+
+    // GPIO configuration
+
+    // Note: OTP "B" version defaults to Alternate functions, not GPO, so must be reconfigured
+    // GPIO0 (Red LED) : GPO, open-drain, logic low
+    // set to hi-Z, LED off
+    { MAX77654_CNFG_GPIO0,
+        MAX77654_DO },
+
+    // GPIO1 (Green LED) : GPO, open-drain, logic low
+    // set to hi-Z, LED off
+    { MAX77654_CNFG_GPIO1,
+        MAX77654_DO },
+
+    // GPIO2 (DISP_PWR_EN): GPO, push-pull, logic low -> 10V off
+    { MAX77654_CNFG_GPIO2,
+        MAX77654_DRV },
+
+    // Charging configuration
+
+    // Battery charging parameters from datasheets
+    // for Varta CP1254 A4 CoinPower battery * 1
+    // Charging:
+    // - Voltage: 4.3V (4.0V for rapid)
+    // - Current: 35mA (standard), 70mA (fast), 140mA (rapid)
+    // - Operating temperature (standard & fast) 0 to 45C
+    // - Operating temperature (rapid) 20 to 45C
+    // - Cut-off time: 5hr (standard), 3h (fast & rapid)
+    // - Cut-off current: 1.4mA
+    // - Pre-qualification charging not specified; assume 14mA to 2.5V
+    // Discharge
+    // - Cut-off voltage: 3.0V
+    // - Max current (continuous): 140mA
+    // - Operating temperature: -20 to 60C
+
+    // Rapid charging is not currently implemented, because:
+    // - It is incompatible with MAX design, which assumes non-JEITA
+    //   charging to a _higher_ voltage, whereas Varta is to _lower_ voltage.
+    // - If implemented rapid charging to 4.0V at temperatures 20-45C,
+    //   battery would never fully charge (except when temp in range 0-20C).
+    // - Could implement rapid charging if willing to accept
+    //   less-than-full battery, or if MCU monitors voltage, increasing
+    //   charge voltage & decreasing charge current when battery reaches 3.95V.
+
+    // JEITA Temperatures: COLD=0C, HOT=45C, COOL=20C (not avail, use
+    // 15C), WARM=45C (MK11 NTC B is 3380K)
+    { MAX77654_CNFG_CHG_A,
+        MAX77654_THM_HOT_45C | MAX77654_THM_WARM_45C | MAX77654_THM_COOL_15C | MAX77654_THM_COLD_00C },
+
+    // "B" version input current limit is 95mA; increase to allow charging
+    // + operation (at least during testing) V_CHGIN_MIN=4.3V,
+    // I_CHGIN-LIM=190mA, I_pre-charge = 20% of I_fast, charge enable
+    { MAX77654_CNFG_CHG_B,
+        MAX77654_VCHGIN_MIN_4V3 | MAX77654_ICHGIN_LIM_190MA | MAX77654_I_PQ | MAX77654_CHG_EN },
+
+    // pre-charge to 2.5V, termination current = 10% = 6.8mA (so CC6
+    // green LED will turn off), top-off 5 mins (unknown how long before
+    // reach 1.4mA, should be safe)
+    { MAX77654_CNFG_CHG_C,
+        MAX77654_CHG_PQ_2V5 | MAX77654_I_TERM_10P | MAX77654_T_TOPOFF_5M },
+};
+
 /**
  * Read a register value over I2C.
  * @param addr Address of the register.
  * @return The value returned.
  */
-uint8_t max77654_read(uint8_t addr)
+static uint8_t max77654_read(uint8_t addr)
 {
     uint8_t val;
 
@@ -309,7 +413,7 @@ uint8_t max77654_read(uint8_t addr)
  * @param addr Address of the register.
  * @param data Value to write.
  */
-void max77654_write(uint8_t addr, uint8_t data)
+static void max77654_write(uint8_t addr, uint8_t data)
 {
     uint8_t buf[] = { addr, data };
 
@@ -400,94 +504,6 @@ static void max77654_update(uint8_t addr, uint8_t newbits, uint8_t mask)
 {
     max77654_write(addr, (max77654_read(addr) & ~mask) | newbits);
 }
-
-struct { uint8_t addr, data; } max77654_conf[] = {
-    // Power Rail Configuration
-
-    // Power Rail: 2.7V
-    // set SBB0 to 2.7V, buck, 333mA, active discharge, OFF
-    { MAX77654_CNFG_SBB0_A, MAX77654_CNFG_SBB_A_TV_2V7 },
-    { MAX77654_CNFG_SBB0_B, MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_OFF },
-
-    // Power Rail: 1.8V always on
-    // set SBB1 to 1.8V, buck, 333mA, active discharge, ON
-    { MAX77654_CNFG_SBB1_B, MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_ON },
-
-    // Power Rail: 1.2V
-    // set SBB2 to 1.2V, buck, 333mA, active discharge, OFF
-    { MAX77654_CNFG_SBB2_A, MAX77654_CNFG_SBB_A_TV_1V2 },
-    { MAX77654_CNFG_SBB2_B, MAX77654_CNFG_SBB_B_MD | MAX77654_CNFG_SBB_B_IP_333 | MAX77654_CNFG_SBB_B_ADE | MAX77654_CNFG_SBB_B_EN_OFF },
-
-    // Power Rail: 1.8VDC_SW, 1.8V switched set LDO0 as load switch,
-    // Active Discharge, OFF
-    // Not needed; just in case mode set to LDO by mistake.
-    { MAX77654_CNFG_LDO0_A, MAX77654_CNFG_LDO_A_TV_1V8 },
-    { MAX77654_CNFG_LDO0_B, MAX77654_CNFG_LDO_B_MD | MAX77654_CNFG_LDO_B_ADE | MAX77654_CNFG_LDO_B_EN_OFF },
-
-    // Power Rail: VLED, 2.7V
-    // set LDO1 to LDO at 2.7V, Active Discharge, OFF
-    { MAX77654_CNFG_LDO1_A, MAX77654_CNFG_LDO_A_TV_2V7 },
-    { MAX77654_CNFG_LDO1_B, MAX77654_CNFG_LDO_B_ADE | MAX77654_CNFG_LDO_B_EN_OFF },
-
-    // ICHGIN_LIM_DEF=0: clear this bit so dev brd "M" OTP matches "B" OTP of 0, that is ICHGIN_LIM scale starts at 95mA
-    // ICHGIN_LIM assumes CNFG_SBB_TOP.ICHGIN_LIM_DEF = 0
-    // Drive strength, slow down to reduce EMI (but reduces efficiency)
-    { MAX77654_CNFG_SBB_TOP, 0x00 },
-
-    // GPIO configuration
-
-    // Note: OTP "B" version defaults to Alternate functions, not GPO, so must be reconfigured
-    // GPIO0 (Red LED) : GPO, open-drain, logic low
-    // set to hi-Z, LED off
-    { MAX77654_CNFG_GPIO0, MAX77654_DO },
-
-    // GPIO1 (Green LED) : GPO, open-drain, logic low
-    // set to hi-Z, LED off
-    { MAX77654_CNFG_GPIO1, MAX77654_DO },
-
-    // GPIO2 (DISP_PWR_EN): GPO, push-pull, logic low -> 10V off
-    { MAX77654_CNFG_GPIO2, MAX77654_DRV },
-
-    // Charging configuration
-
-    // Battery charging parameters from datasheets
-    // for Varta CP1254 A4 CoinPower battery * 1
-    // Charging:
-    // - Voltage: 4.3V (4.0V for rapid)
-    // - Current: 35mA (standard), 70mA (fast), 140mA (rapid)
-    // - Operating temperature (standard & fast) 0 to 45C
-    // - Operating temperature (rapid) 20 to 45C
-    // - Cut-off time: 5hr (standard), 3h (fast & rapid)
-    // - Cut-off current: 1.4mA
-    // - Pre-qualification charging not specified; assume 14mA to 2.5V
-    // Discharge
-    // - Cut-off voltage: 3.0V
-    // - Max current (continuous): 140mA
-    // - Operating temperature: -20 to 60C
-
-    // Rapid charging is not currently implemented, because:
-    // - It is incompatible with MAX design, which assumes non-JEITA
-    //   charging to a _higher_ voltage, whereas Varta is to _lower_ voltage.
-    // - If implemented rapid charging to 4.0V at temperatures 20-45C,
-    //   battery would never fully charge (except when temp in range 0-20C).
-    // - Could implement rapid charging if willing to accept
-    //   less-than-full battery, or if MCU monitors voltage, increasing
-    //   charge voltage & decreasing charge current when battery reaches 3.95V.
-
-    // JEITA Temperatures: COLD=0C, HOT=45C, COOL=20C (not avail, use
-    // 15C), WARM=45C (MK11 NTC B is 3380K)
-    { MAX77654_CNFG_CHG_A, MAX77654_THM_HOT_45C | MAX77654_THM_WARM_45C | MAX77654_THM_COOL_15C | MAX77654_THM_COLD_00C },
-
-    // "B" version input current limit is 95mA; increase to allow charging
-    // + operation (at least during testing) V_CHGIN_MIN=4.3V,
-    // I_CHGIN-LIM=190mA, I_pre-charge = 20% of I_fast, charge enable
-    { MAX77654_CNFG_CHG_B, MAX77654_VCHGIN_MIN_4V3 | MAX77654_ICHGIN_LIM_190MA | MAX77654_I_PQ | MAX77654_CHG_EN },
-
-    // pre-charge to 2.5V, termination current = 10% = 6.8mA (so CC6
-    // green LED will turn off), top-off 5 mins (unknown how long before
-    // reach 1.4mA, should be safe)
-    { MAX77654_CNFG_CHG_C, MAX77654_CHG_PQ_2V5 | MAX77654_I_TERM_10P | MAX77654_T_TOPOFF_5M },
-};
 
 /**
  * Turn the 1.8V rail on/off powering all 1.8V components of the circuit.
@@ -643,6 +659,7 @@ void max77654_init(void)
     // verify MAX77654 on I2C bus by attempting to read Chip ID register
     assert(max77654_get_cid() == MAX77654_CID_EXPECTED);
 
+    // configure all registers from the configuration table
     for (size_t i = 0; i < LEN(max77654_conf); i++)
         max77654_write(max77654_conf[i].addr, max77654_conf[i].data);
 

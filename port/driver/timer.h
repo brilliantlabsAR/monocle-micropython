@@ -32,7 +32,7 @@ typedef void timer_task_t(void);
 extern timer_task_t *timer_1ms[TIMER_MAX_TASKS];
 extern timer_task_t *timer_500ms[TIMER_MAX_TASKS];
 
-void timer_init(void);
+void timer_start(void);
 void timer_add_task(timer_task_t **list, timer_task_t *fn);
 void timer_del_task(timer_task_t **list, timer_task_t *fn);
 uint64_t timer_get_uptime_ms(void);
