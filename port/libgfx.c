@@ -145,9 +145,17 @@ static size_t gfx_draw_glyph(uint8_t *yuv422_buf, size_t yuv422_len, gfx_glyph_t
     return glyph->width;
 }
 
+/*
+ * Estimate the next word's width.
+ */
+static uint16_t gfx_get_word_width(char *u8)
+{
+    return 0;
+}
+
 static void gfx_render_textbox(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj)
 {
-    char const *txt = "welcome";
+    char const *s = obj->text;
     uint16_t x_beg = obj->x;
     uint16_t x_end = obj->x + obj->width;
     uint16_t space_width = 2;
@@ -157,11 +165,11 @@ static void gfx_render_textbox(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t 
         return;
     }
 
-    for (uint16_t n = 0, x = x_beg; *txt != '\0'; x += n) {
+    for (uint16_t n = 0, x = x_beg; *s != '\0'; x += n) {
         gfx_glyph_t glyph;
 
         // search the glyph within the font data
-        glyph = gfx_get_glyph(gfx_font, *txt++);
+        glyph = gfx_get_glyph(gfx_font, *s++);
 
         // stop if we are about to overflow the textbox
         if (x >= x_end || x * 2 > yuv422_len)
@@ -197,6 +205,8 @@ void gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_
         }
 
         switch (obj->type) {
+        case GFX_TYPE_NULL:
+            break;
         case GFX_TYPE_RECTANGLE:
             gfx_render_rectangle(yuv422_buf, yuv422_len, y, obj);
             break;
@@ -213,4 +223,16 @@ void gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_
             assert(!"unknown type");
         }
     }
+}
+
+gfx_obj_t *gfx_get_by_type(gfx_obj_t *obj_list, size_t obj_num, gfx_type_t type)
+{
+    // Try to get a new free slot
+    for (size_t i = 0; i < obj_num; i++)
+    {
+        // find the object by its type
+        if (obj_list[i].type == type)
+            return &obj_list[i];
+    }
+    return NULL;
 }

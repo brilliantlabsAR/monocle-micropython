@@ -23,25 +23,28 @@
 
 typedef enum
 {
-    GFX_TYPE_RECTANGLE,  // filled
-    GFX_TYPE_LINE,       // diagonal line
-    GFX_TYPE_ELLIPSIS,   // diagonal line
-    GFX_TYPE_TEXTBOX,    // box filled with text, clipped at the bottom
-    GFX_TYPE_NUM,        // empty drawing slot
-} gfx_obj_type_t;
+    GFX_TYPE_NULL,      // skip this object
+    GFX_TYPE_RECTANGLE, // filled
+    GFX_TYPE_LINE,      // diagonal line
+    GFX_TYPE_ELLIPSIS,  // diagonal line
+    GFX_TYPE_TEXTBOX,   // box filled with text, clipped at the bottom
+} gfx_type_t;
 
 typedef struct
 {
     uint16_t x, y, width, height;
+    char *text;
     uint8_t yuv444[3];
     uint8_t type;
 } gfx_obj_t;
 
-#define GFX_RGB_TO_YUV444(r, g, b) \
+#define GFX_RGB_TO_YUV444(r, g, b) { \
     128 + 0.29900 * (r) + 0.58700 * (g) + 0.11400 * (b) - 128, \
     128 - 0.16874 * (r) - 0.33126 * (g) + 0.50000 * (b), \
-    128 + 0.50000 * (r) - 0.41869 * (g) - 0.08131 * (b)
+    128 + 0.50000 * (r) - 0.41869 * (g) - 0.08131 * (b) \
+}
 
 void gfx_set_color(gfx_obj_t *gfx, uint16_t line_num, gfx_obj_t *obj_list, size_t obj_num);
 void gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj_list, size_t obj_num);
 void gfx_fill_black(uint8_t *yuv422_buf, size_t yuv422_len);
+gfx_obj_t *gfx_get_by_type(gfx_obj_t *obj_list, size_t obj_num, gfx_type_t type);
