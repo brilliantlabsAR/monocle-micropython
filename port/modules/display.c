@@ -57,9 +57,36 @@ gfx_obj_t gfx_obj_list[10] = {
         .y = 0,
         .width = 640,
         .height = 400,
+        .yuv444 = GFX_RGB_TO_YUV444(0xFF, 0x00, 0x00)
     }
 };
-size_t gfx_obj_num;
+size_t gfx_obj_num = 1;
+
+STATIC size_t get_first_non_black(uint8_t *yuv422_buf, size_t yuv422_len)
+{
+    uint8_t black[2] = GFX_YUV422_BLACK;
+
+    for (size_t i = 0; i < sizeof yuv422_buf; i += 2) {
+        if (memcmp(&yuv422_buf[i], black, sizeof black) == 0)
+        {
+            return i;
+        }
+    }
+    return yuv422_len;
+}
+
+STATIC size_t get_last_non_black(uint8_t *yuv422_buf, size_t yuv422_len)
+{
+    uint8_t black[2] = GFX_YUV422_BLACK;
+
+    for (size_t i = yuv422_len - 2; i > 0; i -= 2) {
+        if (memcmp(&yuv422_buf[i], black, sizeof black) != 0)
+        {
+            return i;
+        }
+    }
+    return 0;
+}
 
 STATIC mp_obj_t display_show(void)
 {
@@ -70,8 +97,6 @@ STATIC mp_obj_t display_show(void)
     for (size_t y = 0; y < OV5640_HEIGHT; y++)
     {
         uint8_t yuv422_buf[ECX336CN_WIDTH * 2];
-        uint32_t u32 = y * sizeof yuv422_buf;
-        uint8_t base[sizeof u32] = { u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0 };
 
         // Clean the row before writing to it
         gfx_fill_black(yuv422_buf, sizeof yuv422_buf);
@@ -79,10 +104,28 @@ STATIC mp_obj_t display_show(void)
         // Render a single row, and if anything was updated, also flush it
         if (gfx_render_row(yuv422_buf, sizeof yuv422_buf, y, gfx_obj_list, gfx_obj_num))
         {
-            // Flush it to the display through the FPGA.
+            // Find the first and last non-black pixels drawn
+            size_t beg = get_first_non_black(yuv422_buf, sizeof yuv422_buf);
+            size_t len = get_last_non_black(yuv422_buf + beg, sizeof yuv422_buf - beg);
+
+            // If only black was drawn, skip the printing.
+            if (beg == sizeof yuv422_buf || len == 0)
+            {
+                continue;
+            }
+
+            // Align the values for adapting it to the FPGA requirement.
+            beg = beg % 16;
+            len = (len + 8) % 16;
+
+
+            // Set the base address
+            uint32_t u32 = y * sizeof yuv422_buf + beg;
+            uint8_t base[sizeof u32] = { u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0 };
             fpga_cmd_write(FPGA_GRAPHICS_BASE, base, sizeof base);
-            LOG("base=0x%02X%02X%02X%02X", base[0], base[1], base[2], base[3]);
-            fpga_cmd_write(FPGA_GRAPHICS_DATA, yuv422_buf, sizeof yuv422_buf);
+
+            // Flush the content of the screen skipping empty bytes.
+            fpga_cmd_write(FPGA_GRAPHICS_DATA, yuv422_buf + beg, len);
         }
     }
 

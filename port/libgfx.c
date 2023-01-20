@@ -189,9 +189,11 @@ static void gfx_render_ellipsis(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t
 
 void gfx_fill_black(uint8_t *yuv422_buf, size_t yuv422_len)
 {
-    for (size_t i = 0; i < yuv422_len; i++)
+    uint8_t black[] = GFX_YUV422_BLACK;
+
+    for (size_t i = 0; i + 1 < yuv422_len; i += 2)
     {
-        yuv422_buf[i] = (i % 2 == 0) ? 0x80 : 0x00;
+        memcpy(yuv422_buf, black, sizeof black);
     }
 }
 
