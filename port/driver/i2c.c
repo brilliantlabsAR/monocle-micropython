@@ -134,7 +134,7 @@ void i2c_init(nrfx_twi_t twi, uint8_t scl_pin, uint8_t sda_pin)
     nrfx_twi_config_t config = {
         .scl = scl_pin,
         .sda = sda_pin,
-        .frequency = NRF_TWI_FREQ_100K,
+        .frequency = NRF_TWI_FREQ_400K,
         .interrupt_priority = NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY,
     };
 

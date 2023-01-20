@@ -206,21 +206,14 @@ void ecx336cn_awake(void)
  */
 void ecx336cn_init(void)
 {
-    // power-on sequence, see Datasheet section 9
-    // 1ms after 1.8V on, device has finished initializing
-    nrfx_systick_delay_ms(100);
-
     // set XCLR to high (1.8V to take it) to change to power-saving mode
     nrf_gpio_pin_set(ECX336CN_XCLR_PIN);
-
 
     // SONY ECX336CN register configuration, see Datasheet section 10.1
     ecx336cn_sleep();
     for (size_t i = 0; i < LEN(ecx336cn_config); i++)
         ecx336cn_write_byte(i, ecx336cn_config[i]);
     ecx336cn_awake();
-
-    nrfx_systick_delay_ms(100);
 
     // check that 0x29 changed from default 0x0A to 0x0B
     // and that 0x2A has been restored

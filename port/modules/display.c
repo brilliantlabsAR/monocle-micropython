@@ -46,6 +46,11 @@
 
 STATIC mp_obj_t display___init__(void)
 {
+    // Set the FPGA to show the graphic buffer.
+    fpga_cmd(FPGA_GRAPHICS_CLEAR);
+    fpga_cmd(FPGA_GRAPHICS_SWAP);
+    fpga_cmd(FPGA_GRAPHICS_ON);
+
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(display___init___obj, display___init__);
@@ -64,9 +69,10 @@ size_t gfx_obj_num = 1;
 
 STATIC size_t get_first_non_black(uint8_t *yuv422_buf, size_t yuv422_len)
 {
-    uint8_t black[2] = GFX_YUV422_BLACK;
+    uint8_t black[] = GFX_YUV422_BLACK;
 
-    for (size_t i = 0; i < sizeof yuv422_buf; i += 2) {
+    assert(yuv422_len % sizeof black == 0);
+    for (size_t i = 0; i < sizeof yuv422_buf; i += sizeof black) {
         if (memcmp(&yuv422_buf[i], black, sizeof black) == 0)
         {
             return i;
@@ -77,9 +83,10 @@ STATIC size_t get_first_non_black(uint8_t *yuv422_buf, size_t yuv422_len)
 
 STATIC size_t get_last_non_black(uint8_t *yuv422_buf, size_t yuv422_len)
 {
-    uint8_t black[2] = GFX_YUV422_BLACK;
+    uint8_t black[] = GFX_YUV422_BLACK;
 
-    for (size_t i = yuv422_len - 2; i > 0; i -= 2) {
+    assert(yuv422_len % sizeof black == 0);
+    for (size_t i = yuv422_len - sizeof black; i > 0; i -= sizeof black) {
         if (memcmp(&yuv422_buf[i], black, sizeof black) != 0)
         {
             return i;
@@ -90,7 +97,7 @@ STATIC size_t get_last_non_black(uint8_t *yuv422_buf, size_t yuv422_len)
 
 STATIC mp_obj_t display_show(void)
 {
-    fpga_cmd(FPGA_GRAPHICS_ON);
+    // fill the display with black pixels
     fpga_cmd(FPGA_GRAPHICS_CLEAR);
 
     // Walk through every line of the display, render it, send it to the FPGA.
@@ -115,14 +122,15 @@ STATIC mp_obj_t display_show(void)
             }
 
             // Align the values for adapting it to the FPGA requirement.
-            beg = beg % 16;
-            len = (len + 8) % 16;
-
+            beg = beg - beg % 16;
+            len = (len + 16) % 16;
 
             // Set the base address
             uint32_t u32 = y * sizeof yuv422_buf + beg;
             uint8_t base[sizeof u32] = { u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0 };
             fpga_cmd_write(FPGA_GRAPHICS_BASE, base, sizeof base);
+
+            LOG("base=0x%08X len=%d", u32, len);
 
             // Flush the content of the screen skipping empty bytes.
             fpga_cmd_write(FPGA_GRAPHICS_DATA, yuv422_buf + beg, len);

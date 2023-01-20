@@ -48,7 +48,7 @@ typedef struct
     128.0 + 0.50000 * (r) - 0.41869 * (g) - 0.08131 * (b) \
 }
 
-#define GFX_YUV422_BLACK    { 0x80, 0x00 }
+#define GFX_YUV422_BLACK    { 0x00, 0x80 }
 
 void gfx_set_color(gfx_obj_t *gfx, uint16_t line_num, gfx_obj_t *obj_list, size_t obj_num);
 bool gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj_list, size_t obj_num);

@@ -145,13 +145,12 @@ void charge_status_timer(void)
     // then check for the PMIC charge status.
     if (max77654_is_charging())
     {
-        // Power everything around off.
-        max77654_power_off();
-
         // Warn that we are going to sleep
         max77654_rail_vled(true);
-        blink(1);
-        max77654_rail_vled(false);
+        max77654_led_red(true);
+
+        // Power everything around off.
+        max77654_power_off();
 
         // Wakeup from events of IQS620 touch controller .
         nrf_gpio_cfg_sense_input(IQS620_TOUCH_RDY_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
@@ -311,6 +310,7 @@ int main(void)
 
     LOG("ECX336CN"); assert_blink_num = 3;
     {
+        // 1ms after 1.8V on, device has finished initializing (datasheet section 9)
         ecx336cn_init();
     }
 
