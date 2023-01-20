@@ -216,9 +216,5 @@ void ecx336cn_init(void)
     ecx336cn_awake();
 
     // check that 0x29 changed from default 0x0A to 0x0B
-    // and that 0x2A has been restored
-    LOG("0x29=0x%02X 0x2A=0x%02X", ecx336cn_read_byte(0x29), ecx336cn_read_byte(0x2A));
-    // TODO: the SPI line cannot be read back!
-    //assert(ecx336cn_read_byte(0x29) == 0x0B);
-    //assert(ecx336cn_read_byte(0x2A) == 0xBE);
+    assert(ecx336cn_read_byte(0x29) == 0x0B);
 }

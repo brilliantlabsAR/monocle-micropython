@@ -27,8 +27,15 @@ typedef enum
     GFX_TYPE_RECTANGLE, // filled
     GFX_TYPE_LINE,      // diagonal line
     GFX_TYPE_ELLIPSIS,  // diagonal line
-    GFX_TYPE_TEXTBOX,   // box filled with text, clipped at the bottom
+    GFX_TYPE_TEXT,      // a single line of text truncated at the end
 } gfx_type_t;
+
+typedef struct
+{
+    uint8_t *buf;
+    size_t len;
+    uint16_t y;
+} gfx_row_t;
 
 typedef struct
 {
@@ -48,8 +55,8 @@ typedef struct
     128.0 + 0.50000 * (r) - 0.41869 * (g) - 0.08131 * (b) \
 }
 
-#define GFX_YUV422_BLACK    { 0x00, 0x80 }
+#define GFX_YUV422_BLACK    { 0x80, 0x00 }
 
 void gfx_set_color(gfx_obj_t *gfx, uint16_t line_num, gfx_obj_t *obj_list, size_t obj_num);
-bool gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj_list, size_t obj_num);
-void gfx_fill_black(uint8_t *yuv422_buf, size_t yuv422_len);
+bool gfx_render_row(gfx_row_t row, gfx_obj_t *obj_list, size_t obj_num);
+void gfx_fill_black(gfx_row_t row);

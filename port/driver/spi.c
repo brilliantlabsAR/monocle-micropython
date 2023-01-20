@@ -62,6 +62,7 @@ void spim_event_handler(nrfx_spim_evt_t const *p_event, void *p_context)
 void spi_chip_select(uint8_t cs_pin)
 {
     nrf_gpio_pin_clear(cs_pin);
+    nrfx_systick_delay_us(100);
 }
 
 /**
@@ -71,6 +72,7 @@ void spi_chip_select(uint8_t cs_pin)
 void spi_chip_deselect(uint8_t cs_pin)
 {
     nrf_gpio_pin_set(cs_pin);
+    nrfx_systick_delay_us(100);
 }
 
 static void spi_xfer_chunk(nrfx_spim_xfer_desc_t *xfer)

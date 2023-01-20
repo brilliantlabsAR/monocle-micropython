@@ -271,15 +271,6 @@ int main(void)
         ble_init();
     }
 
-    // Initiate user-input peripherals, which do not make
-    // sense until everything else is setup.
-
-    LOG("IQS620"); assert_blink_num = 5;
-    {
-        nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
-        iqs620_init();
-    }
-
     // power on everything and wait 
 
     LOG("POWER");
@@ -303,18 +294,18 @@ int main(void)
         spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
     }
 
-    LOG("FPGA"); assert_blink_num = 2;
+    LOG("FPGA"); assert_blink_num = 3;
     {
         fpga_init();
     }
 
-    LOG("ECX336CN"); assert_blink_num = 3;
+    LOG("ECX336CN"); assert_blink_num = 4;
     {
         // 1ms after 1.8V on, device has finished initializing (datasheet section 9)
         ecx336cn_init();
     }
 
-    LOG("OV5640"); assert_blink_num = 4;
+    LOG("OV5640"); assert_blink_num = 5;
     {
         //ov5640_init();
     }
@@ -322,6 +313,15 @@ int main(void)
     LOG("FLASH"); assert_blink_num = 6;
     {
         flash_init();
+    }
+
+    // Initiate user-input peripherals, which did not make
+    // sense before everything else is setup.
+
+    LOG("IQS620"); assert_blink_num = 2;
+    {
+        nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
+        iqs620_init();
     }
 
     LOG("DONE"); assert_blink_num = 10;

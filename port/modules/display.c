@@ -30,6 +30,7 @@
 
 #include "nrfx_log.h"
 #include "nrfx_spim.h"
+#include "nrfx_systick.h"
 
 #include "driver/bluetooth_data_protocol.h"
 #include "driver/config.h"
@@ -44,50 +45,46 @@
 #define VAL(str)    #str
 #define STR(str)    VAL(str)
 
+#define FPGA_ADDR_ALIGN  128
+
 STATIC mp_obj_t display___init__(void)
 {
     // Set the FPGA to show the graphic buffer.
     fpga_cmd(FPGA_GRAPHICS_CLEAR);
+    nrfx_systick_delay_ms(30);
     fpga_cmd(FPGA_GRAPHICS_SWAP);
+    nrfx_systick_delay_ms(30);
     fpga_cmd(FPGA_GRAPHICS_ON);
+    nrfx_systick_delay_ms(30);
 
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(display___init___obj, display___init__);
 
-gfx_obj_t gfx_obj_list[10] = {
-    {
-        .type = GFX_TYPE_LINE,
-        .x = 0,
-        .y = 0,
-        .width = 640,
-        .height = 400,
-        .yuv444 = GFX_RGB_TO_YUV444(0xFF, 0x00, 0x00)
-    }
-};
-size_t gfx_obj_num = 1;
+gfx_obj_t gfx_obj_list[10];
+size_t gfx_obj_num;
 
-STATIC size_t get_first_non_black(uint8_t *yuv422_buf, size_t yuv422_len)
+STATIC size_t get_first_non_black(gfx_row_t yuv422)
 {
     uint8_t black[] = GFX_YUV422_BLACK;
 
-    assert(yuv422_len % sizeof black == 0);
-    for (size_t i = 0; i < sizeof yuv422_buf; i += sizeof black) {
-        if (memcmp(&yuv422_buf[i], black, sizeof black) == 0)
+    assert(yuv422.len % sizeof black == 0);
+    for (size_t i = 0; i < yuv422.len; i += sizeof black) {
+        if (memcmp(yuv422.buf+i, black, sizeof black) != 0)
         {
             return i;
         }
     }
-    return yuv422_len;
+    return yuv422.len;
 }
 
-STATIC size_t get_last_non_black(uint8_t *yuv422_buf, size_t yuv422_len)
+STATIC size_t get_last_non_black(gfx_row_t yuv422)
 {
     uint8_t black[] = GFX_YUV422_BLACK;
 
-    assert(yuv422_len % sizeof black == 0);
-    for (size_t i = yuv422_len - sizeof black; i > 0; i -= sizeof black) {
-        if (memcmp(&yuv422_buf[i], black, sizeof black) != 0)
+    assert(yuv422.len % sizeof black == 0);
+    for (size_t i = yuv422.len - sizeof black; i > 0; i -= sizeof black) {
+        if (memcmp(yuv422.buf+i, black, sizeof black) != 0)
         {
             return i;
         }
@@ -97,43 +94,43 @@ STATIC size_t get_last_non_black(uint8_t *yuv422_buf, size_t yuv422_len)
 
 STATIC mp_obj_t display_show(void)
 {
-    // fill the display with black pixels
+    uint8_t buf[ECX336CN_WIDTH * 2];
+    gfx_row_t yuv422 = { .buf = buf, .len = sizeof buf, .y = 0 };
+
+    // fill the display with YUV422 black pixels
     fpga_cmd(FPGA_GRAPHICS_CLEAR);
+    nrfx_systick_delay_ms(30);
 
     // Walk through every line of the display, render it, send it to the FPGA.
-    for (size_t y = 0; y < OV5640_HEIGHT; y++)
+    for (; yuv422.y < OV5640_HEIGHT; yuv422.y++)
     {
-        uint8_t yuv422_buf[ECX336CN_WIDTH * 2];
-
         // Clean the row before writing to it
-        gfx_fill_black(yuv422_buf, sizeof yuv422_buf);
+        gfx_fill_black(yuv422);
 
         // Render a single row, and if anything was updated, also flush it
-        if (gfx_render_row(yuv422_buf, sizeof yuv422_buf, y, gfx_obj_list, gfx_obj_num))
+        if (gfx_render_row(yuv422, gfx_obj_list, gfx_obj_num))
         {
-            // Find the first and last non-black pixels drawn
-            size_t beg = get_first_non_black(yuv422_buf, sizeof yuv422_buf);
-            size_t len = get_last_non_black(yuv422_buf + beg, sizeof yuv422_buf - beg);
+            // skip empty pixels
+            size_t beg = get_first_non_black(yuv422);
+            size_t end = get_last_non_black(yuv422) + FPGA_ADDR_ALIGN;
 
-            // If only black was drawn, skip the printing.
-            if (beg == sizeof yuv422_buf || len == 0)
+            // align the address as expected by the FPGA
+            beg -= beg % FPGA_ADDR_ALIGN;
+            end -= end % FPGA_ADDR_ALIGN;
+
+            // skip empty lines
+            if (beg == yuv422.len || end == 0)
             {
                 continue;
             }
 
-            // Align the values for adapting it to the FPGA requirement.
-            beg = beg - beg % 16;
-            len = (len + 16) % 16;
-
-            // Set the base address
-            uint32_t u32 = y * sizeof yuv422_buf + beg;
+            // set the base address
+            uint32_t u32 = yuv422.y * yuv422.len + beg;
             uint8_t base[sizeof u32] = { u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0 };
             fpga_cmd_write(FPGA_GRAPHICS_BASE, base, sizeof base);
 
-            LOG("base=0x%08X len=%d", u32, len);
-
             // Flush the content of the screen skipping empty bytes.
-            fpga_cmd_write(FPGA_GRAPHICS_DATA, yuv422_buf + beg, len);
+            fpga_cmd_write(FPGA_GRAPHICS_DATA, yuv422.buf + beg, end - beg);
         }
     }
 
@@ -141,8 +138,8 @@ STATIC mp_obj_t display_show(void)
     fpga_cmd(FPGA_GRAPHICS_SWAP);
 
     // Empty the list of elements to draw.
-    //memset(gfx_obj_list, 0, sizeof gfx_obj_list);
-    //gfx_obj_num = 0;
+    memset(gfx_obj_list, 0, sizeof gfx_obj_list);
+    gfx_obj_num = 0;
 
     return mp_const_none;
 }
@@ -187,7 +184,7 @@ STATIC void new_gfx(gfx_type_t type, mp_int_t x, mp_int_t y, mp_int_t width, mp_
     // Get the latest free slot
     if (gfx_obj_num >= LEN(gfx_obj_list))
         mp_raise_OSError(MP_ENOMEM);
-    gfx = &gfx_obj_list[gfx_obj_num];
+    gfx = gfx_obj_list + gfx_obj_num;
 
     // This is the only place where we increment this number.
     gfx_obj_num++;
@@ -230,14 +227,14 @@ STATIC mp_obj_t display_text(size_t argc, mp_obj_t const args[])
     mp_int_t width = mp_obj_get_int(args[3]);
     mp_int_t rgb = mp_obj_get_int(args[4]);
 
-    new_gfx(GFX_TYPE_TEXTBOX, x, y, width, ECX336CN_HEIGHT, rgb, text);
+    new_gfx(GFX_TYPE_TEXT, x, y, width, ECX336CN_HEIGHT, rgb, text);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_text_obj, 5, 5, display_text);
 
 STATIC mp_obj_t display_txt(size_t argc, mp_obj_t const args[])
 {
-    new_gfx(GFX_TYPE_TEXTBOX, 10, 10, 100, ECX336CN_HEIGHT, 0x880000, "oops");
+    new_gfx(GFX_TYPE_TEXT, 10, 10, 100, ECX336CN_HEIGHT, 0xFF0000, "oops");
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_txt_obj, 0, 5, display_txt);

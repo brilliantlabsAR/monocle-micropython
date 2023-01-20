@@ -41,28 +41,31 @@ typedef struct
     uint8_t const *bitmap;
 } gfx_glyph_t;
 
-uint8_t const *gfx_font = font_50;
+static uint8_t const *gfx_font = font_50;
+static uint16_t gfx_glyph_gap_width = 2;
 
-static inline void gfx_draw_pixel(uint8_t *yuv422_buf, uint16_t x, uint8_t yuv444[3])
+static inline void gfx_draw_pixel(gfx_row_t row, uint16_t x, uint8_t yuv444[3])
 {
-    yuv422_buf[x * 2 + 0] = yuv444[1 + x % 2];
-    yuv422_buf[x * 2 + 1] = yuv444[0];
+    if (x * 2 + 0 < row.len)
+        row.buf[x * 2 + 0] = yuv444[1 + x % 2];
+    if (x * 2 + 1 < row.len)
+        row.buf[x * 2 + 1] = yuv444[0];
 }
 
-static inline void gfx_draw_segment(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t beg, uint16_t end, uint8_t yuv444[3])
+static inline void gfx_draw_segment(gfx_row_t row, uint16_t x_beg, uint16_t x_end, uint8_t yuv444[3])
 {
-    for (size_t len = yuv422_len / 2, x = beg; x < end && x < len; x++) {
-        gfx_draw_pixel(yuv422_buf, x, yuv444);
+    for (size_t len = row.len / 2, x = x_beg; x < x_end && x < len; x++)
+    {
+        gfx_draw_pixel(row, x, yuv444);
     }
 }
 
-static void gfx_render_rectangle(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj)
+static void gfx_render_rectangle(gfx_row_t row, gfx_obj_t *obj)
 {
-    (void)y;
-    gfx_draw_segment(yuv422_buf, yuv422_len, obj->x, obj->x + obj->width, obj->yuv444);
+    gfx_draw_segment(row, obj->x, obj->x + obj->width, obj->yuv444);
 }
 
-static uint16_t gfx_get_intersect_line(uint16_t y,
+static inline uint16_t gfx_get_intersect_line(uint16_t y,
         uint16_t obj_x, uint16_t obj_y, uint16_t obj_width, uint16_t obj_height)
 {
     // Thales theorem to find the intersection of the line with our line.
@@ -80,27 +83,28 @@ static uint16_t gfx_get_intersect_line(uint16_t y,
     return obj_x + obj_width - seg_width;
 }
 
-static void gfx_render_line(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj)
+static void gfx_render_line(gfx_row_t row, gfx_obj_t *obj)
 {
     uint16_t x_beg, x_end;
 
-    // Special case: purely horizontal line, fill as rectangle
-    if (obj->height == 0) {
-        gfx_render_rectangle(yuv422_buf, yuv422_len, y, obj);
+    // Special case: purely horizontal line means divide by 0, fill as a rectangle instead
+    if (obj->height == 0)
+    {
+        gfx_render_rectangle(row, obj);
         return;
     }
 
     // We need to know how many horizontal pixels to drawn to accomodate the line thickness
     // so we get two intersections: the one for the top, and the one for the bottom edge of
     // the line. This introduces an offset, which we correct with the +1
-    x_beg = gfx_get_intersect_line(y + 1, obj->x, obj->y, obj->width, obj->height + 1);
-    x_end = gfx_get_intersect_line(y, obj->x, obj->y, obj->width, obj->height + 1);
+    x_beg = gfx_get_intersect_line(row.y + 1, obj->x, obj->y, obj->width, obj->height + 1);
+    x_end = gfx_get_intersect_line(row.y, obj->x, obj->y, obj->width, obj->height + 1);
 
     // We have the start and stop point of the segment, we can fill it
-    gfx_draw_segment(yuv422_buf, yuv422_len, x_beg, x_end, obj->yuv444);
+    gfx_draw_segment(row, x_beg, x_end, obj->yuv444);
 }
 
-static gfx_glyph_t gfx_get_glyph(uint8_t const *font, char c)
+static inline gfx_glyph_t gfx_get_glyph(uint8_t const *font, char c)
 {
     gfx_glyph_t glyph;
     uint8_t const *f = font;
@@ -114,7 +118,8 @@ static gfx_glyph_t gfx_get_glyph(uint8_t const *font, char c)
     glyph.height = *f++;
 
     // Scan the font, seeking for the glyph to render.
-    for (char i = ' '; i <= c; i++) {
+    for (char i = ' '; i <= c; i++)
+    {
         glyph.width = *f++;
         glyph.bitmap = f;
         f += (glyph.width * glyph.height + 7) / 8;
@@ -130,105 +135,116 @@ static inline bool gfx_get_glyph_bit(gfx_glyph_t *glyph, uint16_t x, uint16_t y)
     return glyph->bitmap[i / 8] & 1 << (i % 8);
 }
 
-static size_t gfx_draw_glyph(uint8_t *yuv422_buf, size_t yuv422_len, gfx_glyph_t *glyph, uint16_t y, uint8_t yuv444[3])
+/**
+ * Render a single glyph onto the buffer.
+ *
+ * @param row The buffer onto which write, with parameters adjusted
+ * to be local: as if the glyph had to be rendered on a screen of the same
+ * dimension onto x=0 y=0.
+ *
+ * @param glpyh The glyph to render.
+ */
+static inline void gfx_draw_glyph(gfx_row_t row, gfx_glyph_t *glyph, uint8_t yuv444[3])
 {
     // for each vertical position
-    for (uint16_t x = 0; x < glyph->width && x < yuv422_len / 2; x++) {
-
+    for (uint16_t x = 0; x < glyph->width && x < row.len / 2; x++)
+    {
         // check if the bit is set
-        if (gfx_get_glyph_bit(glyph, x, y) == true) {
-
+        if (gfx_get_glyph_bit(glyph, x, row.y) == true)
+        {
             // and only if so, fill the buffer with it
-            gfx_draw_pixel(yuv422_buf, x, yuv444);
+            gfx_draw_pixel(row, x, yuv444);
         }
     }
-    return glyph->width;
 }
 
 /*
- * Estimate the next word's width.
+ * Accurately compute the given string's display width
  */
-static uint16_t gfx_get_word_width(char *u8)
+uint16_t gfx_get_str_width(char *s, size_t len)
 {
-    return 0;
+    uint16_t width = 0;
+
+    // Scan the whole string and get the width of each glyph
+    for (size_t i = 0; i < len; i++)
+    {
+        // Accumulate the width of this glyph to render
+        width += (i == 0) ? 0 : gfx_glyph_gap_width;
+        width += gfx_get_glyph(gfx_font, s[i]).width;
+    }
+    return width;
 }
 
-static void gfx_render_textbox(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj)
+static void gfx_render_text(gfx_row_t row, gfx_obj_t *obj)
 {
-    char const *s = obj->u.ptr;
-    uint16_t x_beg = obj->x;
-    uint16_t x_end = obj->x + obj->width;
-    uint16_t space_width = 2;
+    char *s = obj->u.ptr;
 
-    // Only support a single line of text for now
-    if (y - obj->y >= gfx_font[0]) {
-        return;
-    }
-
-    for (uint16_t n = 0, x = x_beg; *s != '\0'; x += n) {
+    for (uint16_t x = obj->x; *s != '\0'; s++)
+    {
         gfx_glyph_t glyph;
 
         // search the glyph within the font data
-        glyph = gfx_get_glyph(gfx_font, *s++);
+        glyph = gfx_get_glyph(gfx_font, *s);
 
-        // stop if we are about to overflow the textbox
-        if (x >= x_end || x * 2 > yuv422_len)
-            break;
+        gfx_row_t local = {
+            .buf = row.buf + x * 2,
+            .len = row.len - x * 2,
+            .y = row.y - obj->y
+        };
 
-        // render the glyph, reduce the buffer to only the section to
-        // draw into, vertical is adjusted to be height within the glyph
-        n = gfx_draw_glyph(yuv422_buf + x*2, yuv422_len, &glyph, y - obj->y, obj->yuv444);
-        n += space_width * 2;
+        // render the glyph, reduce the buffer to only the section to draw into,
+        // y coordinate is adjusted to be height within the glyph
+        gfx_draw_glyph(local, &glyph, obj->yuv444);
+        x += glyph.width + gfx_glyph_gap_width;
     }
 }
 
-static void gfx_render_ellipsis(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj)
+static void gfx_render_ellipsis(gfx_row_t row, gfx_obj_t *obj)
 {
     // TODO implement ellipsis
 }
 
-void gfx_fill_black(uint8_t *yuv422_buf, size_t yuv422_len)
+void gfx_fill_black(gfx_row_t row)
 {
     uint8_t black[] = GFX_YUV422_BLACK;
 
-    for (size_t i = 0; i + 1 < yuv422_len; i += 2)
+    for (size_t i = 0; i + 1 < row.len; i += 2)
     {
-        memcpy(yuv422_buf, black, sizeof black);
+        memcpy(row.buf + i, black, sizeof black);
     }
 }
 
-bool gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj_list, size_t obj_num)
+bool gfx_render_row(gfx_row_t row, gfx_obj_t *obj_list, size_t obj_num)
 {
     bool drawn = false;
 
-    for (size_t i = 0; i < obj_num; i++) {
+    for (size_t i = 0; i < obj_num; i++)
+    {
         gfx_obj_t *obj = obj_list + i;
 
-        if (y < obj->y || y > obj->y + obj->height) {
+        // skip the object if it is not on the row we render.
+        if (obj->y > row.y || obj->y + obj->height < row.y)
+        {
             continue;
         }
 
         drawn = true;
 
-        switch (obj->type) {
+        switch (obj->type)
+        {
         case GFX_TYPE_NULL:
-        LOG("GFX_TYPE_NULL x=%d i=%d", obj->x, i);
             break;
         case GFX_TYPE_RECTANGLE:
-        LOG("GFX_TYPE_RECTANGLE x=%d i=%d", obj->x, i);
-            gfx_render_rectangle(yuv422_buf, yuv422_len, y, obj);
+            gfx_render_rectangle(row, obj);
             break;
         case GFX_TYPE_LINE:
-        LOG("GFX_TYPE_LINE x=%d i=%d", obj->x, i);
-            gfx_render_line(yuv422_buf, yuv422_len, y, obj);
+            gfx_render_line(row, obj);
             break;
-        case GFX_TYPE_TEXTBOX:
-        LOG("GFX_TYPE_TEXTBOX x=%d i=%d", obj->x, i);
-            gfx_render_textbox(yuv422_buf, yuv422_len, y, obj);
+        case GFX_TYPE_TEXT:
+            gfx_render_text(row, obj);
             break;
         case GFX_TYPE_ELLIPSIS:
-        LOG("GFX_TYPE_ELLIPSIS x=%d i=%d", obj->x, i);
-            gfx_render_ellipsis(yuv422_buf, yuv422_len, y, obj);
+            gfx_render_ellipsis(row, obj);
             break;
         default:
             assert(!"unknown type");
