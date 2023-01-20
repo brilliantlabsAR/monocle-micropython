@@ -1,6 +1,11 @@
 Changelog
 =========
 
+v23.020.1610
+------------
+- Performance: Skipping empty pixels when transmitting to the display:
+  typical values bumped up from 1 FPS to 2 FPS.
+
 v23.019.1621
 ------------
 - Bugfix: Correctly shut down the nRF52832.
