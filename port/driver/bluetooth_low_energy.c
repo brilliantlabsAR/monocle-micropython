@@ -529,6 +529,9 @@ void SWI2_IRQHandler(void)
             err = sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0);
             assert(!err);
 
+            // Hook for custom events, such as toggling a LED.
+            ble_on_connect();
+
             break;
         }
 

@@ -155,7 +155,7 @@ static uint16_t gfx_get_word_width(char *u8)
 
 static void gfx_render_textbox(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj)
 {
-    char const *s = obj->text;
+    char const *s = obj->u.ptr;
     uint16_t x_beg = obj->x;
     uint16_t x_end = obj->x + obj->width;
     uint16_t space_width = 2;
@@ -195,8 +195,10 @@ void gfx_fill_black(uint8_t *yuv422_buf, size_t yuv422_len)
     }
 }
 
-void gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj_list, size_t obj_num)
+bool gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_t *obj_list, size_t obj_num)
 {
+    bool drawn = false;
+
     for (size_t i = 0; i < obj_num; i++) {
         gfx_obj_t *obj = obj_list + i;
 
@@ -204,35 +206,31 @@ void gfx_render_row(uint8_t *yuv422_buf, size_t yuv422_len, uint16_t y, gfx_obj_
             continue;
         }
 
+        drawn = true;
+
         switch (obj->type) {
         case GFX_TYPE_NULL:
+        LOG("GFX_TYPE_NULL x=%d i=%d", obj->x, i);
             break;
         case GFX_TYPE_RECTANGLE:
+        LOG("GFX_TYPE_RECTANGLE x=%d i=%d", obj->x, i);
             gfx_render_rectangle(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_LINE:
+        LOG("GFX_TYPE_LINE x=%d i=%d", obj->x, i);
             gfx_render_line(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_TEXTBOX:
+        LOG("GFX_TYPE_TEXTBOX x=%d i=%d", obj->x, i);
             gfx_render_textbox(yuv422_buf, yuv422_len, y, obj);
             break;
         case GFX_TYPE_ELLIPSIS:
+        LOG("GFX_TYPE_ELLIPSIS x=%d i=%d", obj->x, i);
             gfx_render_ellipsis(yuv422_buf, yuv422_len, y, obj);
             break;
         default:
             assert(!"unknown type");
         }
     }
-}
-
-gfx_obj_t *gfx_get_by_type(gfx_obj_t *obj_list, size_t obj_num, gfx_type_t type)
-{
-    // Try to get a new free slot
-    for (size_t i = 0; i < obj_num; i++)
-    {
-        // find the object by its type
-        if (obj_list[i].type == type)
-            return &obj_list[i];
-    }
-    return NULL;
+    return drawn;
 }

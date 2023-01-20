@@ -50,11 +50,21 @@ STATIC mp_obj_t display___init__(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(display___init___obj, display___init__);
 
-gfx_obj_t gfx_obj_list[10];
+gfx_obj_t gfx_obj_list[10] = {
+    {
+        .type = GFX_TYPE_LINE,
+        .x = 0,
+        .y = 0,
+        .width = 640,
+        .height = 400,
+    }
+};
+size_t gfx_obj_num;
 
 STATIC mp_obj_t display_show(void)
 {
     fpga_cmd(FPGA_GRAPHICS_ON);
+    fpga_cmd(FPGA_GRAPHICS_CLEAR);
 
     // Walk through every line of the display, render it, send it to the FPGA.
     for (size_t y = 0; y < OV5640_HEIGHT; y++)
@@ -63,20 +73,25 @@ STATIC mp_obj_t display_show(void)
         uint32_t u32 = y * sizeof yuv422_buf;
         uint8_t base[sizeof u32] = { u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0 };
 
-        // Render one row.
+        // Clean the row before writing to it
         gfx_fill_black(yuv422_buf, sizeof yuv422_buf);
-        gfx_render_row(yuv422_buf, sizeof yuv422_buf, y, gfx_obj_list, LEN(gfx_obj_list));
 
-        // Flush it to the display through the FPGA.
-        fpga_cmd_write(FPGA_GRAPHICS_BASE, base, sizeof base);
-        fpga_cmd_write(FPGA_GRAPHICS_DATA, yuv422_buf, sizeof yuv422_buf);
+        // Render a single row, and if anything was updated, also flush it
+        if (gfx_render_row(yuv422_buf, sizeof yuv422_buf, y, gfx_obj_list, gfx_obj_num))
+        {
+            // Flush it to the display through the FPGA.
+            fpga_cmd_write(FPGA_GRAPHICS_BASE, base, sizeof base);
+            LOG("base=0x%02X%02X%02X%02X", base[0], base[1], base[2], base[3]);
+            fpga_cmd_write(FPGA_GRAPHICS_DATA, yuv422_buf, sizeof yuv422_buf);
+        }
     }
 
     // The framebuffer we wrote to is ready, now we can display it.
     fpga_cmd(FPGA_GRAPHICS_SWAP);
 
     // Empty the list of elements to draw.
-    memset(gfx_obj_list, 0, sizeof gfx_obj_list);
+    //memset(gfx_obj_list, 0, sizeof gfx_obj_list);
+    //gfx_obj_num = 0;
 
     return mp_const_none;
 }
@@ -101,9 +116,9 @@ STATIC mp_obj_t display_brightness(mp_obj_t brightness_in)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(display_brightness_obj, &display_brightness);
 
-STATIC void new_gfx(mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_int_t rgb, void const *ptr)
+STATIC void new_gfx(gfx_type_t type, mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_int_t rgb, void const *ptr)
 {
-    uint8_t yuv444[3] = GFX_RGB_TO_YUV444(rgb >> 16, rgb >> 8, rgb >> 0);
+    uint8_t yuv444[3] = GFX_RGB_TO_YUV444((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, (rgb >> 0) & 0xFF);
     gfx_obj_t *gfx;
 
     // validate parameters for convenience
@@ -118,24 +133,29 @@ STATIC void new_gfx(mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_
     if (rgb < 0 || rgb > 0xFFFFFF)
         mp_raise_ValueError(MP_ERROR_TEXT("color must be between 0x000000 and 0xFFFFFF"));
 
-    gfx = gfx_get_by_type(gfx_obj_list, LEN(gfx_obj_list), GFX_TYPE_NULL);
-    if (gfx == NULL)
+    // Get the latest free slot
+    if (gfx_obj_num >= LEN(gfx_obj_list))
         mp_raise_OSError(MP_ENOMEM);
+    gfx = &gfx_obj_list[gfx_obj_num];
+
+    // This is the only place where we increment this number.
+    gfx_obj_num++;
 
     // Fill the new slot.
+    gfx->type = type;
     gfx->x = x;
     gfx->y = y;
     gfx->width = width;
     gfx->height = height;
-    gfx->text = (void *)ptr;
     memcpy(gfx->yuv444, yuv444, sizeof yuv444);
+    gfx->u.ptr = (void *)ptr;
 }
 
 STATIC mp_obj_t display_line(size_t argc, mp_obj_t const args[])
 {
     mp_int_t x1 = mp_obj_get_int(args[0]);
-    mp_int_t x2 = mp_obj_get_int(args[1]);
-    mp_int_t y1 = mp_obj_get_int(args[2]);
+    mp_int_t y1 = mp_obj_get_int(args[1]);
+    mp_int_t x2 = mp_obj_get_int(args[2]);
     mp_int_t y2 = mp_obj_get_int(args[3]);
     mp_int_t rgb = mp_obj_get_int(args[4]);
     mp_int_t tmp;
@@ -146,7 +166,7 @@ STATIC mp_obj_t display_line(size_t argc, mp_obj_t const args[])
     if (y1 > y2)
         tmp = y1, y1 = y2, y2 = tmp;
 
-    new_gfx(x1, y1, x2 - x1, y2 - y1, rgb, &flipped);
+    new_gfx(GFX_TYPE_LINE, x1, y1, x2 - x1, y2 - y1, rgb, &flipped);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_line_obj, 5, 5, display_line);
@@ -159,15 +179,23 @@ STATIC mp_obj_t display_text(size_t argc, mp_obj_t const args[])
     mp_int_t width = mp_obj_get_int(args[3]);
     mp_int_t rgb = mp_obj_get_int(args[4]);
 
-    new_gfx(x, y, width, ECX336CN_HEIGHT, rgb, text);
+    new_gfx(GFX_TYPE_TEXTBOX, x, y, width, ECX336CN_HEIGHT, rgb, text);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_text_obj, 5, 5, display_text);
+
+STATIC mp_obj_t display_txt(size_t argc, mp_obj_t const args[])
+{
+    new_gfx(GFX_TYPE_TEXTBOX, 10, 10, 100, ECX336CN_HEIGHT, 0x880000, "oops");
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_txt_obj, 0, 5, display_txt);
 
 STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_display) },
     { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&display___init___obj) },
     { MP_ROM_QSTR(MP_QSTR_text),        MP_ROM_PTR(&display_text_obj) },
+    { MP_ROM_QSTR(MP_QSTR_txt),         MP_ROM_PTR(&display_txt_obj) },
     { MP_ROM_QSTR(MP_QSTR_line),        MP_ROM_PTR(&display_line_obj) },
 
     // methods

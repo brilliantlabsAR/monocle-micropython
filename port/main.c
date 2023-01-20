@@ -110,6 +110,11 @@ NORETURN void nlr_jump_fail(void *val)
     assert(!"exception raised without any handlers for it");
 }
 
+void ble_on_connect(void)
+{
+    max77654_led_green(false);;
+}
+
 void blink(uint8_t num)
 {
     for (size_t i = 0; i < num; i++)
