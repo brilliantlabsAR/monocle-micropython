@@ -161,7 +161,7 @@ static inline void gfx_draw_glyph(gfx_row_t row, gfx_glyph_t *glyph, uint8_t yuv
 /*
  * Accurately compute the given string's display width
  */
-uint16_t gfx_get_str_width(char *s, size_t len)
+uint16_t gfx_get_text_width(char const *s, size_t len)
 {
     uint16_t width = 0;
 
@@ -175,9 +175,20 @@ uint16_t gfx_get_str_width(char *s, size_t len)
     return width;
 }
 
+uint16_t gfx_get_text_height(void)
+{
+    return gfx_font[0];
+}
+
 static void gfx_render_text(gfx_row_t row, gfx_obj_t *obj)
 {
     char *s = obj->u.ptr;
+
+    // Only a single row of text is supported.
+    if (row.y > obj->y + gfx_font[0])
+    {
+        return;
+    }
 
     for (uint16_t x = obj->x; *s != '\0'; s++)
     {

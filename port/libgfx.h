@@ -60,3 +60,5 @@ typedef struct
 void gfx_set_color(gfx_obj_t *gfx, uint16_t line_num, gfx_obj_t *obj_list, size_t obj_num);
 bool gfx_render_row(gfx_row_t row, gfx_obj_t *obj_list, size_t obj_num);
 void gfx_fill_black(gfx_row_t row);
+uint16_t gfx_get_text_width(char const *s, size_t len);
+uint16_t gfx_get_text_height(void);

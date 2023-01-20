@@ -224,13 +224,14 @@ STATIC mp_obj_t display_text(size_t argc, mp_obj_t const args[])
     const char *text = mp_obj_str_get_str(args[0]);
     mp_int_t x = mp_obj_get_int(args[1]);
     mp_int_t y = mp_obj_get_int(args[2]);
-    mp_int_t width = mp_obj_get_int(args[3]);
-    mp_int_t rgb = mp_obj_get_int(args[4]);
+    mp_int_t rgb = mp_obj_get_int(args[3]);
+    mp_int_t width = gfx_get_text_width(text, strlen(text));
+    mp_int_t height = gfx_get_text_height();
 
-    new_gfx(GFX_TYPE_TEXT, x, y, width, ECX336CN_HEIGHT, rgb, text);
+    new_gfx(GFX_TYPE_TEXT, x, y, width, height, rgb, text);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_text_obj, 5, 5, display_text);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_text_obj, 4, 4, display_text);
 
 STATIC mp_obj_t display_txt(size_t argc, mp_obj_t const args[])
 {
