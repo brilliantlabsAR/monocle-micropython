@@ -123,6 +123,10 @@
 #define MAX77654_CHG_DTLS_FAULT_TIME    (0x0B << 4) // Fast-charge timer fault
 #define MAX77654_CHG_DTLS_FAULT_TEMP    (0x0C << 4) // Battery temperature fault
 #define MAX77654_CHGIN_DTLS_Msk         (0x03 << 2)
+#define MAX77654_CHGIN_DTLS_LOW         (0x00 << 2)
+#define MAX77654_CHGIN_DTLS_TRIGGERED   (0x01 << 2)
+#define MAX77654_CHGIN_DTLS_DEBOUNCING  (0x02 << 2)
+#define MAX77654_CHGIN_DTLS_HIGH        (0x03 << 2)
 #define MAX77654_CHG                    (0x01 << 1) // Quick Charger Status: 0=not charging, 1=charging
 #define MAX77654_TIME_SUS               (0x01 << 0) // Time Suspend Indicator: 0=not active or not suspended, 1=suspended (for any of 3 given reasons)
 
@@ -389,7 +393,7 @@ struct { uint8_t addr, data; } max77654_conf[] = {
     // green LED will turn off), top-off 5 mins (unknown how long before
     // reach 1.4mA, should be safe)
     { MAX77654_CNFG_CHG_C,
-        MAX77654_CHG_PQ_2V5 | MAX77654_I_TERM_10P | MAX77654_T_TOPOFF_5M },
+        MAX77654_CHG_PQ_2V3 | MAX77654_I_TERM_10P | MAX77654_T_TOPOFF_5M },
 };
 
 /**
@@ -434,31 +438,19 @@ uint8_t max77654_get_cid(void)
     reg = max77654_read(MAX77654_CID);
     bit4 = (reg & MAX77654_CID4) >> 3;
     cid = bit4 | (reg & MAX77654_CID_Msk);
-    LOG("MAX77654 CID = 0x%02X.", cid);
     return cid;
 }
 
 /**
- * Check the battery status.
- * @return True if the battery is currently charging.
+ * Check whether the CHGIN pin of the MAX77654 is triggered, which is the case
+ * when the charger is connected to the device.
+ *
+ * @return True if the charger is connected
  */
-bool max77654_is_charging(void)
+bool max77654_is_connected_to_charger(void)
 {
-    // Read the charge status, featuring many modes.
-    switch (max77654_read(MAX77654_STAT_CHG_B) & MAX77654_CHG_DTLS_Msk)
-    {
-    // All the possible states which mean "charging".
-    case MAX77654_CHG_DTLS_PRE_Q:
-    case MAX77654_CHG_DTLS_FAST_CC:
-    case MAX77654_CHG_DTLS_FAST_CC_J:
-    case MAX77654_CHG_DTLS_FAST_CV:
-    case MAX77654_CHG_DTLS_FAST_CV_J:
-    case MAX77654_CHG_DTLS_TOP_OFF:
-    {
-        return true;
-    }
-    }
-    return false;
+    uint8_t reg = max77654_read(MAX77654_STAT_CHG_B);
+    return (reg & MAX77654_CHGIN_DTLS_Msk) != MAX77654_CHGIN_DTLS_LOW;
 }
 
 /**
@@ -466,7 +458,7 @@ bool max77654_is_charging(void)
  * @param mA Value read from the register in milliamps.
  * @return The value to write in the register.
  */
-static inline uint8_t cc_to_hw(uint32_t mA)
+static inline uint8_t charge_current(uint32_t mA)
 {
     // Datasheet:
     // This 6-bit configuration is a linear transfer function that
@@ -484,7 +476,7 @@ static inline uint8_t cc_to_hw(uint32_t mA)
  * @param mV Voltage in mV.
  * @return Value to write into the register.
  */
-static uint8_t cv_to_hw(uint32_t mV)
+static uint8_t charge_voltage(uint32_t mV)
 {
     if (mV >= 4600)
         return 0x28 << 2;
@@ -610,46 +602,6 @@ void max77654_led_green(bool on)
 }
 
 /**
- * Set input current upper limit (in mA).
- * @param current Range is 95 to 475 in increments of 95mA, see MAX77654_CNFG_CHG_B definitions.
- */
-void max77654_set_current_limit(uint16_t current)
-{
-    uint8_t charge_bits = 0;
-
-    if (current <= 95)
-    {
-        charge_bits = MAX77654_ICHGIN_LIM_95MA;
-    }
-    else if (current <= 190)
-    {
-        charge_bits = MAX77654_ICHGIN_LIM_190MA;
-    }
-    else if (current <= 285)
-    {
-        charge_bits = MAX77654_ICHGIN_LIM_285MA;
-    }
-    else if (current <= 380)
-    {
-        charge_bits = MAX77654_ICHGIN_LIM_380MA;
-    }
-    else
-    {
-        charge_bits = MAX77654_ICHGIN_LIM_475MA;
-    }
-    max77654_update(MAX77654_CNFG_CHG_B, charge_bits, MAX77654_ICHGIN_LIM_Msk);
-}
-
-/**
- * Set the device in extreme low power mode.
- *  This disconnects the battery from the system, not powered anymore.
- */
-void max77564_factory_ship_mode(void) 
-{
-    max77654_write(MAX77654_CNFG_GLBL, 0xA3);
-}
-
-/**
  * Initialize the MAX77654 chip.
  *  Test results: (using resistors to simulate bulk & constant voltage charging)
  *  bulk charging current: 67.4mA, constant voltage: 4.28V
@@ -666,19 +618,19 @@ void max77654_init(void)
     // MAX77654_CNFG_CHG_E: fast/rapid charge current = 67.5mA,
     // safety timer = 3 hours (default)
     // will result in 67.5mA, since next highest value is 75mA
-    max77654_update(MAX77654_CNFG_CHG_E, cc_to_hw(70), MAX77654_CHG_CC_Msk);
+    max77654_update(MAX77654_CNFG_CHG_E, charge_current(70), MAX77654_CHG_CC_Msk);
 
     // MAX77654_CNFG_CHG_F: JEITA charge current = 70mA (=67.5mA), Thermistor enabled
     max77654_write(MAX77654_CNFG_CHG_F, MAX77654_THM_EN);
-    max77654_update(MAX77654_CNFG_CHG_F, cc_to_hw(70), MAX77654_CHG_CC_JEITA_Msk);
+    max77654_update(MAX77654_CNFG_CHG_F, charge_current(70), MAX77654_CHG_CC_JEITA_Msk);
 
     // MAX77654_CNFG_CHG_G: charge voltage 4.3V, not in USB suspend mode
     assert(4300 >= MAX77654_CHG_CV_MIN);
     assert(4300 <= MAX77654_CHG_CV_MAX);
-    max77654_update(MAX77654_CNFG_CHG_G, cv_to_hw(4300), MAX77654_CHG_CV_Msk);
+    max77654_update(MAX77654_CNFG_CHG_G, charge_voltage(4300), MAX77654_CHG_CV_Msk);
 
     // MAX77654_CNFG_CHG_H: JEITA charge voltage = 4.3V, Thermistor enabled
-    max77654_update(MAX77654_CNFG_CHG_H, cv_to_hw(4300), MAX77654_CHG_CV_JEITA_Msk);
+    max77654_update(MAX77654_CNFG_CHG_H, charge_voltage(4300), MAX77654_CHG_CV_JEITA_Msk);
 
     // Turn everything off at startup
     max77654_power_off();

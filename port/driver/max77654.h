@@ -62,5 +62,5 @@ void max77654_rail_vled(bool on);
 void max77654_power_off(void);
 void max77654_led_red(bool on);
 void max77654_led_green(bool on);
-bool max77654_is_charging(void);
+bool max77654_is_connected_to_charger(void);
 void max77564_factory_ship_mode(void);

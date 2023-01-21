@@ -143,7 +143,7 @@ void charge_status_timer(void)
 {
     // Divide the timer frequency a bit, let it overflow
     // then check for the PMIC charge status.
-    if (max77654_is_charging())
+    if (max77654_is_connected_to_charger())
     {
         // Warn that we are going to sleep
         max77654_rail_vled(true);
