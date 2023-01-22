@@ -233,18 +233,10 @@ STATIC mp_obj_t display_text(size_t argc, mp_obj_t const args[])
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_text_obj, 4, 4, display_text);
 
-STATIC mp_obj_t display_txt(size_t argc, mp_obj_t const args[])
-{
-    new_gfx(GFX_TYPE_TEXT, 10, 10, 100, ECX336CN_HEIGHT, 0xFF0000, "oops");
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_txt_obj, 0, 5, display_txt);
-
 STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_display) },
     { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&display___init___obj) },
     { MP_ROM_QSTR(MP_QSTR_text),        MP_ROM_PTR(&display_text_obj) },
-    { MP_ROM_QSTR(MP_QSTR_txt),         MP_ROM_PTR(&display_txt_obj) },
     { MP_ROM_QSTR(MP_QSTR_line),        MP_ROM_PTR(&display_line_obj) },
 
     // methods

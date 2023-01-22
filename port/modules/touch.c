@@ -38,7 +38,6 @@
 #include "driver/iqs620.h"
 #include "driver/timer.h"
 
-#define ASSERT  NRFX_ASSERT
 #define LEN(x) (sizeof(x) / sizeof*(x))
 
 enum {
@@ -325,7 +324,7 @@ static void touch_next_state(touch_event_t event)
 {
     // Update the state using the state machine encoded above.
     touch_state = touch_state_machine[touch_state][event];
-    ASSERT(touch_state != TOUCH_STATE_INVALID);
+    assert(touch_state != TOUCH_STATE_INVALID);
 
     // Handle the multiple states.
     if (touch_trigger_is_on[touch_state])
