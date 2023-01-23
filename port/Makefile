@@ -176,6 +176,7 @@ SRC += ../micropython/lib/libm/sf_sin.c
 SRC += ../micropython/lib/libm/sf_tan.c
 SRC += ../micropython/lib/libm/wf_lgamma.c
 SRC += ../micropython/lib/libm/wf_tgamma.c
+SRC += ../micropython/shared/libc/printf.c
 SRC += ../micropython/shared/libc/string0.c
 SRC += ../micropython/shared/readline/readline.c
 SRC += ../micropython/shared/runtime/interrupt_char.c
