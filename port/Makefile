@@ -62,6 +62,9 @@ OPT += -fno-strict-aliasing
 OPT += -fno-common
 OPT += -g3
 
+# https://github.com/micropython/micropython/issues/10562
+OPT += -fno-tree-loop-distribute-patterns
+
 # Save some code space for performance-critical code
 CSUPEROPT = -Os
 
