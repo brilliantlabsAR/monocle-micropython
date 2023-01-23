@@ -1,0 +1,27 @@
+{
+    "configurations": [
+        {
+            "cwd": "${workspaceRoot}",
+            // Set your ARM GCC path here
+            "armToolchainPath": "/opt/homebrew/bin/",
+            // Executable name should match your project build name
+            "executable": "${workspaceFolder}/port/build/application.elf",
+            "name": "JLink",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "device": "nRF52832_XXAA",
+            "serverArgs": [
+                "-AutoConnect",
+                "1"
+            ],
+            "runToEntryPoint": "main",
+            // Set this path to the nRF SDK folder
+            // "svdFile": "${env:HOME}/nRF5_SDK/modules/nrfx/mdk/nrf52811.svd",
+            // "preLaunchTask": "Build nRF code",
+            "preLaunchCommands": [
+                "load"
+            ]
+        }
+    ]
+}

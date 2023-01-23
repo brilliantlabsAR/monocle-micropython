@@ -1,12 +1,13 @@
+include ../micropython/py/mkenv.mk
+include ../micropython/py/py.mk
+
 MICROPY_ROM_TEXT_COMPRESSION ?= 1
 MICROPY_VFS_LFS2 = 1
 MICROPY_VFS_FAT = 0
 FROZEN_MANIFEST = manifest.py
 CROSS_COMPILE = arm-none-eabi-
 
-include ../micropython/py/mkenv.mk
 include ../micropython/extmod/extmod.mk
-include ../micropython/py/py.mk
 
 NRF = 52832
 SD = s132
@@ -48,30 +49,52 @@ FIRMWARE_HEX = build/firmware.hex
 # Signed Zip archive of the merged dfu package hex file.
 FIRMWARE_ZIP = build/firmware.zip
 
-CFLAGS += $(DEF) $(INC) $(CFLAGS_EXTRA) $(CFLAGS_MOD) $(CFLAGS_MCU_m4)
-CFLAGS += -mthumb
-CFLAGS += -mabi=aapcs
-CFLAGS += -fsingle-precision-constant
-CFLAGS += -Wdouble-promotion
-CFLAGS += -Wall
-CFLAGS += -mtune=cortex-m4
-CFLAGS += -mcpu=cortex-m4
-CFLAGS += -mfpu=fpv4-sp-d16
-CFLAGS += -mfloat-abi=hard
-CFLAGS += -ffunction-sections -fdata-sections
-CFLAGS += -ansi
-CFLAGS += -std=c11
-CFLAGS += -nostdlib
-CFLAGS += -fno-strict-aliasing
-CFLAGS += -fno-tree-loop-distribute-patterns
-CFLAGS += -g -Os
 
-LDFLAGS = $(CFLAGS)
+# Warning options
+WARN = -Wall -Wdouble-promotion -Wfloat-conversion
+
+# Build optimizations
+OPT += -Os -fdata-sections -ffunction-sections 
+OPT += -flto 
+OPT += -fsingle-precision-constant
+OPT += -fshort-enums
+OPT += -fno-strict-aliasing
+OPT += -fno-common
+OPT += -g3
+
+# Save some code space for performance-critical code
+CSUPEROPT = -Os
+
+# Add required build options
+OPT += -std=gnu17
+OPT += -mthumb
+OPT += -mtune=cortex-m4
+OPT += -mcpu=cortex-m4
+OPT += -mfpu=fpv4-sp-d16
+OPT += -mfloat-abi=hard
+OPT += -mabi=aapcs
+
+# Set defines
+DEFS += -DNRF52832_XXAA
+DEFS += -DNDEBUG
+DEFS += -DCONFIG_NFCT_PINS_AS_GPIOS
+DEFS += -DGIT_COMMIT='"$(GIT_COMMIT)"'
+DEFS += -DBUILD_VERSION='"$(BUILD_VERSION)"'
+# DEFS += -DNRF$(NRF)
+# DEFS += -DCONFIG_GPIO_AS_PINRESET
+# DEFS += -DNRF5_HAL_H='<nrf$(NRF)_hal.h>'
+# DEFS += -DSOFTDEVICE_PRESENT
+# DEFS += -DBLUETOOTH_SD=132
+# DEFS += -DBLUETOOTH_SD_DEBUG=1
+# DEFS += -DMICROPY_QSTR_EXTRA_POOL=mp_qstr_frozen_const_pool
+# DEFS += -DMICROPY_MODULE_FROZEN_MPY
+# DEFS += -DMICROPY_MODULE_FROZEN_STR
+
+# Set linker options
+LDFLAGS += -nostdlib
+LDFLAGS += -Lnrfx/mdk -T nrf52832.ld
 LDFLAGS += -Wl,--gc-sections
 LDFLAGS += -Xlinker -Map=$(@:.elf=.map)
-LDFLAGS += -mthumb -mabi=aapcs -Tnrf$(NRF).ld
-
-LIBS += -lgcc -lm
 
 INC += -I.
 INC += -Ibuild
@@ -91,26 +114,13 @@ INC += -I../nrfx/soc
 INC += -I../$(SD)/include
 INC += -I../$(SD)/include/nrf52
 
-DEF += -DNRF$(NRF)_XXAA
-DEF += -DNRF$(NRF)
-DEF += -DCONFIG_GPIO_AS_PINRESET
-DEF += -DNRF5_HAL_H='<nrf$(NRF)_hal.h>'
-DEF += -DSOFTDEVICE_PRESENT
-DEF += -DBLUETOOTH_SD=132
-DEF += -DBLUETOOTH_SD_DEBUG=1
-DEF += -DMICROPY_QSTR_EXTRA_POOL=mp_qstr_frozen_const_pool
-DEF += -DMICROPY_MODULE_FROZEN_MPY
-DEF += -DMICROPY_MODULE_FROZEN_STR
-DEF += -DGIT_COMMIT='"$(GIT_COMMIT)"'
-DEF += -DBUILD_VERSION='"$(BUILD_VERSION)"'
-
-# https://github.com/sandeepmistry/arduino-nRF5/issues/206
-DEF += -DCONFIG_NFCT_PINS_AS_GPIOS
+# Assemble the C flags variable
+CFLAGS += $(WARN) $(OPT) $(INC) $(DEFS)
 
 SRC += main.c
 SRC += nrfx_log.c
 SRC += mphalport.c
-SRC += nrf$(NRF).c
+SRC += nrf52832.c
 
 SRC += driver/battery.c
 SRC += driver/bluetooth_data_protocol.c
@@ -120,7 +130,6 @@ SRC += driver/flash.c
 SRC += driver/fpga.c
 SRC += driver/i2c.c
 SRC += driver/iqs620.c
-SRC += driver/max77654.c
 SRC += driver/ov5640.c
 SRC += driver/spi.c
 SRC += driver/timer.c
@@ -183,15 +192,18 @@ SRC += ../nrfx/drivers/src/nrfx_spi.c
 SRC += ../nrfx/drivers/src/nrfx_spim.c
 SRC += ../nrfx/drivers/src/nrfx_systick.c
 SRC += ../nrfx/drivers/src/nrfx_timer.c
-SRC += ../nrfx/drivers/src/nrfx_twi.c
+SRC += ../nrfx/drivers/src/nrfx_twim.c
 SRC += ../nrfx/drivers/src/prs/nrfx_prs.c
 SRC += ../nrfx/helpers/nrfx_flag32_allocator.c
 SRC += ../nrfx/mdk/system_nrf52.c
 
-SRC_QSTR += $(SRC) $(SRC_MOD)
+SRC_QSTR += $(SRC)
 
-OBJ += $(PY_O)
+OBJ += $(PY_CORE_O)
 OBJ += $(addprefix build/, $(SRC:.c=.o))
+
+# Link required libraries
+LIB += -lm -lc -lgcc
 
 all: ${FIRMWARE_HEX} ${FIRMWARE_ZIP}
 
@@ -204,6 +216,11 @@ release:
 	sed -i 's/NEXT_RELEASE/$(RELEASE)/' ../CHANGELOG.md
 	git commit -am "Release $(RELEASE)"
 	git tag $(RELEASE)
+
+flash: build/application.hex
+	nrfjprog --program ../s132/*.hex --chiperase -f nrf52 --verify
+	nrfjprog --program $< -f nrf52 --verify
+	nrfjprog --reset -f nrf52
 
 flash_openocd_stlink:
 	$(OPENOCD) $(OPENOCD_STLINK) $(OPENOCD_FLASH)

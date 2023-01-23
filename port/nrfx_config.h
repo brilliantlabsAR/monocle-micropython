@@ -48,6 +48,11 @@
 #define NRFX_TWI2_ENABLED 0
 #define NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY 7
 
+#define NRFX_TWIM_ENABLED 1
+#define NRFX_TWIM0_ENABLED 1
+#define NRFX_TWIM1_ENABLED 1
+#define NRFX_TWIM_DEFAULT_CONFIG_IRQ_PRIORITY 7
+
 // Used by driver/spi.c
 #define NRFX_SPI_ENABLED 0
 #define NRFX_SPIM_ENABLED 1
@@ -66,10 +71,10 @@
 #define NRFX_SYSTICK_DEFAULT_CONFIG_IRQ_PRIORITY 7
 
 #define NRFX_TIMER_ENABLED 1
-#define NRFX_TIMER0_ENABLED 1  // Used by the SoftDevice
-#define NRFX_TIMER1_ENABLED 1  // Used for "from machine import Timer"
-#define NRFX_TIMER2_ENABLED 1  // Used by driver/touch.c
-#define NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY  7
+#define NRFX_TIMER0_ENABLED 1 // Used by the SoftDevice
+#define NRFX_TIMER1_ENABLED 1 // Used for "from machine import Timer"
+#define NRFX_TIMER2_ENABLED 1 // Used by driver/touch.c
+#define NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY 7
 
 #define NRFX_NVMC_ENABLED 1
 
@@ -82,5 +87,7 @@
 // Used by driver/battery.c
 #define NRFX_SAADC_ENABLED 1
 #define NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY 7
+
+#define SEGGER_RTT_CONFIG_BUFFER_SIZE_UP 1000
 
 #endif

@@ -42,133 +42,133 @@
 #include "driver/i2c.h"
 #include "driver/iqs620.h"
 
-#define LEN(x) (sizeof(x) / sizeof*(x))
+#define LEN(x) (sizeof(x) / sizeof *(x))
 
 // registers
 
-#define IQS620_ID                               0x00
-#define IQS620_SYS_FLAGS                        0x10
-#define IQS620_GLOBAL_EVENTS                    0x11
-#define IQS620_PROX_FUSION_FLAGS                0x12
+#define IQS620_ID 0x00
+#define IQS620_SYS_FLAGS 0x10
+#define IQS620_GLOBAL_EVENTS 0x11
+#define IQS620_PROX_FUSION_FLAGS 0x12
 
-#define IQS620_CHANNEL_COUNT_0_LO               0x20
-#define IQS620_CHANNEL_COUNT_0_HI               0x21
-#define IQS620_CHANNEL_COUNT_1_LO               0x22
-#define IQS620_CHANNEL_COUNT_1_HI               0x23
+#define IQS620_CHANNEL_COUNT_0_LO 0x20
+#define IQS620_CHANNEL_COUNT_0_HI 0x21
+#define IQS620_CHANNEL_COUNT_1_LO 0x22
+#define IQS620_CHANNEL_COUNT_1_HI 0x23
 
-#define IQS620_PROX_FUSION_0_0                  0x40
-#define IQS620_PROX_FUSION_0_1                  0x41
-#define IQS620_PROX_FUSION_1_0                  0x43
-#define IQS620_PROX_FUSION_1_1                  0x44
-#define IQS620_PROX_FUSION_2_0                  0x46
-#define IQS620_PROX_FUSION_2_1                  0x47
-#define IQS620_PROX_FUSION_3_0                  0x49
-#define IQS620_PROX_FUSION_3_1                  0x4A
+#define IQS620_PROX_FUSION_0_0 0x40
+#define IQS620_PROX_FUSION_0_1 0x41
+#define IQS620_PROX_FUSION_1_0 0x43
+#define IQS620_PROX_FUSION_1_1 0x44
+#define IQS620_PROX_FUSION_2_0 0x46
+#define IQS620_PROX_FUSION_2_1 0x47
+#define IQS620_PROX_FUSION_3_0 0x49
+#define IQS620_PROX_FUSION_3_1 0x4A
 
-#define IQS620_PROX_THRESHOLD_0                 0x60
-#define IQS620_PROX_THRESHOLD_1                 0x62
-#define IQS620_PROX_THRESHOLD_2                 0x64
+#define IQS620_PROX_THRESHOLD_0 0x60
+#define IQS620_PROX_THRESHOLD_1 0x62
+#define IQS620_PROX_THRESHOLD_2 0x64
 
-#define IQS620_TOUCH_THRESHOLD_0                0x61
-#define IQS620_TOUCH_THRESHOLD_1                0x63
-#define IQS620_TOUCH_THRESHOLD_2                0x65
+#define IQS620_TOUCH_THRESHOLD_0 0x61
+#define IQS620_TOUCH_THRESHOLD_1 0x63
+#define IQS620_TOUCH_THRESHOLD_2 0x65
 
-#define IQS620_SYS_SETTINGS                     0xD0
-#define IQS620_ACTIVE_CHANNELS                  0xD1
-#define IQS620_POWER_MODE                       0xD2
-#define IQS620_NORMAL_POWER_REPORT_RATE         0xD3
-#define IQS620_LOW_POWER_REPORT_RATE            0xD4
-#define IQS620_ULTRA_LOW_POWER_REPORT_RATE      0xD5
-#define IQS620_AUTO_SWITCH_TIMER_500MS          0xD6
+#define IQS620_SYS_SETTINGS 0xD0
+#define IQS620_ACTIVE_CHANNELS 0xD1
+#define IQS620_POWER_MODE 0xD2
+#define IQS620_NORMAL_POWER_REPORT_RATE 0xD3
+#define IQS620_LOW_POWER_REPORT_RATE 0xD4
+#define IQS620_ULTRA_LOW_POWER_REPORT_RATE 0xD5
+#define IQS620_AUTO_SWITCH_TIMER_500MS 0xD6
 
 // bit fields
 
-#define IQS620_SYS_FLAGS_RESET_HAPPENED         (1 << 7)
-#define IQS620_SYS_FLAGS_POWER_MODE_NP          (0 << 3)
-#define IQS620_SYS_FLAGS_POWER_MODE_LP          (1 << 3)
-#define IQS620_SYS_FLAGS_POWER_MODE_ULP         (2 << 3)
-#define IQS620_SYS_FLAGS_POWER_MODE_HALT        (3 << 3)
-#define IQS620_SYS_FLAGS_ATI_BUSY               (1 << 2)
-#define IQS620_SYS_FLAGS_EVENT                  (1 << 1)
-#define IQS620_SYS_FLAGS_NP_UPDATE              (1 << 0)
+#define IQS620_SYS_FLAGS_RESET_HAPPENED (1 << 7)
+#define IQS620_SYS_FLAGS_POWER_MODE_NP (0 << 3)
+#define IQS620_SYS_FLAGS_POWER_MODE_LP (1 << 3)
+#define IQS620_SYS_FLAGS_POWER_MODE_ULP (2 << 3)
+#define IQS620_SYS_FLAGS_POWER_MODE_HALT (3 << 3)
+#define IQS620_SYS_FLAGS_ATI_BUSY (1 << 2)
+#define IQS620_SYS_FLAGS_EVENT (1 << 1)
+#define IQS620_SYS_FLAGS_NP_UPDATE (1 << 0)
 
-#define IQS620_GLOBAL_EVENTS_SAR_ACTIVE         (1 << 7)
-#define IQS620_GLOBAL_EVENTS_PMU                (1 << 6)
-#define IQS620_GLOBAL_EVENTS_SYS                (1 << 5)
-#define IQS620_GLOBAL_EVENTS_TEMP               (1 << 4)
-#define IQS620_GLOBAL_EVENTS_HYST               (1 << 3)
-#define IQS620_GLOBAL_EVENTS_HALL               (1 << 2)
-#define IQS620_GLOBAL_EVENTS_SAR                (1 << 1)
-#define IQS620_GLOBAL_EVENTS_PROX               (1 << 0)
+#define IQS620_GLOBAL_EVENTS_SAR_ACTIVE (1 << 7)
+#define IQS620_GLOBAL_EVENTS_PMU (1 << 6)
+#define IQS620_GLOBAL_EVENTS_SYS (1 << 5)
+#define IQS620_GLOBAL_EVENTS_TEMP (1 << 4)
+#define IQS620_GLOBAL_EVENTS_HYST (1 << 3)
+#define IQS620_GLOBAL_EVENTS_HALL (1 << 2)
+#define IQS620_GLOBAL_EVENTS_SAR (1 << 1)
+#define IQS620_GLOBAL_EVENTS_PROX (1 << 0)
 
-#define IQS620_PROX_FUSION_FLAGS_CH2_T          (1 << 6)
-#define IQS620_PROX_FUSION_FLAGS_CH1_T          (1 << 5)
-#define IQS620_PROX_FUSION_FLAGS_CH0_T          (1 << 4)
-#define IQS620_PROX_FUSION_FLAGS_CH2_P          (1 << 2)
-#define IQS620_PROX_FUSION_FLAGS_CH1_P          (1 << 1)
-#define IQS620_PROX_FUSION_FLAGS_CH0_P          (1 << 0)
+#define IQS620_PROX_FUSION_FLAGS_CH2_T (1 << 6)
+#define IQS620_PROX_FUSION_FLAGS_CH1_T (1 << 5)
+#define IQS620_PROX_FUSION_FLAGS_CH0_T (1 << 4)
+#define IQS620_PROX_FUSION_FLAGS_CH2_P (1 << 2)
+#define IQS620_PROX_FUSION_FLAGS_CH1_P (1 << 1)
+#define IQS620_PROX_FUSION_FLAGS_CH0_P (1 << 0)
 
-#define IQS620_PROX_FUSION_0_CS_MODE            (0 << 6)
-#define IQS620_PROX_FUSION_0_CS_RX_NONE         (0 << 0)
-#define IQS620_PROX_FUSION_0_CS_RX_0            (1 << 0)
-#define IQS620_PROX_FUSION_0_CS_RX_1            (2 << 0)
-#define IQS620_PROX_FUSION_0_CS_RX_01           (3 << 0)
+#define IQS620_PROX_FUSION_0_CS_MODE (0 << 6)
+#define IQS620_PROX_FUSION_0_CS_RX_NONE (0 << 0)
+#define IQS620_PROX_FUSION_0_CS_RX_0 (1 << 0)
+#define IQS620_PROX_FUSION_0_CS_RX_1 (2 << 0)
+#define IQS620_PROX_FUSION_0_CS_RX_01 (3 << 0)
 
-#define IQS620_PROX_FUSION_1_CAP_15PF           (0 << 6)
-#define IQS620_PROX_FUSION_1_CAP_60PF           (1 << 6)
-#define IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_2   (0 << 4)
-#define IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_4   (1 << 4)
-#define IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8   (2 << 4)
-#define IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_16  (3 << 4)
-#define IQS620_PROX_FUSION_1_ATI_DISABLED       (0 << 0)
-#define IQS620_PROX_FUSION_1_ATI_PARTIAL        (1 << 0)
-#define IQS620_PROX_FUSION_1_ATI_SEMI_PARTIAL   (2 << 0)
-#define IQS620_PROX_FUSION_1_ATI_FULL           (3 << 0)
+#define IQS620_PROX_FUSION_1_CAP_15PF (0 << 6)
+#define IQS620_PROX_FUSION_1_CAP_60PF (1 << 6)
+#define IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_2 (0 << 4)
+#define IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_4 (1 << 4)
+#define IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 (2 << 4)
+#define IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_16 (3 << 4)
+#define IQS620_PROX_FUSION_1_ATI_DISABLED (0 << 0)
+#define IQS620_PROX_FUSION_1_ATI_PARTIAL (1 << 0)
+#define IQS620_PROX_FUSION_1_ATI_SEMI_PARTIAL (2 << 0)
+#define IQS620_PROX_FUSION_1_ATI_FULL (3 << 0)
 
-#define IQS620_PROX_FUSION_2_ATI_BASE_75        (0 << 6)
-#define IQS620_PROX_FUSION_2_ATI_BASE_100       (1 << 6)
-#define IQS620_PROX_FUSION_2_ATI_BASE_150       (2 << 6)
-#define IQS620_PROX_FUSION_2_ATI_BASE_200       (3 << 6)
+#define IQS620_PROX_FUSION_2_ATI_BASE_75 (0 << 6)
+#define IQS620_PROX_FUSION_2_ATI_BASE_100 (1 << 6)
+#define IQS620_PROX_FUSION_2_ATI_BASE_150 (2 << 6)
+#define IQS620_PROX_FUSION_2_ATI_BASE_200 (3 << 6)
 
-#define IQS620_SYS_SETTINGS_SOFT_RESET          (1 << 7)
-#define IQS620_SYS_SETTINGS_ACK_RESET           (1 << 6)
-#define IQS620_SYS_SETTINGS_EVENT_MODE          (1 << 5)
-#define IQS620_SYS_SETTINGS_4MHZ                (1 << 4)
-#define IQS620_SYS_SETTINGS_COMMS_ATI           (1 << 3)
-#define IQS620_SYS_SETTINGS_ATI_BAND_1_16       (1 << 2)
-#define IQS620_SYS_SETTINGS_REDO_ATI            (1 << 1)
-#define IQS620_SYS_SETTINGS_RESEED              (1 << 0)
+#define IQS620_SYS_SETTINGS_SOFT_RESET (1 << 7)
+#define IQS620_SYS_SETTINGS_ACK_RESET (1 << 6)
+#define IQS620_SYS_SETTINGS_EVENT_MODE (1 << 5)
+#define IQS620_SYS_SETTINGS_4MHZ (1 << 4)
+#define IQS620_SYS_SETTINGS_COMMS_ATI (1 << 3)
+#define IQS620_SYS_SETTINGS_ATI_BAND_1_16 (1 << 2)
+#define IQS620_SYS_SETTINGS_REDO_ATI (1 << 1)
+#define IQS620_SYS_SETTINGS_RESEED (1 << 0)
 
-#define IQS620_POWER_MODE_PWM_OUT               (1 << 7)
-#define IQS620_POWER_MODE_ULP_ENABLE            (1 << 6)
-#define IQS620_POWER_MODE_AUTO                  (0 << 3)
-#define IQS620_POWER_MODE_NP                    (4 << 3)
-#define IQS620_POWER_MODE_LP                    (5 << 3)
-#define IQS620_POWER_MODE_ULP                   (6 << 3)
-#define IQS620_POWER_MODE_HALT                  (7 << 3)
-#define IQS620_POWER_MODE_NP_RATE_1_2           (0 << 0)
-#define IQS620_POWER_MODE_NP_RATE_1_4           (1 << 0)
-#define IQS620_POWER_MODE_NP_RATE_1_8           (2 << 0)
-#define IQS620_POWER_MODE_NP_RATE_1_16          (3 << 0)
-#define IQS620_POWER_MODE_NP_RATE_1_32          (4 << 0)
-#define IQS620_POWER_MODE_NP_RATE_1_64          (5 << 0)
-#define IQS620_POWER_MODE_NP_RATE_1_128         (6 << 0)
-#define IQS620_POWER_MODE_NP_RATE_1_256         (7 << 0)
+#define IQS620_POWER_MODE_PWM_OUT (1 << 7)
+#define IQS620_POWER_MODE_ULP_ENABLE (1 << 6)
+#define IQS620_POWER_MODE_AUTO (0 << 3)
+#define IQS620_POWER_MODE_NP (4 << 3)
+#define IQS620_POWER_MODE_LP (5 << 3)
+#define IQS620_POWER_MODE_ULP (6 << 3)
+#define IQS620_POWER_MODE_HALT (7 << 3)
+#define IQS620_POWER_MODE_NP_RATE_1_2 (0 << 0)
+#define IQS620_POWER_MODE_NP_RATE_1_4 (1 << 0)
+#define IQS620_POWER_MODE_NP_RATE_1_8 (2 << 0)
+#define IQS620_POWER_MODE_NP_RATE_1_16 (3 << 0)
+#define IQS620_POWER_MODE_NP_RATE_1_32 (4 << 0)
+#define IQS620_POWER_MODE_NP_RATE_1_64 (5 << 0)
+#define IQS620_POWER_MODE_NP_RATE_1_128 (6 << 0)
+#define IQS620_POWER_MODE_NP_RATE_1_256 (7 << 0)
 
 // values
 
-#define IQS620_ID_VALUE                         0x41
+#define IQS620_ID_VALUE 0x41
 
 // default is 0x10 = target of 512.
 // target = 0x1E * 32 = 960, gives good results on MK11 Flex through
 // 1mm plastic (higher value slow to react)
-#define IQS620_ATI_TARGET                       0x1E
+#define IQS620_ATI_TARGET 0x1E
 
 // 0=default (22), 1=most sensitive, 255=least sensitive
-#define IQS620_PROX_THRESHOLD                   10
+#define IQS620_PROX_THRESHOLD 10
 
 // 0=default (27), 1=most sensitive, 255=least sensitive
-#define IQS620_TOUCH_THRESHOLD                  10
+#define IQS620_TOUCH_THRESHOLD 10
 
 // Last known state of the buttons.
 static uint8_t iqs620_button_0_state;
@@ -183,10 +183,10 @@ static bool iqs620_triggered;
  */
 static void iqs620_write_reg(uint8_t addr, uint8_t data)
 {
-    uint8_t buf[2] = { addr, data };
+    uint8_t buf[2] = {addr, data};
     bool ok;
 
-    ok = i2c_write(IQS620_I2C, IQS620_ADDR, buf, sizeof(buf));
+    // ok = i2c_write(IQS620_I2C, IQS620_ADDR, buf, sizeof(buf));
     assert(ok);
 }
 
@@ -202,20 +202,20 @@ static void iqs620_read_reg(uint8_t addr, uint8_t *buf, unsigned len)
     bool ok;
 
     // I2C write for the register address (without stop)
-    ok = i2c_write_no_stop(IQS620_I2C, IQS620_ADDR, &addr, 1);
-    assert(ok);
+    // ok = i2c_write_no_stop(IQS620_I2C, IQS620_ADDR, &addr, 1);
+    // assert(ok);
 
     // I2C read the data after the write.
-    ok = i2c_read(IQS620_I2C, IQS620_ADDR, buf, len);
-    assert(ok);
+    // ok = i2c_read(IQS620_I2C, IQS620_ADDR, buf, len);
+    // assert(ok);
 }
 
 static uint8_t iqs620_read_u8(uint8_t addr)
 {
     uint8_t val;
 
-    iqs620_read_reg(addr, &val, 1);
-    return val;
+    // iqs620_read_reg(addr, &val, 1);
+    // return val;
 }
 
 _Static_assert(IQS620_PROX_THRESHOLD > 0, "config register");
@@ -224,60 +224,63 @@ _Static_assert(IQS620_TOUCH_THRESHOLD > 0, "config register");
 /**
  * Configure the IQS620 to get it ready to work.
  */
-static struct { uint8_t addr, data; } iqs620_conf[] =
+static struct
 {
-    // acknowledge any pending resets, switch to event mode, comms enabled in ATI
-    { IQS620_SYS_SETTINGS,
-	IQS620_SYS_SETTINGS_ACK_RESET | IQS620_SYS_SETTINGS_EVENT_MODE | IQS620_SYS_SETTINGS_COMMS_ATI },
+    uint8_t addr, data;
+} iqs620_conf[] =
+    {
+        // acknowledge any pending resets, switch to event mode, comms enabled in ATI
+        {IQS620_SYS_SETTINGS,
+         IQS620_SYS_SETTINGS_ACK_RESET | IQS620_SYS_SETTINGS_EVENT_MODE | IQS620_SYS_SETTINGS_COMMS_ATI},
 
-    // enable channels 0 and 1 for capacitive prox/touch sensing
-    { IQS620_ACTIVE_CHANNELS, (1 << 1) | (1 << 0) },
+        // enable channels 0 and 1 for capacitive prox/touch sensing
+        {IQS620_ACTIVE_CHANNELS, (1 << 1) | (1 << 0)},
 
-    // auto power mode, ULP disabled, 1/16 normal power update rate
-    { IQS620_POWER_MODE,
-        IQS620_POWER_MODE_AUTO | IQS620_POWER_MODE_NP_RATE_1_16 },
+        // auto power mode, ULP disabled, 1/16 normal power update rate
+        {IQS620_POWER_MODE,
+         IQS620_POWER_MODE_AUTO | IQS620_POWER_MODE_NP_RATE_1_16},
 
-    // set up channel 0 to process RX 0
-    { IQS620_PROX_FUSION_0_0,
-        IQS620_PROX_FUSION_0_CS_MODE | IQS620_PROX_FUSION_0_CS_RX_0 },
+        // set up channel 0 to process RX 0
+        {IQS620_PROX_FUSION_0_0,
+         IQS620_PROX_FUSION_0_CS_MODE | IQS620_PROX_FUSION_0_CS_RX_0},
 
-    // set up channel 1 to process RX 1
-    { IQS620_PROX_FUSION_0_1,
-        IQS620_PROX_FUSION_0_CS_MODE | IQS620_PROX_FUSION_0_CS_RX_1 },
+        // set up channel 1 to process RX 1
+        {IQS620_PROX_FUSION_0_1,
+         IQS620_PROX_FUSION_0_CS_MODE | IQS620_PROX_FUSION_0_CS_RX_1},
 
-    // channel 0 cap size 15 pF, full-ATI mode
-    { IQS620_PROX_FUSION_1_0,
-        IQS620_PROX_FUSION_1_CAP_15PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL },
+        // channel 0 cap size 15 pF, full-ATI mode
+        {IQS620_PROX_FUSION_1_0,
+         IQS620_PROX_FUSION_1_CAP_15PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL},
 
-    // channel 1 cap size 15 pF, full-ATI mode
-    { IQS620_PROX_FUSION_1_1,
-        IQS620_PROX_FUSION_1_CAP_15PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL },
+        // channel 1 cap size 15 pF, full-ATI mode
+        {IQS620_PROX_FUSION_1_1,
+         IQS620_PROX_FUSION_1_CAP_15PF | IQS620_PROX_FUSION_1_CHG_FREQ_DIV_1_8 | IQS620_PROX_FUSION_1_ATI_FULL},
 
-    // channel 0 cap sensing ATI base & target (default 0xD0: base=200, target=512 is not sensitive enough)
-    { IQS620_PROX_FUSION_2_0,
-        // base=75, target as configured
-        IQS620_PROX_FUSION_2_ATI_BASE_75 | IQS620_ATI_TARGET },
+        // channel 0 cap sensing ATI base & target (default 0xD0: base=200, target=512 is not sensitive enough)
+        {IQS620_PROX_FUSION_2_0,
+         // base=75, target as configured
+         IQS620_PROX_FUSION_2_ATI_BASE_75 | IQS620_ATI_TARGET},
 
-    // channel 1 cap sensing ATI base & target (default 0xD0: base=200, target=512 is not sensitive enough)
-    { IQS620_PROX_FUSION_2_1,
-        // base=75, target as configured
-        IQS620_PROX_FUSION_2_ATI_BASE_75 | IQS620_ATI_TARGET },
+        // channel 1 cap sensing ATI base & target (default 0xD0: base=200, target=512 is not sensitive enough)
+        {IQS620_PROX_FUSION_2_1,
+         // base=75, target as configured
+         IQS620_PROX_FUSION_2_ATI_BASE_75 | IQS620_ATI_TARGET},
 
-    // set prox detection threshold for channels 0 and 1
-    { IQS620_PROX_THRESHOLD_0,
-        IQS620_PROX_THRESHOLD },
-    { IQS620_PROX_THRESHOLD_1,
-        IQS620_PROX_THRESHOLD },
+        // set prox detection threshold for channels 0 and 1
+        {IQS620_PROX_THRESHOLD_0,
+         IQS620_PROX_THRESHOLD},
+        {IQS620_PROX_THRESHOLD_1,
+         IQS620_PROX_THRESHOLD},
 
-    // set touch detection threshold for channels 0 and 1
-    { IQS620_TOUCH_THRESHOLD_0,
-        IQS620_TOUCH_THRESHOLD },
-    { IQS620_TOUCH_THRESHOLD_1,
-        IQS620_TOUCH_THRESHOLD },
+        // set touch detection threshold for channels 0 and 1
+        {IQS620_TOUCH_THRESHOLD_0,
+         IQS620_TOUCH_THRESHOLD},
+        {IQS620_TOUCH_THRESHOLD_1,
+         IQS620_TOUCH_THRESHOLD},
 
-    // event mode, comms enabled in ATI, redo ATI
-    { IQS620_SYS_SETTINGS,
-	IQS620_SYS_SETTINGS_EVENT_MODE | IQS620_SYS_SETTINGS_COMMS_ATI | IQS620_SYS_SETTINGS_REDO_ATI },
+        // event mode, comms enabled in ATI, redo ATI
+        {IQS620_SYS_SETTINGS,
+         IQS620_SYS_SETTINGS_EVENT_MODE | IQS620_SYS_SETTINGS_COMMS_ATI | IQS620_SYS_SETTINGS_REDO_ATI},
 };
 
 /**
@@ -330,11 +333,9 @@ static void iqs620_process_state(uint8_t button, iqs620_state_t *old, iqs620_sta
     *old = new;
 }
 
-#define STATE(x, ch) (\
-    (x) & (IQS620_PROX_FUSION_FLAGS_CH ## ch ## _T) ? IQS620_STATE_TOUCH : \
-    (x) & (IQS620_PROX_FUSION_FLAGS_CH ## ch ## _P) ? IQS620_STATE_PROX : \
-    IQS620_STATE_NONE \
-)
+#define STATE(x, ch) (                                                                                                                 \
+    (x) & (IQS620_PROX_FUSION_FLAGS_CH##ch##_T) ? IQS620_STATE_TOUCH : (x) & (IQS620_PROX_FUSION_FLAGS_CH##ch##_P) ? IQS620_STATE_PROX \
+                                                                                                                   : IQS620_STATE_NONE)
 
 /**
  * TOUCH_RDY pin high-to-low state change handler
@@ -347,7 +348,8 @@ static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_
     assert(pin == IQS620_TOUCH_RDY_PIN);
 
     // Set the triggered state, used for waiting an event from the IQS620 chip.
-    if (!iqs620_enabled) {
+    if (!iqs620_enabled)
+    {
         iqs620_triggered = true;
         return;
     }
@@ -391,7 +393,6 @@ void iqs620_wait(void)
     __enable_irq();
 }
 
-
 /**
  * Initialise the chip as well as the iqs620 instance.
  */
@@ -406,8 +407,7 @@ void iqs620_init(void)
         NRF_GPIO_PIN_INPUT_CONNECT,
         NRF_GPIO_PIN_PULLUP,
         NRF_GPIO_PIN_S0S1,
-        NRF_GPIO_PIN_SENSE_LOW
-    );
+        NRF_GPIO_PIN_SENSE_LOW);
 
     // Configure the TOUCH_RDY pin for high-to-low edge GPIOTE event
     nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_HITOLO(true);
@@ -430,7 +430,7 @@ void iqs620_init(void)
     // Configure all needed registers.
     for (size_t i = 0; i < LEN(iqs620_conf); i++)
     {
-	iqs620_write_reg(iqs620_conf[i].addr, iqs620_conf[i].data);
+        iqs620_write_reg(iqs620_conf[i].addr, iqs620_conf[i].data);
     }
 
     // Enable the TOUCH_RDY event after the reset.

@@ -42,7 +42,7 @@
 #include "driver/ov5640.h"
 #include "driver/timer.h"
 
-#define LEN(x) (sizeof (x) / sizeof *(x))
+#define LEN(x) (sizeof(x) / sizeof *(x))
 
 /**
  * Swap the byte order.
@@ -86,8 +86,8 @@ static uint8_t ov5640_write_reg(uint16_t reg, uint8_t data)
     memcpy(buf, &swaped, 2);
     memcpy(buf + 2, &data, 1);
 
-    if (i2c_write(OV5640_I2C, I2C_SLAVE_ADDR, buf, 3))
-        return TRANSFER_CMPLT;
+    // if (i2c_write(OV5640_I2C, I2C_SLAVE_ADDR, buf, 3))
+    // return TRANSFER_CMPLT;
 
     return TRANSFER_ERROR;
 }
@@ -104,10 +104,10 @@ static uint8_t ov5640_read_reg(uint16_t reg)
     uint16_t swaped = __bswap_16(reg);
 
     memcpy(w_buf, &swaped, 2);
-    if (!i2c_write(OV5640_I2C, I2C_SLAVE_ADDR, w_buf, 2))
-        return 0;
-    if (!i2c_read(OV5640_I2C, I2C_SLAVE_ADDR, &ret_val, 1))
-        return 0;
+    // if (!i2c_write(OV5640_I2C, I2C_SLAVE_ADDR, w_buf, 2))
+    // return 0;
+    // if (!i2c_read(OV5640_I2C, I2C_SLAVE_ADDR, &ret_val, 1))
+    // return 0;
     return ret_val;
 }
 
@@ -163,7 +163,7 @@ void ov5640_pwr_on(void)
     // step (6)
     nrfx_systick_delay_ms(20);
 
-    ov5640_write_reg(0x3103, 0x11);    // system clock from pad, bit[1]
+    ov5640_write_reg(0x3103, 0x11); // system clock from pad, bit[1]
     ov5640_write_reg(0x3008, 0x82);
     ov5640_yuv422_direct();
 }
@@ -243,12 +243,12 @@ void ov5640_reduce_size(uint16_t h_pixels, uint16_t v_pixels)
 
 /** AWB Light mode config [0..4] [Auto, Sunny, Office, Cloudy, Home]. */
 const static uint8_t ov5640_lightmode_tbl[5][7] =
-{
-    { 0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x00 },
-    { 0x06, 0x1C, 0x04, 0x00, 0x04, 0xF3, 0x01 },
-    { 0x05, 0x48, 0x04, 0x00, 0x07, 0xCF, 0x01 },
-    { 0x06, 0x48, 0x04, 0x00, 0x04, 0xD3, 0x01 },
-    { 0x04, 0x10, 0x04, 0x00, 0x08, 0x40, 0x01 },
+    {
+        {0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x00},
+        {0x06, 0x1C, 0x04, 0x00, 0x04, 0xF3, 0x01},
+        {0x05, 0x48, 0x04, 0x00, 0x07, 0xCF, 0x01},
+        {0x06, 0x48, 0x04, 0x00, 0x04, 0xD3, 0x01},
+        {0x04, 0x10, 0x04, 0x00, 0x08, 0x40, 0x01},
 };
 
 /**
@@ -257,23 +257,23 @@ const static uint8_t ov5640_lightmode_tbl[5][7] =
  */
 void ov5640_light_mode(uint8_t mode)
 {
-    ov5640_write_reg(0x3212, 0x03);    //start group 3
+    ov5640_write_reg(0x3212, 0x03); // start group 3
     for (int i = 0; i < 7; i++)
         ov5640_write_reg(0x3400 + i, ov5640_lightmode_tbl[mode][i]);
-    ov5640_write_reg(0x3212, 0x13); //end group 3
-    ov5640_write_reg(0x3212, 0xA3); //launch group 3
+    ov5640_write_reg(0x3212, 0x13); // end group 3
+    ov5640_write_reg(0x3212, 0xA3); // launch group 3
 }
 
 /** Color saturation config [0..6] [-3, -2, -1, 0, 1, 2, 3]> */
 const static uint8_t OV5640_SATURATION_TBL[7][6] =
-{
-    { 0x0C, 0x30, 0x3D, 0x3E, 0x3D, 0x01 },
-    { 0x10, 0x3D, 0x4D, 0x4E, 0x4D, 0x01 },
-    { 0x15, 0x52, 0x66, 0x68, 0x66, 0x02 },
-    { 0x1A, 0x66, 0x80, 0x82, 0x80, 0x02 },
-    { 0x1F, 0x7A, 0x9A, 0x9C, 0x9A, 0x02 },
-    { 0x24, 0x8F, 0xB3, 0xB6, 0xB3, 0x03 },
-    { 0x2B, 0xAB, 0xD6, 0xDA, 0xD6, 0x04 },
+    {
+        {0x0C, 0x30, 0x3D, 0x3E, 0x3D, 0x01},
+        {0x10, 0x3D, 0x4D, 0x4E, 0x4D, 0x01},
+        {0x15, 0x52, 0x66, 0x68, 0x66, 0x02},
+        {0x1A, 0x66, 0x80, 0x82, 0x80, 0x02},
+        {0x1F, 0x7A, 0x9A, 0x9C, 0x9A, 0x02},
+        {0x24, 0x8F, 0xB3, 0xB6, 0xB3, 0x03},
+        {0x2B, 0xAB, 0xD6, 0xDA, 0xD6, 0x04},
 };
 
 /**
@@ -302,13 +302,14 @@ void ov5640_brightness(uint8_t bright)
 {
     uint8_t brtval = (bright < 4) ? 4 - bright : bright - 4;
 
-    ov5640_write_reg(0x3212, 0x03);    //start group 3
-    ov5640_write_reg(0x5587, brtval<<4);
-    if (bright<4)
+    ov5640_write_reg(0x3212, 0x03); // start group 3
+    ov5640_write_reg(0x5587, brtval << 4);
+    if (bright < 4)
         ov5640_write_reg(0x5588, 0x09);
-    else ov5640_write_reg(0x5588, 0x01);
-    ov5640_write_reg(0x3212, 0x13); //end group 3
-    ov5640_write_reg(0x3212, 0xA3); //launch group 3
+    else
+        ov5640_write_reg(0x5588, 0x01);
+    ov5640_write_reg(0x3212, 0x13); // end group 3
+    ov5640_write_reg(0x3212, 0xA3); // launch group 3
 }
 
 /**
@@ -319,29 +320,29 @@ void ov5640_contrast(uint8_t contrast)
 {
     uint8_t reg0val = 0x00; // contrast = 3
     uint8_t reg1val = 0x20;
-    switch(contrast)
+    switch (contrast)
     {
-        case 0: // -3
-            reg1val = reg0val = 0x14;
-            break;
-        case 1: // -2
-            reg1val = reg0val = 0x18;
-            break;
-        case 2: // -1
-            reg1val = reg0val = 0x1C;
-            break;
-        case 4: // 1
-            reg0val = 0x10;
-            reg1val = 0x24;
-            break;
-        case 5: // 2
-            reg0val = 0x18;
-            reg1val = 0x28;
-            break;
-        case 6: // 3
-            reg0val = 0x1C;
-            reg1val = 0x2C;
-            break;
+    case 0: // -3
+        reg1val = reg0val = 0x14;
+        break;
+    case 1: // -2
+        reg1val = reg0val = 0x18;
+        break;
+    case 2: // -1
+        reg1val = reg0val = 0x1C;
+        break;
+    case 4: // 1
+        reg0val = 0x10;
+        reg1val = 0x24;
+        break;
+    case 5: // 2
+        reg0val = 0x18;
+        reg1val = 0x28;
+        break;
+    case 6: // 3
+        reg0val = 0x1C;
+        reg1val = 0x2C;
+        break;
     }
     ov5640_write_reg(0x3212, 0x03); // start group 3
     ov5640_write_reg(0x5585, reg0val);
@@ -356,7 +357,7 @@ void ov5640_contrast(uint8_t contrast)
  */
 void ov5640_sharpness(uint8_t sharp)
 {
-    if (sharp<33)
+    if (sharp < 33)
     {
         ov5640_write_reg(0x5308, 0x65);
         ov5640_write_reg(0x5302, sharp);
@@ -373,18 +374,17 @@ void ov5640_sharpness(uint8_t sharp)
         ov5640_write_reg(0x530b, 0x04);
         ov5640_write_reg(0x530c, 0x06);
     }
-
 }
 /** Effect configs [0..6] [Normal (off), Blueish (cool light), Redish (warm), Black & White, Sepia, Negative, Greenish] */
 const static uint8_t ov5640_effects_tbl[7][3] =
-{
-    { 0x06, 0x40, 0x10 },
-    { 0x1E, 0xA0, 0x40 },
-    { 0x1E, 0x80, 0xC0 },
-    { 0x1E, 0x80, 0x80 },
-    { 0x1E, 0x40, 0xA0 },
-    { 0x40, 0x40, 0x10 },
-    { 0x1E, 0x60, 0x60 },
+    {
+        {0x06, 0x40, 0x10},
+        {0x1E, 0xA0, 0x40},
+        {0x1E, 0x80, 0xC0},
+        {0x1E, 0x80, 0x80},
+        {0x1E, 0x40, 0xA0},
+        {0x40, 0x40, 0x10},
+        {0x1E, 0x60, 0x60},
 };
 
 /**
@@ -393,13 +393,13 @@ const static uint8_t ov5640_effects_tbl[7][3] =
  */
 void ov5640_special_effects(uint8_t eft)
 {
-    ov5640_write_reg(0x3212, 0x03); //start group 3
+    ov5640_write_reg(0x3212, 0x03); // start group 3
     ov5640_write_reg(0x5580, ov5640_effects_tbl[eft][0]);
     ov5640_write_reg(0x5583, ov5640_effects_tbl[eft][1]); // sat U
     ov5640_write_reg(0x5584, ov5640_effects_tbl[eft][2]); // sat V
     ov5640_write_reg(0x5003, 0x08);
-    ov5640_write_reg(0x3212, 0x13); //end group 3
-    ov5640_write_reg(0x3212, 0xA3); //launch group 3
+    ov5640_write_reg(0x3212, 0x13); // end group 3
+    ov5640_write_reg(0x3212, 0xA3); // launch group 3
 }
 
 /**
@@ -490,7 +490,7 @@ void ov5640_focus_init(void)
  */
 void ov5640_init(void)
 {
-    i2c_scan(i2c1);
+    // i2c_scan(i2c1);
 
     // Check the chip ID
     uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);

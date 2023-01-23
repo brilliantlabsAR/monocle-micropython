@@ -27,6 +27,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <math.h>
+#include "app_err.h"
 
 #include "py/compile.h"
 #include "py/gc.h"
@@ -64,7 +66,7 @@
 #include "driver/timer.h"
 
 /** Variable that holds the Softdevice NVIC state.  */
-nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
+// nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 
 /** This is the top of stack pointer as set in the nrf52832.ld file */
 extern uint32_t _stack_top;
@@ -91,7 +93,8 @@ void gc_collect(void)
 
     // Get stack pointer
     uintptr_t sp;
-    __asm__("mov %0, sp\n" : "=r"(sp));
+    __asm__("mov %0, sp\n"
+            : "=r"(sp));
 
     // Trace the stack, including the registers
     // (since they live on the stack in this function)
@@ -107,21 +110,21 @@ void gc_collect(void)
 NORETURN void nlr_jump_fail(void *val)
 {
     (void)val;
-    assert(!"exception raised without any handlers for it");
+    app_err(1); //!"exception raised without any handlers for it");
 }
 
 void ble_on_connect(void)
 {
-    max77654_led_green(false);;
+    // max77654_led_green(false);
 }
 
 void blink(uint8_t num)
 {
     for (size_t i = 0; i < num; i++)
     {
-        max77654_led_red(true);
+        // max77654_led_red(true);
         nrfx_systick_delay_ms(50);
-        max77654_led_red(false);
+        // max77654_led_red(false);
         nrfx_systick_delay_ms(100);
     }
 }
@@ -139,25 +142,56 @@ NORETURN void __assert_func(const char *file, int line, const char *func, const 
     }
 }
 
-void charge_status_timer(void)
+// void charge_status_timer(void)
+// {
+//     // Divide the timer frequency a bit, let it overflow
+//     // then check for the PMIC charge status.
+//     if (max77654_is_connected_to_charger())
+//     {
+//         // Warn that we are going to sleep
+//         max77654_rail_vled(true);
+//         max77654_led_red(true);
+
+//         // Power everything around off.
+//         max77654_power_off();
+
+//         // Wakeup from events of IQS620 touch controller .
+//         nrf_gpio_cfg_sense_input(IQS620_TOUCH_RDY_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
+
+//         // Power the SoftDevice and the whole chip off.
+//         sd_power_system_off();
+//         nrf_power_system_off(NRF_POWER);
+//     }
+// }
+
+static void check_if_battery_charging_and_sleep(void)
 {
-    // Divide the timer frequency a bit, let it overflow
-    // then check for the PMIC charge status.
-    if (max77654_is_connected_to_charger())
+    // Get the CHG value from STAT_CHG_B
+    i2c_response_t battery_charging_resp = i2c_read(PMIC_ADDRESS, 0x03, 0x02);
+    app_err(battery_charging_resp.fail);
+    if (battery_charging_resp.value)
     {
-        // Warn that we are going to sleep
-        max77654_rail_vled(true);
-        max77654_led_red(true);
+        // Turn off all the rails
+        // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
+        app_err(i2c_write(PMIC_ADDRESS, 0x13, 0x2D, 0x25).fail); // Turn off 10V on PMIC GPIO2
+        app_err(i2c_write(PMIC_ADDRESS, 0x3B, 0x1F, 0x1C).fail); // Turn off load switch to LEDs // TODO is this really set to load switch?
+        app_err(i2c_write(PMIC_ADDRESS, 0x2A, 0x0F, 0x0C).fail); // Turn off 2.7V
+        app_err(i2c_write(PMIC_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch
+        app_err(i2c_write(PMIC_ADDRESS, 0x2E, 0x0F, 0x0C).fail); // Turn off 1.2V
 
-        // Power everything around off.
-        max77654_power_off();
+        // Disconnect AMUX
+        app_err(i2c_write(PMIC_ADDRESS, 0x28, 0x0F, 0x00).fail);
 
-        // Wakeup from events of IQS620 touch controller .
+        // Put PMIC main bias into low power mode
+        // app_err(i2c_write(PMIC_ADDRESS, 0x10, 0x20, 0x20).fail);
+
+        // Touch into low power mode
+
+        // Set up the touch event
         nrf_gpio_cfg_sense_input(IQS620_TOUCH_RDY_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
 
-        // Power the SoftDevice and the whole chip off.
-        sd_power_system_off();
-        nrf_power_system_off(NRF_POWER);
+        // Sleep
+        app_err(sd_power_system_off());
     }
 }
 
@@ -168,19 +202,78 @@ int main(void)
 {
     // All logging through SEGGER RTT interface
     SEGGER_RTT_Init();
-    PRINTF("\r\n" "Brilliant Monocle " BUILD_VERSION " " GIT_COMMIT "\r\n\r\n");
+    LOG_CLEAR();
+    LOG("Brilliant Monocle " BUILD_VERSION " " GIT_COMMIT);
 
-    // Initialise SoftDevice, used as an intermediate layer for many things below.
+    i2c_init();
 
-    // Start the drivers that only rely on the MCU peripherals.
-
-    LOG("SYSTEM");
+    LOG("MAX77654 early setup");
     {
-        // Seems required to power the device off.
-        ble_enable_softdevice();
+        // Read the PMIC CID
+        i2c_response_t resp = i2c_read(PMIC_ADDRESS, 0x14, 0x0F);
 
-        // Init the built-in peripherals
-        nrfx_systick_init();
+        if (resp.fail || resp.value != 0x02)
+        {
+            assert(0);
+        }
+
+        // Set up battery charger voltage & current
+        float voltage = 4.3f;
+        float current = 70.0f;
+
+        uint8_t voltage_setting = (uint8_t)round((voltage - 3.6f) / 0.025f) << 2;
+        uint8_t current_setting = (uint8_t)round((current - 7.5f) / 7.5f) << 2;
+
+        // Apply the constant voltage setting
+        app_err(i2c_write(PMIC_ADDRESS, 0x26, 0xFC, voltage_setting).fail);
+        // TODO set the JETIA voltage
+
+        // Apply the constant current setting
+        app_err(i2c_write(PMIC_ADDRESS, 0x24, 0xFC, current_setting).fail);
+        // TODO set the JETIA current
+    }
+
+    while (1)
+    {
+    }
+
+    // configure the touch
+    // TODO
+
+    check_if_battery_charging_and_sleep(); // This won't return if charging
+    timer_add_task(timer_500ms, check_if_battery_charging_and_sleep);
+
+    // Power up everything for normal operation.
+    // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
+    {
+        // Put PMIC main bias into normal mode
+        // app_err(i2c_write(PMIC_ADDRESS, 0x10, 0x20, 0x00).fail);
+
+        // Set SBB2 to 1.2V and turn on
+        app_err(i2c_write(PMIC_ADDRESS, 0x2D, 0xFF, 0x08).fail);
+        app_err(i2c_write(PMIC_ADDRESS, 0x2E, 0x4F, 0x4F).fail);
+
+        // Set LDO0 to load switch mode and turn on
+        app_err(i2c_write(PMIC_ADDRESS, 0x39, 0x1F, 0x1F).fail);
+
+        // Set SBB0 to 2.7V and turn on
+        app_err(i2c_write(PMIC_ADDRESS, 0x29, 0xFF, 0x26).fail);
+        app_err(i2c_write(PMIC_ADDRESS, 0x2A, 0x4F, 0x4F).fail);
+
+        // Set LDO1 to load switch mode and turn on
+        app_err(i2c_write(PMIC_ADDRESS, 0x3B, 0x1F, 0x1F).fail);
+
+        // Enable the 10V boost
+        app_err(i2c_write(PMIC_ADDRESS, 0x13, 0x2D, 0x0C).fail);
+
+        // Connect AMUX to battery voltage
+        app_err(i2c_write(PMIC_ADDRESS, 0x28, 0x0F, 0x03).fail);
+    }
+
+    /// LOW POWER MODE DONE. Ready for normal operation
+
+    while (1)
+    {
     }
 
     // Turn on the SoftDevice early to allow use of softdevice-dependent calls
@@ -228,25 +321,6 @@ int main(void)
         nrf_gpio_cfg_output(FLASH_CS_N_PIN);
     }
 
-    // Setup the power rails over I2C through the PMIC.  This will first power
-    // off everything as part of the PMIC's init(), then we power the rails one
-    // by one and wait that each chip started before configuring them.
-    // Do not start the 10V power rail yet.
-
-    LOG("I2C");
-    {
-        i2c_init(i2c0, I2C0_SCL_PIN, I2C0_SDA_PIN);
-        i2c_init(i2c1, I2C1_SCL_PIN, I2C1_SDA_PIN);
-    }
-
-    // Setup all registers for the MAX77654 power chip.
-    // This will turn off all power rails if not already done.
-
-    LOG("MAX77654");
-    {
-        max77654_init();
-    }
-
     // Initialize the battery now that the MAX77654 is configured,
     // and check the battery charge status immediately.
 
@@ -256,10 +330,23 @@ int main(void)
         nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
 
         // Periodically check the charger connection status.
-        charge_status_timer();
-        timer_add_task(timer_500ms, charge_status_timer);
+        // charge_status_timer();
+        // timer_add_task(timer_500ms, charge_status_timer);
 
         battery_init(MAX77654_ADC_PIN);
+    }
+
+    // Initialise SoftDevice, used as an intermediate layer for many things below.
+
+    // Start the drivers that only rely on the MCU peripherals.
+
+    LOG("SYSTEM");
+    {
+        // Seems required to power the device off.
+        ble_enable_softdevice();
+
+        // Init the built-in peripherals
+        nrfx_systick_init();
     }
 
     // Start by the Bluetooth driver, which will let the user scan for
@@ -271,7 +358,7 @@ int main(void)
         ble_init();
     }
 
-    // power on everything and wait 
+    // power on everything and wait
 
     LOG("POWER");
     {
@@ -294,23 +381,27 @@ int main(void)
         spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
     }
 
-    LOG("FPGA"); assert_blink_num = 3;
+    LOG("FPGA");
+    assert_blink_num = 3;
     {
         fpga_init();
     }
 
-    LOG("ECX336CN"); assert_blink_num = 4;
+    LOG("ECX336CN");
+    assert_blink_num = 4;
     {
         // 1ms after 1.8V on, device has finished initializing (datasheet section 9)
         ecx336cn_init();
     }
 
-    LOG("OV5640"); assert_blink_num = 5;
+    LOG("OV5640");
+    assert_blink_num = 5;
     {
-        //ov5640_init();
+        // ov5640_init();
     }
 
-    LOG("FLASH"); assert_blink_num = 6;
+    LOG("FLASH");
+    assert_blink_num = 6;
     {
         flash_init();
     }
@@ -318,13 +409,15 @@ int main(void)
     // Initiate user-input peripherals, which did not make
     // sense before everything else is setup.
 
-    LOG("IQS620"); assert_blink_num = 2;
+    LOG("IQS620");
+    assert_blink_num = 2;
     {
         nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
         iqs620_init();
     }
 
-    LOG("DONE"); assert_blink_num = 10;
+    LOG("DONE");
+    assert_blink_num = 10;
     {
         // Enable user interaction touch buttons only now that it started.
         iqs620_enable();

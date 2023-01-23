@@ -23,122 +23,166 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/**
- * Wrapper library over Nordic NRFX I2C drivers.
- */
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include "nrfx_twi.h"
-
 #include "driver/config.h"
 #include "driver/i2c.h"
-#include "nrfx_log.h"
+#include "nrfx_twim.h"
+#include "app_err.h"
 
-#include "driver/config.h"
-#include "driver/i2c.h"
+static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
+static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
 
-nrfx_twi_t const i2c0 = NRFX_TWI_INSTANCE(0);
-nrfx_twi_t const i2c1 = NRFX_TWI_INSTANCE(1);
+static bool not_real_hardware = false;
 
-/** TWI operation ended, may have been successful, may have been NACK. */
-static volatile bool m_xfer_done = false;
-
-/** NACK returned, operation was unsuccessful. */
-static volatile bool m_xfer_nack = false;
-
-/**
- * Workaround the fact taht nordic returns an ENUM instead of a simple integer.
- */
-static inline bool i2c_filter_error(char const *func, nrfx_err_t err)
+void i2c_unused_callback(nrfx_twim_evt_t const *p_event, void *p_context)
 {
-    if (err == NRFX_SUCCESS)
-        return true;
-    if (err == NRFX_ERROR_DRV_TWI_ERR_ANACK)
-        return false;
-    LOG("%s, %s", func, NRFX_LOG_ERROR_STRING_GET(err));
-    return false;
+    // (void)p_event;
+    // (void)p_context;
+    return;
 }
 
-/**
- * Write a buffer over I2C (hardware-based instance).
- * @param addr The address at which write the data.
- * @param buf The buffer to write.
- * @param sz The length of that bufer.
- * @return True if no I2C errors were reported.
- */
-bool i2c_write(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz)
+void i2c_init(void)
 {
-    nrfx_twi_xfer_desc_t xfer = NRFX_TWI_XFER_DESC_TX(addr, buf, sz);
-    return i2c_filter_error(__func__, nrfx_twi_xfer(&twi, &xfer, 0));
+    nrfx_twim_config_t bus_0_config = NRFX_TWIM_DEFAULT_CONFIG(PMIC_TOUCH_I2C_SCL_PIN,
+                                                               PMIC_TOUCH_I2C_SDA_PIN);
+    bus_0_config.frequency = NRF_TWIM_FREQ_400K;
+
+    nrfx_twim_config_t bus_1_config = NRFX_TWIM_DEFAULT_CONFIG(CAMERA_I2C_SCL_PIN,
+                                                               CAMERA_I2C_SDA_PIN);
+    bus_1_config.frequency = NRF_TWIM_FREQ_400K;
+
+    app_err(nrfx_twim_init(&i2c_bus_0, &bus_0_config, i2c_unused_callback, NULL));
+    app_err(nrfx_twim_init(&i2c_bus_1, &bus_1_config, i2c_unused_callback, NULL));
+
+    nrfx_twim_enable(&i2c_bus_0);
+    nrfx_twim_enable(&i2c_bus_1);
 }
 
-/**
- * Write a buffer over I2C without stop condition.
- * The I2C transaction will still be ongoing, permitting to more data to be written.
- * @param addr The address at which write the data.
- * @param buf The buffer containing the data to write.
- * @param sz The length of that bufer.
- * @return True if no I2C errors were reported.
- */
-bool i2c_write_no_stop(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz)
+i2c_response_t i2c_read(uint8_t device_address_7bit,
+                        uint8_t register_address,
+                        uint8_t register_mask)
 {
-    nrfx_twi_xfer_desc_t xfer = NRFX_TWI_XFER_DESC_TX(addr, buf, sz);
-    return i2c_filter_error(__func__, nrfx_twi_xfer(&twi, &xfer, NRFX_TWI_FLAG_TX_NO_STOP));
-}
-
-/**
- * Read a buffer from I2C.
- * @param addr Address of the peripheral.
- * @param buf The buffer receiving the data.
- * @param sz The length of that bufer.
- * @return True if no I2C errors were reported.
- */
-bool i2c_read(nrfx_twi_t twi, uint8_t addr, uint8_t *buf, uint8_t sz)
-{
-    nrfx_twi_xfer_desc_t xfer = NRFX_TWI_XFER_DESC_RX(addr, buf, sz);;
-    return i2c_filter_error(__func__, nrfx_twi_xfer(&twi, &xfer, 0));
-}
-
-/**
- * Perform an I2C scan of an interface and log the result.
- */
-void i2c_scan(nrfx_twi_t twi)
-{
-    uint8_t addr;
-    uint8_t sample_data;
-    bool detected_device = false;
-
-    // send an empty packet for every valid bus address
-    for (addr = 1; addr <= 127; addr++)
+    if (not_real_hardware)
     {
-        if (i2c_read(twi, addr, &sample_data, sizeof(sample_data)))
+        return (i2c_response_t){.fail = false, .value = 0x00};
+    }
+
+    i2c_response_t i2c_response = {
+        .fail = true, // Default if failure
+        .value = 0x00,
+    };
+
+    // Try several times
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        nrfx_twim_xfer_desc_t i2c_xfer = NRFX_TWIM_XFER_DESC_TXRX(device_address_7bit,
+                                                                  &register_address, 1,
+                                                                  &i2c_response.value, 1);
+
+        nrfx_twim_t i2c_handle = i2c_bus_0;
+        if (device_address_7bit == OV5640_ADDR)
         {
-            detected_device = true;
-            LOG("I2C device found on I2C%d: addr=0x%02X", twi.drv_inst_idx, addr);
+            i2c_handle = i2c_bus_1;
+        }
+
+        nrfx_err_t err = nrfx_twim_xfer(&i2c_handle, &i2c_xfer, 0);
+
+        while (nrfx_twim_is_busy(&i2c_handle))
+        {
+        }
+
+        if (err == NRFX_SUCCESS)
+        {
+            i2c_response.fail = false;
+            break;
+        }
+
+        // Catch any errors except ESP_FAIL
+        if (err == NRFX_ERROR_BUSY ||
+            err == NRFX_ERROR_NOT_SUPPORTED ||
+            err == NRFX_ERROR_INTERNAL ||
+            err == NRFX_ERROR_INVALID_ADDR ||
+            err == NRFX_ERROR_DRV_TWI_ERR_OVERRUN)
+        {
+            assert(0); // TODO put something meaningful here
         }
     }
 
-    // better tell explicitly than nothing is found rather than staying silent
-    if (!detected_device)
-    {
-        LOG("No I2C device found on I2C%d", twi.drv_inst_idx);
-    }
+    i2c_response.value &= register_mask;
+
+    return i2c_response;
 }
 
-void i2c_init(nrfx_twi_t twi, uint8_t scl_pin, uint8_t sda_pin)
+i2c_response_t i2c_write(uint8_t device_address_7bit,
+                         uint8_t register_address,
+                         uint8_t register_mask,
+                         uint8_t set_value)
 {
-    uint32_t err;
-    nrfx_twi_config_t config = {
-        .scl = scl_pin,
-        .sda = sda_pin,
-        .frequency = NRF_TWI_FREQ_400K,
-        .interrupt_priority = NRFX_TWI_DEFAULT_CONFIG_IRQ_PRIORITY,
-    };
+    if (not_real_hardware)
+    {
+        return (i2c_response_t){.fail = false, .value = 0x00};
+    }
 
-    err = nrfx_twi_init(&twi, &config, NULL, NULL);
-    assert(err == NRFX_SUCCESS);
-    nrfx_twi_enable(&twi);
+    i2c_response_t resp = i2c_read(device_address_7bit, register_address, 0xFF);
+
+    if (resp.fail)
+    {
+        return resp;
+    }
+
+    // Create a combined value with the existing data and the new value
+    uint8_t updated_value = (resp.value & ~register_mask) |
+                            (set_value & register_mask);
+
+    uint8_t payload[] = {register_address, updated_value};
+
+    // Try several times
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        nrfx_twim_xfer_desc_t i2c_xfer = NRFX_TWIM_XFER_DESC_TX(device_address_7bit,
+                                                                payload,
+                                                                2);
+
+        nrfx_twim_t i2c_handle = i2c_bus_0;
+        if (device_address_7bit == OV5640_ADDR)
+        {
+            i2c_handle = i2c_bus_1;
+        }
+
+        nrfx_err_t err = nrfx_twim_xfer(&i2c_handle, &i2c_xfer, 0);
+
+        if (err == NRFX_SUCCESS)
+        {
+            break;
+        }
+
+        // Catch any errors except ESP_FAIL
+        if (err == NRFX_ERROR_BUSY ||
+            err == NRFX_ERROR_NOT_SUPPORTED ||
+            err == NRFX_ERROR_INTERNAL ||
+            err == NRFX_ERROR_INVALID_ADDR ||
+            err == NRFX_ERROR_DRV_TWI_ERR_OVERRUN)
+        {
+            assert(0); // TODO put something meaningful here
+        }
+
+        // If the last try failed. Don't continue
+        if (i == 2)
+        {
+            resp.fail = true;
+            return resp;
+        }
+    }
+
+    // Check that the register was correctly updated
+    resp = i2c_read(device_address_7bit, register_address, 0xFF);
+
+    if (resp.value != updated_value)
+    {
+        resp.fail = true;
+    }
+
+    return resp;
 }

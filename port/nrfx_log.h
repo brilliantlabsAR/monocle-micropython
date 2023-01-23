@@ -33,6 +33,7 @@
 #include "mphalport.h"
 #include "nrfx_config.h"
 #include "SEGGER_RTT.h"
+#include <string.h>
 
 #define TEST_MODULE_IMPL(x, y) LOG_TEST_##x == LOG_TEST_##y
 #define TEST_MODULE(x, y) TEST_MODULE_IMPL(x, y)
@@ -42,13 +43,25 @@
 
 static inline void LOG_NONE(void *v, ...) { (void)v; }
 
-#define PRINTF(fmt, ...)        SEGGER_RTT_printf(0, fmt, ## __VA_ARGS__)
-#define LOG(fmt, ...)           PRINTF("%s: " fmt "\n", __func__, ## __VA_ARGS__)
+#define LOG_CLEAR() SEGGER_RTT_printf(0, RTT_CTRL_CLEAR "\r");
 
-#define NRFX_LOG_DEBUG          LOG_NONE
-#define NRFX_LOG_INFO           LOG_NONE
-#define NRFX_LOG_WARNING        LOG_NONE
-#define NRFX_LOG_ERROR          LOG
+#define LOG_RAW(format, ...)                                                                                  \
+    do                                                                                                        \
+    {                                                                                                         \
+        char _debug_log_buffer[SEGGER_RTT_CONFIG_BUFFER_SIZE_UP] = "";                                        \
+        snprintf(_debug_log_buffer, SEGGER_RTT_CONFIG_BUFFER_SIZE_UP, format, ##__VA_ARGS__);                 \
+        SEGGER_RTT_Write(0, _debug_log_buffer, strnlen(_debug_log_buffer, SEGGER_RTT_CONFIG_BUFFER_SIZE_UP)); \
+    } while (0)
+
+#define LOG(format, ...) LOG_RAW("\r\n" format, ##__VA_ARGS__)
+
+#define PRINTF(fmt, ...) SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__)
+// #define LOG(fmt, ...)           PRINTF("%s: " fmt "\n", __func__, ## __VA_ARGS__)
+
+#define NRFX_LOG_DEBUG LOG_NONE
+#define NRFX_LOG_INFO LOG_NONE
+#define NRFX_LOG_WARNING LOG_NONE
+#define NRFX_LOG_ERROR LOG
 
 #define NRFX_LOG_ERROR_STRING_GET(error_code) nrfx_error_code_lookup(error_code)
 #define NRFX_LOG_HEXDUMP_ERROR(p_memory, length)
