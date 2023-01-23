@@ -38,6 +38,8 @@
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
 
+#include "app_err.h"
+
 #include "driver/battery.h"
 #include "ble_gap.h"
 
@@ -98,14 +100,12 @@ MP_DEFINE_CONST_FUN_OBJ_1(device_update_obj, device_update);
 STATIC mp_obj_t device_mac_address(void)
 {
     static char m_mac_address[sizeof "XX:XX:XX:XX:XX:XX"];
-    nrfx_err_t err;;
     ble_gap_addr_t addr = {0};
     char *str = m_mac_address;
     size_t sz = sizeof m_mac_address;
     int n;
 
-    err = sd_ble_gap_addr_get(&addr);
-    assert(err == 0);
+    app_err(sd_ble_gap_addr_get(&addr));
 
     assert(sizeof m_mac_address / 3 == sizeof addr.addr);
     for (uint8_t i = 0; i < 6; i++)

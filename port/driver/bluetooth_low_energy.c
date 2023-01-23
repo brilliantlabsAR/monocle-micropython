@@ -33,7 +33,9 @@
 #include "ble.h"
 #include "nrf_clock.h"
 #include "nrf_sdm.h"
+#include "nrf_nvic.h"
 #include "nrfx_log.h"
+#include "app_err.h"
 
 #include "driver/bluetooth_low_energy.h"
 #include "driver/config.h"
@@ -127,7 +129,7 @@ static inline uint8_t ring_pop(ring_buf_t *ring)
  */
 static void ble_tx(ble_service_t *service, uint8_t const *buf, uint16_t len)
 {
-    nrfx_err_t err;;
+    nrfx_err_t err;
     ble_gatts_hvx_params_t hvx_params = {
         .handle = service->tx_characteristic.value_handle,
         .p_data = buf,
@@ -149,7 +151,7 @@ static void ble_tx(ble_service_t *service, uint8_t const *buf, uint16_t len)
         return;
 
     // Catch other errors
-    assert(!err);
+    app_err(err);
 }
 
 /**
@@ -237,7 +239,6 @@ static inline void ble_adv_add_discovery_mode(void)
 
 static inline void ble_adv_add_uuid(ble_uuid_t *uuid)
 {
-    nrfx_err_t err;;
     uint8_t len;
     uint8_t *p_adv_size;
 
@@ -245,16 +246,13 @@ static inline void ble_adv_add_uuid(ble_uuid_t *uuid)
     ble_adv_buf[ble_adv_len++] = 1;
     ble_adv_buf[ble_adv_len++] = BLE_GAP_AD_TYPE_128BIT_SERVICE_UUID_MORE_AVAILABLE;
 
-    err = sd_ble_uuid_encode(uuid, &len, &ble_adv_buf[ble_adv_len]);
-    assert(!err);
+    app_err(sd_ble_uuid_encode(uuid, &len, &ble_adv_buf[ble_adv_len]));
     ble_adv_len += len;
     *p_adv_size += len;
 }
 
 static inline void ble_adv_start(void)
 {
-    nrfx_err_t err;;
-
     ble_gap_adv_data_t adv_data = {
         .adv_data.p_data = ble_adv_buf,
         .adv_data.len = ble_adv_len,
@@ -268,12 +266,10 @@ static inline void ble_adv_start(void)
     adv_params.interval = (20 * 1000) / 625;
 
     // Configure the advertising set
-    err = sd_ble_gap_adv_set_configure(&ble_adv_handle, &adv_data, &adv_params);
-    assert(!err);
+    app_err(sd_ble_gap_adv_set_configure(&ble_adv_handle, &adv_data, &adv_params));
 
     // Start the configured BLE advertisement
-    err = sd_ble_gap_adv_start(ble_adv_handle, 1);
-    assert(!err);
+    app_err(sd_ble_gap_adv_start(ble_adv_handle, 1));
 }
 
 /**
@@ -281,8 +277,6 @@ static inline void ble_adv_start(void)
  */
 static void ble_service_add_characteristic_rx(ble_service_t *service, ble_uuid_t *uuid)
 {
-    nrfx_err_t err;;
-
     ble_gatts_char_md_t rx_char_md = {0};
     rx_char_md.char_props.write = 1;
     rx_char_md.char_props.write_wo_resp = 1;
@@ -299,9 +293,8 @@ static void ble_service_add_characteristic_rx(ble_service_t *service, ble_uuid_t
     rx_attr.init_len = sizeof(uint8_t);
     rx_attr.max_len = BLE_MAX_MTU_LENGTH - 3;
 
-    err = sd_ble_gatts_characteristic_add(service->handle, &rx_char_md, &rx_attr,
-        &service->rx_characteristic);
-    assert(!err);
+    app_err(sd_ble_gatts_characteristic_add(service->handle, &rx_char_md, &rx_attr,
+        &service->rx_characteristic));
 }
 
 /**
@@ -309,8 +302,6 @@ static void ble_service_add_characteristic_rx(ble_service_t *service, ble_uuid_t
  */
 static void ble_service_add_characteristic_tx(ble_service_t *service, ble_uuid_t *uuid)
 {
-    nrfx_err_t err;;
-
     ble_gatts_char_md_t tx_char_md = {0};
     tx_char_md.char_props.notify = 1;
 
@@ -326,14 +317,12 @@ static void ble_service_add_characteristic_tx(ble_service_t *service, ble_uuid_t
     tx_attr.init_len = sizeof(uint8_t);
     tx_attr.max_len = BLE_MAX_MTU_LENGTH - 3;
 
-    err = sd_ble_gatts_characteristic_add(service->handle, &tx_char_md, &tx_attr,
-        &service->tx_characteristic);
-    assert(!err);
+    app_err(sd_ble_gatts_characteristic_add(service->handle, &tx_char_md, &tx_attr,
+        &service->tx_characteristic));
 }
 
 static void ble_configure_nus_service(ble_uuid_t *service_uuid)
 {
-    nrfx_err_t err;;
     ble_service_t *service = &ble_nus_service;
 
     // Set the 16 bit UUIDs for the service and characteristics
@@ -341,11 +330,10 @@ static void ble_configure_nus_service(ble_uuid_t *service_uuid)
     ble_uuid_t rx_uuid = { .uuid = 0x0002 };
     ble_uuid_t tx_uuid = { .uuid = 0x0003 };
 
-    err = sd_ble_uuid_vs_add(&ble_nus_uuid128, &service_uuid->type);
-    assert(!err);
+    app_err(sd_ble_uuid_vs_add(&ble_nus_uuid128, &service_uuid->type));
 
-    err = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
-        service_uuid, &service->handle);
+    app_err(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
+        service_uuid, &service->handle));
 
     // Copy the service UUID type to both rx and tx UUID
     rx_uuid.type = service_uuid->type;
@@ -366,7 +354,6 @@ void ble_raw_tx(uint8_t const *buf, uint16_t len)
  */
 void ble_configure_raw_service(ble_uuid_t *service_uuid)
 {
-    nrfx_err_t err;;
     ble_service_t *service = &ble_raw_service;
 
     // Set the 16 bit UUIDs for the service and characteristics
@@ -374,11 +361,10 @@ void ble_configure_raw_service(ble_uuid_t *service_uuid)
     ble_uuid_t rx_uuid = { .uuid = 0x0002 };
     ble_uuid_t tx_uuid = { .uuid = 0x0003 };
 
-    err = sd_ble_uuid_vs_add(&ble_raw_uuid128, &service_uuid->type);
-    assert(!err);
+    app_err(sd_ble_uuid_vs_add(&ble_raw_uuid128, &service_uuid->type));
 
-    err = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
-        service_uuid, &service->handle);
+    app_err(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
+        service_uuid, &service->handle));
 
     // Copy the service UUID type to both rx and tx UUID
     rx_uuid.type = service_uuid->type;
@@ -394,53 +380,44 @@ void ble_configure_raw_service(ble_uuid_t *service_uuid)
  */
 void ble_configure_softdevice(void)
 {
-    nrfx_err_t err;;
-
     // Add GAP configuration to the BLE stack
     ble_cfg_t cfg;
     cfg.conn_cfg.conn_cfg_tag = 1;
     cfg.conn_cfg.params.gap_conn_cfg.conn_count = 1;
     cfg.conn_cfg.params.gap_conn_cfg.event_length = 3;
-    err = sd_ble_cfg_set(BLE_CONN_CFG_GAP, &cfg, ram_start);
-    assert(!err);
+    app_err(sd_ble_cfg_set(BLE_CONN_CFG_GAP, &cfg, ram_start));
 
     // Set BLE role to peripheral only
     memset(&cfg, 0, sizeof(cfg));
     cfg.gap_cfg.role_count_cfg.periph_role_count = 1;
-    err = sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &cfg, ram_start);
-    assert(!err);
+    app_err(sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &cfg, ram_start));
 
     // Set max MTU size
     memset(&cfg, 0, sizeof(cfg));
     cfg.conn_cfg.conn_cfg_tag = 1;
     cfg.conn_cfg.params.gatt_conn_cfg.att_mtu = BLE_MAX_MTU_LENGTH;
-    err = sd_ble_cfg_set(BLE_CONN_CFG_GATT, &cfg, ram_start);
-    assert(!err);
+    app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATT, &cfg, ram_start));
 
     // Configure a single queued transfer
     memset(&cfg, 0, sizeof(cfg));
     cfg.conn_cfg.conn_cfg_tag = 1;
     cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 1;
-    err = sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &cfg, ram_start);
-    assert(!err);
+    app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &cfg, ram_start));
 
     // Configure number of custom UUIDs
     memset(&cfg, 0, sizeof(cfg));
     cfg.common_cfg.vs_uuid_cfg.vs_uuid_count = 2;
-    err = sd_ble_cfg_set(BLE_COMMON_CFG_VS_UUID, &cfg, ram_start);
-    assert(!err);
+    app_err(sd_ble_cfg_set(BLE_COMMON_CFG_VS_UUID, &cfg, ram_start));
 
     // Configure GATTS attribute table
     memset(&cfg, 0, sizeof(cfg));
     cfg.gatts_cfg.attr_tab_size.attr_tab_size = 1408;
-    err = sd_ble_cfg_set(BLE_GATTS_CFG_ATTR_TAB_SIZE, &cfg, ram_start);
-    assert(!err);
+    app_err(sd_ble_cfg_set(BLE_GATTS_CFG_ATTR_TAB_SIZE, &cfg, ram_start));
 
     // No service changed attribute needed
     memset(&cfg, 0, sizeof(cfg));
     cfg.gatts_cfg.service_changed.service_changed = 0;
-    err = sd_ble_cfg_set(BLE_GATTS_CFG_SERVICE_CHANGED, &cfg, ram_start);
-    assert(!err);
+    app_err(sd_ble_cfg_set(BLE_GATTS_CFG_SERVICE_CHANGED, &cfg, ram_start));
 }
 
 /**
@@ -456,7 +433,6 @@ static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
  */
 void SWI2_IRQHandler(void)
 {
-    nrfx_err_t err;;
     uint32_t evt_id;
     uint8_t ble_evt_buffer[sizeof(ble_evt_t) + BLE_MAX_MTU_LENGTH];
 
@@ -520,14 +496,11 @@ void SWI2_IRQHandler(void)
             // Update connection parameters
             ble_gap_conn_params_t conn_params;
 
-            err = sd_ble_gap_ppcp_get(&conn_params);
-            assert(!err);
+            app_err(sd_ble_gap_ppcp_get(&conn_params));
 
-            err = sd_ble_gap_conn_param_update(ble_conn_handle, &conn_params);
-            assert(!err);
+            app_err(sd_ble_gap_conn_param_update(ble_conn_handle, &conn_params));
 
-            err = sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0);
-            assert(!err);
+            app_err(sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0));
 
             // Hook for custom events, such as toggling a LED.
             ble_on_connect();
@@ -545,8 +518,7 @@ void SWI2_IRQHandler(void)
             ble_conn_handle = BLE_CONN_HANDLE_INVALID;
 
             // Start advertising
-            err = sd_ble_gap_adv_start(ble_adv_handle, 1);
-            assert(!err);
+            app_err(sd_ble_gap_adv_start(ble_adv_handle, 1));
             break;
         }
 
@@ -560,8 +532,7 @@ void SWI2_IRQHandler(void)
                 .rx_phys = BLE_GAP_PHY_AUTO,
                 .tx_phys = BLE_GAP_PHY_AUTO,
             };
-            err = sd_ble_gap_phy_update(ble_evt->evt.gap_evt.conn_handle, &phys);
-            assert(!err);
+            app_err(sd_ble_gap_phy_update(ble_evt->evt.gap_evt.conn_handle, &phys));
             break;
         }
 
@@ -576,8 +547,7 @@ void SWI2_IRQHandler(void)
                 ble_evt->evt.gatts_evt.params.exchange_mtu_request.client_rx_mtu;
 
             // Respond with our max MTU size
-            err = sd_ble_gatts_exchange_mtu_reply(ble_conn_handle, BLE_MAX_MTU_LENGTH);
-            assert(!err);
+            sd_ble_gatts_exchange_mtu_reply(ble_conn_handle, BLE_MAX_MTU_LENGTH);
 
             // Choose the smaller MTU as the final length we'll use
             // -3 bytes to accommodate for Op-code and attribute service
@@ -620,8 +590,7 @@ void SWI2_IRQHandler(void)
         LOG("BLE_GATTS_EVT_TIMEOUT");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-            err = sd_ble_gap_disconnect(ble_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-            assert(!err);
+            app_err(sd_ble_gap_disconnect(ble_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
             break;
         }
 
@@ -630,8 +599,7 @@ void SWI2_IRQHandler(void)
         LOG("BLE_GATTS_EVT_SYS_ATTR_MISSING");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-            err = sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0);
-            assert(!err);
+            app_err(sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0));
             break;
         }
 
@@ -640,8 +608,7 @@ void SWI2_IRQHandler(void)
         LOG("BLE_GAP_EVT_SEC_PARAMS_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-            err = sd_ble_gap_sec_params_reply(ble_conn_handle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL);
-            assert(!err);
+            app_err(sd_ble_gap_sec_params_reply(ble_conn_handle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL));
             break;
         }
 
@@ -649,8 +616,7 @@ void SWI2_IRQHandler(void)
         LOG("BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-            err = sd_ble_gap_data_length_update(ble_conn_handle, NULL, NULL);
-            assert(!err);
+            app_err(sd_ble_gap_data_length_update(ble_conn_handle, NULL, NULL));
             break;
         }
 
@@ -658,8 +624,7 @@ void SWI2_IRQHandler(void)
         LOG("BLE_GAP_EVT_SEC_INFO_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-            err = sd_ble_gap_sec_info_reply(ble_conn_handle, NULL, NULL, NULL);
-            assert(!err);
+            app_err(sd_ble_gap_sec_info_reply(ble_conn_handle, NULL, NULL, NULL));
             break;
         }
 
@@ -667,8 +632,7 @@ void SWI2_IRQHandler(void)
         LOG("BLE_GAP_EVT_SEC_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-            err = sd_ble_gap_authenticate(ble_conn_handle, NULL);
-            assert(!err);
+            app_err(sd_ble_gap_authenticate(ble_conn_handle, NULL));
             break;
         }
 
@@ -676,8 +640,7 @@ void SWI2_IRQHandler(void)
         LOG("BLE_GAP_EVT_AUTH_KEY_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-            err = sd_ble_gap_auth_key_reply(ble_conn_handle, BLE_GAP_AUTH_KEY_TYPE_NONE, NULL);
-            assert(!err);
+            app_err(sd_ble_gap_auth_key_reply(ble_conn_handle, BLE_GAP_AUTH_KEY_TYPE_NONE, NULL));
             break;
         }
 
@@ -704,9 +667,6 @@ void SWI2_IRQHandler(void)
  */
 void ble_enable_softdevice(void)
 {
-    // Error code variable
-    nrfx_err_t err;;
-
     // Init LF clock
     nrf_clock_lf_cfg_t clock_config = {
         .source = NRF_CLOCK_LF_SRC_XTAL,
@@ -716,8 +676,7 @@ void ble_enable_softdevice(void)
     };
 
     // Enable the softdevice
-    err = sd_softdevice_enable(&clock_config, softdevice_assert_handler);
-    assert(!err);
+    app_err(sd_softdevice_enable(&clock_config, softdevice_assert_handler));
 }
 
 /**
@@ -727,32 +686,25 @@ void ble_enable_softdevice(void)
  */
 void ble_init(void)
 {
-    // Error code variable
-    nrfx_err_t err;;
-
     // Enable softdevice interrupt
-    err = sd_nvic_EnableIRQ((IRQn_Type)SD_EVT_IRQn);
-    assert(!err);
+    app_err(sd_nvic_EnableIRQ((IRQn_Type)SD_EVT_IRQn));
 
     // Enable the DC-DC convertor
-    err = sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE);
-    assert(!err);
+    app_err(sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE));
 
     // Set configuration parameters for the SoftDevice suitable for this code.
     ble_configure_softdevice();
 
     // Start bluetooth. `ram_start` is the address of a variable containing an address, defined in the linker script.
     // It updates that address with another one planning ahead the RAM needed by the softdevice.
-    err = sd_ble_enable(&ram_start);
-    assert(!err);
+    app_err(sd_ble_enable(&ram_start));
 
     // Set security to open
     ble_gap_conn_sec_mode_t sec_mode;
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
     // Set device name. Last four characters are taken from MAC address ;
-    err = sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)BLE_DEVICE_NAME, sizeof BLE_DEVICE_NAME - 1);
-    assert(!err);
+    app_err(sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)BLE_DEVICE_NAME, sizeof BLE_DEVICE_NAME - 1));
 
     // Set connection parameters
     ble_gap_conn_params_t gap_conn_params = {0};
@@ -760,8 +712,7 @@ void ble_init(void)
     gap_conn_params.max_conn_interval = (15 * 1000) / 1250;
     gap_conn_params.slave_latency = 3;
     gap_conn_params.conn_sup_timeout = (2000 * 1000) / 10000;
-    err = sd_ble_gap_ppcp_set(&gap_conn_params);
-    assert(!err);
+    app_err(sd_ble_gap_ppcp_set(&gap_conn_params));
 
     // Add name to advertising payload
     ble_adv_add_device_name(BLE_DEVICE_NAME);

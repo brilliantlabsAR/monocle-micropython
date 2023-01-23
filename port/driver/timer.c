@@ -37,6 +37,8 @@
 #include "driver/config.h"
 #include "driver/timer.h"
 
+#include "app_err.h"
+
 #define LEN(x) (sizeof(x) / sizeof*(x))
 
 timer_task_t *timer_1ms[TIMER_MAX_TASKS];
@@ -136,15 +138,13 @@ uint64_t timer_get_uptime_ms(void)
 void timer_start(void)
 {
     static nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG;
-    nrfx_err_t err;;
 
     // Prepare the configuration structure.
     timer_config.frequency = NRF_TIMER_FREQ_125kHz;
     timer_config.mode = NRF_TIMER_MODE_TIMER;
     timer_config.bit_width = NRF_TIMER_BIT_WIDTH_8;
 
-    err = nrfx_timer_init(&timer, &timer_config, timer_event_handler);
-    assert(err == NRFX_SUCCESS);
+    app_err(nrfx_timer_init(&timer, &timer_config, timer_event_handler));
 
     // Raise an interrupt every 1ms: 125 kHz / 125
     nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 125,

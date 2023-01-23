@@ -36,6 +36,8 @@
 #include "nrfx_systick.h"
 #include "nrf_soc.h"
 
+#include "app_err.h"
+
 #include "driver/config.h"
 #include "driver/spi.h"
 
@@ -77,7 +79,6 @@ void spi_chip_deselect(uint8_t cs_pin)
 
 static void spi_xfer_chunk(nrfx_spim_xfer_desc_t *xfer)
 {
-    nrfx_err_t err;;
 
     // wait for any pending SPI operation to complete
     while (!m_xfer_done)
@@ -85,8 +86,7 @@ static void spi_xfer_chunk(nrfx_spim_xfer_desc_t *xfer)
 
     // Start the transaction and wait for the interrupt handler to warn us it is done.
     m_xfer_done = false;
-    err = nrfx_spim_xfer(&spi2, xfer, 0);
-    assert(err == NRFX_SUCCESS);
+    app_err(nrfx_spim_xfer(&spi2, xfer, 0));
     while (!m_xfer_done)
         __WFE();
 }
@@ -131,7 +131,6 @@ void spi_write(uint8_t const *buf, size_t len)
  */
 void spi_init(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_pin)
 {
-    nrfx_err_t err;;
     nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
         sck_pin, mosi_pin, miso_pin, NRFX_SPIM_PIN_NOT_USED
     );
@@ -140,6 +139,5 @@ void spi_init(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_p
     config.mode      = NRF_SPIM_MODE_3;
     config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
 
-    err = nrfx_spim_init(&spi2, &config, spim_event_handler, NULL);
-    assert(err == NRFX_SUCCESS);
+    app_err(nrfx_spim_init(&spi2, &config, spim_event_handler, NULL));
 }
