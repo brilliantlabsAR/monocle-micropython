@@ -1,5 +1,10 @@
 Changelog
 =========
+v23.023.1011
+------------
+- Bugfix: improve the text rendering feature, more stable less bugs.
+- Hardware: adjust the threshold for prequalification battery charge:
+  making the charging case CC8 more likely to pick-up the undercharged MK12.
 
 v23.020.1610
 ------------
