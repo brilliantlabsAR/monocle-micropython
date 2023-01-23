@@ -110,7 +110,7 @@ void gc_collect(void)
 NORETURN void nlr_jump_fail(void *val)
 {
     (void)val;
-    app_err(1); //!"exception raised without any handlers for it");
+    app_err(1); // exception raised without any handlers for it
 }
 
 void ble_on_connect(void)
