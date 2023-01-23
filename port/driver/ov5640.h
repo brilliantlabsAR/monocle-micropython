@@ -37,7 +37,6 @@
 
 #define TRANSFER_CMPLT 0x00u
 #define TRANSFER_ERROR 0x01u
-#define I2C_SLAVE_ADDR OV5640_ADDR
 
 void ov5640_prepare(void);
 void ov5640_init(void);

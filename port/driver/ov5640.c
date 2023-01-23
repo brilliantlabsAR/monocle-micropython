@@ -35,6 +35,8 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
+#include "app_err.h"
+
 #include "driver/config.h"
 #include "driver/i2c.h"
 #include "driver/max77654.h"
@@ -73,26 +75,6 @@ static void ov5640_set_power(bool state)
 }
 
 /**
- * Write a byte of data to a provided registry address.
- * @param reg Register address (16 bit)
- * @param data 1-Byte data
- * @return uint8_t Status of the i2c write (TRANSFER_ERROR / TRANSFER_CMPLT)
- */
-static uint8_t ov5640_write_reg(uint16_t reg, uint8_t data)
-{
-    uint8_t buf[3];
-    uint16_t swaped = __bswap_16(reg);
-
-    memcpy(buf, &swaped, 2);
-    memcpy(buf + 2, &data, 1);
-
-    // if (i2c_write(OV5640_I2C, I2C_SLAVE_ADDR, buf, 3))
-    // return TRANSFER_CMPLT;
-
-    return TRANSFER_ERROR;
-}
-
-/**
  * Read a byte of data from the provided registry address.
  * @param reg Register address (16 bit)
  * @return uint8_t A byte read data
@@ -104,9 +86,9 @@ static uint8_t ov5640_read_reg(uint16_t reg)
     uint16_t swaped = __bswap_16(reg);
 
     memcpy(w_buf, &swaped, 2);
-    // if (!i2c_write(OV5640_I2C, I2C_SLAVE_ADDR, w_buf, 2))
+    // if (!i2c_write(OV5640_I2C, OV5640_ADDR, w_buf, 2))
     // return 0;
-    // if (!i2c_read(OV5640_I2C, I2C_SLAVE_ADDR, &ret_val, 1))
+    // if (!i2c_read(OV5640_I2C, OV5640_ADDR, &ret_val, 1))
     // return 0;
     return ret_val;
 }
@@ -118,54 +100,6 @@ void ov5640_deinit(void)
 {
     nrf_gpio_cfg_default(OV5640_RESETB_N_PIN);
     nrf_gpio_cfg_default(OV5640_PWDN_PIN);
-}
-
-/**
- * Merge 3 configuration steps into one, to reduce high current draw of ov5640_uxga_init_tbl[] and speed boot.
- * It combines
- * - ov5640_uxga_init_tbl[] in ov5640_pwr_on()
- * - ov5640_rgb565_tbl in ov5640_yuv422_mode()
- * - ov5640_rgb565_1x_tbl in ov5640_mode_1x()
- */
-static void ov5640_yuv422_direct(void)
-{
-    for (size_t i = 0; i < LEN(ov5640_yuv422_direct_tbl); i++)
-        ov5640_write_reg(ov5640_yuv422_direct_tbl[i].addr, ov5640_yuv422_direct_tbl[i].value);
-}
-
-/**
- * Power on the camera.
- * Precondition: ov5640_init() called earlier in main.c
- */
-void ov5640_pwr_on(void)
-{
-    // Power on sequence, references: Datasheet section 2.7.1; Application Notes section 3.1.1
-    // assume XCLK is on & kept on, per the current code (it could be turned off when powered down)
-    // 1) PWDN (active high) is high, RESET (active low) is low
-    // 2) DOVDD (1.8V) on
-    // 3) >= 0ms later, AVDD (2.8V) on
-    // 4) >= 5ms later, PWDN low (exit low-power standby mode)
-    // 5) >= 1ms later, RESET high (come out of reset)
-    // 6) >= 20ms later, can begin using SCCB to access ov5640 registers
-
-    // step (1) --though already done in ov5640_init(), keep in case of re-try
-    ov5640_set_power(false);
-    ov5640_set_reset(true);
-    nrfx_systick_delay_ms(5);
-    // step (2): 1.8V is already on
-    // step (3), 2.8V is already on
-    // step (4)
-    nrfx_systick_delay_ms(8);
-    ov5640_set_power(true);
-    // step (5)
-    nrfx_systick_delay_ms(2);
-    ov5640_set_reset(false);
-    // step (6)
-    nrfx_systick_delay_ms(20);
-
-    ov5640_write_reg(0x3103, 0x11); // system clock from pad, bit[1]
-    ov5640_write_reg(0x3008, 0x82);
-    ov5640_yuv422_direct();
 }
 
 /**
@@ -494,7 +428,7 @@ void ov5640_init(void)
 
     // Check the chip ID
     uint16_t id = ov5640_read_reg(OV5640_CHIPIDH) << 8 | ov5640_read_reg(OV5640_CHIPIDL);
-    assert(id == OV5640_ID);
+    app_err(id == OV5640_ID ? NRFX_SUCCESS : 1);
 
     ov5640_reduce_size(640, 400);
     ov5640_mode_1x();
