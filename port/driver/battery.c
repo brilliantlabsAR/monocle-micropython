@@ -146,7 +146,7 @@ static float battery_travelling_mean(float new)
 static nrf_saadc_value_t battery_get_saadc(void)
 {
     nrf_saadc_value_t result;
-    uint32_t err;
+    nrfx_err_t err;;
 
     // Configure first ADC channel with low setup (enough for battery sensing)
     err = nrfx_saadc_simple_mode_set(1u << 0, BATTERY_ADC_RESOLUTION,
@@ -184,7 +184,7 @@ void battery_level_timer(void)
  */
 void battery_init(uint8_t adc_pin)
 {
-    uint32_t err;
+    nrfx_err_t err;;
     nrfx_saadc_channel_t channel = NRFX_SAADC_DEFAULT_CHANNEL_SE(adc_pin, 0);
 
     channel.channel_config.reference = BATTERY_ADC_REFERENCE;

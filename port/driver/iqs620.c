@@ -398,7 +398,7 @@ void iqs620_wait(void)
  */
 void iqs620_init(void)
 {
-    uint32_t err;
+    nrfx_err_t err;;
 
     // Setup the GPIO pin for touch state interrupts.
     nrf_gpio_cfg(

@@ -136,7 +136,7 @@ uint64_t timer_get_uptime_ms(void)
 void timer_start(void)
 {
     static nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG;
-    uint32_t err;
+    nrfx_err_t err;;
 
     // Prepare the configuration structure.
     timer_config.frequency = NRF_TIMER_FREQ_125kHz;

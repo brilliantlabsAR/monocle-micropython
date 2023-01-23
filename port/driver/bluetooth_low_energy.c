@@ -127,7 +127,7 @@ static inline uint8_t ring_pop(ring_buf_t *ring)
  */
 static void ble_tx(ble_service_t *service, uint8_t const *buf, uint16_t len)
 {
-    uint32_t err;
+    nrfx_err_t err;;
     ble_gatts_hvx_params_t hvx_params = {
         .handle = service->tx_characteristic.value_handle,
         .p_data = buf,
@@ -237,7 +237,7 @@ static inline void ble_adv_add_discovery_mode(void)
 
 static inline void ble_adv_add_uuid(ble_uuid_t *uuid)
 {
-    uint32_t err;
+    nrfx_err_t err;;
     uint8_t len;
     uint8_t *p_adv_size;
 
@@ -253,7 +253,7 @@ static inline void ble_adv_add_uuid(ble_uuid_t *uuid)
 
 static inline void ble_adv_start(void)
 {
-    uint32_t err;
+    nrfx_err_t err;;
 
     ble_gap_adv_data_t adv_data = {
         .adv_data.p_data = ble_adv_buf,
@@ -281,7 +281,7 @@ static inline void ble_adv_start(void)
  */
 static void ble_service_add_characteristic_rx(ble_service_t *service, ble_uuid_t *uuid)
 {
-    uint32_t err;
+    nrfx_err_t err;;
 
     ble_gatts_char_md_t rx_char_md = {0};
     rx_char_md.char_props.write = 1;
@@ -309,7 +309,7 @@ static void ble_service_add_characteristic_rx(ble_service_t *service, ble_uuid_t
  */
 static void ble_service_add_characteristic_tx(ble_service_t *service, ble_uuid_t *uuid)
 {
-    uint32_t err;
+    nrfx_err_t err;;
 
     ble_gatts_char_md_t tx_char_md = {0};
     tx_char_md.char_props.notify = 1;
@@ -333,7 +333,7 @@ static void ble_service_add_characteristic_tx(ble_service_t *service, ble_uuid_t
 
 static void ble_configure_nus_service(ble_uuid_t *service_uuid)
 {
-    uint32_t err;
+    nrfx_err_t err;;
     ble_service_t *service = &ble_nus_service;
 
     // Set the 16 bit UUIDs for the service and characteristics
@@ -366,7 +366,7 @@ void ble_raw_tx(uint8_t const *buf, uint16_t len)
  */
 void ble_configure_raw_service(ble_uuid_t *service_uuid)
 {
-    uint32_t err;
+    nrfx_err_t err;;
     ble_service_t *service = &ble_raw_service;
 
     // Set the 16 bit UUIDs for the service and characteristics
@@ -394,7 +394,7 @@ void ble_configure_raw_service(ble_uuid_t *service_uuid)
  */
 void ble_configure_softdevice(void)
 {
-    uint32_t err;
+    nrfx_err_t err;;
 
     // Add GAP configuration to the BLE stack
     ble_cfg_t cfg;
@@ -456,7 +456,7 @@ static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
  */
 void SWI2_IRQHandler(void)
 {
-    uint32_t err;
+    nrfx_err_t err;;
     uint32_t evt_id;
     uint8_t ble_evt_buffer[sizeof(ble_evt_t) + BLE_MAX_MTU_LENGTH];
 
@@ -705,7 +705,7 @@ void SWI2_IRQHandler(void)
 void ble_enable_softdevice(void)
 {
     // Error code variable
-    uint32_t err;
+    nrfx_err_t err;;
 
     // Init LF clock
     nrf_clock_lf_cfg_t clock_config = {
@@ -728,7 +728,7 @@ void ble_enable_softdevice(void)
 void ble_init(void)
 {
     // Error code variable
-    uint32_t err;
+    nrfx_err_t err;;
 
     // Enable softdevice interrupt
     err = sd_nvic_EnableIRQ((IRQn_Type)SD_EVT_IRQn);

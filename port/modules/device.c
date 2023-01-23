@@ -98,7 +98,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(device_update_obj, device_update);
 STATIC mp_obj_t device_mac_address(void)
 {
     static char m_mac_address[sizeof "XX:XX:XX:XX:XX:XX"];
-    uint32_t err;
+    nrfx_err_t err;;
     ble_gap_addr_t addr = {0};
     char *str = m_mac_address;
     size_t sz = sizeof m_mac_address;

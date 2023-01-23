@@ -77,7 +77,7 @@ void spi_chip_deselect(uint8_t cs_pin)
 
 static void spi_xfer_chunk(nrfx_spim_xfer_desc_t *xfer)
 {
-    uint32_t err;
+    nrfx_err_t err;;
 
     // wait for any pending SPI operation to complete
     while (!m_xfer_done)
@@ -131,7 +131,7 @@ void spi_write(uint8_t const *buf, size_t len)
  */
 void spi_init(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_pin)
 {
-    uint32_t err;
+    nrfx_err_t err;;
     nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
         sck_pin, mosi_pin, miso_pin, NRFX_SPIM_PIN_NOT_USED
     );
