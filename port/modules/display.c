@@ -93,9 +93,10 @@ STATIC bool block_has_content(gfx_row_t yuv422, size_t pos)
     assert(pos % sizeof black == 0);
     assert(pos < yuv422.len);
 
-    for (; pos < yuv422.len; pos += sizeof black)
+
+    for (size_t i = pos; i < yuv422.len && i < pos + FPGA_ADDR_ALIGN; i += sizeof black)
     {
-        if (memcmp(yuv422.buf + pos, black, sizeof black) != 0)
+        if (memcmp(yuv422.buf + i, black, sizeof black) != 0)
         {
             return true;
         }
@@ -117,7 +118,6 @@ STATIC void flush_row(gfx_row_t yuv422)
             {
                 return;
             }
-
             if (block_has_content(yuv422, i))
             {
                 break;
