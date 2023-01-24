@@ -2,7 +2,7 @@
     "configurations": [
         {
             "cwd": "${workspaceFolder}",
-            "executable": "port/build/application.elf",
+            "executable": "build/application.elf",
             "name": "JLink",
             "request": "launch",
             "type": "cortex-debug",
@@ -11,6 +11,14 @@
             "servertype": "jlink",
             "svdFile": "nrfx/mdk/nrf52.svd",
             "preLaunchTask": "Build",
+            "loadFiles": [
+                "softdevice/s132_nrf52_7.3.0_softdevice.hex",
+            ],
+            "preLaunchCommands": [
+                "monitor halt",
+                "monitor speed 2000",
+                "load"
+            ],
         }
     ]
 }

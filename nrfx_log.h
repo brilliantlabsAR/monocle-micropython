@@ -55,12 +55,12 @@ static inline size_t _rttlen(const char *s, size_t n)
     return p == NULL ? n : p - s;
 }
 
-#define LOG_RAW(format, ...)                                                                                  \
-    do                                                                                                        \
-    {                                                                                                         \
-        char _debug_log_buffer[SEGGER_RTT_CONFIG_BUFFER_SIZE_UP] = "";                                        \
-        snprintf(_debug_log_buffer, SEGGER_RTT_CONFIG_BUFFER_SIZE_UP, format, ##__VA_ARGS__);                 \
-        SEGGER_RTT_Write(0, _debug_log_buffer, _rttlen(_debug_log_buffer, SEGGER_RTT_CONFIG_BUFFER_SIZE_UP)); \
+#define LOG_RAW(format, ...)                                                                \
+    do                                                                                      \
+    {                                                                                       \
+        char _debug_log_buffer[BUFFER_SIZE_UP] = "";                                        \
+        snprintf(_debug_log_buffer, BUFFER_SIZE_UP, format, ##__VA_ARGS__);                 \
+        SEGGER_RTT_Write(0, _debug_log_buffer, _rttlen(_debug_log_buffer, BUFFER_SIZE_UP)); \
     } while (0)
 
 #define LOG(format, ...) LOG_RAW("\r\n" format, ##__VA_ARGS__)

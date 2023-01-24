@@ -6,7 +6,7 @@
         {
             "label": "Build",
             "type": "shell",
-            "command": "make -C port -j`getconf _NPROCESSORS_ONLN`",
+            "command": "make -j`getconf _NPROCESSORS_ONLN`",
             "problemMatcher": [
                 "$gcc"
             ],
@@ -20,13 +20,13 @@
             },
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
         },
         {
             "label": "Build & flash",
             "type": "shell",
-            "command": "make -C port -j`getconf _NPROCESSORS_ONLN` flash",
+            "command": "make -j`getconf _NPROCESSORS_ONLN` flash",
             "problemMatcher": [
                 "$gcc"
             ],
@@ -46,7 +46,7 @@
         {
             "label": "Clean",
             "type": "shell",
-            "command": "make -C port clean",
+            "command": "make clean",
             "problemMatcher": [],
             "presentation": {
                 "echo": false,

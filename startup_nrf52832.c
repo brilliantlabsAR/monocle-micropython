@@ -27,7 +27,7 @@
 #include <stdint.h>
 #include "nrf.h"
 
-extern uint32_t _estack;
+extern uint32_t _stack_top;
 extern uint32_t _sidata;
 extern uint32_t _sdata;
 extern uint32_t _edata;
@@ -37,6 +37,7 @@ extern uint32_t _ebss;
 typedef void (*func)(void);
 
 extern void main(void) __attribute__((noreturn));
+extern void SystemInit(void);
 
 void Default_Handler(void)
 {
@@ -66,7 +67,7 @@ void HardFault_Handler(void)
     NVIC_SystemReset();
 }
 
-__attribute__((optimize("O0"))) void Reset_Handler(void)
+void Reset_Handler(void)
 {
     uint32_t *p_src = &_sidata;
     uint32_t *p_dest = &_sdata;
@@ -83,6 +84,7 @@ __attribute__((optimize("O0"))) void Reset_Handler(void)
         *p_bss++ = 0ul;
     }
 
+    SystemInit();
     main();
 }
 
@@ -134,7 +136,7 @@ void I2S_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 void FPU_IRQHandler(void) __attribute__((weak, alias("Default_Handler")));
 
 const func __Vectors[] __attribute__((section(".isr_vector"), used)) = {
-    (func)&_estack,
+    (func)&_stack_top,
     Reset_Handler,
     NMI_Handler,
     HardFault_Handler,

@@ -1,0 +1,7 @@
+# Ignore VSCode user specific files
+.vscode/.cortex-debug.peripherals.state.json
+.vscode/.cortex-debug.registers.state.json
+.vscode/settings.json
+
+# Ignore build output
+build
