@@ -37,16 +37,18 @@ typedef struct
     uint16_t y;
 } gfx_row_t;
 
+typedef union
+{
+    void const *ptr;
+    uint32_t u32;
+} gfx_arg_t;
+
 typedef struct
 {
     uint16_t x, y, width, height;
-    union
-    {
-        void *ptr;
-        uint32_t u32;
-    } u;
     uint8_t yuv444[3];
     uint8_t type;
+    gfx_arg_t arg;
 } gfx_obj_t;
 
 #define GFX_RGB_TO_YUV444(r, g, b) { \

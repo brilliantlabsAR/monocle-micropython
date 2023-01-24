@@ -191,7 +191,7 @@ STATIC mp_obj_t display_brightness(mp_obj_t brightness_in)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(display_brightness_obj, &display_brightness);
 
-STATIC void new_gfx(gfx_type_t type, mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_int_t rgb, void const *ptr)
+STATIC void new_gfx(gfx_type_t type, mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_int_t rgb, gfx_arg_t arg)
 {
     uint8_t yuv444[3] = GFX_RGB_TO_YUV444((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, (rgb >> 0) & 0xFF);
     gfx_obj_t *gfx;
@@ -223,7 +223,7 @@ STATIC void new_gfx(gfx_type_t type, mp_int_t x, mp_int_t y, mp_int_t width, mp_
     gfx->width = width;
     gfx->height = height;
     memcpy(gfx->yuv444, yuv444, sizeof yuv444);
-    gfx->u.ptr = (void *)ptr;
+    gfx->arg = arg;
 }
 
 STATIC mp_obj_t display_line(size_t argc, mp_obj_t const args[])
@@ -234,28 +234,28 @@ STATIC mp_obj_t display_line(size_t argc, mp_obj_t const args[])
     mp_int_t y2 = mp_obj_get_int(args[3]);
     mp_int_t rgb = mp_obj_get_int(args[4]);
     mp_int_t tmp;
-    bool flipped = ((x1 > x2) == (y1 > y2));
+    gfx_arg_t arg = { .u32 = ((x1 > x2) == (y1 > y2)) };
 
     if (x1 > x2)
         tmp = x1, x1 = x2, x2 = tmp;
     if (y1 > y2)
         tmp = y1, y1 = y2, y2 = tmp;
 
-    new_gfx(GFX_TYPE_LINE, x1, y1, x2 - x1, y2 - y1, rgb, &flipped);
+    new_gfx(GFX_TYPE_LINE, x1, y1, x2 - x1, y2 - y1, rgb, arg);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_line_obj, 5, 5, display_line);
 
 STATIC mp_obj_t display_text(size_t argc, mp_obj_t const args[])
 {
-    const char *text = mp_obj_str_get_str(args[0]);
+    gfx_arg_t arg = { .ptr = mp_obj_str_get_str(args[0]) };
     mp_int_t x = mp_obj_get_int(args[1]);
     mp_int_t y = mp_obj_get_int(args[2]);
     mp_int_t rgb = mp_obj_get_int(args[3]);
-    mp_int_t width = gfx_get_text_width(text, strlen(text));
+    mp_int_t width = gfx_get_text_width(arg.ptr, strlen(arg.ptr));
     mp_int_t height = gfx_get_text_height();
 
-    new_gfx(GFX_TYPE_TEXT, x, y, width, height, rgb, text);
+    new_gfx(GFX_TYPE_TEXT, x, y, width, height, rgb, arg);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_text_obj, 4, 4, display_text);
@@ -263,8 +263,9 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_text_obj, 4, 4, display_text);
 STATIC mp_obj_t display_fill(mp_obj_t rgb_in)
 {
     mp_int_t rgb = mp_obj_get_int(rgb_in);
+    gfx_arg_t null = {0};
 
-    new_gfx(GFX_TYPE_RECTANGLE, 0, 0, OV5640_WIDTH, OV5640_HEIGHT, rgb, NULL);
+    new_gfx(GFX_TYPE_RECTANGLE, 0, 0, OV5640_WIDTH, OV5640_HEIGHT, rgb, null);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(display_fill_obj, display_fill);
@@ -276,8 +277,9 @@ STATIC mp_obj_t display_hline(size_t argc, mp_obj_t const args[])
     mp_int_t width = mp_obj_get_int(args[2]);
     mp_int_t height = 1;
     mp_int_t rgb = mp_obj_get_int(args[3]);
+    gfx_arg_t null = {0};
 
-    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, NULL);
+    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, null);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_hline_obj, 4, 4, display_hline);
@@ -289,8 +291,9 @@ STATIC mp_obj_t display_vline(size_t argc, mp_obj_t const args[])
     mp_int_t height = mp_obj_get_int(args[2]);
     mp_int_t width = 1;
     mp_int_t rgb = mp_obj_get_int(args[3]);
+    gfx_arg_t null = {0};
 
-    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, NULL);
+    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, null);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_vline_obj, 4, 4, display_vline);

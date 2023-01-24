@@ -66,7 +66,7 @@ static void gfx_render_rectangle(gfx_row_t row, gfx_obj_t *obj)
 }
 
 static inline uint16_t gfx_get_intersect_line(uint16_t y,
-        uint16_t obj_x, uint16_t obj_y, uint16_t obj_width, uint16_t obj_height)
+        uint16_t obj_x, uint16_t obj_y, uint16_t obj_width, uint16_t obj_height, bool flip)
 {
     // Thales theorem to find the intersection of the line with our line.
     // y0--------------------------+ [a1,b2] is the line we draw
@@ -80,7 +80,7 @@ static inline uint16_t gfx_get_intersect_line(uint16_t y,
     // seg_width = obj_width * seg_height / obj_height
     uint16_t seg_height = y - obj_y;
     uint16_t seg_width = obj_width * seg_height / obj_height;
-    return obj_x + obj_width - seg_width;
+    return obj_x + (flip ? seg_width : obj_width - seg_width);
 }
 
 static void gfx_render_line(gfx_row_t row, gfx_obj_t *obj)
@@ -97,8 +97,8 @@ static void gfx_render_line(gfx_row_t row, gfx_obj_t *obj)
     // We need to know how many horizontal pixels to drawn to accomodate the line thickness
     // so we get two intersections: the one for the top, and the one for the bottom edge of
     // the line. This introduces an offset, which we correct with the +1
-    x_beg = gfx_get_intersect_line(row.y + 1, obj->x, obj->y, obj->width, obj->height + 1);
-    x_end = gfx_get_intersect_line(row.y, obj->x, obj->y, obj->width, obj->height + 1);
+    x_beg = gfx_get_intersect_line(row.y + 1, obj->x, obj->y, obj->width, obj->height + 1, &obj->arg.u32);
+    x_end = gfx_get_intersect_line(row.y, obj->x, obj->y, obj->width, obj->height + 1, &obj->arg.u32);
 
     // We have the start and stop point of the segment, we can fill it
     gfx_draw_segment(row, x_beg, x_end, obj->yuv444);
@@ -182,7 +182,7 @@ uint16_t gfx_get_text_height(void)
 
 static void gfx_render_text(gfx_row_t row, gfx_obj_t *obj)
 {
-    char *s = obj->u.ptr;
+    char const *s = obj->arg.ptr;
 
     // Only a single row of text is supported.
     if (row.y > obj->y + gfx_font[0])
