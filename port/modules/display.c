@@ -65,32 +65,78 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(display___init___obj, display___init__);
 gfx_obj_t gfx_obj_list[10];
 size_t gfx_obj_num;
 
-STATIC size_t get_first_non_black(gfx_row_t yuv422)
+STATIC void flush_blocks(gfx_row_t yuv422, size_t pos, size_t len)
 {
-    uint8_t black[] = GFX_YUV422_BLACK;
+    assert(pos + len <= yuv422.len);
 
-    assert(yuv422.len % sizeof black == 0);
-    for (size_t i = 0; i < yuv422.len; i += sizeof black) {
-        if (memcmp(yuv422.buf+i, black, sizeof black) != 0)
-        {
-            return i;
-        }
+    // Easier and more generic to place this optimization here than
+    // checking every time from the caller.
+    if (len == 0)
+    {
+        return;
     }
-    return yuv422.len;
+
+    // set the base address
+    uint32_t u32 = yuv422.y * yuv422.len + pos;
+    uint8_t base[sizeof u32] = { u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0 };
+    fpga_cmd_write(FPGA_GRAPHICS_BASE, base, sizeof base);
+
+    // Flush the content of the screen skipping empty bytes.
+    fpga_cmd_write(FPGA_GRAPHICS_DATA, yuv422.buf + pos, len);
 }
 
-STATIC size_t get_last_non_black(gfx_row_t yuv422)
+STATIC bool block_has_content(gfx_row_t yuv422, size_t pos)
 {
     uint8_t black[] = GFX_YUV422_BLACK;
 
     assert(yuv422.len % sizeof black == 0);
-    for (size_t i = yuv422.len - sizeof black; i > 0; i -= sizeof black) {
-        if (memcmp(yuv422.buf+i, black, sizeof black) != 0)
+    assert(pos % sizeof black == 0);
+    assert(pos < yuv422.len);
+
+    for (; pos < yuv422.len; pos += sizeof black)
+    {
+        if (memcmp(yuv422.buf + pos, black, sizeof black) != 0)
         {
-            return i;
+            return true;
         }
     }
-    return 0;
+    return false;
+}
+
+STATIC void flush_row(gfx_row_t yuv422)
+{
+    // Print all contiguous blocks that can be flushed altogether
+    for (size_t i = 0;;)
+    {
+        size_t beg, end;
+
+        // find the start position
+        for (;; i+= FPGA_ADDR_ALIGN)
+        {
+            if (i == yuv422.len)
+            {
+                return;
+            }
+
+            if (block_has_content(yuv422, i))
+            {
+                break;
+            }
+        }
+        beg = i;
+
+        // find the end position
+        for (; i < yuv422.len; i+= FPGA_ADDR_ALIGN)
+        {
+            if (!block_has_content(yuv422, i))
+            {
+                break;
+            }
+        }
+        end = i;
+
+        flush_blocks(yuv422, beg, end - beg);
+    }
 }
 
 STATIC mp_obj_t display_show(void)
@@ -111,27 +157,7 @@ STATIC mp_obj_t display_show(void)
         // Render a single row, and if anything was updated, also flush it
         if (gfx_render_row(yuv422, gfx_obj_list, gfx_obj_num))
         {
-            // skip empty pixels
-            size_t beg = get_first_non_black(yuv422);
-            size_t end = get_last_non_black(yuv422) + FPGA_ADDR_ALIGN;
-
-            // align the address as expected by the FPGA
-            beg -= beg % FPGA_ADDR_ALIGN;
-            end -= end % FPGA_ADDR_ALIGN;
-
-            // skip empty lines
-            if (beg == yuv422.len || end == 0)
-            {
-                continue;
-            }
-
-            // set the base address
-            uint32_t u32 = yuv422.y * yuv422.len + beg;
-            uint8_t base[sizeof u32] = { u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0 };
-            fpga_cmd_write(FPGA_GRAPHICS_BASE, base, sizeof base);
-
-            // Flush the content of the screen skipping empty bytes.
-            fpga_cmd_write(FPGA_GRAPHICS_DATA, yuv422.buf + beg, end - beg);
+            flush_row(yuv422);
         }
     }
 
