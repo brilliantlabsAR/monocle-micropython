@@ -247,12 +247,14 @@ void setup_pmic_and_sleep_mode(void)
         // TODO set the JETIA current
     }
 
+    // configure the touch
+    // TODO
+    // Configure the touch IC for low power mode
+    // Configure and enable GPTIOTE
+
     while (1)
     {
     }
-
-    // configure the touch
-    // TODO
 
     check_if_battery_charging_and_sleep(); // This won't return if charging
     // timer_add_task(timer_500ms, check_if_battery_charging_and_sleep);
