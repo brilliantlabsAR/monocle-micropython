@@ -292,16 +292,3 @@ void setup_pmic_and_sleep_mode(void)
 /**
  * @brief PMIC helper functions.
  */
-
-// void app_err(nrfx_err_t err)
-// {
-//     if (0x0000FFFF & err)
-//     {
-//         log("App error code: 0x%x at %s:%u\r\n", err, __FILE__, __LINE__);
-//         if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk)
-//         {
-//             __BKPT();
-//         }
-//         NVIC_SystemReset();
-//     }
-// }
