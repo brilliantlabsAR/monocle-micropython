@@ -25,11 +25,11 @@
  * THE SOFTWARE.
  */
 
-#ifndef NRFX_LOG_H
-#define NRFX_LOG_H
+#pragma once
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include "mphalport.h"
 #include "nrfx_config.h"
 #include "SEGGER_RTT.h"
@@ -43,35 +43,13 @@
 
 static inline void LOG_NONE(void *v, ...) { (void)v; }
 
-#define LOG_CLEAR() SEGGER_RTT_printf(0, RTT_CTRL_CLEAR "\r");
-
-/**
- * Local implementation as there is no support for it in the micropython libc.
- */
-static inline size_t _rttlen(const char *s, size_t n)
-{
-    const char *p = memchr(s, '\0', n);
-
-    return p == NULL ? n : p - s;
-}
-
-#define LOG_RAW(format, ...)                                                                \
-    do                                                                                      \
-    {                                                                                       \
-        char _debug_log_buffer[BUFFER_SIZE_UP] = "";                                        \
-        snprintf(_debug_log_buffer, BUFFER_SIZE_UP, format, ##__VA_ARGS__);                 \
-        SEGGER_RTT_Write(0, _debug_log_buffer, _rttlen(_debug_log_buffer, BUFFER_SIZE_UP)); \
-    } while (0)
-
-#define LOG(format, ...) LOG_RAW("\r\n" format, ##__VA_ARGS__)
-
-#define PRINTF(fmt, ...) SEGGER_RTT_printf(0, fmt, ##__VA_ARGS__)
-// #define LOG(fmt, ...)           PRINTF("%s: " fmt "\n", __func__, ## __VA_ARGS__)
+#define log_clear() SEGGER_RTT_printf(0, RTT_CTRL_CLEAR "\r");
+#define log(format, ...) SEGGER_RTT_printf(0, "\r\n" format, ##__VA_ARGS__)
 
 #define NRFX_LOG_DEBUG LOG_NONE
 #define NRFX_LOG_INFO LOG_NONE
 #define NRFX_LOG_WARNING LOG_NONE
-#define NRFX_LOG_ERROR LOG
+#define NRFX_LOG_ERROR log
 
 #define NRFX_LOG_ERROR_STRING_GET(error_code) nrfx_error_code_lookup(error_code)
 #define NRFX_LOG_HEXDUMP_ERROR(p_memory, length)
@@ -80,5 +58,3 @@ static inline size_t _rttlen(const char *s, size_t n)
 #define NRFX_LOG_HEXDUMP_DEBUG(p_memory, length)
 
 const char *nrfx_error_code_lookup(uint32_t err_code);
-
-#endif

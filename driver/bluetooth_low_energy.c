@@ -35,7 +35,7 @@
 #include "nrf_sdm.h"
 #include "nrf_nvic.h"
 #include "nrfx_log.h"
-#include "app_err.h"
+#include "critical_functions.h"
 
 #include "driver/bluetooth_low_energy.h"
 #include "driver/config.h"
@@ -442,14 +442,14 @@ void SWI2_IRQHandler(void)
         switch (evt_id)
         {
         case NRF_EVT_FLASH_OPERATION_SUCCESS:
-        LOG("NRF_EVT_FLASH_OPERATION_SUCCESS");
+        log("NRF_EVT_FLASH_OPERATION_SUCCESS");
         {
             // TODO In case we add a filesystem in the future
             break;
         }
 
         case NRF_EVT_FLASH_OPERATION_ERROR:
-        LOG("NRF_EVT_FLASH_OPERATION_ERROR");
+        log("NRF_EVT_FLASH_OPERATION_ERROR");
         {
             // TODO In case we add a filesystem in the future
             break;
@@ -486,7 +486,7 @@ void SWI2_IRQHandler(void)
 
         // When connected
         case BLE_GAP_EVT_CONNECTED:
-        LOG("BLE_GAP_EVT_CONNECTED");
+        log("BLE_GAP_EVT_CONNECTED");
         {
             assert(ble_conn_handle == BLE_CONN_HANDLE_INVALID);
 
@@ -510,7 +510,7 @@ void SWI2_IRQHandler(void)
 
         // When disconnected
         case BLE_GAP_EVT_DISCONNECTED:
-        LOG("BLE_GAP_EVT_DISCONNECTED");
+        log("BLE_GAP_EVT_DISCONNECTED");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
 
@@ -524,7 +524,7 @@ void SWI2_IRQHandler(void)
 
         // On a phy update request, set the phy speed automatically
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
-        LOG("BLE_GAP_EVT_PHY_UPDATE_REQUEST");
+        log("BLE_GAP_EVT_PHY_UPDATE_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
 
@@ -538,7 +538,7 @@ void SWI2_IRQHandler(void)
 
         // Handle requests for changing MTU length
         case BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST:
-        LOG("BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST");
+        log("BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
 
@@ -559,7 +559,7 @@ void SWI2_IRQHandler(void)
 
         // When data arrives, we can write it to the buffer
         case BLE_GATTS_EVT_WRITE:
-        LOG("BLE_GATTS_EVT_WRITE");
+        log("BLE_GATTS_EVT_WRITE");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
             // For the entire incoming string
@@ -579,7 +579,7 @@ void SWI2_IRQHandler(void)
 
         // Disconnect on GATT Client timeout
         case BLE_GATTC_EVT_TIMEOUT:
-        LOG("BLE_GATTC_EVT_TIMEOUT");
+        log("BLE_GATTC_EVT_TIMEOUT");
         {
             assert(!"not reached");
             break;
@@ -587,7 +587,7 @@ void SWI2_IRQHandler(void)
 
         // Disconnect on GATT Server timeout
         case BLE_GATTS_EVT_TIMEOUT:
-        LOG("BLE_GATTS_EVT_TIMEOUT");
+        log("BLE_GATTS_EVT_TIMEOUT");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
             app_err(sd_ble_gap_disconnect(ble_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
@@ -596,7 +596,7 @@ void SWI2_IRQHandler(void)
 
         // Updates system attributes after a new connection event
         case BLE_GATTS_EVT_SYS_ATTR_MISSING:
-        LOG("BLE_GATTS_EVT_SYS_ATTR_MISSING");
+        log("BLE_GATTS_EVT_SYS_ATTR_MISSING");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
             app_err(sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0));
@@ -605,7 +605,7 @@ void SWI2_IRQHandler(void)
 
         // We don't support pairing, so reply with that message
         case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
-        LOG("BLE_GAP_EVT_SEC_PARAMS_REQUEST");
+        log("BLE_GAP_EVT_SEC_PARAMS_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
             app_err(sd_ble_gap_sec_params_reply(ble_conn_handle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL));
@@ -613,7 +613,7 @@ void SWI2_IRQHandler(void)
         }
 
         case BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST:
-        LOG("BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST");
+        log("BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
             app_err(sd_ble_gap_data_length_update(ble_conn_handle, NULL, NULL));
@@ -621,7 +621,7 @@ void SWI2_IRQHandler(void)
         }
 
         case BLE_GAP_EVT_SEC_INFO_REQUEST:
-        LOG("BLE_GAP_EVT_SEC_INFO_REQUEST");
+        log("BLE_GAP_EVT_SEC_INFO_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
             app_err(sd_ble_gap_sec_info_reply(ble_conn_handle, NULL, NULL, NULL));
@@ -629,7 +629,7 @@ void SWI2_IRQHandler(void)
         }
 
         case BLE_GAP_EVT_SEC_REQUEST:
-        LOG("BLE_GAP_EVT_SEC_REQUEST");
+        log("BLE_GAP_EVT_SEC_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
             app_err(sd_ble_gap_authenticate(ble_conn_handle, NULL));
@@ -637,7 +637,7 @@ void SWI2_IRQHandler(void)
         }
 
         case BLE_GAP_EVT_AUTH_KEY_REQUEST:
-        LOG("BLE_GAP_EVT_AUTH_KEY_REQUEST");
+        log("BLE_GAP_EVT_AUTH_KEY_REQUEST");
         {
             assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
             app_err(sd_ble_gap_auth_key_reply(ble_conn_handle, BLE_GAP_AUTH_KEY_TYPE_NONE, NULL));

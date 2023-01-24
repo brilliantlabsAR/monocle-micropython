@@ -16,18 +16,15 @@ CROSS_COMPILE = arm-none-eabi-
 # TODO optimize this away as we can choose ourselves
 include micropython/extmod/extmod.mk
 
-# Create the firmware version defines and final release file name
-GIT_COMMIT = $(shell git rev-parse --short HEAD)
-IS_DIRTY = $(shell git diff --quiet || echo '-dirty')
-RELEASE_DATE = $(shell TZ= date +v%y.%j.%H%M)
-BUILD_NAME = monocle-firmware-$(RELEASE_DATE)$(IS_DIRTY)
+# Use date and time as build version "vYY.DDD.HHMM"
+BUILD_VERSION = $(shell TZ= date +v%y.%j.%H%M)
 
 # Warning options
 WARN = -Wall -Wdouble-promotion -Wfloat-conversion
 
 # Build optimizations
 OPT += -Os -fdata-sections -ffunction-sections 
-OPT += -flto 
+OPT += -flto
 OPT += -fsingle-precision-constant
 OPT += -fshort-enums
 OPT += -fno-strict-aliasing
@@ -54,7 +51,6 @@ OPT += -mabi=aapcs
 DEFS += -DNRF52832_XXAA
 DEFS += -DNDEBUG
 DEFS += -DCONFIG_NFCT_PINS_AS_GPIOS
-DEFS += -DGIT_COMMIT='"$(GIT_COMMIT)"'
 DEFS += -DBUILD_VERSION='"$(BUILD_VERSION)"'
 
 # Set linker options
@@ -85,6 +81,7 @@ INC += -Isoftdevice/include/nrf52
 CFLAGS += $(WARN) $(OPT) $(INC) $(DEFS)
 
 SRC_C += main.c
+SRC_C += critical_functions.c
 SRC_C += nrfx_log.c
 SRC_C += mphalport.c
 SRC_C += startup_nrf52832.c
@@ -95,7 +92,6 @@ SRC_C += driver/bluetooth_low_energy.c
 SRC_C += driver/ecx336cn.c
 SRC_C += driver/flash.c
 SRC_C += driver/fpga.c
-SRC_C += driver/i2c.c
 SRC_C += driver/iqs620.c
 SRC_C += driver/ov5640.c
 SRC_C += driver/spi.c

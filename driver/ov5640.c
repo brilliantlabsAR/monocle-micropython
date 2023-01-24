@@ -35,10 +35,9 @@
 #include "nrfx_log.h"
 #include "nrfx_twi.h"
 
-#include "app_err.h"
+#include "critical_functions.h"
 
 #include "driver/config.h"
-#include "driver/i2c.h"
 #include "driver/max77654.h"
 #include "driver/ov5640_data.h"
 #include "driver/ov5640.h"
@@ -86,9 +85,9 @@ static uint8_t ov5640_read_reg(uint16_t reg)
     uint16_t swaped = __bswap_16(reg);
 
     memcpy(w_buf, &swaped, 2);
-    // if (!i2c_write(OV5640_I2C, OV5640_ADDR, w_buf, 2))
+    // if (!i2c_write(OV5640_I2C, OV5640_ADDRRESS, w_buf, 2))
     // return 0;
-    // if (!i2c_read(OV5640_I2C, OV5640_ADDR, &ret_val, 1))
+    // if (!i2c_read(OV5640_I2C, OV5640_ADDRRESS, &ret_val, 1))
     // return 0;
     return ret_val;
 }

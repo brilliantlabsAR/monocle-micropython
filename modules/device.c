@@ -38,7 +38,7 @@
 #include "lib/oofatfs/ff.h"
 #include "lib/oofatfs/diskio.h"
 
-#include "app_err.h"
+#include "critical_functions.h"
 
 #include "driver/battery.h"
 #include "ble_gap.h"
@@ -48,9 +48,6 @@ STATIC const MP_DEFINE_STR_OBJ(device_version_obj, BUILD_VERSION);
 
 /** Current git tag as a string object. */
 STATIC const MP_DEFINE_STR_OBJ(device_git_tag_obj, MICROPY_GIT_HASH);
-
-/** Board name as a string object. */
-STATIC const MP_DEFINE_STR_OBJ(device_board_name_obj, MICROPY_HW_BOARD_NAME);
 
 /** Holding the reset cause string. */
 STATIC mp_obj_t reset_cause_obj = mp_const_none;
@@ -137,25 +134,24 @@ STATIC mp_obj_t device_reset_cause(void)
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_reset_cause_obj, device_reset_cause);
 
 STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__),            MP_ROM_QSTR(MP_QSTR_device) },
-    { MP_ROM_QSTR(MP_QSTR___init__),            MP_ROM_PTR(&mod_device___init___obj) },
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_device)},
+    {MP_ROM_QSTR(MP_QSTR___init__), MP_ROM_PTR(&mod_device___init___obj)},
 
     // methods
-    { MP_ROM_QSTR(MP_QSTR_mac_address),         MP_ROM_PTR(&device_mac_address_obj) },
-    { MP_ROM_QSTR(MP_QSTR_update),              MP_ROM_PTR(&device_update_obj) },
-    { MP_ROM_QSTR(MP_QSTR_battery_level),       MP_ROM_PTR(&device_battery_level_obj) },
-    { MP_ROM_QSTR(MP_QSTR_reset),               MP_ROM_PTR(&device_reset_obj) },
-    { MP_ROM_QSTR(MP_QSTR_reset_cause),         MP_ROM_PTR(&device_reset_cause_obj) },
+    {MP_ROM_QSTR(MP_QSTR_mac_address), MP_ROM_PTR(&device_mac_address_obj)},
+    {MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&device_update_obj)},
+    {MP_ROM_QSTR(MP_QSTR_battery_level), MP_ROM_PTR(&device_battery_level_obj)},
+    {MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&device_reset_obj)},
+    {MP_ROM_QSTR(MP_QSTR_reset_cause), MP_ROM_PTR(&device_reset_cause_obj)},
 
     // constants
-    { MP_ROM_QSTR(MP_QSTR_GIT_TAG),             MP_ROM_PTR(&device_git_tag_obj) },
-    { MP_ROM_QSTR(MP_QSTR_NAME),                MP_ROM_PTR(&device_board_name_obj) },
-    { MP_ROM_QSTR(MP_QSTR_VERSION),             MP_ROM_PTR(&device_version_obj) },
+    {MP_ROM_QSTR(MP_QSTR_GIT_TAG), MP_ROM_PTR(&device_git_tag_obj)},
+    {MP_ROM_QSTR(MP_QSTR_VERSION), MP_ROM_PTR(&device_version_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(device_module_globals, device_module_globals_table);
 
 const mp_obj_module_t mp_module_device = {
-    .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t*)&device_module_globals,
+    .base = {&mp_type_module},
+    .globals = (mp_obj_dict_t *)&device_module_globals,
 };
 MP_REGISTER_MODULE(MP_QSTR_device, mp_module_device);

@@ -1,0 +1,42 @@
+{
+    "configurations": [
+        {
+            "name": "monocle-micropython",
+            // Set this to your compiler path
+            "compilerPath": "/opt/homebrew/bin/arm-none-eabi-gcc",
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++14",
+            "includePath": [
+                ".",
+                "build",
+                "build/genhdr",
+                "driver",
+                "micropython",
+                "micropython/extmod/**",
+                "micropython/lib/cmsis/inc",
+                "micropython/lib/libm_dbl",
+                "micropython/lib/libm",
+                "micropython/lib/re1.5",
+                "micropython/py",
+                "micropython/shared/**",
+                "nrfx",
+                "nrfx/drivers/**",
+                "nrfx/hal/**",
+                "nrfx/helpers/**",
+                "nrfx/mdk/**",
+                "nrfx/soc/**",
+                "segger_rtt",
+                "softdevice/include",
+                "softdevice/include/nrf52"
+            ],
+            "defines": [
+                "NRF52832_XXAA",
+                "NDEBUG",
+                "CONFIG_NFCT_PINS_AS_GPIOS",
+                "GIT_COMMIT=\"abcdefg\"",
+                "BUILD_VERSION=\"vYY.DDD.HHMM\""
+            ]
+        }
+    ],
+    "version": 4
+}

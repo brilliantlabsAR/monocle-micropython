@@ -31,7 +31,7 @@
 #include "nrf_gpio.h"
 #include "nrfx_log.h"
 
-#include "app_err.h"
+#include "critical_functions.h"
 
 #include "driver/battery.h"
 #include "driver/config.h"
@@ -173,7 +173,7 @@ void battery_level_timer(void)
     battery_percent = battery_voltage_to_percent(v_mean);
 
     // For battery_discharge_curve.awk
-    // LOG("%d v_mean=%d %d%%", (int)(v_inst * 1000), (int)(v_mean * 1000), battery_percent);
+    // log("%d v_mean=%d %d%%", (int)(v_inst * 1000), (int)(v_mean * 1000), battery_percent);
 }
 
 /**

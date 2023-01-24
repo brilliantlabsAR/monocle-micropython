@@ -80,5 +80,5 @@ void fpga_init(void)
 
     // report the FPGA bitstream version
     fpga_cmd_read(FPGA_SYSTEM_VERSION, version, sizeof version);
-    LOG("version=%02x.%02x.%02x", version[0], version[1], version[2]);
+    log("version=%02x.%02x.%02x", version[0], version[1], version[2]);
 }

@@ -37,9 +37,9 @@
 #include "driver/config.h"
 #include "driver/timer.h"
 
-#include "app_err.h"
+#include "critical_functions.h"
 
-#define LEN(x) (sizeof(x) / sizeof*(x))
+#define LEN(x) (sizeof(x) / sizeof *(x))
 
 timer_task_t *timer_1ms[TIMER_MAX_TASKS];
 timer_task_t *timer_500ms[TIMER_MAX_TASKS];
@@ -67,7 +67,8 @@ static void timer_event_handler(nrf_timer_event_t event, void *ctx)
     // update the current time since timer_start in millisecond.
     timer_uptime_ms++;
 
-    if (timer_divider_500ms++ == 500) {
+    if (timer_divider_500ms++ == 500)
+    {
         timer_divider_500ms = 0;
         timer_call_handlers(timer_500ms, LEN(timer_500ms));
     }
@@ -80,7 +81,7 @@ static void timer_event_handler(nrf_timer_event_t event, void *ctx)
  */
 static timer_task_t **timer_get_task_slot(timer_task_t **list, timer_task_t *fn)
 {
-    for (size_t i = 0 ; i < TIMER_MAX_TASKS; i++)
+    for (size_t i = 0; i < TIMER_MAX_TASKS; i++)
         if (list[i] == fn)
             return &list[i];
     return NULL;
@@ -107,7 +108,7 @@ void timer_add_task(timer_task_t **list, timer_task_t *fn)
 {
     timer_task_t **slot;
 
-    LOG("0x%p", fn);
+    log("0x%p", fn);
 
     // Check if the timer is already configured.
     if (timer_get_task_slot(list, fn) != NULL)
@@ -148,7 +149,7 @@ void timer_start(void)
 
     // Raise an interrupt every 1ms: 125 kHz / 125
     nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 125,
-            NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
+                                NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
 
     // Start the timer, letting timer_add_task() append more of them while running.
     nrfx_timer_enable(&timer);

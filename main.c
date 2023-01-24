@@ -28,7 +28,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
-#include "app_err.h"
 
 #include "py/compile.h"
 #include "py/gc.h"
@@ -39,6 +38,9 @@
 
 #include "shared/readline/readline.h"
 #include "shared/runtime/pyexec.h"
+#include "genhdr/mpversion.h"
+
+#include "nrfx.h"
 
 #include "nrfx_log.h"
 #include "nrf_sdm.h"
@@ -58,7 +60,7 @@
 #include "driver/ecx336cn.h"
 #include "driver/flash.h"
 #include "driver/fpga.h"
-#include "driver/i2c.h"
+#include "critical_functions.h"
 #include "driver/iqs620.h"
 #include "driver/max77654.h"
 #include "driver/ov5640.h"
@@ -111,6 +113,9 @@ NORETURN void nlr_jump_fail(void *val)
 {
     (void)val;
     app_err(1); // exception raised without any handlers for it
+    while (1)
+    {
+    }
 }
 
 void ble_on_connect(void)
@@ -135,7 +140,7 @@ NORETURN void __assert_func(const char *file, int line, const char *func, const 
     for (;;)
     {
         // repeatedly display the error message, which helps a bit with RTT
-        LOG("%s:%d: %s: %s", file, line, func, expr);
+        log("%s:%d: %s: %s", file, line, func, expr);
 
         blink(assert_blink_num);
         nrfx_systick_delay_ms(1000);
@@ -164,113 +169,16 @@ NORETURN void __assert_func(const char *file, int line, const char *func, const 
 //     }
 // }
 
-static void check_if_battery_charging_and_sleep(void)
-{
-    // Get the CHG value from STAT_CHG_B
-    i2c_response_t battery_charging_resp = i2c_read(PMIC_ADDRESS, 0x03, 0x02);
-    app_err(battery_charging_resp.fail);
-    if (battery_charging_resp.value)
-    {
-        // Turn off all the rails
-        // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
-        app_err(i2c_write(PMIC_ADDRESS, 0x13, 0x2D, 0x25).fail); // Turn off 10V on PMIC GPIO2
-        app_err(i2c_write(PMIC_ADDRESS, 0x3B, 0x1F, 0x1C).fail); // Turn off load switch to LEDs // TODO is this really set to load switch?
-        app_err(i2c_write(PMIC_ADDRESS, 0x2A, 0x0F, 0x0C).fail); // Turn off 2.7V
-        app_err(i2c_write(PMIC_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch
-        app_err(i2c_write(PMIC_ADDRESS, 0x2E, 0x0F, 0x0C).fail); // Turn off 1.2V
-
-        // Disconnect AMUX
-        app_err(i2c_write(PMIC_ADDRESS, 0x28, 0x0F, 0x00).fail);
-
-        // Put PMIC main bias into low power mode
-        // app_err(i2c_write(PMIC_ADDRESS, 0x10, 0x20, 0x20).fail);
-
-        // Touch into low power mode
-
-        // Set up the touch event
-        nrf_gpio_cfg_sense_input(IQS620_TOUCH_RDY_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
-
-        // Sleep
-        app_err(sd_power_system_off());
-    }
-}
-
 /**
  * @brief Main application called from Reset_Handler().
  */
 int main(void)
 {
-    // All logging through SEGGER RTT interface
     SEGGER_RTT_Init();
-    LOG_CLEAR();
-    LOG("Brilliant Monocle " BUILD_VERSION " " GIT_COMMIT);
+    log_clear();
+    log("MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ") ");
 
-    i2c_init();
-
-    LOG("MAX77654 early setup");
-    {
-        // Read the PMIC CID
-        i2c_response_t resp = i2c_read(PMIC_ADDRESS, 0x14, 0x0F);
-
-        if (resp.fail || resp.value != 0x02)
-        {
-            assert(0);
-        }
-
-        // Set up battery charger voltage & current
-        float voltage = 4.3f;
-        float current = 70.0f;
-
-        uint8_t voltage_setting = (uint8_t)round((voltage - 3.6f) / 0.025f) << 2;
-        uint8_t current_setting = (uint8_t)round((current - 7.5f) / 7.5f) << 2;
-
-        // Apply the constant voltage setting
-        app_err(i2c_write(PMIC_ADDRESS, 0x26, 0xFC, voltage_setting).fail);
-        // TODO set the JETIA voltage
-
-        // Apply the constant current setting
-        app_err(i2c_write(PMIC_ADDRESS, 0x24, 0xFC, current_setting).fail);
-        // TODO set the JETIA current
-    }
-
-    while (1)
-    {
-    }
-
-    // configure the touch
-    // TODO
-
-    check_if_battery_charging_and_sleep(); // This won't return if charging
-    timer_add_task(timer_500ms, check_if_battery_charging_and_sleep);
-
-    // Power up everything for normal operation.
-    // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
-    {
-        // Put PMIC main bias into normal mode
-        // app_err(i2c_write(PMIC_ADDRESS, 0x10, 0x20, 0x00).fail);
-
-        // Set SBB2 to 1.2V and turn on
-        app_err(i2c_write(PMIC_ADDRESS, 0x2D, 0xFF, 0x08).fail);
-        app_err(i2c_write(PMIC_ADDRESS, 0x2E, 0x4F, 0x4F).fail);
-
-        // Set LDO0 to load switch mode and turn on
-        app_err(i2c_write(PMIC_ADDRESS, 0x39, 0x1F, 0x1F).fail);
-
-        // Set SBB0 to 2.7V and turn on
-        app_err(i2c_write(PMIC_ADDRESS, 0x29, 0xFF, 0x26).fail);
-        app_err(i2c_write(PMIC_ADDRESS, 0x2A, 0x4F, 0x4F).fail);
-
-        // Set LDO1 to load switch mode and turn on
-        app_err(i2c_write(PMIC_ADDRESS, 0x3B, 0x1F, 0x1F).fail);
-
-        // Enable the 10V boost
-        app_err(i2c_write(PMIC_ADDRESS, 0x13, 0x2D, 0x0C).fail);
-
-        // Connect AMUX to battery voltage
-        app_err(i2c_write(PMIC_ADDRESS, 0x28, 0x0F, 0x03).fail);
-    }
-
-    /// LOW POWER MODE DONE. Ready for normal operation
+    setup_pmic_and_sleep_mode();
 
     while (1)
     {
@@ -282,7 +190,7 @@ int main(void)
     // Setup the GPIO states before powering-on the chips,
     // to provide particular pin state at each chip's bootup.
 
-    LOG("GPIO");
+    log("GPIO");
     {
         // OV5640
 
@@ -324,7 +232,7 @@ int main(void)
     // Initialize the battery now that the MAX77654 is configured,
     // and check the battery charge status immediately.
 
-    LOG("BATTERY");
+    log("BATTERY");
     {
         // The battery module needs the ADC setup.
         nrfx_saadc_init(NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY);
@@ -340,7 +248,7 @@ int main(void)
 
     // Start the drivers that only rely on the MCU peripherals.
 
-    LOG("SYSTEM");
+    log("SYSTEM");
     {
         // Seems required to power the device off.
         ble_enable_softdevice();
@@ -353,14 +261,14 @@ int main(void)
     // a network, and by the time the negociation would happen, and the
     // host application gets started, this firmware would be likely ready.
 
-    LOG("BLE");
+    log("BLE");
     {
         ble_init();
     }
 
     // power on everything and wait
 
-    LOG("POWER");
+    log("POWER");
     {
         max77654_rail_1v2(true);
         max77654_rail_1v8(true);
@@ -376,31 +284,31 @@ int main(void)
     // Now we can setup the various peripherals over SPI, starting by the FPGA
     // upon which the other depend for their configuration.
 
-    LOG("SPI");
+    log("SPI");
     {
         spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
     }
 
-    LOG("FPGA");
+    log("FPGA");
     assert_blink_num = 3;
     {
         fpga_init();
     }
 
-    LOG("ECX336CN");
+    log("ECX336CN");
     assert_blink_num = 4;
     {
         // 1ms after 1.8V on, device has finished initializing (datasheet section 9)
         ecx336cn_init();
     }
 
-    LOG("OV5640");
+    log("OV5640");
     assert_blink_num = 5;
     {
         // ov5640_init();
     }
 
-    LOG("FLASH");
+    log("FLASH");
     assert_blink_num = 6;
     {
         flash_init();
@@ -409,14 +317,14 @@ int main(void)
     // Initiate user-input peripherals, which did not make
     // sense before everything else is setup.
 
-    LOG("IQS620");
+    log("IQS620");
     assert_blink_num = 2;
     {
         nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY);
         iqs620_init();
     }
 
-    LOG("DONE");
+    log("DONE");
     assert_blink_num = 10;
     {
         // Enable user interaction touch buttons only now that it started.
@@ -456,7 +364,7 @@ int main(void)
         {
             stop = pyexec_friendly_repl();
         }
-        LOG("switching the interpreter mode");
+        log("switching the interpreter mode");
     }
 
     // Deinitialize the board and power things off early

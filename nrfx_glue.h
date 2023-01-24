@@ -30,18 +30,17 @@
 #include "py/mpconfig.h"
 #include "py/misc.h"
 #include <assert.h>
-
 #include <soc/nrfx_irqs.h>
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE MP_ARRAY_SIZE
 #endif
 
-#define NRFX_ASSERT             assert
+#define NRFX_ASSERT(__e) ((__e) ? (void)0 : __assert_func(__FILE__, __LINE__, __FUNCTION__, #__e))
 #define NRFX_STATIC_ASSERT(exp) _Static_assert(exp, #exp)
 
 void mp_hal_delay_us(mp_uint_t us);
-#define NRFX_DELAY_US            mp_hal_delay_us
+#define NRFX_DELAY_US mp_hal_delay_us
 
 #if BLUETOOTH_SD
 
@@ -52,13 +51,13 @@ void mp_hal_delay_us(mp_uint_t us);
 #define NRFX_IRQ_PENDING_SET(irq_number) sd_nvic_SetPendingIRQ(irq_number)
 #define NRFX_IRQ_PENDING_CLEAR(irq_number) sd_nvic_ClearPendingIRQ(irq_number)
 
-#define NRFX_CRITICAL_SECTION_ENTER() \
-    { \
+#define NRFX_CRITICAL_SECTION_ENTER()       \
+    {                                       \
         uint8_t _is_nested_critical_region; \
         sd_nvic_critical_region_enter(&_is_nested_critical_region);
 
-#define NRFX_CRITICAL_SECTION_EXIT() \
-        sd_nvic_critical_region_exit(_is_nested_critical_region); \
+#define NRFX_CRITICAL_SECTION_EXIT()                          \
+    sd_nvic_critical_region_exit(_is_nested_critical_region); \
     }
 
 #else
@@ -71,8 +70,13 @@ void mp_hal_delay_us(mp_uint_t us);
 
 // Source:
 // https://devzone.nordicsemi.com/f/nordic-q-a/8572/disable-interrupts-and-enable-interrupts-if-they-where-enabled/31347#31347
-#define NRFX_CRITICAL_SECTION_ENTER() { int _old_primask = __get_PRIMASK(); __disable_irq();
-#define NRFX_CRITICAL_SECTION_EXIT() __set_PRIMASK(_old_primask); }
+#define NRFX_CRITICAL_SECTION_ENTER()       \
+    {                                       \
+        int _old_primask = __get_PRIMASK(); \
+        __disable_irq();
+#define NRFX_CRITICAL_SECTION_EXIT() \
+    __set_PRIMASK(_old_primask);     \
+    }
 
 #endif
 

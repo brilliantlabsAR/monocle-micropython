@@ -34,7 +34,7 @@
 #include "nrfx_twi.h"
 
 #include "driver/config.h"
-#include "driver/i2c.h"
+#include "critical_functions.h"
 #include "driver/iqs620.h"
 #include "driver/timer.h"
 
@@ -288,7 +288,7 @@ static void touch_set_timer(touch_event_t event)
 
     case TOUCH_EVENT_LONG:
     {
-        LOG("TOUCH_EVENT_LONG");
+        log("TOUCH_EVENT_LONG");
         // No timer to configure.
         timer_del_task(timer_1ms, touch_timer_task);
         return;
@@ -296,7 +296,7 @@ static void touch_set_timer(touch_event_t event)
 
     case TOUCH_EVENT_SHORT:
     {
-        LOG("TOUCH_EVENT_SHORT");
+        log("TOUCH_EVENT_SHORT");
         // After a short timer, extend to a long timer.
         touch_timer_ticks = TOUCH_DELAY_LONG_MS;
         touch_timer_event = TOUCH_EVENT_LONG;
@@ -305,7 +305,7 @@ static void touch_set_timer(touch_event_t event)
 
     default:
     {
-        LOG("default event");
+        log("default event");
         // After a button event, setup a short timer.
         touch_timer_ticks = TOUCH_DELAY_SHORT_MS;
         touch_timer_event = TOUCH_EVENT_SHORT;
@@ -315,7 +315,7 @@ static void touch_set_timer(touch_event_t event)
     }
 
     // Submit the configuration.
-    LOG("timer_add_task");
+    log("timer_add_task");
     timer_add_task(timer_1ms, touch_timer_task);
 }
 
@@ -359,7 +359,7 @@ static void touch_timer_task(void)
         timer_del_task(timer_1ms, touch_timer_task);
 
         // Submit the event to the state machine.
-        LOG("touch_timer_event=%s",
+        log("touch_timer_event=%s",
                 touch_timer_event == TOUCH_EVENT_SHORT ? "SHORT" :
                 touch_timer_event == TOUCH_EVENT_LONG ? "LONG" :
                 "?");
@@ -380,7 +380,7 @@ static void touch_timer_task(void)
 
 void iqs620_callback_button_pressed(uint8_t button)
 {
-    LOG("button=%d", button);
+    log("button=%d", button);
 
     if (button == 0)
         touch_next_state(TOUCH_EVENT_0_ON);
@@ -390,7 +390,7 @@ void iqs620_callback_button_pressed(uint8_t button)
 
 void iqs620_callback_button_released(uint8_t button)
 {
-    LOG("button=%d", button);
+    log("button=%d", button);
 
     if (button == 0)
         touch_next_state(TOUCH_EVENT_0_OFF);
@@ -440,11 +440,11 @@ void touch_callback(touch_state_t trigger)
 
     if (callback == mp_const_none)
     {
-        LOG("trigger=0x%02X no callback set", trigger);
+        log("trigger=0x%02X no callback set", trigger);
     }
     else
     {
-        LOG("trigger=0x%02X scheduling trigger", trigger);
+        log("trigger=0x%02X scheduling trigger", trigger);
         mp_sched_schedule(callback, MP_OBJ_NEW_SMALL_INT(trigger));
     }
 }

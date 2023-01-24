@@ -154,5 +154,5 @@ uint8_t flash_get_device_id(void)
  */
 void flash_init(void)
 {
-    LOG("flash_device_id=0x%02X", flash_get_device_id());
+    log("flash_device_id=0x%02X", flash_get_device_id());
 }

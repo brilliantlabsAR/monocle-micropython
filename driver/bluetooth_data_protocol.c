@@ -127,7 +127,7 @@ void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
         // get a buffer-ful of RGB data from the camera (via the FPGA)
         //size_t n = fpga_capture_read(rgb_buf, sizeof rgb_buf); // TODO: implement it
 
-        //LOG("n=%d height=%d", n, ctx.height);
+        //log("n=%d height=%d", n, ctx.height);
 
     // enqueue the conversion, letting the callback flush the data over bluetooth
     } while (jojpeg_append_8_rows(&ctx, rgb_buf, sizeof rgb_buf));

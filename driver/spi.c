@@ -36,7 +36,7 @@
 #include "nrfx_systick.h"
 #include "nrf_soc.h"
 
-#include "app_err.h"
+#include "critical_functions.h"
 
 #include "driver/config.h"
 #include "driver/spi.h"
@@ -99,7 +99,8 @@ static void spi_xfer_chunk(nrfx_spim_xfer_desc_t *xfer)
  */
 void spi_read(uint8_t *buf, size_t len)
 {
-    for (size_t n = 0; len > 0; len -= n, buf += n) {
+    for (size_t n = 0; len > 0; len -= n, buf += n)
+    {
         n = MIN(SPI_MAX_XFER_LEN, len);
         nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, n);
         spi_xfer_chunk(&xfer);
@@ -114,7 +115,8 @@ void spi_read(uint8_t *buf, size_t len)
  */
 void spi_write(uint8_t const *buf, size_t len)
 {
-    for (size_t n = 0; len > 0; len -= n, buf += n) {
+    for (size_t n = 0; len > 0; len -= n, buf += n)
+    {
         n = MIN(SPI_MAX_XFER_LEN, len);
         nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, n);
         spi_xfer_chunk(&xfer);
@@ -132,11 +134,10 @@ void spi_write(uint8_t const *buf, size_t len)
 void spi_init(nrfx_spim_t spi, uint8_t sck_pin, uint8_t mosi_pin, uint8_t miso_pin)
 {
     nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
-        sck_pin, mosi_pin, miso_pin, NRFX_SPIM_PIN_NOT_USED
-    );
+        sck_pin, mosi_pin, miso_pin, NRFX_SPIM_PIN_NOT_USED);
 
     config.frequency = NRF_SPIM_FREQ_4M;
-    config.mode      = NRF_SPIM_MODE_3;
+    config.mode = NRF_SPIM_MODE_3;
     config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
 
     app_err(nrfx_spim_init(&spi2, &config, spim_event_handler, NULL));

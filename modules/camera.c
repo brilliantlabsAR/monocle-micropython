@@ -31,7 +31,7 @@
 #include "nrfx_twi.h"
 
 #include "driver/fpga.h"
-#include "driver/i2c.h"
+#include "critical_functions.h"
 #include "driver/ov5640.h"
 #include "driver/max77654.h"
 #include "driver/config.h"
@@ -68,18 +68,18 @@ STATIC mp_obj_t camera_stop(void)
 MP_DEFINE_CONST_FUN_OBJ_0(camera_stop_obj, &camera_stop);
 
 STATIC const mp_rom_map_elem_t camera_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_camera) },
-    { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&mod_camera___init___obj) },
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_camera)},
+    {MP_ROM_QSTR(MP_QSTR___init__), MP_ROM_PTR(&mod_camera___init___obj)},
 
     // methods
-    { MP_ROM_QSTR(MP_QSTR_capture),     MP_ROM_PTR(&camera_capture_obj) },
-    { MP_ROM_QSTR(MP_QSTR_stop),        MP_ROM_PTR(&camera_stop_obj) },
-    { MP_ROM_QSTR(MP_QSTR_live),        MP_ROM_PTR(&camera_live_obj) },
+    {MP_ROM_QSTR(MP_QSTR_capture), MP_ROM_PTR(&camera_capture_obj)},
+    {MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&camera_stop_obj)},
+    {MP_ROM_QSTR(MP_QSTR_live), MP_ROM_PTR(&camera_live_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(camera_module_globals, camera_module_globals_table);
 
 const mp_obj_module_t camera_module = {
-    .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t*)&camera_module_globals,
+    .base = {&mp_type_module},
+    .globals = (mp_obj_dict_t *)&camera_module_globals,
 };
 MP_REGISTER_MODULE(MP_QSTR_camera, camera_module);

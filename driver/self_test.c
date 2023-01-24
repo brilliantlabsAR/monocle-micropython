@@ -81,7 +81,7 @@ static void power_check_errors(void)
 
 void power_assert_func(char const *file, int line, char const *func, char const *expr)
 {
-    LOG("%s:%d: (#%d) %s: %s", file, line, power_test_num, func, expr);
+    log("%s:%d: (#%d) %s: %s", file, line, power_test_num, func, expr);
 
     if (power_halt_on_error)
     {
@@ -160,7 +160,7 @@ void power_on_self_test(void)
     // Needs: power
     flash_init();
 
-    LOG("ready errors=0x%02X test_num=%d", power_errors, power_test_num);
+    log("ready errors=0x%02X test_num=%d", power_errors, power_test_num);
     max77654_led_green(false);
     board_power_off();
 }
