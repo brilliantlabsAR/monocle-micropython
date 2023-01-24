@@ -219,6 +219,8 @@ void setup_pmic_and_sleep_mode(void)
 {
     app_err(startup_already_done);
 
+    NRF_POWER->DCDCEN = 0x00000001;
+
     i2c_init();
 
     log("MAX77654 early setup");
