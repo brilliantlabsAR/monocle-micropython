@@ -30,7 +30,7 @@ def t2():
     print("blue line from top left to bottom right")
     time.sleep(1)
 
-    display.line(0, 0, 640, 400, 0x990000)
+    display.line(0, 400, 640, 0, 0x990000)
     display.show()
     print("red line from top right to bottom left")
     time.sleep(1)

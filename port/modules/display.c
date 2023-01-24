@@ -260,11 +260,49 @@ STATIC mp_obj_t display_text(size_t argc, mp_obj_t const args[])
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_text_obj, 4, 4, display_text);
 
+STATIC mp_obj_t display_fill(mp_obj_t rgb_in)
+{
+    mp_int_t rgb = mp_obj_get_int(rgb_in);
+
+    new_gfx(GFX_TYPE_RECTANGLE, 0, 0, OV5640_WIDTH, OV5640_HEIGHT, rgb, NULL);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(display_fill_obj, display_fill);
+
+STATIC mp_obj_t display_hline(size_t argc, mp_obj_t const args[])
+{
+    mp_int_t x = mp_obj_get_int(args[0]);
+    mp_int_t y = mp_obj_get_int(args[1]);
+    mp_int_t width = mp_obj_get_int(args[2]);
+    mp_int_t height = 1;
+    mp_int_t rgb = mp_obj_get_int(args[3]);
+
+    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, NULL);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_hline_obj, 4, 4, display_hline);
+
+STATIC mp_obj_t display_vline(size_t argc, mp_obj_t const args[])
+{
+    mp_int_t x = mp_obj_get_int(args[0]);
+    mp_int_t y = mp_obj_get_int(args[1]);
+    mp_int_t height = mp_obj_get_int(args[2]);
+    mp_int_t width = 1;
+    mp_int_t rgb = mp_obj_get_int(args[3]);
+
+    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, NULL);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_vline_obj, 4, 4, display_vline);
+
 STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_display) },
     { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&display___init___obj) },
-    { MP_ROM_QSTR(MP_QSTR_text),        MP_ROM_PTR(&display_text_obj) },
+    { MP_ROM_QSTR(MP_QSTR_fill),        MP_ROM_PTR(&display_fill_obj) },
     { MP_ROM_QSTR(MP_QSTR_line),        MP_ROM_PTR(&display_line_obj) },
+    { MP_ROM_QSTR(MP_QSTR_text),        MP_ROM_PTR(&display_text_obj) },
+    { MP_ROM_QSTR(MP_QSTR_hline),       MP_ROM_PTR(&display_hline_obj) },
+    { MP_ROM_QSTR(MP_QSTR_vline),       MP_ROM_PTR(&display_vline_obj) },
 
     // methods
     { MP_ROM_QSTR(MP_QSTR_show),        MP_ROM_PTR(&display_show_obj) },
