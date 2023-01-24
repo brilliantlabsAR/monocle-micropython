@@ -1,7 +1,0 @@
-{
-    "cortex-debug.variableUseNaturalFormat": false,
-    "files.associations": {
-        "config.h": "c",
-        "cmath": "c"
-    }
-}
