@@ -27,7 +27,7 @@ WARN = -Wall -Wdouble-promotion -Wfloat-conversion
 
 # Build optimizations
 OPT += -Os -fdata-sections -ffunction-sections 
-# OPT += -flto 
+OPT += -flto 
 OPT += -fsingle-precision-constant
 OPT += -fshort-enums
 OPT += -fno-strict-aliasing

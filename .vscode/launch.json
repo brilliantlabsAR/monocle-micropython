@@ -1,4 +1,6 @@
 {
+    // Requires Cortex-Debug plugin for VSCode:
+    // https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug
     "configurations": [
         {
             "cwd": "${workspaceFolder}",
