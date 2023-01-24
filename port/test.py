@@ -35,10 +35,10 @@ def t2():
     print("red line from top right to bottom left")
     time.sleep(1)
 
-    display.text("test", 300, 200, 0xFFFFFF)
-    display.show()
-    print("the white text 'test' in the middle")
-    time.sleep(1)
+    #display.text("test", 300, 200, 0xFFFFFF)
+    #display.show()
+    #print("the white text 'test' in the middle")
+    #time.sleep(1)
 
 def all():
     t1()

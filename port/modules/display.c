@@ -93,7 +93,6 @@ STATIC bool block_has_content(gfx_row_t yuv422, size_t pos)
     assert(pos % sizeof black == 0);
     assert(pos < yuv422.len);
 
-
     for (size_t i = pos; i < yuv422.len && i < pos + FPGA_ADDR_ALIGN; i += sizeof black)
     {
         if (memcmp(yuv422.buf + i, black, sizeof black) != 0)
@@ -184,7 +183,9 @@ STATIC mp_obj_t display_brightness(mp_obj_t brightness_in)
     };
 
     if (brightness >= MP_ARRAY_SIZE(tab))
+    {
         mp_raise_ValueError(MP_ERROR_TEXT("brightness must be between 0 and 4"));
+    }
 
     ecx336cn_set_luminance(tab[brightness]);
     return mp_const_none;
@@ -198,19 +199,31 @@ STATIC void new_gfx(gfx_type_t type, mp_int_t x, mp_int_t y, mp_int_t width, mp_
 
     // validate parameters for convenience
     if (x < 0 || x >= OV5640_WIDTH)
+    {
         mp_raise_ValueError(MP_ERROR_TEXT("x must be between 0 and " STR(OV5640_WIDTH)));
+    }
     if (y < 0 || y >= OV5640_HEIGHT)
+    {
         mp_raise_ValueError(MP_ERROR_TEXT("y must be between 0 and " STR(OV5640_HEIGHT)));
+    }
     if (width <= 0)
+    {
         mp_raise_ValueError(MP_ERROR_TEXT("width must be greater than 0"));
+    }
     if (height <= 0)
+    {
         mp_raise_ValueError(MP_ERROR_TEXT("height must be greater than 0"));
+    }
     if (rgb < 0 || rgb > 0xFFFFFF)
+    {
         mp_raise_ValueError(MP_ERROR_TEXT("color must be between 0x000000 and 0xFFFFFF"));
+    }
 
     // Get the latest free slot
     if (gfx_obj_num >= LEN(gfx_obj_list))
+    {
         mp_raise_OSError(MP_ENOMEM);
+    }
     gfx = gfx_obj_list + gfx_obj_num;
 
     // This is the only place where we increment this number.
@@ -237,9 +250,13 @@ STATIC mp_obj_t display_line(size_t argc, mp_obj_t const args[])
     gfx_arg_t arg = { .u32 = ((x1 > x2) == (y1 > y2)) };
 
     if (x1 > x2)
+    {
         tmp = x1, x1 = x2, x2 = tmp;
+    }
     if (y1 > y2)
+    {
         tmp = y1, y1 = y2, y2 = tmp;
+    }
 
     new_gfx(GFX_TYPE_LINE, x1, y1, x2 - x1, y2 - y1, rgb, arg);
     return mp_const_none;

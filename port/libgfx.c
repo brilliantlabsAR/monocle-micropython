@@ -33,7 +33,7 @@
 
 #include "nrfx_log.h"
 
-#define LEN(x)  (sizeof(x) / sizeof*(x))
+#define LEN(x)      (sizeof(x) / sizeof*(x))
 
 typedef struct
 {
@@ -47,13 +47,18 @@ static uint16_t gfx_glyph_gap_width = 2;
 static inline void gfx_draw_pixel(gfx_row_t row, uint16_t x, uint8_t yuv444[3])
 {
     if (x * 2 + 0 < row.len)
+    {
         row.buf[x * 2 + 0] = yuv444[1 + x % 2];
+    }
     if (x * 2 + 1 < row.len)
+    {
         row.buf[x * 2 + 1] = yuv444[0];
+    }
 }
 
 static inline void gfx_draw_segment(gfx_row_t row, uint16_t x_beg, uint16_t x_end, uint8_t yuv444[3])
 {
+    LOG("x_beg=%d x_end=%d", x_beg, x_end);
     for (size_t len = row.len / 2, x = x_beg; x < x_end && x < len; x++)
     {
         gfx_draw_pixel(row, x, yuv444);
@@ -80,12 +85,13 @@ static inline uint16_t gfx_get_intersect_line(uint16_t y,
     // seg_width = obj_width * seg_height / obj_height
     uint16_t seg_height = y - obj_y;
     uint16_t seg_width = obj_width * seg_height / obj_height;
-    return obj_x + (flip ? seg_width : obj_width - seg_width);
+    return obj_x + (flip) ? (obj_width - seg_width) : (seg_width);
 }
 
 static void gfx_render_line(gfx_row_t row, gfx_obj_t *obj)
 {
-    uint16_t x_beg, x_end;
+    uint16_t x0, x1;
+    bool flip = obj->arg.u32;
 
     // Special case: purely horizontal line means divide by 0, fill as a rectangle instead
     if (obj->height == 0)
@@ -97,11 +103,12 @@ static void gfx_render_line(gfx_row_t row, gfx_obj_t *obj)
     // We need to know how many horizontal pixels to drawn to accomodate the line thickness
     // so we get two intersections: the one for the top, and the one for the bottom edge of
     // the line. This introduces an offset, which we correct with the +1
-    x_beg = gfx_get_intersect_line(row.y + 1, obj->x, obj->y, obj->width, obj->height + 1, &obj->arg.u32);
-    x_end = gfx_get_intersect_line(row.y, obj->x, obj->y, obj->width, obj->height + 1, &obj->arg.u32);
+    x0 = gfx_get_intersect_line(row.y + 1, obj->x, obj->y, obj->width, obj->height + 1, flip);
+    x1 = gfx_get_intersect_line(row.y, obj->x, obj->y, obj->width, obj->height + 1, flip);
 
+    LOG("x=%d y=%d w=%d h=%d x0=%d x1=%d", obj->x, obj->y, obj->width, obj->height, x0, x1);
     // We have the start and stop point of the segment, we can fill it
-    gfx_draw_segment(row, x_beg, x_end, obj->yuv444);
+    gfx_draw_segment(row, MIN(x0, x1), MAX(x0, x1), obj->yuv444);
 }
 
 static inline gfx_glyph_t gfx_get_glyph(uint8_t const *font, char c)
@@ -244,21 +251,33 @@ bool gfx_render_row(gfx_row_t row, gfx_obj_t *obj_list, size_t obj_num)
         switch (obj->type)
         {
         case GFX_TYPE_NULL:
+        {
             break;
+        }
         case GFX_TYPE_RECTANGLE:
+        {
             gfx_render_rectangle(row, obj);
             break;
+        }
         case GFX_TYPE_LINE:
+        {
             gfx_render_line(row, obj);
             break;
+        }
         case GFX_TYPE_TEXT:
+        {
             gfx_render_text(row, obj);
             break;
+        }
         case GFX_TYPE_ELLIPSIS:
+        {
             gfx_render_ellipsis(row, obj);
             break;
+        }
         default:
+        {
             assert(!"unknown type");
+        }
         }
     }
     return drawn;
