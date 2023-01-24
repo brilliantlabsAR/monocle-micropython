@@ -297,6 +297,14 @@ int main(void)
     LOG("FPGA"); assert_blink_num = 3;
     {
         fpga_init();
+
+        // Prevent the FPGA to show the test pattern on the display.
+        fpga_cmd(FPGA_GRAPHICS_CLEAR);
+        nrfx_systick_delay_ms(30);
+        fpga_cmd(FPGA_GRAPHICS_SWAP);
+        nrfx_systick_delay_ms(30);
+        fpga_cmd(FPGA_GRAPHICS_ON);
+        nrfx_systick_delay_ms(30);
     }
 
     LOG("ECX336CN"); assert_blink_num = 4;

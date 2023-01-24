@@ -49,6 +49,7 @@
 
 STATIC mp_obj_t display___init__(void)
 {
+    // TODO: remove this once full startup procedure works.
     // Set the FPGA to show the graphic buffer.
     fpga_cmd(FPGA_GRAPHICS_CLEAR);
     nrfx_systick_delay_ms(30);
