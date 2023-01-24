@@ -250,7 +250,7 @@ void setup_pmic_and_sleep_mode(void)
     // configure the touch
     // TODO
     // Configure the touch IC for low power mode
-    // Configure and enable GPTIOTE
+    // Configure and enable GPIO sense
 
     while (1)
     {
