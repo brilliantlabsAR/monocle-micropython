@@ -26,10 +26,10 @@
 
 #include "mpconfigport.h"
 
+// TODO we can remove this and use the keyboard interrupt functions
 static inline void mp_hal_set_interrupt_char(char c)
 {
-    (void)c; // TODO remove and enable this
+    (void)c;
 }
 
-void mp_hal_delay_ms(mp_uint_t ms);
-void mp_hal_delay_us(mp_uint_t us);
+int mp_hal_generate_random_seed(void);

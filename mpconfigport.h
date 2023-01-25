@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "mphalport.h"
 #include <stdint.h>
 #include <alloca.h>
 
@@ -126,8 +127,7 @@
 
 #define MICROPY_PY_URANDOM (1)
 #define MICROPY_PY_URANDOM_EXTRA_FUNCS (1)
-// TODO #include "esp_random.h"
-// TODO #define MICROPY_PY_URANDOM_SEED_INIT_FUNC (esp_random())
+#define MICROPY_PY_URANDOM_SEED_INIT_FUNC (mp_hal_generate_random_seed())
 
 #define MICROPY_PY_URE (1)
 #define MICROPY_PY_URE_SUB (1)

@@ -62,7 +62,6 @@
 #include "driver/fpga.h"
 #include "critical_functions.h"
 #include "driver/iqs620.h"
-#include "driver/ov5640.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
 
@@ -72,85 +71,6 @@ extern uint32_t _stack_top;
 extern uint32_t _stack_bot;
 extern uint32_t _heap_start;
 extern uint32_t _heap_end;
-
-const char help_text[] = {
-    "Welcome to MicroPython!\n\n"
-    "For full documentation, visit: https://docs.brilliantmonocle.com\n"
-    "Control commands:\n"
-    "  Ctrl-A - enter raw REPL mode\n"
-    "  Ctrl-B - enter normal REPL mode\n"
-    "  CTRL-C - interrupt a running program\n"
-    "  Ctrl-D - reset the device\n"
-    "  Ctrl-E - enter paste mode\n\n"
-    "To list available modules, type help('modules')\n"
-    "For details on a specific module, import it, and then type "
-    "help(module_name)\n"};
-
-// TODO
-void mp_hal_delay_ms(mp_uint_t ms)
-{
-    // uint64_t delay = ms * 1000;
-
-    // uint64_t t0 = esp_timer_get_time();
-
-    // while (esp_timer_get_time() - t0 < delay)
-    // {
-    // vTaskDelay(1);
-    // mp_handle_pending(true);
-    // }
-}
-
-// TODO
-void mp_hal_delay_us(mp_uint_t us)
-{
-    // uint64_t t0 = esp_timer_get_time();
-
-    // while (esp_timer_get_time() - t0 < us)
-    // {
-    // mp_handle_pending(true);
-    // }
-}
-
-// TODO
-mp_uint_t mp_hal_ticks_ms(void)
-{
-    return 0;
-}
-
-// TODO
-mp_uint_t mp_hal_ticks_us(void)
-{
-    return 0;
-}
-
-mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs)
-{
-    // File opening is currently not supported
-    mp_raise_OSError(MP_EPERM);
-}
-MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
-
-mp_lexer_t *mp_lexer_new_from_file(const char *filename)
-{
-    // File opening is currently not supported
-    mp_raise_OSError(MP_ENOENT);
-}
-
-mp_import_stat_t mp_import_stat(const char *path)
-{
-    // File opening is currently not supported
-    return MP_IMPORT_STAT_NO_EXIST;
-}
-
-int mp_hal_stdin_rx_chr(void)
-{
-    return ble_nus_rx();
-}
-
-void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len)
-{
-    ble_nus_tx(str, len);
-}
 
 static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
                                     nrf_gpiote_polarity_t action)

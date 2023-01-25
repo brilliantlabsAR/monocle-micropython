@@ -42,7 +42,6 @@
 #include "driver/fpga.h"
 #include "driver/i2c.h"
 #include "driver/iqs620.h"
-#include "driver/ov5640.h"
 #include "driver/power.h"
 #include "driver/spi.h"
 #include "driver/timer.h"

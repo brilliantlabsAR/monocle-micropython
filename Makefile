@@ -41,7 +41,7 @@ CROSS_COMPILE = arm-none-eabi-
 BUILD_VERSION = $(shell TZ= date +v%y.%j.%H%M)
 
 # Warning options
-WARN = -Wall -Wdouble-promotion -Wfloat-conversion
+WARN = -Wall -Werror -Wdouble-promotion -Wfloat-conversion
 
 # Build optimizations
 OPT += -mcpu=cortex-m4
@@ -56,8 +56,7 @@ OPT += -fsingle-precision-constant
 OPT += -fshort-enums
 OPT += -fno-strict-aliasing
 OPT += -fno-common
-# OPT += -flto
-OPT += -fno-tree-loop-distribute-patterns # TODO fix when fix is available https://github.com/micropython/micropython/issues/10562
+OPT += -flto
 
 # Save some code space for performance-critical code
 CSUPEROPT = -Os
@@ -77,11 +76,10 @@ LDFLAGS += --specs=nano.specs
 
 INC += -I.
 INC += -Ibuild
-INC += -Imodules
-INC += -Isegger_rtt
 INC += -Imicropython
 INC += -Imicropython/lib/cmsis/inc
 INC += -Imicropython/shared/readline
+INC += -Imodules
 INC += -Inrfx
 INC += -Inrfx/drivers
 INC += -Inrfx/drivers/include
@@ -90,14 +88,16 @@ INC += -Inrfx/hal
 INC += -Inrfx/helpers
 INC += -Inrfx/mdk
 INC += -Inrfx/soc
+INC += -Isegger_rtt
 INC += -Isoftdevice/include
 INC += -Isoftdevice/include/nrf52
 
 # Assemble the C flags variable
 CFLAGS += $(WARN) $(OPT) $(INC) $(DEFS)
 
-SRC_C += main.c
 SRC_C += critical_functions.c
+SRC_C += main.c
+SRC_C += mphalport.c
 SRC_C += startup_nrf52832.c
 
 SRC_C += driver/battery.c
@@ -107,40 +107,37 @@ SRC_C += driver/ecx336cn.c
 SRC_C += driver/flash.c
 SRC_C += driver/fpga.c
 SRC_C += driver/iqs620.c
-SRC_C += driver/ov5640.c
 SRC_C += driver/spi.c
 SRC_C += driver/timer.c
 SRC_C += font.c
 SRC_C += libgfx.c
 SRC_C += libjojpeg.c
 
-SRC_C += modules/camera.c
-SRC_C += modules/display.c
-SRC_C += modules/fpga.c
-SRC_C += modules/led.c
-SRC_C += modules/device.c
-SRC_C += modules/time.c
-SRC_C += modules/touch.c
 SRC_C += micropython/extmod/moduasyncio.c
 SRC_C += micropython/extmod/modubinascii.c
 SRC_C += micropython/extmod/moduhashlib.c
 SRC_C += micropython/extmod/modujson.c
 SRC_C += micropython/extmod/modurandom.c
 SRC_C += micropython/extmod/modure.c
+SRC_C += modules/camera.c
+SRC_C += modules/device.c
+SRC_C += modules/display.c
+SRC_C += modules/fpga.c
+SRC_C += modules/led.c
+SRC_C += modules/time.c
+SRC_C += modules/touch.c
 
-SRC_C += segger_rtt/SEGGER_RTT.c
-SRC_C += segger_rtt/SEGGER_RTT_Syscalls_GCC.c
 SRC_C += segger_rtt/SEGGER_RTT_printf.c
+SRC_C += segger_rtt/SEGGER_RTT_Syscalls_GCC.c
+SRC_C += segger_rtt/SEGGER_RTT.c
 
 SRC_C += micropython/shared/readline/readline.c
-SRC_C += micropython/shared/timeutils/timeutils.c
+SRC_C += micropython/shared/runtime/gchelper_generic.c
 SRC_C += micropython/shared/runtime/interrupt_char.c
+SRC_C += micropython/shared/runtime/pyexec.c
 SRC_C += micropython/shared/runtime/stdout_helpers.c
 SRC_C += micropython/shared/runtime/sys_stdio_mphal.c
-SRC_C += micropython/shared/runtime/pyexec.c
-SRC_C += micropython/shared/runtime/gchelper_generic.c
-
-SRC_C += micropython/lib/uzlib/crc32.c
+SRC_C += micropython/shared/timeutils/timeutils.c
 
 SRC_C += micropython/lib/libm/acoshf.c
 SRC_C += micropython/lib/libm/asinfacosf.c
@@ -169,8 +166,7 @@ SRC_C += micropython/lib/libm/sf_sin.c
 SRC_C += micropython/lib/libm/sf_tan.c
 SRC_C += micropython/lib/libm/wf_lgamma.c
 SRC_C += micropython/lib/libm/wf_tgamma.c
-# SRC_C += micropython/shared/libc/printf.c
-# SRC_C += micropython/shared/libc/string0.c
+SRC_C += micropython/lib/uzlib/crc32.c
 
 SRC_C += nrfx/drivers/src/nrfx_clock.c
 SRC_C += nrfx/drivers/src/nrfx_gpiote.c

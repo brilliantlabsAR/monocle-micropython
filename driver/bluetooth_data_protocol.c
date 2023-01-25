@@ -35,12 +35,12 @@
 #include "driver/bluetooth_low_energy.h"
 #include "driver/config.h"
 #include "driver/fpga.h"
-#include "driver/ov5640.h"
 #include "driver/timer.h"
 #include "libjojpeg.h"
 
 // List of flags to append in the header when we send file chunks over BLE
-enum {
+enum
+{
     BLE_FILE_SMALL_FLAG = 0,
     BLE_FILE_START_FLAG,
     BLE_FILE_MIDDLE_FLAG,
@@ -87,8 +87,10 @@ void data_flush_ble_packet(void)
 
 void jojpeg_write(uint8_t const *jpeg_buf, size_t jpeg_len)
 {
-    for (size_t i = 0; i < jpeg_len; i++) {
-        if (ble_pos == ble_len) {
+    for (size_t i = 0; i < jpeg_len; i++)
+    {
+        if (ble_pos == ble_len)
+        {
             data_flush_ble_packet();
         }
         app_err(ble_pos < ble_len);
@@ -123,13 +125,14 @@ void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
     // set all the parameters and write the JPEG header
     jojpeg_start(&ctx, OV5640_WIDTH, OV5640_HEIGHT, 3, 0);
 
-    do {
+    do
+    {
         // get a buffer-ful of RGB data from the camera (via the FPGA)
-        //size_t n = fpga_capture_read(rgb_buf, sizeof rgb_buf); // TODO: implement it
+        // size_t n = fpga_capture_read(rgb_buf, sizeof rgb_buf); // TODO: implement it
 
-        //log("n=%d height=%d", n, ctx.height);
+        // log("n=%d height=%d", n, ctx.height);
 
-    // enqueue the conversion, letting the callback flush the data over bluetooth
+        // enqueue the conversion, letting the callback flush the data over bluetooth
     } while (jojpeg_append_8_rows(&ctx, rgb_buf, sizeof rgb_buf));
 
     // the callback sets the ble_flag to BLE_MIDDLE when run, instead, here, we want

@@ -35,7 +35,6 @@
 
 #include "driver/config.h"
 #include "driver/fpga.h"
-#include "driver/ov5640.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
 #include "critical_functions.h"

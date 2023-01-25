@@ -264,6 +264,8 @@ void setup_pmic_and_sleep_mode(void)
         uint8_t voltage_setting = (uint8_t)round((voltage - 3.6f) / 0.025f) << 2;
         uint8_t current_setting = (uint8_t)round((current - 7.5f) / 7.5f) << 2;
 
+        // TODO set temperature cutouts
+
         // Apply the constant voltage setting
         app_err(i2c_write(PMIC_ADDRESS, 0x26, 0xFC, voltage_setting).fail);
         // TODO set the JETIA voltage
