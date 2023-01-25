@@ -86,14 +86,12 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
  */
 int main(void)
 {
+    // Set up debug logging
     {
         SEGGER_RTT_Init();
         log_clear();
         log("MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ") ");
     }
-
-    // Important initialisation to set up power rails and charging/sleep behaviour
-    setup_pmic_and_sleep_mode();
 
     // Setup touch interrupt
     {
@@ -119,10 +117,18 @@ int main(void)
     // Set up BLE
     ble_init();
 
-    // Setup devices on SPI (FPGA & Flash)
+    // Set up the SPI bus to the FPGA and external flash IC
     {
         spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
+    }
 
+    // Check if external flash has an FPGA image and boot it
+    {
+        // flash_init();
+        // nrf_gpio_pin_write(FLASH_CS_N_PIN, true);
+        // nrf_gpio_cfg_output(FLASH_CS_N_PIN);
+
+        // fpga_init();
         // Start the FPGA with
         nrf_gpio_cfg_output(FPGA_MODE1_PIN);
         nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
@@ -130,12 +136,6 @@ int main(void)
         // Let the FPGA start as soon as it has the power on.
         nrf_gpio_cfg_output(FPGA_RECONFIG_N_PIN);
         nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
-
-        // fpga_init();
-
-        // flash_init();
-        // nrf_gpio_pin_write(FLASH_CS_N_PIN, true);
-        // nrf_gpio_cfg_output(FLASH_CS_N_PIN);
     }
 
     // Setup camera
@@ -224,11 +224,8 @@ void gc_collect(void)
 /**
  * @brief Called if an exception is raised outside all C exception-catching handlers.
  */
-NORETURN void nlr_jump_fail(void *val)
+void nlr_jump_fail(void *val)
 {
-    (void)val;
-    app_err(1); // exception raised without any handlers for it
-    while (1)
-    {
-    }
+    app_err((uint32_t)val);
+    NVIC_SystemReset();
 }

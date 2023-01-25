@@ -98,7 +98,6 @@ CFLAGS += $(WARN) $(OPT) $(INC) $(DEFS)
 SRC_C += critical_functions.c
 SRC_C += main.c
 SRC_C += mphalport.c
-SRC_C += startup_nrf52832.c
 
 SRC_C += driver/battery.c
 SRC_C += driver/bluetooth_data_protocol.c

@@ -30,59 +30,41 @@
 #include "SEGGER_RTT.h"
 
 /**
- * @brief Sets up the PMIC and low power mode of the Monocle. Won't return if
- *        the device is charging, and will put everything to sleep. Should only
- *        be called once during startup.
+ * @brief I2C addresses.
  */
-void setup_pmic_and_sleep_mode(void);
+#define TOUCH_ADDRESS 0x44  // I2C address for the IQS620A touch controller
+#define CAMERA_ADDRESS 0x3C // I2C address for the OV5640 camera module
 
 /**
- * @brief PMIC helper functions.
+ * @brief Enumeration of both LEDs on the device. Pass one of these to
+ *        pmic_set_led to set it.
  */
-
-/**
- * @brief I2C helper functions
- */
-
-#define IQS620_ADDRESS 0x44
-#define OV5640_ADDRRESS 0x3C
-
-typedef struct i2c_response_t
-{
-    bool fail;
-    uint8_t value;
-} i2c_response_t;
-
-void i2c_init(void);
-
-i2c_response_t i2c_read(uint8_t device_address_7bit,
-                        uint8_t register_address,
-                        uint8_t register_mask);
-
-i2c_response_t i2c_write(uint8_t device_address_7bit,
-                         uint8_t register_address,
-                         uint8_t register_mask,
-                         uint8_t set_value);
-
-/**
- * @brief PMIC helpers
- */
-
 typedef enum led_t
 {
     GREEN_LED,
     RED_LED
 } led_t;
 
+/**
+ * @brief Sets the red or green LED connected to the PMIC.
+ * @param led: Can be GREEN_LED or RED_LED.
+ * @param enable: True = on. False = off
+ */
 void pmic_set_led(led_t led, bool enable);
 
 /**
- * @brief Error and logging macros
+ * @brief Logging macro for SeggerRTT based logging. Use like printf.
  */
-
-#define log_clear() SEGGER_RTT_printf(0, RTT_CTRL_CLEAR "\r");
 #define log(format, ...) SEGGER_RTT_printf(0, "\r\n" format, ##__VA_ARGS__)
 
+/**
+ * @brief Clears the log screen.
+ */
+#define log_clear() SEGGER_RTT_printf(0, RTT_CTRL_CLEAR "\r");
+
+/**
+ * @brief Error handling macro. Safely logs and restarts the device.
+ */
 #define app_err(eval)                                                          \
     do                                                                         \
     {                                                                          \
@@ -98,4 +80,26 @@ void pmic_set_led(led_t led, bool enable);
         }                                                                      \
     } while (0)
 
+/**
+ * @brief I2C response structure. Contains a value and failure flag. If fail is
+ *        true, then value is not valid.
+ */
+typedef struct i2c_response_t
+{
+    bool fail;
+    uint8_t value;
+} i2c_response_t;
+
+i2c_response_t i2c_read(uint8_t device_address_7bit,
+                        uint8_t register_address,
+                        uint8_t register_mask);
+
+i2c_response_t i2c_write(uint8_t device_address_7bit,
+                         uint8_t register_address,
+                         uint8_t register_mask,
+                         uint8_t set_value);
+
+/**
+ * @brief Bootloader entry function. Call this to enter DFU mode.
+ */
 void enter_bootloader(void);
