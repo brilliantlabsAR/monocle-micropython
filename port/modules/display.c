@@ -62,7 +62,7 @@ STATIC mp_obj_t display___init__(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(display___init___obj, display___init__);
 
-gfx_obj_t gfx_obj_list[10];
+gfx_obj_t gfx_obj_list[50];
 size_t gfx_obj_num;
 
 STATIC void flush_blocks(gfx_row_t yuv422, size_t pos, size_t len)
@@ -79,6 +79,7 @@ STATIC void flush_blocks(gfx_row_t yuv422, size_t pos, size_t len)
     // set the base address
     uint32_t u32 = yuv422.y * yuv422.len + pos;
     uint8_t base[sizeof u32] = { u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0 };
+    assert(u32 < OV5640_WIDTH * OV5640_HEIGHT * 2);
     fpga_cmd_write(FPGA_GRAPHICS_BASE, base, sizeof base);
 
     // Flush the content of the screen skipping empty bytes.
@@ -141,6 +142,7 @@ STATIC void flush_row(gfx_row_t yuv422)
 STATIC mp_obj_t display_show(void)
 {
     uint8_t buf[ECX336CN_WIDTH * 2];
+    uint8_t buf2[1 << 15]; memset(buf2, 0, sizeof buf2);
     gfx_row_t yuv422 = { .buf = buf, .len = sizeof buf, .y = 0 };
 
     // fill the display with YUV422 black pixels
@@ -197,23 +199,9 @@ STATIC void new_gfx(gfx_type_t type, mp_int_t x, mp_int_t y, mp_int_t width, mp_
     uint8_t yuv444[3] = GFX_RGB_TO_YUV444((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, (rgb >> 0) & 0xFF);
     gfx_obj_t *gfx;
 
-    // validate parameters for convenience
-    if (x < 0 || x >= OV5640_WIDTH)
-    {
-        mp_raise_ValueError(MP_ERROR_TEXT("x must be between 0 and " STR(OV5640_WIDTH)));
-    }
-    if (y < 0 || y >= OV5640_HEIGHT)
-    {
-        mp_raise_ValueError(MP_ERROR_TEXT("y must be between 0 and " STR(OV5640_HEIGHT)));
-    }
-    if (width <= 0)
-    {
-        mp_raise_ValueError(MP_ERROR_TEXT("width must be greater than 0"));
-    }
-    if (height <= 0)
-    {
-        mp_raise_ValueError(MP_ERROR_TEXT("height must be greater than 0"));
-    }
+    // Validate parameters
+    assert(width >= 0);
+    assert(height >= 0);
     if (rgb < 0 || rgb > 0xFFFFFF)
     {
         mp_raise_ValueError(MP_ERROR_TEXT("color must be between 0x000000 and 0xFFFFFF"));
@@ -246,19 +234,13 @@ STATIC mp_obj_t display_line(size_t argc, mp_obj_t const args[])
     mp_int_t x2 = mp_obj_get_int(args[2]);
     mp_int_t y2 = mp_obj_get_int(args[3]);
     mp_int_t rgb = mp_obj_get_int(args[4]);
-    mp_int_t tmp;
-    gfx_arg_t arg = { .u32 = ((x1 > x2) == (y1 > y2)) };
+    gfx_arg_t arg = { .u32 = (x1 < x2) != (y1 < y2) };
+    mp_int_t width = (x1 < x2) ? x2 - x1 : x1 - x2;
+    mp_int_t height = (y1 < y2) ? y2 - y1 : y1 - y2;
+    mp_int_t x = MIN(x1, x2);
+    mp_int_t y = MIN(y1, y2);
 
-    if (x1 > x2)
-    {
-        tmp = x1, x1 = x2, x2 = tmp;
-    }
-    if (y1 > y2)
-    {
-        tmp = y1, y1 = y2, y2 = tmp;
-    }
-
-    new_gfx(GFX_TYPE_LINE, x1, y1, x2 - x1, y2 - y1, rgb, arg);
+    new_gfx(GFX_TYPE_LINE, x, y, width, height, rgb, arg);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_line_obj, 5, 5, display_line);

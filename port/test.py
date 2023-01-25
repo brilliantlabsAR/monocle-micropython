@@ -25,20 +25,47 @@ def t1():
     __test("time.zone('15:00')", ValueError)
 
 def t2():
-    display.line(0, 0, 640, 400, 0x000099)
-    display.show()
-    print("blue line from top left to bottom right")
-    time.sleep(1)
+    # line scanning the screen bound to the left
+    display.line(0,0,   640,200, 0xFFFFFF); display.show()
+    display.line(0,50,  640,200, 0xFFFFFF); display.show()
+    display.line(0,100, 640,200, 0xFFFFFF); display.show()
+    display.line(0,150, 640,200, 0xFFFFFF); display.show()
+    display.line(0,200, 640,200, 0xFFFFFF); display.show()
+    display.line(0,250, 640,200, 0xFFFFFF); display.show()
+    display.line(0,300, 640,200, 0xFFFFFF); display.show()
+    display.line(0,350, 640,200, 0xFFFFFF); display.show()
+    display.line(0,400, 640,200, 0xFFFFFF); display.show()
 
-    display.line(0, 400, 640, 0, 0x990000)
-    display.show()
-    print("red line from top right to bottom left")
-    time.sleep(1)
+    # line scanning the screen bound to the right
+    display.line(640,0,   0,200, 0xFFFFFF); display.show()
+    display.line(640,50,  0,200, 0xFFFFFF); display.show()
+    display.line(640,100, 0,200, 0xFFFFFF); display.show()
+    display.line(640,150, 0,200, 0xFFFFFF); display.show()
+    display.line(640,200, 0,200, 0xFFFFFF); display.show()
+    display.line(640,250, 0,200, 0xFFFFFF); display.show()
+    display.line(640,300, 0,200, 0xFFFFFF); display.show()
+    display.line(640,350, 0,200, 0xFFFFFF); display.show()
+    display.line(640,400, 0,200, 0xFFFFFF); display.show()
 
-    #display.text("test", 300, 200, 0xFFFFFF)
-    #display.show()
-    #print("the white text 'test' in the middle")
-    #time.sleep(1)
+    # line scanning the screen bound to the top
+    display.line(300,0,   0,400, 0xFFFFFF); display.show()
+    display.line(300,0, 100,400, 0xFFFFFF); display.show()
+    display.line(300,0, 200,400, 0xFFFFFF); display.show()
+    display.line(300,0, 300,400, 0xFFFFFF); display.show()
+    display.line(300,0, 400,400, 0xFFFFFF); display.show()
+    display.line(300,0, 500,400, 0xFFFFFF); display.show()
+    display.line(300,0, 600,400, 0xFFFFFF); display.show()
+    display.line(300,0, 640,400, 0xFFFFFF); display.show()
+
+    # line scanning the screen bound to the bottom
+    display.line(  0,0, 300,400, 0xFFFFFF); display.show()
+    display.line(100,0, 300,400, 0xFFFFFF); display.show()
+    display.line(200,0, 300,400, 0xFFFFFF); display.show()
+    display.line(300,0, 300,400, 0xFFFFFF); display.show()
+    display.line(400,0, 300,400, 0xFFFFFF); display.show()
+    display.line(500,0, 300,400, 0xFFFFFF); display.show()
+    display.line(600,0, 300,400, 0xFFFFFF); display.show()
+    display.line(640,0, 300,400, 0xFFFFFF); display.show()
 
 def all():
     t1()

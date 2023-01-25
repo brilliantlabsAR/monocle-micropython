@@ -42,9 +42,9 @@ typedef struct
 } gfx_glyph_t;
 
 static uint8_t const *gfx_font = font_50;
-static uint16_t gfx_glyph_gap_width = 2;
+static int16_t gfx_glyph_gap_width = 2;
 
-static inline void gfx_draw_pixel(gfx_row_t row, uint16_t x, uint8_t yuv444[3])
+static inline void gfx_draw_pixel(gfx_row_t row, int16_t x, uint8_t yuv444[3])
 {
     if (x * 2 + 0 < row.len)
     {
@@ -56,9 +56,8 @@ static inline void gfx_draw_pixel(gfx_row_t row, uint16_t x, uint8_t yuv444[3])
     }
 }
 
-static inline void gfx_draw_segment(gfx_row_t row, uint16_t x_beg, uint16_t x_end, uint8_t yuv444[3])
+static inline void gfx_draw_segment(gfx_row_t row, int16_t x_beg, int16_t x_end, uint8_t yuv444[3])
 {
-    LOG("x_beg=%d x_end=%d", x_beg, x_end);
     for (size_t len = row.len / 2, x = x_beg; x < x_end && x < len; x++)
     {
         gfx_draw_pixel(row, x, yuv444);
@@ -70,8 +69,8 @@ static void gfx_render_rectangle(gfx_row_t row, gfx_obj_t *obj)
     gfx_draw_segment(row, obj->x, obj->x + obj->width, obj->yuv444);
 }
 
-static inline uint16_t gfx_get_intersect_line(uint16_t y,
-        uint16_t obj_x, uint16_t obj_y, uint16_t obj_width, uint16_t obj_height, bool flip)
+static inline int16_t gfx_get_intersect_line(int16_t y,
+        int16_t obj_x, int16_t obj_y, int16_t obj_width, int16_t obj_height, bool flip)
 {
     // Thales theorem to find the intersection of the line with our line.
     // y0--------------------------+ [a1,b2] is the line we draw
@@ -83,14 +82,14 @@ static inline uint16_t gfx_get_intersect_line(uint16_t y,
     // +---------------------------+
     // seg_width / obj_width = seg_height / obj_height
     // seg_width = obj_width * seg_height / obj_height
-    uint16_t seg_height = y - obj_y;
-    uint16_t seg_width = obj_width * seg_height / obj_height;
-    return obj_x + (flip) ? (obj_width - seg_width) : (seg_width);
+    int16_t seg_height = y - obj_y;
+    int16_t seg_width = obj_width * seg_height / obj_height;
+    return obj_x + (flip ? obj_width - seg_width : seg_width);
 }
 
 static void gfx_render_line(gfx_row_t row, gfx_obj_t *obj)
 {
-    uint16_t x0, x1;
+    int16_t x0, x1;
     bool flip = obj->arg.u32;
 
     // Special case: purely horizontal line means divide by 0, fill as a rectangle instead
@@ -106,7 +105,6 @@ static void gfx_render_line(gfx_row_t row, gfx_obj_t *obj)
     x0 = gfx_get_intersect_line(row.y + 1, obj->x, obj->y, obj->width, obj->height + 1, flip);
     x1 = gfx_get_intersect_line(row.y, obj->x, obj->y, obj->width, obj->height + 1, flip);
 
-    LOG("x=%d y=%d w=%d h=%d x0=%d x1=%d", obj->x, obj->y, obj->width, obj->height, x0, x1);
     // We have the start and stop point of the segment, we can fill it
     gfx_draw_segment(row, MIN(x0, x1), MAX(x0, x1), obj->yuv444);
 }
@@ -119,7 +117,10 @@ static inline gfx_glyph_t gfx_get_glyph(uint8_t const *font, char c)
     // Only ASCII is supported for this early release
     // see how https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
     // encoded lookup tables for a strategy to support UTF-8.
-    assert(c >= ' ' || c <= '~');
+    if (c < ' ' || c > '~')
+    {
+        return gfx_get_glyph(font, ' ');
+    }
 
     // Store the global font header properties.
     glyph.height = *f++;
@@ -134,7 +135,7 @@ static inline gfx_glyph_t gfx_get_glyph(uint8_t const *font, char c)
     return glyph;
 }
 
-static inline bool gfx_get_glyph_bit(gfx_glyph_t *glyph, uint16_t x, uint16_t y)
+static inline bool gfx_get_glyph_bit(gfx_glyph_t *glyph, int16_t x, int16_t y)
 {
     size_t i = y * glyph->width + x;
 
@@ -154,7 +155,7 @@ static inline bool gfx_get_glyph_bit(gfx_glyph_t *glyph, uint16_t x, uint16_t y)
 static inline void gfx_draw_glyph(gfx_row_t row, gfx_glyph_t *glyph, uint8_t yuv444[3])
 {
     // for each vertical position
-    for (uint16_t x = 0; x < glyph->width && x < row.len / 2; x++)
+    for (int16_t x = 0; x < glyph->width && x < row.len / 2; x++)
     {
         // check if the bit is set
         if (gfx_get_glyph_bit(glyph, x, row.y) == true)
@@ -168,9 +169,9 @@ static inline void gfx_draw_glyph(gfx_row_t row, gfx_glyph_t *glyph, uint8_t yuv
 /*
  * Accurately compute the given string's display width
  */
-uint16_t gfx_get_text_width(char const *s, size_t len)
+int16_t gfx_get_text_width(char const *s, size_t len)
 {
-    uint16_t width = 0;
+    int16_t width = 0;
 
     // Scan the whole string and get the width of each glyph
     for (size_t i = 0; i < len; i++)
@@ -182,7 +183,7 @@ uint16_t gfx_get_text_width(char const *s, size_t len)
     return width;
 }
 
-uint16_t gfx_get_text_height(void)
+int16_t gfx_get_text_height(void)
 {
     return gfx_font[0];
 }
@@ -197,7 +198,7 @@ static void gfx_render_text(gfx_row_t row, gfx_obj_t *obj)
         return;
     }
 
-    for (uint16_t x = obj->x; *s != '\0'; s++)
+    for (int16_t x = obj->x; *s != '\0'; s++)
     {
         gfx_glyph_t glyph;
 
@@ -241,7 +242,7 @@ bool gfx_render_row(gfx_row_t row, gfx_obj_t *obj_list, size_t obj_num)
         gfx_obj_t *obj = obj_list + i;
 
         // skip the object if it is not on the row we render.
-        if (obj->y > row.y || obj->y + obj->height < row.y)
+        if (row.y < obj->y || row.y > obj->y + obj->height)
         {
             continue;
         }
