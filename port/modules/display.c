@@ -39,13 +39,305 @@
 #include "driver/max77654.h"
 #include "driver/spi.h"
 
-#include "libgfx.h"
+#include "font.h"
+
+#define FPGA_ADDR_ALIGN  128
 
 #define LEN(x)      (sizeof(x) / sizeof*(x))
 #define VAL(str)    #str
 #define STR(str)    VAL(str)
 
-#define FPGA_ADDR_ALIGN  128
+#define GFX_RGB_TO_YUV444(r, g, b) { \
+    128.0 + 0.29900 * (r) + 0.58700 * (g) + 0.11400 * (b) - 128.0, \
+    128.0 - 0.16874 * (r) - 0.33126 * (g) + 0.50000 * (b), \
+    128.0 + 0.50000 * (r) - 0.41869 * (g) - 0.08131 * (b) \
+}
+
+#define GFX_YUV422_BLACK    { 0x80, 0x00 }
+
+typedef struct
+{
+    uint8_t width, height;
+    uint8_t const *bitmap;
+} glyph_t;
+
+enum
+{
+    GFX_TYPE_NULL,      // skip this object
+    GFX_TYPE_RECTANGLE, // filled
+    GFX_TYPE_LINE,      // diagonal line
+    GFX_TYPE_ELLIPSIS,  // diagonal line
+    GFX_TYPE_TEXT,      // a single line of text truncated at the end
+};
+
+typedef struct
+{
+    uint8_t *buf;
+    size_t len;
+    int16_t y;
+} row_t;
+
+typedef union
+{
+    void const *ptr;
+    uint32_t u32;
+} arg_t;
+
+typedef struct
+{
+    int16_t x, y, width, height;
+    uint8_t yuv444[3];
+    uint8_t type;
+    arg_t arg;
+} obj_t;
+
+static uint8_t const *font = font_50;
+static int16_t glyph_gap_width = 2;
+
+static inline void draw_pixel(row_t row, int16_t x, uint8_t yuv444[3])
+{
+    if (x * 2 + 0 < row.len)
+    {
+        row.buf[x * 2 + 0] = yuv444[1 + x % 2];
+    }
+    if (x * 2 + 1 < row.len)
+    {
+        row.buf[x * 2 + 1] = yuv444[0];
+    }
+}
+
+static inline void draw_segment(row_t row, int16_t x_beg, int16_t x_end, uint8_t yuv444[3])
+{
+    for (size_t len = row.len / 2, x = x_beg; x < x_end && x < len; x++)
+    {
+        draw_pixel(row, x, yuv444);
+    }
+}
+
+static void render_rectangle(row_t row, obj_t *obj)
+{
+    draw_segment(row, obj->x, obj->x + obj->width, obj->yuv444);
+}
+
+static inline int16_t get_intersect_line(int16_t y,
+        int16_t obj_x, int16_t obj_y, int16_t obj_width, int16_t obj_height, bool flip)
+{
+    // Thales theorem to find the intersection of the line with our line.
+    // y0--------------------------+ [a1,b2] is the line we draw
+    // a0                _,a1      | [b2,c2] is obj_width, the bounding box width
+    // |             _,-'   |      | [a1,c2] is obj_height, the bounding box height
+    // y1--------_b1'-------c1-----| [b1,c1] is seg_width, what we want to know
+    // |     _.-'           |      | [a0,y1] is seg_height, which we know
+    // |   b2. . . . . . . .c2     | [y0,y1] is y, the position of the line to render
+    // +---------------------------+
+    // seg_width / obj_width = seg_height / obj_height
+    // seg_width = obj_width * seg_height / obj_height
+    int16_t seg_height = y - obj_y;
+    int16_t seg_width = obj_width * seg_height / obj_height;
+    return obj_x + (flip ? obj_width - seg_width : seg_width);
+}
+
+static void render_line(row_t row, obj_t *obj)
+{
+    int16_t x0, x1;
+    bool flip = obj->arg.u32;
+
+    assert(obj->height > 0);
+
+    // Special case: purely horizontal line means divide by 0, fill as a rectangle instead
+    if (obj->height == 1)
+    {
+        render_rectangle(row, obj);
+        return;
+    }
+
+    // We need to know how many horizontal pixels to drawn to accomodate the line thickness
+    // so we get two intersections: the one for the top, and the one for the bottom edge of
+    // the line. This introduces an offset, which we correct with the +1
+    x0 = get_intersect_line(row.y + 1, obj->x, obj->y, obj->width, obj->height + 1, flip);
+    x1 = get_intersect_line(row.y, obj->x, obj->y, obj->width, obj->height + 1, flip);
+
+    // We have the start and stop point of the segment, we can fill it
+    draw_segment(row, MIN(x0, x1), MAX(x0, x1), obj->yuv444);
+}
+
+static inline glyph_t get_glyph(uint8_t const *font, char c)
+{
+    glyph_t glyph;
+    uint8_t const *f = font;
+
+    // Only ASCII is supported for this early release
+    // see how https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
+    // encoded lookup tables for a strategy to support UTF-8.
+    if (c < ' ' || c > '~')
+    {
+        return get_glyph(font, ' ');
+    }
+
+    // Store the global font header properties.
+    glyph.height = *f++;
+
+    // Scan the font, seeking for the glyph to render.
+    for (char i = ' '; i <= c; i++)
+    {
+        glyph.width = *f++;
+        glyph.bitmap = f;
+        f += (glyph.width * glyph.height + 7) / 8;
+    }
+    return glyph;
+}
+
+static inline bool get_glyph_bit(glyph_t *glyph, int16_t x, int16_t y)
+{
+    size_t i = y * glyph->width + x;
+
+    // See the txt2cfont tool to understand this encoding.
+    return glyph->bitmap[i / 8] & 1 << (i % 8);
+}
+
+/**
+ * Render a single glyph onto the buffer.
+ *
+ * @param row The buffer onto which write, with parameters adjusted
+ * to be local: as if the glyph had to be rendered on a screen of the same
+ * dimension onto x=0 y=0.
+ *
+ * @param glpyh The glyph to render.
+ */
+static inline void draw_glyph(row_t row, glyph_t *glyph, uint8_t yuv444[3])
+{
+    // for each vertical position
+    for (int16_t x = 0; x < glyph->width && x < row.len / 2; x++)
+    {
+        // check if the bit is set
+        if (get_glyph_bit(glyph, x, row.y) == true)
+        {
+            // and only if so, fill the buffer with it
+            draw_pixel(row, x, yuv444);
+        }
+    }
+}
+
+/*
+ * Accurately compute the given string's display width
+ */
+int16_t get_text_width(char const *s, size_t len)
+{
+    int16_t width = 0;
+
+    // Scan the whole string and get the width of each glyph
+    for (size_t i = 0; i < len; i++)
+    {
+        // Accumulate the width of this glyph to render
+        width += (i == 0) ? 0 : glyph_gap_width;
+        width += get_glyph(font, s[i]).width;
+    }
+    return width;
+}
+
+int16_t get_text_height(void)
+{
+    return font[0];
+}
+
+static void render_text(row_t row, obj_t *obj)
+{
+    char const *s = obj->arg.ptr;
+
+    // Only a single row of text is supported.
+    if (row.y > obj->y + font[0])
+    {
+        return;
+    }
+
+    for (int16_t x = obj->x; *s != '\0'; s++)
+    {
+        glyph_t glyph;
+
+        // search the glyph within the font data
+        glyph = get_glyph(font, *s);
+
+        row_t local = {
+            .buf = row.buf + x * 2,
+            .len = row.len - x * 2,
+            .y = row.y - obj->y
+        };
+
+        // render the glyph, reduce the buffer to only the section to draw into,
+        // y coordinate is adjusted to be height within the glyph
+        draw_glyph(local, &glyph, obj->yuv444);
+        x += glyph.width + glyph_gap_width;
+    }
+}
+
+static void render_ellipsis(row_t row, obj_t *obj)
+{
+    // TODO implement ellipsis: maybe that's college level trigonometry,
+    // but it's kind of tough for me ^_^'
+}
+
+void fill_black(row_t row)
+{
+    uint8_t black[] = GFX_YUV422_BLACK;
+
+    for (size_t i = 0; i + 1 < row.len; i += 2)
+    {
+        memcpy(row.buf + i, black, sizeof black);
+    }
+}
+
+bool render_row(row_t row, obj_t *obj_list, size_t obj_num)
+{
+    bool drawn = false;
+
+    for (size_t i = 0; i < obj_num; i++)
+    {
+        obj_t *obj = obj_list + i;
+
+        // skip the object if it is not on the row we render.
+        if (row.y < obj->y || row.y > obj->y + obj->height)
+        {
+            continue;
+        }
+
+        drawn = true;
+
+        switch (obj->type)
+        {
+        case GFX_TYPE_NULL:
+        {
+            break;
+        }
+        case GFX_TYPE_RECTANGLE:
+        {
+            render_rectangle(row, obj);
+            break;
+        }
+        case GFX_TYPE_LINE:
+        {
+            render_line(row, obj);
+            break;
+        }
+        case GFX_TYPE_TEXT:
+        {
+            render_text(row, obj);
+            break;
+        }
+        case GFX_TYPE_ELLIPSIS:
+        {
+            render_ellipsis(row, obj);
+            break;
+        }
+        default:
+        {
+            assert(!"unknown type");
+        }
+        }
+    }
+    return drawn;
+}
+
+/* Python bindings */
 
 STATIC mp_obj_t display___init__(void)
 {
@@ -62,10 +354,10 @@ STATIC mp_obj_t display___init__(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(display___init___obj, display___init__);
 
-gfx_obj_t gfx_obj_list[50];
-size_t gfx_obj_num;
+obj_t obj_list[50];
+size_t obj_num;
 
-STATIC void flush_blocks(gfx_row_t yuv422, size_t pos, size_t len)
+STATIC void flush_blocks(row_t yuv422, size_t pos, size_t len)
 {
     assert(pos + len <= yuv422.len);
 
@@ -86,7 +378,7 @@ STATIC void flush_blocks(gfx_row_t yuv422, size_t pos, size_t len)
     fpga_cmd_write(FPGA_GRAPHICS_DATA, yuv422.buf + pos, len);
 }
 
-STATIC bool block_has_content(gfx_row_t yuv422, size_t pos)
+STATIC bool block_has_content(row_t yuv422, size_t pos)
 {
     uint8_t black[] = GFX_YUV422_BLACK;
 
@@ -104,7 +396,7 @@ STATIC bool block_has_content(gfx_row_t yuv422, size_t pos)
     return false;
 }
 
-STATIC void flush_row(gfx_row_t yuv422)
+STATIC void flush_row(row_t yuv422)
 {
     // Print all contiguous blocks that can be flushed altogether
     for (size_t i = 0;;)
@@ -143,7 +435,7 @@ STATIC mp_obj_t display_show(void)
 {
     uint8_t buf[ECX336CN_WIDTH * 2];
     uint8_t buf2[1 << 15]; memset(buf2, 0, sizeof buf2);
-    gfx_row_t yuv422 = { .buf = buf, .len = sizeof buf, .y = 0 };
+    row_t yuv422 = { .buf = buf, .len = sizeof buf, .y = 0 };
 
     // fill the display with YUV422 black pixels
     fpga_cmd(FPGA_GRAPHICS_CLEAR);
@@ -153,10 +445,10 @@ STATIC mp_obj_t display_show(void)
     for (; yuv422.y < OV5640_HEIGHT; yuv422.y++)
     {
         // Clean the row before writing to it
-        gfx_fill_black(yuv422);
+        fill_black(yuv422);
 
         // Render a single row, and if anything was updated, also flush it
-        if (gfx_render_row(yuv422, gfx_obj_list, gfx_obj_num))
+        if (render_row(yuv422, obj_list, obj_num))
         {
             flush_row(yuv422);
         }
@@ -166,8 +458,8 @@ STATIC mp_obj_t display_show(void)
     fpga_cmd(FPGA_GRAPHICS_SWAP);
 
     // Empty the list of elements to draw.
-    memset(gfx_obj_list, 0, sizeof gfx_obj_list);
-    gfx_obj_num = 0;
+    memset(obj_list, 0, sizeof obj_list);
+    obj_num = 0;
 
     return mp_const_none;
 }
@@ -194,28 +486,37 @@ STATIC mp_obj_t display_brightness(mp_obj_t brightness_in)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(display_brightness_obj, &display_brightness);
 
-STATIC void new_gfx(gfx_type_t type, mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_int_t rgb, gfx_arg_t arg)
+STATIC void new_gfx(int type, mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_int_t rgb, arg_t arg)
 {
     uint8_t yuv444[3] = GFX_RGB_TO_YUV444((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, (rgb >> 0) & 0xFF);
-    gfx_obj_t *gfx;
+    obj_t *gfx;
 
-    // Validate parameters
     assert(width >= 0);
     assert(height >= 0);
+
+    // Validate parameters from user.
+    if (width == 0)
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT("width must be greater than 0"));
+    }
+    if (height == 0)
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT("height must be greater than 0"));
+    }
     if (rgb < 0 || rgb > 0xFFFFFF)
     {
         mp_raise_ValueError(MP_ERROR_TEXT("color must be between 0x000000 and 0xFFFFFF"));
     }
 
     // Get the latest free slot
-    if (gfx_obj_num >= LEN(gfx_obj_list))
+    if (obj_num >= LEN(obj_list))
     {
         mp_raise_OSError(MP_ENOMEM);
     }
-    gfx = gfx_obj_list + gfx_obj_num;
+    gfx = obj_list + obj_num;
 
     // This is the only place where we increment this number.
-    gfx_obj_num++;
+    obj_num++;
 
     // Fill the new slot.
     gfx->type = type;
@@ -234,12 +535,14 @@ STATIC mp_obj_t display_line(size_t argc, mp_obj_t const args[])
     mp_int_t x2 = mp_obj_get_int(args[2]);
     mp_int_t y2 = mp_obj_get_int(args[3]);
     mp_int_t rgb = mp_obj_get_int(args[4]);
-    gfx_arg_t arg = { .u32 = (x1 < x2) != (y1 < y2) };
+    arg_t arg = { .u32 = (x1 < x2) != (y1 < y2) };
     mp_int_t width = (x1 < x2) ? x2 - x1 : x1 - x2;
     mp_int_t height = (y1 < y2) ? y2 - y1 : y1 - y2;
     mp_int_t x = MIN(x1, x2);
     mp_int_t y = MIN(y1, y2);
 
+    height = MAX(height, 1);
+    width = MAX(width, 1);
     new_gfx(GFX_TYPE_LINE, x, y, width, height, rgb, arg);
     return mp_const_none;
 }
@@ -247,12 +550,12 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_line_obj, 5, 5, display_line);
 
 STATIC mp_obj_t display_text(size_t argc, mp_obj_t const args[])
 {
-    gfx_arg_t arg = { .ptr = mp_obj_str_get_str(args[0]) };
+    arg_t arg = { .ptr = mp_obj_str_get_str(args[0]) };
     mp_int_t x = mp_obj_get_int(args[1]);
     mp_int_t y = mp_obj_get_int(args[2]);
     mp_int_t rgb = mp_obj_get_int(args[3]);
-    mp_int_t width = gfx_get_text_width(arg.ptr, strlen(arg.ptr));
-    mp_int_t height = gfx_get_text_height();
+    mp_int_t width = get_text_width(arg.ptr, strlen(arg.ptr));
+    mp_int_t height = get_text_height();
 
     new_gfx(GFX_TYPE_TEXT, x, y, width, height, rgb, arg);
     return mp_const_none;
@@ -262,9 +565,9 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_text_obj, 4, 4, display_text);
 STATIC mp_obj_t display_fill(mp_obj_t rgb_in)
 {
     mp_int_t rgb = mp_obj_get_int(rgb_in);
-    gfx_arg_t null = {0};
+    arg_t none = {0};
 
-    new_gfx(GFX_TYPE_RECTANGLE, 0, 0, OV5640_WIDTH, OV5640_HEIGHT, rgb, null);
+    new_gfx(GFX_TYPE_RECTANGLE, 0, 0, OV5640_WIDTH, OV5640_HEIGHT, rgb, none);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(display_fill_obj, display_fill);
@@ -276,9 +579,9 @@ STATIC mp_obj_t display_hline(size_t argc, mp_obj_t const args[])
     mp_int_t width = mp_obj_get_int(args[2]);
     mp_int_t height = 1;
     mp_int_t rgb = mp_obj_get_int(args[3]);
-    gfx_arg_t null = {0};
+    arg_t none = {0};
 
-    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, null);
+    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, none);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_hline_obj, 4, 4, display_hline);
@@ -290,9 +593,9 @@ STATIC mp_obj_t display_vline(size_t argc, mp_obj_t const args[])
     mp_int_t height = mp_obj_get_int(args[2]);
     mp_int_t width = 1;
     mp_int_t rgb = mp_obj_get_int(args[3]);
-    gfx_arg_t null = {0};
+    arg_t none = {0};
 
-    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, null);
+    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, none);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_vline_obj, 4, 4, display_vline);

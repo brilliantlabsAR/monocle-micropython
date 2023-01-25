@@ -125,7 +125,6 @@ SRC += driver/ov5640.c
 SRC += driver/spi.c
 SRC += driver/timer.c
 SRC += font.c
-SRC += libgfx.c
 SRC += libjojpeg.c
 
 SRC += modules/camera.c
