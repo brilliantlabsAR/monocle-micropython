@@ -6,6 +6,7 @@
 #include "nrfx.h"
 #include "nrf_soc.h"
 #include "nrfx_twim.h"
+#include "nrfx_timer.h"
 #include "pinout.h"
 
 /**
@@ -175,8 +176,14 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
  */
 static bool startup_already_done = false;
 
-static void check_if_battery_charging_and_sleep(void)
+static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
+                                                void *p_context)
 {
+    (void)event_type;
+    (void)p_context;
+
+    log("Called");
+
     // Get the CHG value from STAT_CHG_B
     i2c_response_t battery_charging_resp = i2c_read(PMIC_ADDRESS, 0x03, 0x0C);
     app_err(battery_charging_resp.fail);
@@ -275,8 +282,24 @@ void setup_pmic_and_sleep_mode(void)
         }
     }
 
-    check_if_battery_charging_and_sleep(); // This won't return if charging
-    // timer_add_task(timer_500ms, check_if_battery_charging_and_sleep);
+    check_if_battery_charging_and_sleep(0, NULL); // This won't return if charging
+
+    // Set up a timer for checking charge state periodically
+    {
+        nrfx_timer_t timer = NRFX_TIMER_INSTANCE(4);
+
+        nrfx_timer_config_t timer_config = NRFX_TIMER_DEFAULT_CONFIG;
+        timer_config.frequency = NRF_TIMER_FREQ_31250Hz;
+        timer_config.bit_width = NRF_TIMER_BIT_WIDTH_24;
+        app_err(nrfx_timer_init(&timer,
+                                &timer_config,
+                                check_if_battery_charging_and_sleep));
+
+        nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 156250,
+                                    NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
+
+        nrfx_timer_enable(&timer);
+    }
 
     while (1)
     {

@@ -74,6 +74,7 @@
 #define NRFX_TIMER0_ENABLED 1 // Used by the SoftDevice
 #define NRFX_TIMER1_ENABLED 1 // Used for "from machine import Timer"
 #define NRFX_TIMER2_ENABLED 1 // Used by driver/touch.c
+#define NRFX_TIMER4_ENABLED 1 // Used for checking battery state
 #define NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY 7
 
 #define NRFX_NVMC_ENABLED 1
