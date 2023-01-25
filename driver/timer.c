@@ -115,7 +115,7 @@ void timer_add_task(timer_task_t **list, timer_task_t *fn)
         return;
 
     slot = timer_get_task_slot(list, NULL);
-    assert(slot != NULL); // misconfiguration of TIMER_MAX_HANDLERS
+    app_err(slot == NULL); // misconfiguration of TIMER_MAX_HANDLERS
 
     __disable_irq();
     *slot = fn;

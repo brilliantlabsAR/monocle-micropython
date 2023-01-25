@@ -304,7 +304,7 @@ static void iqs620_process_state(uint8_t button, iqs620_state_t *old, iqs620_sta
  */
 static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
-    assert(pin == TOUCH_INTERRUPT_PIN);
+    app_err(pin != TOUCH_INTERRUPT_PIN);
 
     // Set the triggered state, used for waiting an event from the IQS620 chip.
     if (!iqs620_enabled)

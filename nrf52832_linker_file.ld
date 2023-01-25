@@ -1,3 +1,27 @@
+/*
+ * This file is part of the MicroPython for Monocle project:
+ *      https://github.com/brilliantlabsAR/monocle-micropython
+ *
+ * Authored by: Josuah Demangeon (me@josuah.net)
+ *              Raj Nakarja / Brilliant Labs Inc (raj@itsbrilliant.co)
+ *
+ * ISC Licence
+ *
+ * Copyright © 2023 Brilliant Labs Inc.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+ 
 /* This must be updated whenever the bootloader size changes */
 bl_flash_end = 0;
 bl_flash_settings_page_size = 0;
@@ -31,7 +55,7 @@ SECTIONS
         
         . = ALIGN(4);
         _etext = .;          /* define a global symbol at end of code */
-    } >FLASH
+    } > FLASH
 
     /* This is used by the startup to initialize data */
     
@@ -52,7 +76,7 @@ SECTIONS
 
         . = ALIGN(4);
         _edata = .;        /* define a global symbol at data end; used by startup code in order to initialize the .data section in RAM */
-    } >RAM AT>FLASH
+    } > RAM AT> FLASH
 
     /* Uninitialized data section */
 
@@ -66,7 +90,10 @@ SECTIONS
 
         . = ALIGN(4);
         _ebss = .;         /* define a global symbol at bss end; used by startup code and GC */
-    } >RAM
+
+        PROVIDE(end = .);
+
+    } > RAM
 
     .ARM.attributes 0 : 
     { 

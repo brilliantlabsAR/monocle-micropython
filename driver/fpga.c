@@ -35,14 +35,14 @@
 
 #include "driver/config.h"
 #include "driver/fpga.h"
-#include "driver/max77654.h"
 #include "driver/ov5640.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
+#include "critical_functions.h"
 
 void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len)
 {
-    uint8_t cmd_buf[2] = { cmd >> 8, cmd >> 0 };
+    uint8_t cmd_buf[2] = {cmd >> 8, cmd >> 0};
 
     spi_chip_select(FPGA_CS_N_PIN);
     spi_write(cmd_buf, sizeof cmd_buf);
@@ -52,7 +52,7 @@ void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len)
 
 void fpga_cmd_read(uint16_t cmd, uint8_t *buf, size_t len)
 {
-    uint8_t cmd_buf[2] = { (cmd >> 8) & 0xFF, (cmd >> 0) & 0xFF };
+    uint8_t cmd_buf[2] = {(cmd >> 8) & 0xFF, (cmd >> 0) & 0xFF};
 
     spi_chip_select(FPGA_CS_N_PIN);
     spi_write(cmd_buf, sizeof cmd_buf);

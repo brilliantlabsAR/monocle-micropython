@@ -1,3 +1,27 @@
+#
+# This file is part of the MicroPython for Monocle project:
+#      https://github.com/brilliantlabsAR/monocle-micropython
+#
+# Authored by: Josuah Demangeon (me@josuah.net)
+#              Raj Nakarja / Brilliant Labs Inc (raj@itsbrilliant.co)
+#
+# ISC Licence
+#
+# Copyright © 2023 Brilliant Labs Inc.
+#
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+# REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+# AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+# INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+# LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+# OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+# PERFORMANCE OF THIS SOFTWARE.
+#
+
 # Include the core environment definitions
 include micropython/py/mkenv.mk
 
@@ -13,9 +37,6 @@ FROZEN_MANIFEST = manifest.py
 # Define the toolchain prefix for ARM GCC
 CROSS_COMPILE = arm-none-eabi-
 
-# TODO optimize this away as we can choose ourselves
-include micropython/extmod/extmod.mk
-
 # Use date and time as build version "vYY.DDD.HHMM"
 BUILD_VERSION = $(shell TZ= date +v%y.%j.%H%M)
 
@@ -23,29 +44,23 @@ BUILD_VERSION = $(shell TZ= date +v%y.%j.%H%M)
 WARN = -Wall -Wdouble-promotion -Wfloat-conversion
 
 # Build optimizations
-OPT += -Os -fdata-sections -ffunction-sections 
-OPT += -flto
+OPT += -mcpu=cortex-m4
+OPT += -mthumb
+OPT += -mabi=aapcs
+OPT += -mfloat-abi=hard
+OPT += -mfpu=fpv4-sp-d16
+OPT += -std=gnu17
+OPT += -Os -g0
+OPT += -fdata-sections -ffunction-sections 
 OPT += -fsingle-precision-constant
 OPT += -fshort-enums
 OPT += -fno-strict-aliasing
 OPT += -fno-common
-OPT += -g3
-
-# TODO fix when fix is available
-# https://github.com/micropython/micropython/issues/10562
-OPT += -fno-tree-loop-distribute-patterns
+# OPT += -flto
+OPT += -fno-tree-loop-distribute-patterns # TODO fix when fix is available https://github.com/micropython/micropython/issues/10562
 
 # Save some code space for performance-critical code
 CSUPEROPT = -Os
-
-# Add required build options
-OPT += -std=gnu17
-OPT += -mthumb
-OPT += -mtune=cortex-m4
-OPT += -mcpu=cortex-m4
-OPT += -mfpu=fpv4-sp-d16
-OPT += -mfloat-abi=hard
-OPT += -mabi=aapcs
 
 # Set defines
 DEFS += -DNRF52832_XXAA
@@ -58,6 +73,7 @@ LDFLAGS += -nostdlib
 LDFLAGS += -Lnrfx/mdk -T nrf52832_linker_file.ld
 LDFLAGS += -Wl,--gc-sections
 LDFLAGS += -Xlinker -Map=$(@:.elf=.map)
+LDFLAGS += --specs=nano.specs
 
 INC += -I.
 INC += -Ibuild
@@ -82,8 +98,6 @@ CFLAGS += $(WARN) $(OPT) $(INC) $(DEFS)
 
 SRC_C += main.c
 SRC_C += critical_functions.c
-SRC_C += nrfx_log.c
-SRC_C += mphalport.c
 SRC_C += startup_nrf52832.c
 
 SRC_C += driver/battery.c
@@ -107,10 +121,26 @@ SRC_C += modules/led.c
 SRC_C += modules/device.c
 SRC_C += modules/time.c
 SRC_C += modules/touch.c
+SRC_C += micropython/extmod/moduasyncio.c
+SRC_C += micropython/extmod/modubinascii.c
+SRC_C += micropython/extmod/moduhashlib.c
+SRC_C += micropython/extmod/modujson.c
+SRC_C += micropython/extmod/modurandom.c
+SRC_C += micropython/extmod/modure.c
 
 SRC_C += segger_rtt/SEGGER_RTT.c
 SRC_C += segger_rtt/SEGGER_RTT_Syscalls_GCC.c
 SRC_C += segger_rtt/SEGGER_RTT_printf.c
+
+SRC_C += micropython/shared/readline/readline.c
+SRC_C += micropython/shared/timeutils/timeutils.c
+SRC_C += micropython/shared/runtime/interrupt_char.c
+SRC_C += micropython/shared/runtime/stdout_helpers.c
+SRC_C += micropython/shared/runtime/sys_stdio_mphal.c
+SRC_C += micropython/shared/runtime/pyexec.c
+SRC_C += micropython/shared/runtime/gchelper_generic.c
+
+SRC_C += micropython/lib/uzlib/crc32.c
 
 SRC_C += micropython/lib/libm/acoshf.c
 SRC_C += micropython/lib/libm/asinfacosf.c
@@ -139,13 +169,8 @@ SRC_C += micropython/lib/libm/sf_sin.c
 SRC_C += micropython/lib/libm/sf_tan.c
 SRC_C += micropython/lib/libm/wf_lgamma.c
 SRC_C += micropython/lib/libm/wf_tgamma.c
-SRC_C += micropython/shared/libc/printf.c
-SRC_C += micropython/shared/libc/string0.c
-SRC_C += micropython/shared/readline/readline.c
-SRC_C += micropython/shared/runtime/interrupt_char.c
-SRC_C += micropython/shared/runtime/pyexec.c
-SRC_C += micropython/shared/runtime/sys_stdio_mphal.c
-SRC_C += micropython/shared/timeutils/timeutils.c
+# SRC_C += micropython/shared/libc/printf.c
+# SRC_C += micropython/shared/libc/string0.c
 
 SRC_C += nrfx/drivers/src/nrfx_clock.c
 SRC_C += nrfx/drivers/src/nrfx_gpiote.c
@@ -167,7 +192,7 @@ OBJ += $(PY_CORE_O)
 OBJ += $(addprefix build/, $(SRC_C:.c=.o))
 
 # Link required libraries
-LIB += -lm -lc -lgcc
+LIB += -lm -lc -lnosys -lgcc
 
 all: build/application.hex
 

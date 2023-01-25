@@ -36,19 +36,19 @@
 
 #include "driver/config.h"
 #include "driver/flash.h"
-#include "driver/max77654.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
+#include "critical_functions.h"
 
-#define FLASH_CMD_PROGRAM_PAGE      0x02
-#define FLASH_CMD_READ              0x03
-#define FLASH_CMD_ENABLE_WRITE      0x06
-#define FLASH_CMD_STATUS            0x05
-#define FLASH_CMD_CHIP_ERASE        0xC7
-#define FLASH_CMD_JEDEC_ID          0x9F
-#define FLASH_CMD_DEVICE_ID         0x90
+#define FLASH_CMD_PROGRAM_PAGE 0x02
+#define FLASH_CMD_READ 0x03
+#define FLASH_CMD_ENABLE_WRITE 0x06
+#define FLASH_CMD_STATUS 0x05
+#define FLASH_CMD_CHIP_ERASE 0xC7
+#define FLASH_CMD_JEDEC_ID 0x9F
+#define FLASH_CMD_DEVICE_ID 0x90
 
-#define FLASH_STATUS_BUSY_MASK      0x01
+#define FLASH_STATUS_BUSY_MASK 0x01
 
 static inline void flash_cmd_input(uint8_t cmd, uint8_t *buf, size_t len)
 {
@@ -85,14 +85,15 @@ static void flash_wait_completion(void)
 {
     uint8_t status = 0;
 
-    do {
+    do
+    {
         flash_cmd_input(FLASH_CMD_STATUS, &status, 1);
     } while (status & FLASH_STATUS_BUSY_MASK);
 }
 
 static void flash_enable_write(void)
 {
-    flash_cmd_output(FLASH_CMD_ENABLE_WRITE , NULL, 0);
+    flash_cmd_output(FLASH_CMD_ENABLE_WRITE, NULL, 0);
 }
 
 /**
@@ -102,9 +103,9 @@ static void flash_enable_write(void)
  */
 void flash_program_page(uint32_t addr, uint8_t page[FLASH_PAGE_SIZE])
 {
-    uint8_t cmds[] = { FLASH_CMD_PROGRAM_PAGE, addr >> 16, addr >> 8, addr >> 0 };
+    uint8_t cmds[] = {FLASH_CMD_PROGRAM_PAGE, addr >> 16, addr >> 8, addr >> 0};
 
-    assert(addr % FLASH_PAGE_SIZE == 0);
+    app_err(addr % FLASH_PAGE_SIZE != 0);
 
     flash_enable_write();
 
@@ -124,7 +125,7 @@ void flash_program_page(uint32_t addr, uint8_t page[FLASH_PAGE_SIZE])
  */
 void flash_read(uint32_t addr, uint8_t *buf, size_t len)
 {
-    uint8_t cmds[] = { FLASH_CMD_READ, addr >> 16, addr >> 8, addr >> 0 };
+    uint8_t cmds[] = {FLASH_CMD_READ, addr >> 16, addr >> 8, addr >> 0};
 
     spi_chip_select(FLASH_CS_N_PIN);
     spi_write(cmds, sizeof cmds);

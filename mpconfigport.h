@@ -1,9 +1,9 @@
 /*
- * This file is part of the MicroPython for Frame project:
- *      https://github.com/brilliantlabsAR/frame-micropython
+ * This file is part of the MicroPython for Monocle project:
+ *      https://github.com/brilliantlabsAR/monocle-micropython
  *
- * Authored by: Raj Nakarja / Silicon Witchery (raj@siliconwitchery.com)
- *              for Brilliant Labs Inc.
+ * Authored by: Josuah Demangeon (me@josuah.net)
+ *              Raj Nakarja / Brilliant Labs Inc (raj@itsbrilliant.co)
  *
  * ISC Licence
  *
@@ -92,10 +92,10 @@
 #define MICROPY_PY_BUILTINS_HELP_TEXT help_text
 #define MICROPY_PY_BUILTINS_HELP_MODULES (1)
 
-#define MICROPY_ENABLE_EXTERNAL_IMPORT (1)
-#define MICROPY_QSTR_EXTRA_POOL mp_qstr_frozen_const_pool
-#define MICROPY_MODULE_FROZEN_MPY (1)
-#define MICROPY_PY_BUILTINS_FROZENSET (1)
+// #define MICROPY_ENABLE_EXTERNAL_IMPORT (1)
+// #define MICROPY_QSTR_EXTRA_POOL mp_qstr_frozen_const_pool
+// #define MICROPY_MODULE_FROZEN_MPY (1)
+// #define MICROPY_PY_BUILTINS_FROZENSET (1)
 
 #define MICROPY_PY_GC (1)
 #define MICROPY_ENABLE_GC (1)

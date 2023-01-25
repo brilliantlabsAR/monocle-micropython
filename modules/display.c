@@ -36,16 +36,15 @@
 #include "driver/config.h"
 #include "driver/ecx336cn.h"
 #include "driver/fpga.h"
-#include "driver/max77654.h"
 #include "driver/spi.h"
 
 #include "libgfx.h"
 
-#define LEN(x)      (sizeof(x) / sizeof*(x))
-#define VAL(str)    #str
-#define STR(str)    VAL(str)
+#define LEN(x) (sizeof(x) / sizeof *(x))
+#define VAL(str) #str
+#define STR(str) VAL(str)
 
-#define FPGA_ADDR_ALIGN  128
+#define FPGA_ADDR_ALIGN 128
 
 STATIC mp_obj_t display___init__(void)
 {
@@ -69,8 +68,9 @@ STATIC size_t get_first_non_black(gfx_row_t yuv422)
     uint8_t black[] = GFX_YUV422_BLACK;
 
     assert(yuv422.len % sizeof black == 0);
-    for (size_t i = 0; i < yuv422.len; i += sizeof black) {
-        if (memcmp(yuv422.buf+i, black, sizeof black) != 0)
+    for (size_t i = 0; i < yuv422.len; i += sizeof black)
+    {
+        if (memcmp(yuv422.buf + i, black, sizeof black) != 0)
         {
             return i;
         }
@@ -83,8 +83,9 @@ STATIC size_t get_last_non_black(gfx_row_t yuv422)
     uint8_t black[] = GFX_YUV422_BLACK;
 
     assert(yuv422.len % sizeof black == 0);
-    for (size_t i = yuv422.len - sizeof black; i > 0; i -= sizeof black) {
-        if (memcmp(yuv422.buf+i, black, sizeof black) != 0)
+    for (size_t i = yuv422.len - sizeof black; i > 0; i -= sizeof black)
+    {
+        if (memcmp(yuv422.buf + i, black, sizeof black) != 0)
         {
             return i;
         }
@@ -95,7 +96,7 @@ STATIC size_t get_last_non_black(gfx_row_t yuv422)
 STATIC mp_obj_t display_show(void)
 {
     uint8_t buf[ECX336CN_WIDTH * 2];
-    gfx_row_t yuv422 = { .buf = buf, .len = sizeof buf, .y = 0 };
+    gfx_row_t yuv422 = {.buf = buf, .len = sizeof buf, .y = 0};
 
     // fill the display with YUV422 black pixels
     fpga_cmd(FPGA_GRAPHICS_CLEAR);
@@ -126,7 +127,7 @@ STATIC mp_obj_t display_show(void)
 
             // set the base address
             uint32_t u32 = yuv422.y * yuv422.len + beg;
-            uint8_t base[sizeof u32] = { u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0 };
+            uint8_t base[sizeof u32] = {u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0};
             fpga_cmd_write(FPGA_GRAPHICS_BASE, base, sizeof base);
 
             // Flush the content of the screen skipping empty bytes.
@@ -241,20 +242,20 @@ STATIC mp_obj_t display_txt(size_t argc, mp_obj_t const args[])
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_txt_obj, 0, 5, display_txt);
 
 STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_display) },
-    { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&display___init___obj) },
-    { MP_ROM_QSTR(MP_QSTR_text),        MP_ROM_PTR(&display_text_obj) },
-    { MP_ROM_QSTR(MP_QSTR_txt),         MP_ROM_PTR(&display_txt_obj) },
-    { MP_ROM_QSTR(MP_QSTR_line),        MP_ROM_PTR(&display_line_obj) },
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_display)},
+    {MP_ROM_QSTR(MP_QSTR___init__), MP_ROM_PTR(&display___init___obj)},
+    {MP_ROM_QSTR(MP_QSTR_text), MP_ROM_PTR(&display_text_obj)},
+    {MP_ROM_QSTR(MP_QSTR_txt), MP_ROM_PTR(&display_txt_obj)},
+    {MP_ROM_QSTR(MP_QSTR_line), MP_ROM_PTR(&display_line_obj)},
 
     // methods
-    { MP_ROM_QSTR(MP_QSTR_show),        MP_ROM_PTR(&display_show_obj) },
-    { MP_ROM_QSTR(MP_QSTR_brightness),  MP_ROM_PTR(&display_brightness_obj) },
+    {MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&display_show_obj)},
+    {MP_ROM_QSTR(MP_QSTR_brightness), MP_ROM_PTR(&display_brightness_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(display_module_globals, display_module_globals_table);
 
 const mp_obj_module_t display_module = {
-    .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t*)&display_module_globals,
+    .base = {&mp_type_module},
+    .globals = (mp_obj_dict_t *)&display_module_globals,
 };
 MP_REGISTER_MODULE(MP_QSTR_display, display_module);

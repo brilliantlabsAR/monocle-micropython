@@ -30,6 +30,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "nrfx_systick.h"
 #include "nrfx_log.h"
@@ -38,7 +39,6 @@
 #include "critical_functions.h"
 
 #include "driver/config.h"
-#include "driver/max77654.h"
 #include "driver/ov5640_data.h"
 #include "driver/ov5640.h"
 #include "driver/timer.h"

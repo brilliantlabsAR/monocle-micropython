@@ -33,7 +33,6 @@
 #include "driver/fpga.h"
 #include "critical_functions.h"
 #include "driver/ov5640.h"
-#include "driver/max77654.h"
 #include "driver/config.h"
 #include "driver/bluetooth_data_protocol.h"
 

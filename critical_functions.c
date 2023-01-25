@@ -1,3 +1,27 @@
+/*
+ * This file is part of the MicroPython for Monocle project:
+ *      https://github.com/brilliantlabsAR/monocle-micropython
+ *
+ * Authored by: Josuah Demangeon (me@josuah.net)
+ *              Raj Nakarja / Brilliant Labs Inc (raj@itsbrilliant.co)
+ *
+ * ISC Licence
+ *
+ * Copyright © 2023 Brilliant Labs Inc.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -201,9 +225,8 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
         // Put PMIC main bias into low power mode
         app_err(i2c_write(PMIC_ADDRESS, 0x10, 0x20, 0x20).fail);
 
-        // Touch into low power mode ?
+        // Set up the touch interrupt pin
 
-        // Set up the touch event
         nrf_gpio_cfg_sense_input(TOUCH_INTERRUPT_PIN,
                                  NRF_GPIO_PIN_NOPULL,
                                  NRF_GPIO_PIN_SENSE_LOW);
@@ -361,4 +384,13 @@ void pmic_set_led(led_t led, bool enable)
             app_err(i2c_write(PMIC_ADDRESS, 0x12, 0x2D, 0x08).fail);
         }
     }
+}
+
+void enter_bootloader(void)
+{
+    // Set the persistent memory flag telling the bootloader to go into DFU mode.
+    sd_power_gpregret_set(0, 0xB1);
+
+    // Reset the CPU, giving control to the bootloader.
+    NVIC_SystemReset();
 }

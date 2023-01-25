@@ -91,8 +91,8 @@ void jojpeg_write(uint8_t const *jpeg_buf, size_t jpeg_len)
         if (ble_pos == ble_len) {
             data_flush_ble_packet();
         }
-        assert(ble_pos < ble_len);
-        assert(ble_pos > 0);
+        app_err(ble_pos < ble_len);
+        app_err(ble_pos > 0);
         ble_buf[ble_pos++] = jpeg_buf[i];
     }
 }

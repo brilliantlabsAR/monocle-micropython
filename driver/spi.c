@@ -40,6 +40,7 @@
 
 #include "driver/config.h"
 #include "driver/spi.h"
+#include "py/misc.h"
 
 // SPI instance
 const nrfx_spim_t spi2 = NRFX_SPIM_INSTANCE(2);

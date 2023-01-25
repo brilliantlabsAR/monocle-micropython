@@ -32,7 +32,6 @@
 
 #include "driver/config.h"
 #include "driver/fpga.h"
-#include "driver/max77654.h"
 #include "driver/spi.h"
 
 STATIC mp_obj_t mod_fpga___init__(void)
@@ -43,7 +42,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_fpga___init___obj, mod_fpga___init__);
 
 static inline void spi_write_u16(uint16_t u16)
 {
-    uint8_t buf[2] = { u16 >> 8, u16 >> 0 };
+    uint8_t buf[2] = {u16 >> 8, u16 >> 0};
     spi_write(buf, sizeof buf);
 }
 
@@ -116,18 +115,18 @@ STATIC mp_obj_t fpga_status(void)
 MP_DEFINE_CONST_FUN_OBJ_0(fpga_status_obj, &fpga_status);
 
 STATIC const mp_rom_map_elem_t fpga_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_fpga) },
-    { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&mod_fpga___init___obj) },
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_fpga)},
+    {MP_ROM_QSTR(MP_QSTR___init__), MP_ROM_PTR(&mod_fpga___init___obj)},
 
     // methods
-    { MP_ROM_QSTR(MP_QSTR_write),       MP_ROM_PTR(&fpga_write_obj) },
-    { MP_ROM_QSTR(MP_QSTR_read),        MP_ROM_PTR(&fpga_read_obj) },
-    { MP_ROM_QSTR(MP_QSTR_status),      MP_ROM_PTR(&fpga_status_obj) },
+    {MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&fpga_write_obj)},
+    {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&fpga_read_obj)},
+    {MP_ROM_QSTR(MP_QSTR_status), MP_ROM_PTR(&fpga_status_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(fpga_module_globals, fpga_module_globals_table);
 
 const mp_obj_module_t fpga_module = {
-    .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t*)&fpga_module_globals,
+    .base = {&mp_type_module},
+    .globals = (mp_obj_dict_t *)&fpga_module_globals,
 };
 MP_REGISTER_MODULE(MP_QSTR_fpga, fpga_module);
