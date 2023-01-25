@@ -1,5 +1,10 @@
 Changelog
 =========
+
+v23.025.1215
+------------
+- Bugfix: fix the line drawing being flipped if x1 > x2
+
 v23.023.1011
 ------------
 - Bugfix: improve the text rendering feature, more stable less bugs.
