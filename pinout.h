@@ -12,7 +12,7 @@
 #define PMIC_TOUCH_I2C_SDA_PIN 13             // P0.13 I2C data GPIO pin.
 #define CAMERA_I2C_SCL_PIN 18                 // P0.18 I2C clock GPIO pin.
 #define CAMERA_I2C_SDA_PIN 16                 // P0.16 I2C data GPIO pin.
-#define IQS620_TOUCH_RDY_PIN 2                // P0.02 Interrupt pin.
+#define TOUCH_INTERRUPT_PIN 2                // P0.02 Interrupt pin.
 #define MAX77654_ADC_PIN NRF_SAADC_INPUT_AIN1 // P0.02/AIN0 = VBATT_MEAS
 #define MAX77654_IRQ_PIN 14                   // P0.14
 #define OV5640_PWDN_PIN 1                     // P0.01

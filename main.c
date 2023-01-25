@@ -161,7 +161,7 @@ NORETURN void __assert_func(const char *file, int line, const char *func, const 
 //         max77654_power_off();
 
 //         // Wakeup from events of IQS620 touch controller .
-//         nrf_gpio_cfg_sense_input(IQS620_TOUCH_RDY_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
+//         nrf_gpio_cfg_sense_input(TOUCH_INTERRUPT_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
 
 //         // Power the SoftDevice and the whole chip off.
 //         sd_power_system_off();

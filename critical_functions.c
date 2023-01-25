@@ -20,6 +20,7 @@
  */
 
 #define PMIC_ADDRESS 0x48
+#define TOUCH_ADDRESS 0x44
 
 static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
 static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
@@ -30,11 +31,11 @@ void i2c_init(void)
 {
     nrfx_twim_config_t bus_0_config = NRFX_TWIM_DEFAULT_CONFIG(PMIC_TOUCH_I2C_SCL_PIN,
                                                                PMIC_TOUCH_I2C_SDA_PIN);
-    bus_0_config.frequency = NRF_TWIM_FREQ_400K;
+    bus_0_config.frequency = NRF_TWIM_FREQ_100K;
 
     nrfx_twim_config_t bus_1_config = NRFX_TWIM_DEFAULT_CONFIG(CAMERA_I2C_SCL_PIN,
                                                                CAMERA_I2C_SDA_PIN);
-    bus_1_config.frequency = NRF_TWIM_FREQ_400K;
+    bus_1_config.frequency = NRF_TWIM_FREQ_100K;
 
     app_err(nrfx_twim_init(&i2c_bus_0, &bus_0_config, NULL, NULL));
     app_err(nrfx_twim_init(&i2c_bus_1, &bus_1_config, NULL, NULL));
@@ -161,19 +162,9 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
         // If the last try failed. Don't continue
         if (i == 2)
         {
-            log("Ran through all attempts");
             resp.fail = true;
             return resp;
         }
-    }
-
-    // Check that the register was correctly updated
-    resp = i2c_read(device_address_7bit, register_address, 0xFF);
-
-    if (resp.value != updated_value)
-    {
-        log("register didn't update");
-        resp.fail = true;
     }
 
     return resp;
@@ -187,14 +178,14 @@ static bool startup_already_done = false;
 static void check_if_battery_charging_and_sleep(void)
 {
     // Get the CHG value from STAT_CHG_B
-    i2c_response_t battery_charging_resp = i2c_read(PMIC_ADDRESS, 0x03, 0x02);
+    i2c_response_t battery_charging_resp = i2c_read(PMIC_ADDRESS, 0x03, 0x0C);
     app_err(battery_charging_resp.fail);
     if (battery_charging_resp.value)
     {
         // Turn off all the rails
         // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
-        app_err(i2c_write(PMIC_ADDRESS, 0x13, 0x2D, 0x25).fail); // Turn off 10V on PMIC GPIO2
-        app_err(i2c_write(PMIC_ADDRESS, 0x3B, 0x1F, 0x1C).fail); // Turn off load switch to LEDs // TODO is this really set to load switch?
+        app_err(i2c_write(PMIC_ADDRESS, 0x13, 0x2D, 0x04).fail); // Turn off 10V on PMIC GPIO2
+        app_err(i2c_write(PMIC_ADDRESS, 0x3B, 0x1F, 0x0C).fail); // Turn off LDO to LEDs
         app_err(i2c_write(PMIC_ADDRESS, 0x2A, 0x0F, 0x0C).fail); // Turn off 2.7V
         app_err(i2c_write(PMIC_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch
         app_err(i2c_write(PMIC_ADDRESS, 0x2E, 0x0F, 0x0C).fail); // Turn off 1.2V
@@ -203,15 +194,20 @@ static void check_if_battery_charging_and_sleep(void)
         app_err(i2c_write(PMIC_ADDRESS, 0x28, 0x0F, 0x00).fail);
 
         // Put PMIC main bias into low power mode
-        // app_err(i2c_write(PMIC_ADDRESS, 0x10, 0x20, 0x20).fail);
+        app_err(i2c_write(PMIC_ADDRESS, 0x10, 0x20, 0x20).fail);
 
-        // Touch into low power mode
+        // Touch into low power mode ?
 
         // Set up the touch event
-        nrf_gpio_cfg_sense_input(IQS620_TOUCH_RDY_PIN, NRF_GPIO_PIN_PULLUP, NRF_GPIO_PIN_SENSE_LOW);
+        nrf_gpio_cfg_sense_input(TOUCH_INTERRUPT_PIN,
+                                 NRF_GPIO_PIN_NOPULL,
+                                 NRF_GPIO_PIN_SENSE_LOW);
 
-        // Sleep
-        app_err(sd_power_system_off());
+        NRF_POWER->SYSTEMOFF = 1;
+
+        while (1)
+        {
+        }
     }
 }
 
@@ -223,7 +219,6 @@ void setup_pmic_and_sleep_mode(void)
 
     i2c_init();
 
-    log("MAX77654 early setup");
     {
         // Read the PMIC CID
         i2c_response_t resp = i2c_read(PMIC_ADDRESS, 0x14, 0x0F);
@@ -250,16 +245,42 @@ void setup_pmic_and_sleep_mode(void)
     }
 
     // configure the touch
-    // TODO
-    // Configure the touch IC for low power mode
-    // Configure and enable GPIO sense
-
-    while (1)
     {
+        // Read the touch CID
+        i2c_response_t resp = i2c_read(TOUCH_ADDRESS, 0x00, 0xFF);
+        if (resp.fail || resp.value != 0x41)
+        {
+            app_err(resp.value);
+        }
+
+        app_err(i2c_write(TOUCH_ADDRESS, 0xD0, 0x60, 0x60).fail); // Ack resets and enable event mode
+        app_err(i2c_write(TOUCH_ADDRESS, 0xD1, 0xFF, 0x03).fail); // Enable ch0 and ch1
+        app_err(i2c_write(TOUCH_ADDRESS, 0xD2, 0x20, 0x20).fail); // Disable auto power mode switching // TODO enable ULP mode
+        app_err(i2c_write(TOUCH_ADDRESS, 0x40, 0xFF, 0x01).fail); // Enable rx0 to cap sensing
+        app_err(i2c_write(TOUCH_ADDRESS, 0x41, 0xFF, 0x02).fail); // Enable rx1 to cap sensing
+        app_err(i2c_write(TOUCH_ADDRESS, 0x43, 0x60, 0x20).fail); // 15pf, 1/8 divider on ch0
+        app_err(i2c_write(TOUCH_ADDRESS, 0x44, 0x60, 0x20).fail); // 15pf, 1/8 divider on ch1
+        app_err(i2c_write(TOUCH_ADDRESS, 0x46, 0xFF, 0x1E).fail); // ATI base 75 and target = 30 on ch0
+        app_err(i2c_write(TOUCH_ADDRESS, 0x47, 0xFF, 0x1E).fail); // ATI base 75 and target = 30 on ch1
+        app_err(i2c_write(TOUCH_ADDRESS, 0x60, 0xFF, 0x0A).fail); // Proximity thresholds
+        app_err(i2c_write(TOUCH_ADDRESS, 0x62, 0xFF, 0x0A).fail); // Proximity thresholds
+        app_err(i2c_write(TOUCH_ADDRESS, 0x61, 0xFF, 0x0A).fail); // Proximity thresholds
+        app_err(i2c_write(TOUCH_ADDRESS, 0x63, 0xFF, 0x0A).fail); // Proximity thresholds
+        app_err(i2c_write(TOUCH_ADDRESS, 0xD0, 0x22, 0x22).fail); // Redo ATI and enable event mode
+
+        // Delay to complete configuration
+        for (int i = 0; i < 10000000; i++)
+        {
+            __asm volatile("nop");
+        }
     }
 
     check_if_battery_charging_and_sleep(); // This won't return if charging
     // timer_add_task(timer_500ms, check_if_battery_charging_and_sleep);
+
+    while (1)
+    {
+    }
 
     // Power up everything for normal operation.
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
@@ -278,8 +299,13 @@ void setup_pmic_and_sleep_mode(void)
         app_err(i2c_write(PMIC_ADDRESS, 0x29, 0xFF, 0x26).fail);
         app_err(i2c_write(PMIC_ADDRESS, 0x2A, 0x4F, 0x4F).fail);
 
-        // Set LDO1 to load switch mode and turn on
-        app_err(i2c_write(PMIC_ADDRESS, 0x3B, 0x1F, 0x1F).fail);
+        // Configure LEDs on GPIO0 and GPIO1 as open drain outputs. Set to hi-z
+        app_err(i2c_write(PMIC_ADDRESS, 0x11, 0x2D, 0x08).fail);
+        app_err(i2c_write(PMIC_ADDRESS, 0x12, 0x2D, 0x08).fail);
+
+        // Set LDO1 to 3.3V and turn on
+        app_err(i2c_write(PMIC_ADDRESS, 0x3A, 0xFF, 0x64).fail);
+        app_err(i2c_write(PMIC_ADDRESS, 0x3B, 0x1F, 0x0F).fail);
 
         // Enable the 10V boost
         app_err(i2c_write(PMIC_ADDRESS, 0x13, 0x2D, 0x0C).fail);
@@ -294,3 +320,29 @@ void setup_pmic_and_sleep_mode(void)
 /**
  * @brief PMIC helper functions.
  */
+
+void pmic_set_led(led_t led, bool enable)
+{
+    if (led == RED_LED)
+    {
+        if (enable)
+        {
+            app_err(i2c_write(PMIC_ADDRESS, 0x11, 0x2D, 0x00).fail);
+        }
+        else
+        {
+            app_err(i2c_write(PMIC_ADDRESS, 0x11, 0x2D, 0x08).fail);
+        }
+    }
+    if (led == GREEN_LED)
+    {
+        if (enable)
+        {
+            app_err(i2c_write(PMIC_ADDRESS, 0x12, 0x2D, 0x00).fail);
+        }
+        else
+        {
+            app_err(i2c_write(PMIC_ADDRESS, 0x12, 0x2D, 0x08).fail);
+        }
+    }
+}

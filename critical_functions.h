@@ -40,6 +40,18 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
                          uint8_t set_value);
 
 /**
+ * @brief PMIC helpers
+ */
+
+typedef enum led_t
+{
+    GREEN_LED,
+    RED_LED
+} led_t;
+
+void pmic_set_led(led_t led, bool enable);
+
+/**
  * @brief Error and logging macro
  */
 

@@ -304,7 +304,7 @@ static void iqs620_process_state(uint8_t button, iqs620_state_t *old, iqs620_sta
  */
 static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
 {
-    assert(pin == IQS620_TOUCH_RDY_PIN);
+    assert(pin == TOUCH_INTERRUPT_PIN);
 
     // Set the triggered state, used for waiting an event from the IQS620 chip.
     if (!iqs620_enabled)
@@ -359,7 +359,7 @@ void iqs620_init(void)
 {
     // Setup the GPIO pin for touch state interrupts.
     nrf_gpio_cfg(
-        IQS620_TOUCH_RDY_PIN,
+        TOUCH_INTERRUPT_PIN,
         NRF_GPIO_PIN_DIR_INPUT,
         NRF_GPIO_PIN_INPUT_CONNECT,
         NRF_GPIO_PIN_PULLUP,
@@ -369,10 +369,10 @@ void iqs620_init(void)
     // Configure the TOUCH_RDY pin for high-to-low edge GPIOTE event
     nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_HITOLO(true);
     config.pull = NRF_GPIO_PIN_PULLUP;
-    app_err(nrfx_gpiote_in_init(IQS620_TOUCH_RDY_PIN, &config, iqs620_touch_rdy_handler));
+    app_err(nrfx_gpiote_in_init(TOUCH_INTERRUPT_PIN, &config, iqs620_touch_rdy_handler));
 
     // Disable the TOUCH_RDY event during reset.
-    nrfx_gpiote_in_event_disable(IQS620_TOUCH_RDY_PIN);
+    nrfx_gpiote_in_event_disable(TOUCH_INTERRUPT_PIN);
 
     // Initiate soft reset.
     i2c_write(IQS620_ADDRESS, IQS620_SYS_SETTINGS, 0xFF, 1 << 7);
@@ -395,5 +395,5 @@ void iqs620_init(void)
     }
 
     // Enable the TOUCH_RDY event after the reset.
-    nrfx_gpiote_in_event_enable(IQS620_TOUCH_RDY_PIN, true);
+    nrfx_gpiote_in_event_enable(TOUCH_INTERRUPT_PIN, true);
 }
