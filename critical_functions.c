@@ -182,8 +182,6 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
     (void)event_type;
     (void)p_context;
 
-    log("Called");
-
     // Get the CHG value from STAT_CHG_B
     i2c_response_t battery_charging_resp = i2c_read(PMIC_ADDRESS, 0x03, 0x0C);
     app_err(battery_charging_resp.fail);
@@ -212,6 +210,7 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
 
         NRF_POWER->SYSTEMOFF = 1;
 
+        // Never return
         while (1)
         {
         }
@@ -274,6 +273,7 @@ void setup_pmic_and_sleep_mode(void)
         app_err(i2c_write(TOUCH_ADDRESS, 0x61, 0xFF, 0x0A).fail); // Proximity thresholds
         app_err(i2c_write(TOUCH_ADDRESS, 0x63, 0xFF, 0x0A).fail); // Proximity thresholds
         app_err(i2c_write(TOUCH_ADDRESS, 0xD0, 0x22, 0x22).fail); // Redo ATI and enable event mode
+                                                                  // TODO what interrupts are enabled?
 
         // Delay to complete configuration
         for (int i = 0; i < 10000000; i++)
@@ -301,16 +301,9 @@ void setup_pmic_and_sleep_mode(void)
         nrfx_timer_enable(&timer);
     }
 
-    while (1)
-    {
-    }
-
     // Power up everything for normal operation.
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
     {
-        // Put PMIC main bias into normal mode
-        // app_err(i2c_write(PMIC_ADDRESS, 0x10, 0x20, 0x00).fail);
-
         // Set SBB2 to 1.2V and turn on
         app_err(i2c_write(PMIC_ADDRESS, 0x2D, 0xFF, 0x08).fail);
         app_err(i2c_write(PMIC_ADDRESS, 0x2E, 0x4F, 0x4F).fail);
@@ -318,8 +311,8 @@ void setup_pmic_and_sleep_mode(void)
         // Set LDO0 to load switch mode and turn on
         app_err(i2c_write(PMIC_ADDRESS, 0x39, 0x1F, 0x1F).fail);
 
-        // Set SBB0 to 2.7V and turn on
-        app_err(i2c_write(PMIC_ADDRESS, 0x29, 0xFF, 0x26).fail);
+        // Set SBB0 to 2.8V and turn on
+        app_err(i2c_write(PMIC_ADDRESS, 0x29, 0xFF, 0x28).fail);
         app_err(i2c_write(PMIC_ADDRESS, 0x2A, 0x4F, 0x4F).fail);
 
         // Configure LEDs on GPIO0 and GPIO1 as open drain outputs. Set to hi-z
