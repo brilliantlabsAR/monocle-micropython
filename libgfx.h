@@ -34,19 +34,21 @@ typedef struct
 {
     uint8_t *buf;
     size_t len;
-    uint16_t y;
+    int16_t y;
 } gfx_row_t;
+
+typedef union
+{
+    void const *ptr;
+    uint32_t u32;
+} gfx_arg_t;
 
 typedef struct
 {
-    uint16_t x, y, width, height;
-    union
-    {
-        void *ptr;
-        uint32_t u32;
-    } u;
+    int16_t x, y, width, height;
     uint8_t yuv444[3];
     uint8_t type;
+    gfx_arg_t arg;
 } gfx_obj_t;
 
 #define GFX_RGB_TO_YUV444(r, g, b) { \
@@ -57,8 +59,8 @@ typedef struct
 
 #define GFX_YUV422_BLACK    { 0x80, 0x00 }
 
-void gfx_set_color(gfx_obj_t *gfx, uint16_t line_num, gfx_obj_t *obj_list, size_t obj_num);
+void gfx_set_color(gfx_obj_t *gfx, int16_t line_num, gfx_obj_t *obj_list, size_t obj_num);
 bool gfx_render_row(gfx_row_t row, gfx_obj_t *obj_list, size_t obj_num);
 void gfx_fill_black(gfx_row_t row);
-uint16_t gfx_get_text_width(char const *s, size_t len);
-uint16_t gfx_get_text_height(void);
+int16_t gfx_get_text_width(char const *s, size_t len);
+int16_t gfx_get_text_height(void);

@@ -44,7 +44,7 @@ jobs:
 
             You can flash the hex file with [nrfjprog](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools) and [JLink](https://www.segger.com/products/debug-probes/j-link/):
             ```
-            nrfjprog --family nrf52 --recover --program brilliant-monocle-${{ github.ref_name }}.hex --verify --debugreset
+            nrfjprog --family nrf52 --recover --program brilliant-monocle-${{ github.ref_name }}.hex --verify --reset
             ```
 
             See the [documentation](https://monocle-docs.readthedocs.io/en/latest/firmware_how_to.html) for more.
