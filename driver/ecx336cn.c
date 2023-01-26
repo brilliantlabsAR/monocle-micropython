@@ -40,7 +40,6 @@
 #include "driver/ecx336cn.h"
 #include "driver/fpga.h"
 #include "driver/spi.h"
-#include "driver/timer.h"
 
 #define LEN(x) (sizeof(x) / sizeof *(x))
 

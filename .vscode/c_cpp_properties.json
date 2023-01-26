@@ -30,7 +30,7 @@
                 "nrfx/helpers",
                 "nrfx/mdk",
                 "nrfx/soc",
-                "segger_rtt",
+                "segger",
                 "softdevice/include",
                 "softdevice/include/nrf52"
             ],

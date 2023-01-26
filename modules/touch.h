@@ -1,12 +1,13 @@
 /*
- * This file is part of the MicroPython for Monocle:
- *      https://github.com/Itsbrilliantlabs/monocle-micropython
+ * This file is part of the MicroPython for Monocle project:
+ *      https://github.com/brilliantlabsAR/monocle-micropython
  *
- * Authored by: Josuah Demangeon <me@josuah.net>
+ * Authored by: Josuah Demangeon (me@josuah.net)
+ *              Raj Nakarja / Brilliant Labs Inc (raj@itsbrilliant.co)
  *
  * ISC Licence
  *
- * Copyright © 2022 Brilliant Labs Inc.
+ * Copyright © 2023 Brilliant Labs Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -21,18 +22,17 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/**
- * Wrapper around NRFX timers for sharing a single periodic timer.
- */
+#pragma once
 
-typedef void timer_task_t(void);
+typedef enum touch_action_t
+{
+    A_TOUCH,
+    B_TOUCH,
+    A_DEEP_TOUCH,
+    B_DEEP_TOUCH,
+    A_PROXIMITY,
+    B_PROXIMITY,
+    _LEN_TOUCH_ACTION_T,
+} touch_action_t;
 
-#define TIMER_MAX_TASKS     5
-
-extern timer_task_t *timer_1ms[TIMER_MAX_TASKS];
-extern timer_task_t *timer_500ms[TIMER_MAX_TASKS];
-
-void timer_start(void);
-void timer_add_task(timer_task_t **list, timer_task_t *fn);
-void timer_del_task(timer_task_t **list, timer_task_t *fn);
-uint64_t timer_get_uptime_ms(void);
+void touch_event_handler(touch_action_t action);

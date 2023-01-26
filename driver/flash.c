@@ -37,7 +37,6 @@
 #include "driver/config.h"
 #include "driver/flash.h"
 #include "driver/spi.h"
-#include "driver/timer.h"
 #include "monocle.h"
 
 #define FLASH_CMD_PROGRAM_PAGE 0x02

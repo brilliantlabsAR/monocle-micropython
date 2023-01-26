@@ -39,9 +39,10 @@
 #include "shared/runtime/pyexec.h"
 #include "genhdr/mpversion.h"
 
+#include "monocle.h"
+#include "touch.h"
 #include "nrfx.h"
 
-#include "monocle.h"
 #include "nrfx_log.h"
 #include "nrf_sdm.h"
 #include "nrf_power.h"
@@ -61,9 +62,7 @@
 #include "driver/ecx336cn.h"
 #include "driver/flash.h"
 #include "driver/fpga.h"
-#include "driver/iqs620.h"
 #include "driver/spi.h"
-#include "driver/timer.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 
@@ -73,12 +72,19 @@ extern uint32_t _heap_start;
 extern uint32_t _heap_end;
 
 static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
-                                    nrf_gpiote_polarity_t action)
+                                    nrf_gpiote_polarity_t polarity)
 {
     (void)pin;
-    (void)action;
-    // TODO
-    log("touch event!");
+    (void)polarity;
+
+    /*
+    // Read the interrupt registers
+    i2c_response_t global_reg_0x11 = i2c_read(TOUCH_I2C_ADDRESS, 0x11, 0xFF);
+    i2c_response_t sar_ui_reg_0x12 = i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
+    i2c_response_t sar_ui_reg_0x13 = i2c_read(TOUCH_I2C_ADDRESS, 0x13, 0xFF);
+    */
+    touch_action_t touch_action = A_TOUCH; // TODO this should be decoded from the I2C responses
+    touch_event_handler(touch_action);
 }
 
 /**

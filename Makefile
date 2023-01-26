@@ -108,9 +108,7 @@ SRC_C += driver/bluetooth_low_energy.c
 SRC_C += driver/ecx336cn.c
 SRC_C += driver/flash.c
 SRC_C += driver/fpga.c
-SRC_C += driver/iqs620.c
 SRC_C += driver/spi.c
-SRC_C += driver/timer.c
 
 SRC_C += micropython/extmod/moduasyncio.c
 SRC_C += micropython/extmod/modubinascii.c
