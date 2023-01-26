@@ -37,7 +37,7 @@
 #include "driver/config.h"
 #include "driver/timer.h"
 
-#include "critical_functions.h"
+#include "monocle.h"
 
 #define LEN(x) (sizeof(x) / sizeof *(x))
 

@@ -37,7 +37,7 @@
 #include "driver/fpga.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
-#include "critical_functions.h"
+#include "monocle.h"
 
 void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len)
 {

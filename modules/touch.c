@@ -21,7 +21,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -34,14 +33,15 @@
 #include "nrfx_twi.h"
 
 #include "driver/config.h"
-#include "critical_functions.h"
+#include "monocle.h"
 #include "driver/iqs620.h"
 #include "driver/timer.h"
 
-#define ASSERT  NRFX_ASSERT
-#define LEN(x) (sizeof(x) / sizeof*(x))
+#define ASSERT NRFX_ASSERT
+#define LEN(x) (sizeof(x) / sizeof *(x))
 
-enum {
+enum
+{
     TOUCH_ACTION_LONG,
     TOUCH_ACTION_PRESS,
     TOUCH_ACTION_SLIDE,
@@ -54,10 +54,10 @@ enum {
 #define TOUCH_BUTTON_NUM 2
 
 /** Timeout for button press (ticks) = 0.5 s */
-#define TOUCH_DELAY_SHORT_MS        500000
+#define TOUCH_DELAY_SHORT_MS 500000
 
 /** Timeout for long button press (ticks) = 9.5 s + PRESS_INTERVAL = 10 s */
-#define TOUCH_DELAY_LONG_MS         9500000
+#define TOUCH_DELAY_LONG_MS 9500000
 
 /*
  * This state machine can distinguish between the various gestures.
@@ -67,7 +67,8 @@ enum {
  * for most gestures, but after TAP_INTERVAL for Tap (i.e. some delay).
  */
 
-typedef enum {
+typedef enum
+{
     TOUCH_STATE_INVALID,
 
     TOUCH_STATE_IDLE,
@@ -133,13 +134,14 @@ typedef enum {
     TOUCH_STATE_NUM,
 } touch_state_t;
 
-typedef enum {
+typedef enum
+{
     TOUCH_EVENT_0_ON,
     TOUCH_EVENT_0_OFF,
     TOUCH_EVENT_1_ON,
     TOUCH_EVENT_1_OFF,
-    TOUCH_EVENT_SHORT,  // timer triggered after a short delay
-    TOUCH_EVENT_LONG,   // timer triggered after a longer delay
+    TOUCH_EVENT_SHORT, // timer triggered after a short delay
+    TOUCH_EVENT_LONG,  // timer triggered after a longer delay
     TOUCH_EVENT_NUM
 } touch_event_t;
 
@@ -147,130 +149,130 @@ touch_state_t touch_state = TOUCH_STATE_IDLE;
 const touch_state_t touch_state_machine[TOUCH_STATE_NUM][TOUCH_EVENT_NUM] = {
     // When asserts are off, go back to IDLE state on every event.
     [TOUCH_STATE_INVALID] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_IDLE,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_IDLE,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_IDLE,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_IDLE,
-        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_IDLE,
-        [TOUCH_EVENT_LONG]      = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_0_OFF] = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_1_OFF] = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_SHORT] = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_LONG] = TOUCH_STATE_IDLE,
     },
     // Starting point, also set after a TOUCH_TRIGGER_* event.
     [TOUCH_STATE_IDLE] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_IDLE,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_IDLE,
-        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_IDLE,
-        [TOUCH_EVENT_LONG]      = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_0_OFF] = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_OFF] = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_SHORT] = TOUCH_STATE_IDLE,
+        [TOUCH_EVENT_LONG] = TOUCH_STATE_IDLE,
     },
     // Touched button 0.
     [TOUCH_STATE_0_ON] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_0_ON,
-        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_0_ON_SHORT,
-        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_0_OFF] = TOUCH_STATE_0_ON_OFF,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_1_OFF] = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_SHORT] = TOUCH_STATE_0_ON_SHORT,
+        [TOUCH_EVENT_LONG] = TOUCH_STATE_INVALID,
     },
     // Touched button 1.
     [TOUCH_STATE_1_ON] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_1_ON_OFF,
-        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_1_ON_SHORT,
-        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_0_OFF] = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_OFF] = TOUCH_STATE_1_ON_OFF,
+        [TOUCH_EVENT_SHORT] = TOUCH_STATE_1_ON_SHORT,
+        [TOUCH_EVENT_LONG] = TOUCH_STATE_INVALID,
     },
     // Touched button 0 and maintained for a short time.
     [TOUCH_STATE_0_ON_SHORT] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON_SHORT,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_0_PRESS,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_0_ON_SHORT,
-        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
-        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_0_LONG,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_0_ON_SHORT,
+        [TOUCH_EVENT_0_OFF] = TOUCH_TRIGGER_0_PRESS,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_1_OFF] = TOUCH_STATE_0_ON_SHORT,
+        [TOUCH_EVENT_SHORT] = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_LONG] = TOUCH_TRIGGER_0_LONG,
     },
     // Touched button 1 and maintained for a short time.
     [TOUCH_STATE_1_ON_SHORT] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON_SHORT,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_1_PRESS,
-        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
-        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_1_LONG,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_0_OFF] = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_1_ON_SHORT,
+        [TOUCH_EVENT_1_OFF] = TOUCH_TRIGGER_1_PRESS,
+        [TOUCH_EVENT_SHORT] = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_LONG] = TOUCH_TRIGGER_1_LONG,
     },
     // Touched both buttons.
     [TOUCH_STATE_BOTH_ON] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_BOTH_TAP,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_BOTH_TAP,
-        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_BOTH_ON,
-        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_0_OFF] = TOUCH_TRIGGER_BOTH_TAP,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_1_OFF] = TOUCH_TRIGGER_BOTH_TAP,
+        [TOUCH_EVENT_SHORT] = TOUCH_STATE_BOTH_ON,
+        [TOUCH_EVENT_LONG] = TOUCH_STATE_INVALID,
     },
     // Touched both buttons and maintained for a short time.
     [TOUCH_STATE_BOTH_ON_SHORT] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_BOTH_ON_SHORT,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_TRIGGER_BOTH_PRESS,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_BOTH_ON_SHORT,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_BOTH_PRESS,
-        [TOUCH_EVENT_SHORT]     = TOUCH_STATE_INVALID,
-        [TOUCH_EVENT_LONG]      = TOUCH_TRIGGER_BOTH_LONG,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_BOTH_ON_SHORT,
+        [TOUCH_EVENT_0_OFF] = TOUCH_TRIGGER_BOTH_PRESS,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_BOTH_ON_SHORT,
+        [TOUCH_EVENT_1_OFF] = TOUCH_TRIGGER_BOTH_PRESS,
+        [TOUCH_EVENT_SHORT] = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_LONG] = TOUCH_TRIGGER_BOTH_LONG,
     },
     // Touched then released button 0.
     [TOUCH_STATE_0_ON_OFF] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_0_ON_OFF,
-        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_0_TAP,
-        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_0_ON,
+        [TOUCH_EVENT_0_OFF] = TOUCH_STATE_0_ON_OFF,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_1_OFF] = TOUCH_STATE_0_ON_OFF,
+        [TOUCH_EVENT_SHORT] = TOUCH_TRIGGER_0_TAP,
+        [TOUCH_EVENT_LONG] = TOUCH_STATE_INVALID,
     },
     // Touched then released button 1.
     [TOUCH_STATE_1_ON_OFF] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_1_ON,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON_OFF,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_STATE_1_ON_OFF,
-        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_1_TAP,
-        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_1_ON,
+        [TOUCH_EVENT_0_OFF] = TOUCH_STATE_1_ON_OFF,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_1_OFF] = TOUCH_STATE_1_ON_OFF,
+        [TOUCH_EVENT_SHORT] = TOUCH_TRIGGER_1_TAP,
+        [TOUCH_EVENT_LONG] = TOUCH_STATE_INVALID,
     },
     // Touched then released button 0, then touched button 1.
     [TOUCH_STATE_0_ON_OFF_1_ON] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_0_ON_OFF_1_ON,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_0_ON_OFF_1_ON,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_0_1_SLIDE,
-        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_0_1_SLIDE,
-        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_0_OFF] = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_0_ON_OFF_1_ON,
+        [TOUCH_EVENT_1_OFF] = TOUCH_TRIGGER_0_1_SLIDE,
+        [TOUCH_EVENT_SHORT] = TOUCH_TRIGGER_0_1_SLIDE,
+        [TOUCH_EVENT_LONG] = TOUCH_STATE_INVALID,
     },
     // Touched then released button 1, then touched button 0.
     [TOUCH_STATE_1_ON_OFF_0_ON] = {
-        [TOUCH_EVENT_0_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
-        [TOUCH_EVENT_0_OFF]     = TOUCH_STATE_1_ON_OFF_0_ON,
-        [TOUCH_EVENT_1_ON]      = TOUCH_STATE_1_ON_OFF_0_ON,
-        [TOUCH_EVENT_1_OFF]     = TOUCH_TRIGGER_1_0_SLIDE,
-        [TOUCH_EVENT_SHORT]     = TOUCH_TRIGGER_1_0_SLIDE,
-        [TOUCH_EVENT_LONG]      = TOUCH_STATE_INVALID,
+        [TOUCH_EVENT_0_ON] = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_0_OFF] = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_1_ON] = TOUCH_STATE_1_ON_OFF_0_ON,
+        [TOUCH_EVENT_1_OFF] = TOUCH_TRIGGER_1_0_SLIDE,
+        [TOUCH_EVENT_SHORT] = TOUCH_TRIGGER_1_0_SLIDE,
+        [TOUCH_EVENT_LONG] = TOUCH_STATE_INVALID,
     },
 };
 
 static bool touch_trigger_is_on[TOUCH_STATE_NUM] = {
     // Push and quick release.
-    [TOUCH_TRIGGER_0_TAP]      = true,
-    [TOUCH_TRIGGER_1_TAP]      = true,
-    [TOUCH_TRIGGER_BOTH_TAP]   = true,
+    [TOUCH_TRIGGER_0_TAP] = true,
+    [TOUCH_TRIGGER_1_TAP] = true,
+    [TOUCH_TRIGGER_BOTH_TAP] = true,
     // Push one for >0.5s and <10s then release.
-    [TOUCH_TRIGGER_0_PRESS]    = true,
-    [TOUCH_TRIGGER_1_PRESS]    = true,
+    [TOUCH_TRIGGER_0_PRESS] = true,
+    [TOUCH_TRIGGER_1_PRESS] = true,
     [TOUCH_TRIGGER_BOTH_PRESS] = true,
     // Push for >10s then release.
-    [TOUCH_TRIGGER_0_LONG]     = true,
-    [TOUCH_TRIGGER_1_LONG]     = true,
-    [TOUCH_TRIGGER_BOTH_LONG]  = true,
+    [TOUCH_TRIGGER_0_LONG] = true,
+    [TOUCH_TRIGGER_1_LONG] = true,
+    [TOUCH_TRIGGER_BOTH_LONG] = true,
     // Tap on one button followed by tap on other.
-    [TOUCH_TRIGGER_0_1_SLIDE]  = true,
-    [TOUCH_TRIGGER_1_0_SLIDE]  = true,
+    [TOUCH_TRIGGER_0_1_SLIDE] = true,
+    [TOUCH_TRIGGER_1_0_SLIDE] = true,
     // Tap, followed quickly by another Tap.
     // TODO
 };
@@ -311,7 +313,6 @@ static void touch_set_timer(touch_event_t event)
         touch_timer_event = TOUCH_EVENT_SHORT;
         break;
     }
-
     }
 
     // Submit the configuration.
@@ -351,7 +352,7 @@ static void touch_next_state(touch_event_t event)
 }
 
 static void touch_timer_task(void)
-{ 
+{
     // If the timer's counter reaches 0
     if (touch_timer_ticks == 0)
     {
@@ -360,9 +361,8 @@ static void touch_timer_task(void)
 
         // Submit the event to the state machine.
         log("touch_timer_event=%s",
-                touch_timer_event == TOUCH_EVENT_SHORT ? "SHORT" :
-                touch_timer_event == TOUCH_EVENT_LONG ? "LONG" :
-                "?");
+            touch_timer_event == TOUCH_EVENT_SHORT ? "SHORT" : touch_timer_event == TOUCH_EVENT_LONG ? "LONG"
+                                                                                                     : "?");
         touch_next_state(touch_timer_event);
     }
     else
@@ -417,16 +417,26 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_touch___init___obj, mod_touch___init__);
 
 static inline mp_obj_t touch_get_callback(touch_state_t trigger)
 {
-    switch (trigger) {
-    case TOUCH_TRIGGER_0_TAP:       return callback_list[0][TOUCH_ACTION_TAP];
-    case TOUCH_TRIGGER_1_TAP:       return callback_list[1][TOUCH_ACTION_TAP];
-    case TOUCH_TRIGGER_0_PRESS:     return callback_list[0][TOUCH_ACTION_PRESS];
-    case TOUCH_TRIGGER_1_PRESS:     return callback_list[1][TOUCH_ACTION_PRESS];
-    case TOUCH_TRIGGER_0_LONG:      return callback_list[0][TOUCH_ACTION_LONG];
-    case TOUCH_TRIGGER_1_LONG:      return callback_list[1][TOUCH_ACTION_LONG];
-    case TOUCH_TRIGGER_0_1_SLIDE:   return callback_list[0][TOUCH_ACTION_SLIDE];
-    case TOUCH_TRIGGER_1_0_SLIDE:   return callback_list[1][TOUCH_ACTION_SLIDE];
-    default:                        return mp_const_none;
+    switch (trigger)
+    {
+    case TOUCH_TRIGGER_0_TAP:
+        return callback_list[0][TOUCH_ACTION_TAP];
+    case TOUCH_TRIGGER_1_TAP:
+        return callback_list[1][TOUCH_ACTION_TAP];
+    case TOUCH_TRIGGER_0_PRESS:
+        return callback_list[0][TOUCH_ACTION_PRESS];
+    case TOUCH_TRIGGER_1_PRESS:
+        return callback_list[1][TOUCH_ACTION_PRESS];
+    case TOUCH_TRIGGER_0_LONG:
+        return callback_list[0][TOUCH_ACTION_LONG];
+    case TOUCH_TRIGGER_1_LONG:
+        return callback_list[1][TOUCH_ACTION_LONG];
+    case TOUCH_TRIGGER_0_1_SLIDE:
+        return callback_list[0][TOUCH_ACTION_SLIDE];
+    case TOUCH_TRIGGER_1_0_SLIDE:
+        return callback_list[1][TOUCH_ACTION_SLIDE];
+    default:
+        return mp_const_none;
     }
 }
 
@@ -471,24 +481,24 @@ STATIC mp_obj_t touch_bind(mp_obj_t button_in, mp_obj_t action_in, mp_obj_t call
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(touch_bind_obj, touch_bind);
 
 STATIC const mp_rom_map_elem_t touch_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__),            MP_ROM_QSTR(MP_QSTR_touch) },
-    { MP_ROM_QSTR(MP_QSTR___init__),            MP_ROM_PTR(&mod_touch___init___obj) },
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_touch)},
+    {MP_ROM_QSTR(MP_QSTR___init__), MP_ROM_PTR(&mod_touch___init___obj)},
 
     // methods
-    { MP_ROM_QSTR(MP_QSTR_bind),                MP_ROM_PTR(&touch_bind_obj) },
+    {MP_ROM_QSTR(MP_QSTR_bind), MP_ROM_PTR(&touch_bind_obj)},
 
     // constants
-    { MP_ROM_QSTR(MP_QSTR_A),                   MP_OBJ_NEW_SMALL_INT(0) },
-    { MP_ROM_QSTR(MP_QSTR_B),                   MP_OBJ_NEW_SMALL_INT(1) },
-    { MP_ROM_QSTR(MP_QSTR_LONG),                MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_LONG) },
-    { MP_ROM_QSTR(MP_QSTR_PRESS),               MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_PRESS) },
-    { MP_ROM_QSTR(MP_QSTR_SLIDE),               MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_SLIDE) },
-    { MP_ROM_QSTR(MP_QSTR_TAP),                 MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_TAP) },
+    {MP_ROM_QSTR(MP_QSTR_A), MP_OBJ_NEW_SMALL_INT(0)},
+    {MP_ROM_QSTR(MP_QSTR_B), MP_OBJ_NEW_SMALL_INT(1)},
+    {MP_ROM_QSTR(MP_QSTR_LONG), MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_LONG)},
+    {MP_ROM_QSTR(MP_QSTR_PRESS), MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_PRESS)},
+    {MP_ROM_QSTR(MP_QSTR_SLIDE), MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_SLIDE)},
+    {MP_ROM_QSTR(MP_QSTR_TAP), MP_OBJ_NEW_SMALL_INT(TOUCH_ACTION_TAP)},
 };
 STATIC MP_DEFINE_CONST_DICT(touch_module_globals, touch_module_globals_table);
 
 const mp_obj_module_t touch_module = {
-    .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t*)&touch_module_globals,
+    .base = {&mp_type_module},
+    .globals = (mp_obj_dict_t *)&touch_module_globals,
 };
 MP_REGISTER_MODULE(MP_QSTR_touch, touch_module);

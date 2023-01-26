@@ -31,7 +31,7 @@
 #include "nrf_gpio.h"
 #include "nrfx_log.h"
 
-#include "critical_functions.h"
+#include "monocle.h"
 
 #include "driver/battery.h"
 #include "driver/config.h"
@@ -151,7 +151,7 @@ static nrf_saadc_value_t battery_get_saadc(void)
 
     // Configure first ADC channel with low setup (enough for battery sensing)
     app_err(nrfx_saadc_simple_mode_set(1u << 0, BATTERY_ADC_RESOLUTION,
-                                     NRF_SAADC_OVERSAMPLE_DISABLED, NULL));
+                                       NRF_SAADC_OVERSAMPLE_DISABLED, NULL));
 
     // Add a buffer for the NRFX SDK to fill
     app_err(nrfx_saadc_buffer_set(&result, 1));

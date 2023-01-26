@@ -38,7 +38,7 @@
 #include "nrfx_glue.h"
 #include "nrfx_twi.h"
 
-#include "critical_functions.h"
+#include "monocle.h"
 
 #include "driver/config.h"
 #include "driver/iqs620.h"
@@ -313,12 +313,12 @@ static void iqs620_touch_rdy_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_
         return;
     }
 
-    i2c_response_t events = i2c_read(TOUCH_ADDRESS, IQS620_GLOBAL_EVENTS, 0xFF);
+    i2c_response_t events = i2c_read(TOUCH_I2C_ADDRESS, IQS620_GLOBAL_EVENTS, 0xFF);
     app_err(events.fail);
 
     if (events.value & IQS620_GLOBAL_EVENTS_PROX)
     {
-        i2c_response_t proxflags = i2c_read(TOUCH_ADDRESS, IQS620_PROX_FUSION_FLAGS, 0xFF);
+        i2c_response_t proxflags = i2c_read(TOUCH_I2C_ADDRESS, IQS620_PROX_FUSION_FLAGS, 0xFF);
         app_err(proxflags.fail);
         iqs620_process_state(0, &iqs620_button_0_state, STATE(proxflags.value, 0));
         iqs620_process_state(1, &iqs620_button_1_state, STATE(proxflags.value, 1));
@@ -375,13 +375,13 @@ void iqs620_init(void)
     nrfx_gpiote_in_event_disable(TOUCH_INTERRUPT_PIN);
 
     // Initiate soft reset.
-    i2c_write(TOUCH_ADDRESS, IQS620_SYS_SETTINGS, 0xFF, 1 << 7);
+    i2c_write(TOUCH_I2C_ADDRESS, IQS620_SYS_SETTINGS, 0xFF, 1 << 7);
 
     // Wait for IQS620 system reset completion.
     nrfx_systick_delay_ms(10);
 
     // Check that the chip responds correctly.
-    i2c_response_t id = i2c_read(TOUCH_ADDRESS, IQS620_ID, 0xFF);
+    i2c_response_t id = i2c_read(TOUCH_I2C_ADDRESS, IQS620_ID, 0xFF);
     app_err(id.fail);
     if (id.value != IQS620_ID_VALUE)
     {
@@ -391,7 +391,7 @@ void iqs620_init(void)
     // Configure all needed registers.
     for (size_t i = 0; i < LEN(iqs620_conf); i++)
     {
-        i2c_write(TOUCH_ADDRESS, iqs620_conf[i].addr, 0xFF, iqs620_conf[i].data);
+        i2c_write(TOUCH_I2C_ADDRESS, iqs620_conf[i].addr, 0xFF, iqs620_conf[i].data);
     }
 
     // Enable the TOUCH_RDY event after the reset.

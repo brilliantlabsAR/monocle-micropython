@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "critical_functions.h"
+#include "monocle.h"
 
 #define NRFX_LOG_ERROR(format, ...) log(format, ##__VA_ARGS__)
 #define NRFX_LOG_WARNING(format, ...)

@@ -85,9 +85,9 @@ static uint8_t ov5640_read_reg(uint16_t reg)
     uint16_t swaped = __bswap_16(reg);
 
     memcpy(w_buf, &swaped, 2);
-    // if (!i2c_write(OV5640_I2C, CAMERA_ADDRESS, w_buf, 2))
+    // if (!i2c_write(OV5640_I2C, CAMERA_I2C_ADDRESS, w_buf, 2))
     // return 0;
-    // if (!i2c_read(OV5640_I2C, CAMERA_ADDRESS, &ret_val, 1))
+    // if (!i2c_read(OV5640_I2C, CAMERA_I2C_ADDRESS, &ret_val, 1))
     // return 0;
     return ret_val;
 }

@@ -31,7 +31,7 @@
 #include "py/runtime.h"
 #include "py/objstr.h"
 #include "nrfx_reset_reason.h"
-#include "critical_functions.h"
+#include "monocle.h"
 #include "driver/battery.h"
 #include "ble_gap.h"
 
@@ -81,7 +81,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_device___init___obj, mod_device___init__);
 STATIC mp_obj_t device_update(const mp_obj_t reboot)
 {
     if (mp_obj_is_true(reboot))
-        enter_bootloader();
+        monocle_enter_bootloader();
     return mp_const_true;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(device_update_obj, device_update);

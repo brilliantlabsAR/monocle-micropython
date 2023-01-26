@@ -38,7 +38,7 @@
 #include "driver/flash.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
-#include "critical_functions.h"
+#include "monocle.h"
 
 #define FLASH_CMD_PROGRAM_PAGE 0x02
 #define FLASH_CMD_READ 0x03

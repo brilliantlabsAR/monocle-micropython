@@ -36,7 +36,7 @@
 #include "nrf_sdm.h"
 #include "nrf_nvic.h"
 #include "nrfx_log.h"
-#include "critical_functions.h"
+#include "monocle.h"
 
 #include "driver/bluetooth_low_energy.h"
 #include "driver/config.h"

@@ -29,7 +29,7 @@
 #include "mphalport.h"
 #include "mpconfigport.h"
 #include "nrfx_twi.h"
-#include "critical_functions.h"
+#include "monocle.h"
 
 enum
 {
@@ -49,13 +49,13 @@ static mp_obj_t led_on(mp_obj_t led_in)
     {
     case LED_RED:
     {
-        pmic_set_led(RED_LED, true);
+        monocle_set_led(RED_LED, true);
         break;
     }
 
     case LED_GREEN:
     {
-        pmic_set_led(GREEN_LED, true);
+        monocle_set_led(GREEN_LED, true);
 
         break;
     }
@@ -71,13 +71,13 @@ static mp_obj_t led_off(mp_obj_t led_in)
 
     case LED_RED:
     {
-        pmic_set_led(RED_LED, false);
+        monocle_set_led(RED_LED, false);
         break;
     }
 
     case LED_GREEN:
     {
-        pmic_set_led(GREEN_LED, false);
+        monocle_set_led(GREEN_LED, false);
         break;
     }
     }

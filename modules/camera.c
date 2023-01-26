@@ -31,7 +31,7 @@
 #include "nrfx_twi.h"
 
 #include "driver/fpga.h"
-#include "critical_functions.h"
+#include "monocle.h"
 // #include "driver/ov5640.h"
 #include "driver/config.h"
 #include "driver/bluetooth_data_protocol.h"

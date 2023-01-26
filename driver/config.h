@@ -21,14 +21,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/*
- * Configuratin file for the drivers.
- * GPIO pins used, I2C addresses, peripheral instances in use...
- */
-
-#include "pinout.h"
 // Bluetooth params
-
 #define BLE_DEVICE_NAME "Monocle"
 
 // 0 is reserved for SoftDevice

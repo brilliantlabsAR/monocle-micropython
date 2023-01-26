@@ -35,8 +35,7 @@
 #include "nrfx_spim.h"
 #include "nrfx_systick.h"
 #include "nrf_soc.h"
-
-#include "critical_functions.h"
+#include "monocle.h"
 
 #include "driver/config.h"
 #include "driver/spi.h"

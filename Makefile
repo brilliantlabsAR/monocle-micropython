@@ -80,6 +80,7 @@ INC += -Imicropython
 INC += -Imicropython/lib/cmsis/inc
 INC += -Imicropython/shared/readline
 INC += -Imodules
+INC += -Imonocle-core
 INC += -Inrfx
 INC += -Inrfx/drivers
 INC += -Inrfx/drivers/include
@@ -95,8 +96,10 @@ INC += -Isoftdevice/include/nrf52
 # Assemble the C flags variable
 CFLAGS += $(WARN) $(OPT) $(INC) $(DEFS)
 
-SRC_C += critical_functions.c
 SRC_C += main.c
+SRC_C += monocle-core/monocle-critical.c
+SRC_C += monocle-core/monocle-drivers.c
+SRC_C += monocle-core/monocle-startup.c
 SRC_C += mphalport.c
 
 SRC_C += driver/battery.c

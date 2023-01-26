@@ -41,6 +41,7 @@
 
 #include "nrfx.h"
 
+#include "monocle.h"
 #include "nrfx_log.h"
 #include "nrf_sdm.h"
 #include "nrf_power.h"
@@ -60,7 +61,6 @@
 #include "driver/ecx336cn.h"
 #include "driver/flash.h"
 #include "driver/fpga.h"
-#include "critical_functions.h"
 #include "driver/iqs620.h"
 #include "driver/spi.h"
 #include "driver/timer.h"
@@ -92,6 +92,9 @@ int main(void)
         log_clear();
         log("MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ") ");
     }
+
+    // Set up the PMIC and go to sleep if on charge
+    monocle_critical_startup();
 
     // Setup touch interrupt
     {
