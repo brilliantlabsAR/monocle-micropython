@@ -33,7 +33,9 @@
 
 #include "nrfx_log.h"
 
-#define LEN(x)      (sizeof(x) / sizeof*(x))
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define LEN(x) (sizeof(x) / sizeof *(x))
 
 typedef struct
 {
@@ -70,7 +72,7 @@ static void gfx_render_rectangle(gfx_row_t row, gfx_obj_t *obj)
 }
 
 static inline int16_t gfx_get_intersect_line(int16_t y,
-        int16_t obj_x, int16_t obj_y, int16_t obj_width, int16_t obj_height, bool flip)
+                                             int16_t obj_x, int16_t obj_y, int16_t obj_width, int16_t obj_height, bool flip)
 {
     // Thales theorem to find the intersection of the line with our line.
     // y0--------------------------+ [a1,b2] is the line we draw
@@ -208,8 +210,7 @@ static void gfx_render_text(gfx_row_t row, gfx_obj_t *obj)
         gfx_row_t local = {
             .buf = row.buf + x * 2,
             .len = row.len - x * 2,
-            .y = row.y - obj->y
-        };
+            .y = row.y - obj->y};
 
         // render the glyph, reduce the buffer to only the section to draw into,
         // y coordinate is adjusted to be height within the glyph

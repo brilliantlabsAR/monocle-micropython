@@ -197,7 +197,7 @@ STATIC void new_gfx(gfx_type_t type, mp_int_t x, mp_int_t y, mp_int_t width, mp_
     gfx->width = width;
     gfx->height = height;
     memcpy(gfx->yuv444, yuv444, sizeof yuv444);
-    gfx->u.ptr = (void *)ptr;
+    // gfx->u.ptr = (void *)ptr; // TODO this wouldn't compile
 }
 
 STATIC mp_obj_t display_line(size_t argc, mp_obj_t const args[])
