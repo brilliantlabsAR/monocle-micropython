@@ -32,7 +32,7 @@ sd_flash_end = bl_flash_end + 0x26000;
 /* This must be updated whenever softdevice settings are changed */
 sd_ram_end = 0x39c0;
 
-ENTRY(entry_and_critical_setup)
+ENTRY(Reset_Handler)
 
 MEMORY
 {

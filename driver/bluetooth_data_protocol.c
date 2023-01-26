@@ -36,7 +36,6 @@
 #include "driver/config.h"
 #include "driver/fpga.h"
 #include "driver/timer.h"
-#include "libjojpeg.h"
 
 // List of flags to append in the header when we send file chunks over BLE
 enum
@@ -102,8 +101,8 @@ void jojpeg_write(uint8_t const *jpeg_buf, size_t jpeg_len)
 void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
 {
     // buffer storing RGB data from from the camera, used by the JPEG library
-    jojpeg_t ctx;
-    uint8_t rgb_buf[OV5640_WIDTH * 8 * 3];
+    // jojpeg_t ctx;
+    // uint8_t rgb_buf[OV5640_WIDTH * 8 * 3];
 
     // ask the FPGA to start a camera capture, and read the data later.
     fpga_cmd(FPGA_CAMERA_CAPTURE);
@@ -123,17 +122,17 @@ void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
     ble_pos += data_encode_str(ble_buf + ble_pos, filename);
 
     // set all the parameters and write the JPEG header
-    jojpeg_start(&ctx, OV5640_WIDTH, OV5640_HEIGHT, 3, 0);
+    // jojpeg_start(&ctx, OV5640_WIDTH, OV5640_HEIGHT, 3, 0);
 
-    do
-    {
+    // do
+    // {
         // get a buffer-ful of RGB data from the camera (via the FPGA)
         // size_t n = fpga_capture_read(rgb_buf, sizeof rgb_buf); // TODO: implement it
 
         // log("n=%d height=%d", n, ctx.height);
 
         // enqueue the conversion, letting the callback flush the data over bluetooth
-    } while (jojpeg_append_8_rows(&ctx, rgb_buf, sizeof rgb_buf));
+    // } while (jojpeg_append_8_rows(&ctx, rgb_buf, sizeof rgb_buf));
 
     // the callback sets the ble_flag to BLE_MIDDLE when run, instead, here, we want
     // it to be the end packet, unless the callback never ran, which means we have

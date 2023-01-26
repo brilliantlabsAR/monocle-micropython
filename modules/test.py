@@ -14,15 +14,39 @@ def __test(evaluate, expected):
         print(f"Failed - {evaluate} == {response}. Expected: {expected}")
 
 # Tests for individual modules
-
 def t1():
+
     print("Test setting and checking the time")
     __test("time.time(1674252171)", None)
     __test("time.time()", 1674252171)
+    __test("time.now()", {'timezone': '00:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 22, 'year': 2023, 'dst': 'no'})
+    
+    print("Check time dict at a specified epoch")
+    __test("time.now(1674253104)", {'timezone': '00:00', 'weekday': 'friday', 'minute': 18, 'day': 20, 'yearday': 20, 'month': 1, 'second': 24, 'hour': 22, 'year': 2023, 'dst': 'no'})
+    
+    print("Test timezones")
+    __test("time.zone('5:30')", None)
+    __test("time.zone()", '05:30')
+    __test("time.now()", {'timezone': '05:30', 'weekday': 'saturday', 'minute': 32, 'day': 21, 'yearday': 21, 'month': 1, 'second': 51, 'hour': 3, 'year': 2023, 'dst': 'no'})
+    __test("time.zone('-12:00')", None)
+    __test("time.now()", {'timezone': '-12:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 10, 'year': 2023, 'dst': 'no'})
+    
+    print("Test getting epochs from time dict")
+
+    print("Test sleep")
+    __test("time.time(1674252171)", None)
+    __test("time.time()", 1674252171)
+    __test("time.sleep(2)", None)
+    __test("time.time()", 1674252173)
+    __test("time.sleep(0.25)", None)
+    __test("time.time()", 1674252173)
+    
     print("Test invalid values")
     __test("time.time(-1)", ValueError)
     __test("time.zone('-14:00')", ValueError)
     __test("time.zone('15:00')", ValueError)
+    __test("time.zone('1:20')", ValueError)
+    __test("time.sleep(-1)", ValueError)
 
 def t2():
     # line scanning the screen bound to the left

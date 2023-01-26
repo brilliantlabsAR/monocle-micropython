@@ -32,7 +32,7 @@ include micropython/py/py.mk
 MICROPY_ROM_TEXT_COMPRESSION ?= 1
 
 # Which python files to freeze into the firmware are listed in here
-FROZEN_MANIFEST = manifest.py
+FROZEN_MANIFEST = modules/frozen-manifest.py
 
 # Define the toolchain prefix for ARM GCC
 CROSS_COMPILE = arm-none-eabi-
@@ -69,7 +69,7 @@ DEFS += -DBUILD_VERSION='"$(BUILD_VERSION)"'
 
 # Set linker options
 LDFLAGS += -nostdlib
-LDFLAGS += -Lnrfx/mdk -T nrf52832_linker_file.ld
+LDFLAGS += -Lnrfx/mdk -T monocle-core/monocle.ld
 LDFLAGS += -Wl,--gc-sections
 LDFLAGS += -Xlinker -Map=$(@:.elf=.map)
 LDFLAGS += --specs=nano.specs
@@ -89,7 +89,7 @@ INC += -Inrfx/hal
 INC += -Inrfx/helpers
 INC += -Inrfx/mdk
 INC += -Inrfx/soc
-INC += -Isegger_rtt
+INC += -Isegger
 INC += -Isoftdevice/include
 INC += -Isoftdevice/include/nrf52
 
@@ -111,9 +111,6 @@ SRC_C += driver/fpga.c
 SRC_C += driver/iqs620.c
 SRC_C += driver/spi.c
 SRC_C += driver/timer.c
-SRC_C += font.c
-SRC_C += libgfx.c
-SRC_C += libjojpeg.c
 
 SRC_C += micropython/extmod/moduasyncio.c
 SRC_C += micropython/extmod/modubinascii.c
@@ -129,9 +126,9 @@ SRC_C += modules/led.c
 SRC_C += modules/time.c
 SRC_C += modules/touch.c
 
-SRC_C += segger_rtt/SEGGER_RTT_printf.c
-SRC_C += segger_rtt/SEGGER_RTT_Syscalls_GCC.c
-SRC_C += segger_rtt/SEGGER_RTT.c
+SRC_C += segger/SEGGER_RTT_printf.c
+SRC_C += segger/SEGGER_RTT_Syscalls_GCC.c
+SRC_C += segger/SEGGER_RTT.c
 
 SRC_C += micropython/shared/readline/readline.c
 SRC_C += micropython/shared/runtime/gchelper_generic.c
