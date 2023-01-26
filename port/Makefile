@@ -230,7 +230,7 @@ gdb_segger_jlink:
 	$(JLINKGDBSERVERCL) -device nrf$(NRF)_XXAA -if SWD
 
 gdb:
-	$(GDB) -ex 'target extended-remote :2331' -ex 'monitor reset' -ex 'continue' $(APPLICATION_ELF)
+	$(GDB) -ex 'target extended-remote :2331' -ex 'continue' $(APPLICATION_ELF)
 
 $(APPLICATION_ELF): $(OBJ)
 	$(ECHO) 'LINK $@'

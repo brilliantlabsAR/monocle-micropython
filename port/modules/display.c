@@ -46,14 +46,17 @@
 #define LEN(x)      (sizeof(x) / sizeof*(x))
 #define VAL(str)    #str
 #define STR(str)    VAL(str)
+#define ABS(x)      ((x) > 0 ? (x) : -(x))
 
-#define GFX_RGB_TO_YUV444(r, g, b) { \
+#define RGB_TO_YUV444(r, g, b) { \
     128.0 + 0.29900 * (r) + 0.58700 * (g) + 0.11400 * (b) - 128.0, \
     128.0 - 0.16874 * (r) - 0.33126 * (g) + 0.50000 * (b), \
     128.0 + 0.50000 * (r) - 0.41869 * (g) - 0.08131 * (b) \
 }
 
-#define GFX_YUV422_BLACK    { 0x80, 0x00 }
+#define YUV422_BLACK    { 0x80, 0x00 }
+
+#define LINE_THICKNESS  4
 
 typedef struct
 {
@@ -63,11 +66,11 @@ typedef struct
 
 enum
 {
-    GFX_TYPE_NULL,      // skip this object
-    GFX_TYPE_RECTANGLE, // filled
-    GFX_TYPE_LINE,      // diagonal line
-    GFX_TYPE_ELLIPSIS,  // diagonal line
-    GFX_TYPE_TEXT,      // a single line of text truncated at the end
+    OBJ_NULL,      // skip this object
+    OBJ_RECTANGLE, // filled
+    OBJ_LINE,      // diagonal line
+    OBJ_ELLIPSIS,  // diagonal line
+    OBJ_TEXT,      // a single line of text truncated at the end
 };
 
 typedef struct
@@ -96,6 +99,10 @@ static int16_t glyph_gap_width = 2;
 
 static inline void draw_pixel(row_t row, int16_t x, uint8_t yuv444[3])
 {
+    if (x * 2 < 0 || x * 2 + 1 > row.len)
+    {
+        LOG("row.y=%d x=%d", row.y, x);
+    }
     if (x * 2 + 0 < row.len)
     {
         row.buf[x * 2 + 0] = yuv444[1 + x % 2];
@@ -119,7 +126,7 @@ static void render_rectangle(row_t row, obj_t *obj)
     draw_segment(row, obj->x, obj->x + obj->width, obj->yuv444);
 }
 
-static inline int16_t get_intersect_line(int16_t y,
+static inline int16_t get_intersect(int16_t y,
         int16_t obj_x, int16_t obj_y, int16_t obj_width, int16_t obj_height, bool flip)
 {
     // Thales theorem to find the intersection of the line with our line.
@@ -142,22 +149,22 @@ static void render_line(row_t row, obj_t *obj)
     int16_t x0, x1;
     bool flip = obj->arg.u32;
 
+    // Avoid divide by zero
     assert(obj->height > 0);
 
-    // Special case: purely horizontal line means divide by 0, fill as a rectangle instead
-    if (obj->height == 1)
-    {
-        render_rectangle(row, obj);
-        return;
-    }
+    // In order for the lines to have at least a bit of thickness, we compute
+    // the position of two lines, away from each other by 1 pixel in x or y
+    // direction depending if the line is mostly horizontal or vertical.
+    int16_t line_x0 = obj->x - (obj->width < obj->height) * LINE_THICKNESS;
+    int16_t line_y0 = obj->y - (obj->width > obj->height) * LINE_THICKNESS;
+    int16_t line_x1 = obj->x + (obj->width < obj->height) * LINE_THICKNESS;
+    int16_t line_y1 = obj->y + (obj->width > obj->height) * LINE_THICKNESS;
 
-    // We need to know how many horizontal pixels to drawn to accomodate the line thickness
-    // so we get two intersections: the one for the top, and the one for the bottom edge of
-    // the line. This introduces an offset, which we correct with the +1
-    x0 = get_intersect_line(row.y + 1, obj->x, obj->y, obj->width, obj->height + 1, flip);
-    x1 = get_intersect_line(row.y, obj->x, obj->y, obj->width, obj->height + 1, flip);
+    // Then, we get the intersection of these lines with our horizontal axis.
+    x0 = get_intersect(row.y, line_x0, line_y0, obj->width, obj->height, flip);
+    x1 = get_intersect(row.y, line_x1, line_y1, obj->width, obj->height, flip);
 
-    // We have the start and stop point of the segment, we can fill it
+    // We then fill the pixels between these two points.
     draw_segment(row, MIN(x0, x1), MAX(x0, x1), obj->yuv444);
 }
 
@@ -278,7 +285,7 @@ static void render_ellipsis(row_t row, obj_t *obj)
 
 void fill_black(row_t row)
 {
-    uint8_t black[] = GFX_YUV422_BLACK;
+    uint8_t black[] = YUV422_BLACK;
 
     for (size_t i = 0; i + 1 < row.len; i += 2)
     {
@@ -304,26 +311,26 @@ bool render_row(row_t row, obj_t *obj_list, size_t obj_num)
 
         switch (obj->type)
         {
-        case GFX_TYPE_NULL:
+        case OBJ_NULL:
         {
             break;
         }
-        case GFX_TYPE_RECTANGLE:
+        case OBJ_RECTANGLE:
         {
             render_rectangle(row, obj);
             break;
         }
-        case GFX_TYPE_LINE:
+        case OBJ_LINE:
         {
             render_line(row, obj);
             break;
         }
-        case GFX_TYPE_TEXT:
+        case OBJ_TEXT:
         {
             render_text(row, obj);
             break;
         }
-        case GFX_TYPE_ELLIPSIS:
+        case OBJ_ELLIPSIS:
         {
             render_ellipsis(row, obj);
             break;
@@ -372,6 +379,7 @@ STATIC void flush_blocks(row_t yuv422, size_t pos, size_t len)
     uint32_t u32 = yuv422.y * yuv422.len + pos;
     uint8_t base[sizeof u32] = { u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0 };
     assert(u32 < OV5640_WIDTH * OV5640_HEIGHT * 2);
+    PRINTF(" %X", u32);
     fpga_cmd_write(FPGA_GRAPHICS_BASE, base, sizeof base);
 
     // Flush the content of the screen skipping empty bytes.
@@ -380,7 +388,7 @@ STATIC void flush_blocks(row_t yuv422, size_t pos, size_t len)
 
 STATIC bool block_has_content(row_t yuv422, size_t pos)
 {
-    uint8_t black[] = GFX_YUV422_BLACK;
+    uint8_t black[] = YUV422_BLACK;
 
     assert(yuv422.len % sizeof black == 0);
     assert(pos % sizeof black == 0);
@@ -486,23 +494,14 @@ STATIC mp_obj_t display_brightness(mp_obj_t brightness_in)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(display_brightness_obj, &display_brightness);
 
-STATIC void new_gfx(int type, mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_int_t rgb, arg_t arg)
+STATIC void new_obj(int type, mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_int_t rgb, arg_t arg)
 {
-    uint8_t yuv444[3] = GFX_RGB_TO_YUV444((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, (rgb >> 0) & 0xFF);
+    uint8_t yuv444[3] = RGB_TO_YUV444((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, (rgb >> 0) & 0xFF);
     obj_t *gfx;
 
     assert(width >= 0);
     assert(height >= 0);
 
-    // Validate parameters from user.
-    if (width == 0)
-    {
-        mp_raise_ValueError(MP_ERROR_TEXT("width must be greater than 0"));
-    }
-    if (height == 0)
-    {
-        mp_raise_ValueError(MP_ERROR_TEXT("height must be greater than 0"));
-    }
     if (rgb < 0 || rgb > 0xFFFFFF)
     {
         mp_raise_ValueError(MP_ERROR_TEXT("color must be between 0x000000 and 0xFFFFFF"));
@@ -536,14 +535,21 @@ STATIC mp_obj_t display_line(size_t argc, mp_obj_t const args[])
     mp_int_t y2 = mp_obj_get_int(args[3]);
     mp_int_t rgb = mp_obj_get_int(args[4]);
     arg_t arg = { .u32 = (x1 < x2) != (y1 < y2) };
-    mp_int_t width = (x1 < x2) ? x2 - x1 : x1 - x2;
-    mp_int_t height = (y1 < y2) ? y2 - y1 : y1 - y2;
+    mp_int_t width = ABS(x1 - x2);
+    mp_int_t height = ABS(y1 - y2);
     mp_int_t x = MIN(x1, x2);
     mp_int_t y = MIN(y1, y2);
+    int type = OBJ_LINE;
 
-    height = MAX(height, 1);
-    width = MAX(width, 1);
-    new_gfx(GFX_TYPE_LINE, x, y, width, height, rgb, arg);
+    // Special case: avoid division by 0 later on.
+    if (height == 0)
+    {
+        y -= LINE_THICKNESS / 2;
+        height = LINE_THICKNESS;
+        type = OBJ_RECTANGLE;
+    }
+
+    new_obj(type, x, y, width, height, rgb, arg);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_line_obj, 5, 5, display_line);
@@ -557,7 +563,7 @@ STATIC mp_obj_t display_text(size_t argc, mp_obj_t const args[])
     mp_int_t width = get_text_width(arg.ptr, strlen(arg.ptr));
     mp_int_t height = get_text_height();
 
-    new_gfx(GFX_TYPE_TEXT, x, y, width, height, rgb, arg);
+    new_obj(OBJ_TEXT, x, y, width, height, rgb, arg);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_text_obj, 4, 4, display_text);
@@ -567,7 +573,7 @@ STATIC mp_obj_t display_fill(mp_obj_t rgb_in)
     mp_int_t rgb = mp_obj_get_int(rgb_in);
     arg_t none = {0};
 
-    new_gfx(GFX_TYPE_RECTANGLE, 0, 0, OV5640_WIDTH, OV5640_HEIGHT, rgb, none);
+    new_obj(OBJ_RECTANGLE, 0, 0, OV5640_WIDTH, OV5640_HEIGHT, rgb, none);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(display_fill_obj, display_fill);
@@ -581,7 +587,7 @@ STATIC mp_obj_t display_hline(size_t argc, mp_obj_t const args[])
     mp_int_t rgb = mp_obj_get_int(args[3]);
     arg_t none = {0};
 
-    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, none);
+    new_obj(OBJ_RECTANGLE, x, y, width, height, rgb, none);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_hline_obj, 4, 4, display_hline);
@@ -595,7 +601,7 @@ STATIC mp_obj_t display_vline(size_t argc, mp_obj_t const args[])
     mp_int_t rgb = mp_obj_get_int(args[3]);
     arg_t none = {0};
 
-    new_gfx(GFX_TYPE_RECTANGLE, x, y, width, height, rgb, none);
+    new_obj(OBJ_RECTANGLE, x, y, width, height, rgb, none);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_vline_obj, 4, 4, display_vline);
