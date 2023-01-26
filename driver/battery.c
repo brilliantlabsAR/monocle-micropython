@@ -35,7 +35,6 @@
 
 #include "driver/battery.h"
 #include "driver/config.h"
-#include "driver/timer.h"
 
 #define BATTERY_MEAN_WINDOW 20
 

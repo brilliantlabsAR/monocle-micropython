@@ -4,6 +4,3 @@
 [submodule "micropython"]
 	path = micropython
 	url = https://github.com/micropython/micropython
-[submodule "doc/monocle-docs"]
-	path = doc/monocle-docs
-	url = git@github.com:itsbrilliantlabs/monocle-docs

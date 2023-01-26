@@ -1,12 +1,13 @@
 /*
- * This file is part of the MicroPython for Monocle:
- *      https://github.com/Itsbrilliantlabs/monocle-micropython
+ * This file is part of the MicroPython for Monocle project:
+ *      https://github.com/brilliantlabsAR/monocle-micropython
  *
- * Authored by: Josuah Demangeon <me@josuah.net>
+ * Authored by: Josuah Demangeon (me@josuah.net)
+ *              Raj Nakarja / Brilliant Labs Inc (raj@itsbrilliant.co)
  *
  * ISC Licence
  *
- * Copyright © 2022 Brilliant Labs Inc.
+ * Copyright © 2023 Brilliant Labs Inc.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
