@@ -60,7 +60,6 @@
 #include "driver/config.h"
 #include "driver/ecx336cn.h"
 #include "driver/flash.h"
-#include "driver/fpga.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 
