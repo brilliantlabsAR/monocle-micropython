@@ -203,7 +203,7 @@ void spi_read(uint8_t *buf, size_t len)
 {
     for (size_t n = 0; len > 0; len -= n, buf += n)
     {
-        n = MIN(SPI_MAX_XFER_LEN, len);
+        n = MIN(255, len);
         nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, n);
         spi_xfer_chunk(&xfer);
     }
@@ -213,7 +213,7 @@ void spi_write(uint8_t const *buf, size_t len)
 {
     for (size_t n = 0; len > 0; len -= n, buf += n)
     {
-        n = MIN(SPI_MAX_XFER_LEN, len);
+        n = MIN(255, len);
         nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, n);
         spi_xfer_chunk(&xfer);
     }
@@ -313,39 +313,31 @@ int main(void)
 
     // Check if external flash has an FPGA image and boot it
     {
-        // nrf_gpio_pin_write(FLASH_CS_N_PIN, true);
+        // nrf_gpio_pin_set(FLASH_CS_N_PIN);
         // nrf_gpio_cfg_output(FLASH_CS_N_PIN);
 
         // Let the FPGA start as soon as it has the power on.
         nrf_gpio_cfg_output(FPGA_RECONFIG_N_PIN);
-        nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
+        nrf_gpio_pin_set(FPGA_RECONFIG_N_PIN);
     }
 
     // Setup camera
     {
         // Set to 0V = hold camera in reset.
-        // nrf_gpio_pin_write(OV5640_RESETB_N_PIN, false);
+        // nrf_gpio_pin_clear(OV5640_RESETB_N_PIN);
         // nrf_gpio_cfg_output(OV5640_RESETB_N_PIN);
 
         // // Set to 0V = not asserted.
-        // nrf_gpio_pin_write(OV5640_PWDN_PIN, false);
+        // nrf_gpio_pin_clear(OV5640_PWDN_PIN);
         // nrf_gpio_cfg_output(OV5640_PWDN_PIN);
         // ov5640_init();
-
     }
 
     // Setup display
     {
         // configure CS pin for the Display (for active low)
-        // nrf_gpio_pin_set(ECX336CN_CS_N_PIN);
-        // nrf_gpio_cfg_output(ECX336CN_CS_N_PIN);
-
-        // // Set low on boot (datasheet p.11)
-        // nrf_gpio_pin_write(ECX336CN_XCLR_PIN, false);
-        // nrf_gpio_cfg_output(ECX336CN_XCLR_PIN);
-
-        // set XCLR to high (1.8V to take it) to change to power-saving mode
-        nrf_gpio_pin_set(ECX336CN_XCLR_PIN);
+        nrf_gpio_pin_set(ECX336CN_CS_N_PIN);
+        nrf_gpio_cfg_output(ECX336CN_CS_N_PIN);
 
         ecx336cn_write_byte(0x00, 0x9E); // enter power saving mode (YUV)
         // it is now possible to turn off the 10V rail

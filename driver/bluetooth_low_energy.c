@@ -39,10 +39,10 @@
 #include "monocle.h"
 
 #include "driver/bluetooth_low_energy.h"
-#include "driver/config.h"
 
 #define BLE_ADV_MAX_SIZE 31
 #define BLE_UUID_COUNT 2
+#define BLE_DEVICE_NAME "Monocle"
 
 /** Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go. */
 #define RING_BUFFER_LENGTH (1024 + 45)
