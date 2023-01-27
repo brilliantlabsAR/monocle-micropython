@@ -26,6 +26,7 @@
 #include "monocle.h"
 #include "nrfx_timer.h"
 #include "nrfx_twim.h"
+#include "nrfx_systick.h"
 #include "nrf_gpio.h"
 #include "nrf_soc.h"
 
@@ -180,22 +181,30 @@ void monocle_critical_startup(void)
         nrfx_timer_enable(&timer);
     }
 
-    // Early GPIO setup before the power rail come up
-    {
-        // Tell the FPGA to start with the embedded flash.
-        nrf_gpio_cfg_output(FPGA_MODE1_PIN);
-        nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
-    }
+    // TODO ignoring all display-related functions below also work
 
     // Power up everything for normal operation.
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
     {
+        nrfx_systick_init();
+
+        // Tell the FPGA to start with the embedded flash.
+        nrf_gpio_pin_clear(FPGA_MODE1_PIN);
+        nrf_gpio_cfg_output(FPGA_MODE1_PIN);
+
+        // Display: 9. Power Supply Sequence (datasheet p.11)
+        nrf_gpio_pin_clear(ECX336CN_XCLR_PIN);
+        nrf_gpio_cfg_output(ECX336CN_XCLR_PIN);
+
         // Set SBB2 to 1.2V and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2D, 0xFF, 0x08).fail);
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x4F, 0x4F).fail);
 
         // Set LDO0 to load switch mode and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1F).fail);
+
+        // Display: 9. Power Supply Sequence (datasheet p.11)
+        nrfx_systick_delay_ms(1);
 
         // Set SBB0 to 2.8V and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x29, 0xFF, 0x28).fail);
@@ -208,6 +217,9 @@ void monocle_critical_startup(void)
         // Set LDO1 to 3.3V and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3A, 0xFF, 0x64).fail);
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0F).fail);
+
+        // Display: 9. Power Supply Sequence (datasheet p.11)
+        nrf_gpio_pin_set(ECX336CN_XCLR_PIN);
 
         // Enable the 10V boost
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x0C).fail);
