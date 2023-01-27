@@ -58,7 +58,6 @@
 #include "driver/bluetooth_data_protocol.h"
 #include "driver/bluetooth_low_energy.h"
 #include "driver/config.h"
-#include "driver/flash.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 
