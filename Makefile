@@ -25,14 +25,14 @@
 # Include the core environment definitions
 include micropython/py/mkenv.mk
 
-# Include py core make definitions
-include micropython/py/py.mk
-
 # Set makefile-level MicroPython feature configurations
 MICROPY_ROM_TEXT_COMPRESSION ?= 1
 
 # Which python files to freeze into the firmware are listed in here
 FROZEN_MANIFEST = modules/frozen-manifest.py
+
+# Include py core make definitions
+include micropython/py/py.mk
 
 # Define the toolchain prefix for ARM GCC
 CROSS_COMPILE = arm-none-eabi-
@@ -180,7 +180,7 @@ SRC_C += nrfx/mdk/system_nrf52.c
 
 SRC_QSTR += $(SRC_C)
 
-OBJ += $(PY_CORE_O)
+OBJ += $(PY_O)
 OBJ += $(addprefix build/, $(SRC_C:.c=.o))
 
 # Link required libraries

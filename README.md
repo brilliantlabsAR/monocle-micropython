@@ -34,6 +34,7 @@ nrfjprog --program *.hex --chiperase -f nrf52 --verify --reset
 
     # Initialize the submodules
     git submodule update --init
+    git -C micropython submodule update --init lib/micropython-lib
     ```
 
 1. You can now close the terminal and open the project in [VSCode](https://code.visualstudio.com).

@@ -446,7 +446,7 @@ void ble_configure_softdevice(void)
  */
 static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
 {
-    app_err(id);
+    app_err(0x5D000000 & id);
 }
 
 /**
