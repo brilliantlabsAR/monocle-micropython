@@ -61,7 +61,6 @@
 #include "driver/ecx336cn.h"
 #include "driver/flash.h"
 #include "driver/fpga.h"
-#include "driver/spi.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 
@@ -69,6 +68,61 @@ extern uint32_t _stack_top;
 extern uint32_t _stack_bot;
 extern uint32_t _heap_start;
 extern uint32_t _heap_end;
+
+// Indicate that SPI completed the transfer from the interrupt handler to main loop.
+static volatile bool m_xfer_done = true;
+
+void spim_event_handler(nrfx_spim_evt_t const *p_event, void *p_context)
+{
+    m_xfer_done = true;
+}
+
+void spi_chip_select(uint8_t cs_pin)
+{
+    nrf_gpio_pin_clear(cs_pin);
+    nrfx_systick_delay_us(100);
+}
+
+void spi_chip_deselect(uint8_t cs_pin)
+{
+    nrf_gpio_pin_set(cs_pin);
+    nrfx_systick_delay_us(100);
+}
+
+static void spi_xfer_chunk(nrfx_spim_xfer_desc_t *xfer)
+{
+    const nrfx_spim_t spi2 = NRFX_SPIM_INSTANCE(2);
+
+    // wait for any pending SPI operation to complete
+    while (!m_xfer_done)
+        sd_app_evt_wait();
+
+    // Start the transaction and wait for the interrupt handler to warn us it is done.
+    m_xfer_done = false;
+    app_err(nrfx_spim_xfer(&spi2, xfer, 0));
+    while (!m_xfer_done)
+        __WFE();
+}
+
+void spi_read(uint8_t *buf, size_t len)
+{
+    for (size_t n = 0; len > 0; len -= n, buf += n)
+    {
+        n = MIN(SPI_MAX_XFER_LEN, len);
+        nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, n);
+        spi_xfer_chunk(&xfer);
+    }
+}
+
+void spi_write(uint8_t const *buf, size_t len)
+{
+    for (size_t n = 0; len > 0; len -= n, buf += n)
+    {
+        n = MIN(SPI_MAX_XFER_LEN, len);
+        nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, n);
+        spi_xfer_chunk(&xfer);
+    }
+}
 
 static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
                                     nrf_gpiote_polarity_t polarity)
@@ -127,7 +181,16 @@ int main(void)
 
     // Set up the SPI bus to the FPGA and external flash IC
     {
-        spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
+        const nrfx_spim_t spi2 = NRFX_SPIM_INSTANCE(2);
+
+        nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
+            SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN, NRFX_SPIM_PIN_NOT_USED);
+
+        config.frequency = NRF_SPIM_FREQ_4M;
+        config.mode = NRF_SPIM_MODE_3;
+        config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
+
+        app_err(nrfx_spim_init(&spi2, &config, spim_event_handler, NULL));
     }
 
     // Check if external flash has an FPGA image and boot it
