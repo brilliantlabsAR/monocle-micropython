@@ -58,10 +58,6 @@
 #include "driver/bluetooth_data_protocol.h"
 #include "driver/bluetooth_low_energy.h"
 #include "driver/config.h"
-#include "driver/ecx336cn.h"
-#include "driver/flash.h"
-#include "driver/fpga.h"
-#include "driver/spi.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 
@@ -69,6 +65,181 @@ extern uint32_t _stack_top;
 extern uint32_t _stack_bot;
 extern uint32_t _heap_start;
 extern uint32_t _heap_end;
+
+// Indicate that SPI completed the transfer from the interrupt handler to main loop.
+static volatile bool m_xfer_done = true;
+
+// ECX336CN datasheet section 10.1
+uint8_t const ecx336cn_config[] = {
+    [0x00] = 0x9E, // [0]=0 -> enter power save mode
+    [0x01] = 0x20,
+    /* * */
+    [0x03] = 0x20, // 1125
+    [0x04] = 0x3F,
+    [0x05] = 0xC8, // 1125  DITHERON, LUMINANCE=0x00=2000cd/m2=medium (Datasheet 10.8)
+    /* * */
+    [0x07] = 0x40,
+    [0x08] = 0x80, // Luminance adjustment: OTPCALDAC_REGDIS=0 (preset mode per reg 5), white chromaticity: OTPDG_REGDIS=0 (preset mode, default)
+    /* * */
+    [0x0A] = 0x10,
+    /* * */
+    [0x0F] = 0x56,
+    /* * */
+    [0x20] = 0x01,
+    /* * */
+    [0x22] = 0x40,
+    [0x23] = 0x40,
+    [0x24] = 0x40,
+    [0x25] = 0x80,
+    [0x26] = 0x40,
+    [0x27] = 0x40,
+    [0x28] = 0x40,
+    [0x29] = 0x0B,
+    [0x2A] = 0xBE, // CALDAC=190 (ignored, since OTPCALDAC_REGDIS=0)
+    [0x2B] = 0x3C,
+    [0x2C] = 0x02,
+    [0x2D] = 0x7A,
+    [0x2E] = 0x02,
+    [0x2F] = 0xFA,
+    [0x30] = 0x26,
+    [0x31] = 0x01,
+    [0x32] = 0xB6,
+    /* * */
+    [0x34] = 0x03,
+    [0x35] = 0x60, // 1125
+    /* * */
+    [0x37] = 0x76,
+    [0x38] = 0x02,
+    [0x39] = 0xFE,
+    [0x3A] = 0x02,
+    [0x3B] = 0x71, // 1125
+    /* * */
+    [0x3D] = 0x1B,
+    /* * */
+    [0x3F] = 0x1C,
+    [0x40] = 0x02, // 1125
+    [0x41] = 0x4D, // 1125
+    [0x42] = 0x02, // 1125
+    [0x43] = 0x4E, // 1125
+    [0x44] = 0x80,
+    /* * */
+    [0x47] = 0x2D, // 1125
+    [0x48] = 0x08,
+    [0x49] = 0x01, // 1125
+    [0x4A] = 0x7E, // 1125
+    [0x4B] = 0x08,
+    [0x4C] = 0x0A, // 1125
+    [0x4D] = 0x04, // 1125
+    /* * */
+    [0x4F] = 0x3A, // 1125
+    [0x50] = 0x01, // 1125
+    [0x51] = 0x58, // 1125
+    [0x52] = 0x01,
+    [0x53] = 0x2D,
+    [0x54] = 0x01,
+    [0x55] = 0x15, // 1125
+    /* * */
+    [0x57] = 0x2B,
+    [0x58] = 0x11, // 1125
+    [0x59] = 0x02,
+    [0x5A] = 0x11, // 1125
+    [0x5B] = 0x02,
+    [0x5C] = 0x25,
+    [0x5D] = 0x04, // 1125
+    [0x5E] = 0x0B, // 1125
+    /* * */
+    [0x60] = 0x23,
+    [0x61] = 0x02,
+    [0x62] = 0x1A, // 1125
+    /* * */
+    [0x64] = 0x0A, // 1125
+    [0x65] = 0x01, // 1125
+    [0x66] = 0x8C, // 1125
+    [0x67] = 0x30, // 1125
+    /* * */
+    [0x69] = 0x00, // 1125
+    /* * */
+    [0x6D] = 0x00, // 1125
+    /* * */
+    [0x6F] = 0x60,
+    /* * */
+    [0x79] = 0x68,
+};
+
+void spim_event_handler(nrfx_spim_evt_t const *p_event, void *p_context)
+{
+    m_xfer_done = true;
+}
+
+void spi_chip_select(uint8_t cs_pin)
+{
+    nrf_gpio_pin_clear(cs_pin);
+    nrfx_systick_delay_us(100);
+}
+
+void spi_chip_deselect(uint8_t cs_pin)
+{
+    nrf_gpio_pin_set(cs_pin);
+    nrfx_systick_delay_us(100);
+}
+
+static void spi_xfer_chunk(nrfx_spim_xfer_desc_t *xfer)
+{
+    const nrfx_spim_t spi2 = NRFX_SPIM_INSTANCE(2);
+
+    // wait for any pending SPI operation to complete
+    while (!m_xfer_done)
+        sd_app_evt_wait();
+
+    // Start the transaction and wait for the interrupt handler to warn us it is done.
+    m_xfer_done = false;
+    app_err(nrfx_spim_xfer(&spi2, xfer, 0));
+    while (!m_xfer_done)
+        __WFE();
+}
+
+void spi_read(uint8_t *buf, size_t len)
+{
+    for (size_t n = 0; len > 0; len -= n, buf += n)
+    {
+        n = MIN(255, len);
+        nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, n);
+        spi_xfer_chunk(&xfer);
+    }
+}
+
+void spi_write(uint8_t const *buf, size_t len)
+{
+    for (size_t n = 0; len > 0; len -= n, buf += n)
+    {
+        n = MIN(255, len);
+        nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, n);
+        spi_xfer_chunk(&xfer);
+    }
+}
+
+static inline const void ecx336cn_write_byte(uint8_t addr, uint8_t data)
+{
+    spi_chip_select(ECX336CN_CS_N_PIN);
+    spi_write(&addr, 1);
+    spi_write(&data, 1);
+    spi_chip_deselect(ECX336CN_CS_N_PIN);
+}
+
+static inline uint8_t ecx336cn_read_byte(uint8_t addr)
+{
+    uint8_t data;
+
+    ecx336cn_write_byte(0x80, 0x01);
+    ecx336cn_write_byte(0x81, addr);
+
+    spi_chip_select(ECX336CN_CS_N_PIN);
+    spi_write(&addr, 1);
+    spi_read(&data, 1);
+    spi_chip_deselect(ECX336CN_CS_N_PIN);
+
+    return data;
+}
 
 static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
                                     nrf_gpiote_polarity_t polarity)
@@ -127,48 +298,59 @@ int main(void)
 
     // Set up the SPI bus to the FPGA and external flash IC
     {
-        spi_init(spi2, SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN);
+        const nrfx_spim_t spi2 = NRFX_SPIM_INSTANCE(2);
+
+        nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
+            SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN, NRFX_SPIM_PIN_NOT_USED);
+
+        config.frequency = NRF_SPIM_FREQ_4M;
+        config.mode = NRF_SPIM_MODE_3;
+        config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
+
+        app_err(nrfx_spim_init(&spi2, &config, spim_event_handler, NULL));
     }
 
     // Check if external flash has an FPGA image and boot it
     {
-        // flash_init();
-        // nrf_gpio_pin_write(FLASH_CS_N_PIN, true);
+        // nrf_gpio_pin_set(FLASH_CS_N_PIN);
         // nrf_gpio_cfg_output(FLASH_CS_N_PIN);
-
-        // fpga_init();
-        // Start the FPGA with
-        nrf_gpio_cfg_output(FPGA_MODE1_PIN);
-        nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
 
         // Let the FPGA start as soon as it has the power on.
         nrf_gpio_cfg_output(FPGA_RECONFIG_N_PIN);
-        nrf_gpio_pin_write(FPGA_RECONFIG_N_PIN, true);
+        nrf_gpio_pin_set(FPGA_RECONFIG_N_PIN);
     }
 
     // Setup camera
     {
         // Set to 0V = hold camera in reset.
-        // nrf_gpio_pin_write(OV5640_RESETB_N_PIN, false);
+        // nrf_gpio_pin_clear(OV5640_RESETB_N_PIN);
         // nrf_gpio_cfg_output(OV5640_RESETB_N_PIN);
 
         // // Set to 0V = not asserted.
-        // nrf_gpio_pin_write(OV5640_PWDN_PIN, false);
+        // nrf_gpio_pin_clear(OV5640_PWDN_PIN);
         // nrf_gpio_cfg_output(OV5640_PWDN_PIN);
         // ov5640_init();
-
     }
 
     // Setup display
     {
         // configure CS pin for the Display (for active low)
-        // nrf_gpio_pin_set(ECX336CN_CS_N_PIN);
-        // nrf_gpio_cfg_output(ECX336CN_CS_N_PIN);
+        nrf_gpio_pin_set(ECX336CN_CS_N_PIN);
+        nrf_gpio_cfg_output(ECX336CN_CS_N_PIN);
 
-        // // Set low on boot (datasheet p.11)
-        // nrf_gpio_pin_write(ECX336CN_XCLR_PIN, false);
-        // nrf_gpio_cfg_output(ECX336CN_XCLR_PIN);
-        // ecx336cn_init();
+        ecx336cn_write_byte(0x00, 0x9E); // enter power saving mode (YUV)
+        // it is now possible to turn off the 10V rail
+
+        for (size_t i = 0; i < sizeof(ecx336cn_config) / sizeof(*ecx336cn_config); i++)
+        {
+            ecx336cn_write_byte(i, ecx336cn_config[i]);
+        }
+
+        // the 10V power rail needs to be turned back on first
+        ecx336cn_write_byte(0x00, 0x9F); // exit power saving mode (YUV)
+
+        // check that 0x29 changed from default 0x0A to 0x0B
+        app_err(ecx336cn_read_byte(0x29) != 0x0B);
     }
 
     // Initialise the stack pointer for the main thread

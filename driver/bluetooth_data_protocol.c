@@ -34,7 +34,6 @@
 #include "driver/bluetooth_data_protocol.h"
 #include "driver/bluetooth_low_energy.h"
 #include "driver/config.h"
-#include "driver/fpga.h"
 
 // List of flags to append in the header when we send file chunks over BLE
 enum
@@ -49,6 +48,9 @@ static uint8_t ble_buf[BLE_MAX_MTU_LENGTH];
 static uint8_t ble_flag;
 static size_t ble_pos;
 static size_t ble_len;
+
+// TODO use a header
+void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len);
 
 static inline size_t data_encode_u32(uint8_t *buf, uint32_t u32)
 {
@@ -104,7 +106,7 @@ void bluetooth_data_camera_capture(char const *filename, uint8_t quality)
     // uint8_t rgb_buf[OV5640_WIDTH * 8 * 3];
 
     // ask the FPGA to start a camera capture, and read the data later.
-    fpga_cmd(FPGA_CAMERA_CAPTURE);
+    fpga_cmd_write(0x1006, NULL, 0);
 
     // init blueetooth buffer parameters
     ble_len = ble_negotiated_mtu - 3;

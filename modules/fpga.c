@@ -32,8 +32,32 @@
 #include "nrfx_spim.h"
 
 #include "driver/config.h"
-#include "driver/fpga.h"
-#include "driver/spi.h"
+
+// TODO use a header
+void spi_chip_select(uint8_t cs_pin);
+void spi_chip_deselect(uint8_t cs_pin);
+void spi_read(uint8_t *buf, size_t len);
+void spi_write(uint8_t const *buf, size_t len);
+
+void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len)
+{
+    uint8_t cmd_buf[2] = {cmd >> 8, cmd >> 0};
+
+    spi_chip_select(FPGA_CS_N_PIN);
+    spi_write(cmd_buf, sizeof cmd_buf);
+    spi_write(buf, len);
+    spi_chip_deselect(FPGA_CS_N_PIN);
+}
+
+void fpga_cmd_read(uint16_t cmd, uint8_t *buf, size_t len)
+{
+    uint8_t cmd_buf[2] = {(cmd >> 8) & 0xFF, (cmd >> 0) & 0xFF};
+
+    spi_chip_select(FPGA_CS_N_PIN);
+    spi_write(cmd_buf, sizeof cmd_buf);
+    spi_read(buf, len);
+    spi_chip_deselect(FPGA_CS_N_PIN);
+}
 
 STATIC mp_obj_t mod_fpga___init__(void)
 {
@@ -59,19 +83,13 @@ STATIC mp_obj_t fpga_read(mp_obj_t addr_in, mp_obj_t len_in)
     mp_obj_t return_list = mp_obj_new_list(0, NULL);
 
     // Read on the SPI using the command and address given
-    spi_chip_select(FPGA_CS_N_PIN);
-    spi_write_u16(addr);
-    spi_read(buf, len);
-    spi_chip_deselect(FPGA_CS_N_PIN);
+    fpga_cmd_read(addr, buf, len);
 
     // Copy the read bytes into the list object
     for (size_t i = 0; i < len; i++)
     {
         mp_obj_list_append(return_list, MP_OBJ_NEW_SMALL_INT(buf[i]));
     }
-
-    // Flush the buffer over SPI
-    fpga_cmd_write(addr, buf, len);
 
     // Free the temporary buffer
     m_free(buf);

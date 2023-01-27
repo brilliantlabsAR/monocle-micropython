@@ -104,10 +104,6 @@ SRC_C += mphalport.c
 
 SRC_C += driver/bluetooth_data_protocol.c
 SRC_C += driver/bluetooth_low_energy.c
-SRC_C += driver/ecx336cn.c
-SRC_C += driver/flash.c
-SRC_C += driver/fpga.c
-SRC_C += driver/spi.c
 
 SRC_C += micropython/extmod/moduasyncio.c
 SRC_C += micropython/extmod/modubinascii.c
@@ -115,7 +111,7 @@ SRC_C += micropython/extmod/moduhashlib.c
 SRC_C += micropython/extmod/modujson.c
 SRC_C += micropython/extmod/modurandom.c
 SRC_C += micropython/extmod/modure.c
-SRC_C += modules/camera.c
+#SRC_C += modules/camera.c
 SRC_C += modules/device.c
 SRC_C += modules/display.c
 SRC_C += modules/fpga.c
