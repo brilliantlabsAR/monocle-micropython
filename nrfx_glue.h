@@ -24,17 +24,20 @@
 
 #pragma once
 
+#include "monocle.h"
+
 #include "nrfx.h"
 #include "nrf_nvic.h"
 #include <soc/nrfx_coredep.h>
 #include <soc/nrfx_atomic.h>
 
-// TODO replace this with app_err
-#define NRFX_ASSERT(expression) \
-    do                          \
-    {                           \
-        bool res = expression;  \
-        (void)res;              \
+#define NRFX_ASSERT(expression)  \
+    do                           \
+    {                            \
+        if ((expression) == 0)   \
+        {                        \
+            app_err(0xDEAD0A55); \
+        }                        \
     } while (0)
 
 #define NRFX_STATIC_ASSERT(expression) \

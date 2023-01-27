@@ -22,7 +22,6 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import io
 import time
 import display
 

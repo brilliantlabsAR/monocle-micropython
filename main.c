@@ -55,7 +55,6 @@
 #include "nrfx_rtc.h"
 #include "nrfx_glue.h"
 
-#include "driver/battery.h"
 #include "driver/bluetooth_data_protocol.h"
 #include "driver/bluetooth_low_energy.h"
 #include "driver/config.h"
@@ -117,8 +116,8 @@ int main(void)
         nrfx_saadc_channel_t channel =
             NRFX_SAADC_DEFAULT_CHANNEL_SE(BATTERY_LEVEL_PIN, 0);
 
-        channel.channel_config.reference = NRF_SAADC_REFERENCE_VDD4;
-        channel.channel_config.gain = NRF_SAADC_GAIN1_4;
+        channel.channel_config.reference = NRF_SAADC_REFERENCE_INTERNAL;
+        channel.channel_config.gain = NRF_SAADC_GAIN1_2;
 
         app_err(nrfx_saadc_channel_config(&channel));
     }
