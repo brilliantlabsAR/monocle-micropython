@@ -65,8 +65,6 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
         // Put PMIC main bias into low power mode
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x10, 0x20, 0x20).fail);
 
-        // Set up the touch interrupt pin
-
         nrf_gpio_cfg_sense_input(TOUCH_INTERRUPT_PIN,
                                  NRF_GPIO_PIN_NOPULL,
                                  NRF_GPIO_PIN_SENSE_LOW);
@@ -82,7 +80,7 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
 
 void monocle_critical_startup(void)
 {
-    // Enable the the DC DC convertor
+    // Enable the the DC/DC convertor
     NRF_POWER->DCDCEN = 0x00000001;
 
     // Set up the I2C buses
@@ -112,22 +110,27 @@ void monocle_critical_startup(void)
             app_err(resp.value);
         }
 
-        // Set up battery charger voltage & current
-        float voltage = 4.3f;
-        float current = 70.0f;
+        // Vhot & Vwarm = 45 degrees. Vcool = 15 degrees. Vcold = 0 degrees
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x20, 0xFF, 0x2E).fail);
 
-        uint8_t voltage_setting = (uint8_t)round((voltage - 3.6f) / 0.025f) << 2;
-        uint8_t current_setting = (uint8_t)round((current - 7.5f) / 7.5f) << 2;
+        // Set CHGIN limit to 475mA
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x21, 0x1C, 0x10).fail);
 
-        // TODO set temperature cutouts
+        // Charge termination current = 5%
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x22, 0x18, 0x00).fail);
 
-        // Apply the constant voltage setting
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x26, 0xFC, voltage_setting).fail);
-        // TODO set the JETIA voltage
+        // Set junction regulation temperature to 70 degrees
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x23, 0xE0, 0x20).fail);
 
-        // Apply the constant current setting
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x24, 0xFC, current_setting).fail);
-        // TODO set the JETIA current
+        // Set the fast charge current value to 75mA
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x24, 0xFC, 0x24).fail);
+
+        // Set the Vcool & Vwarm current to 75mA, and enable the thermistor
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x25, 0xFE, 0x26).fail);
+
+        // Set constant voltage to 4.3V for both fast charge and JEITA
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x26, 0xFC, 0x70).fail);
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x27, 0xFC, 0x70).fail);
     }
 
     // Configure the touch IC
