@@ -180,6 +180,13 @@ void monocle_critical_startup(void)
         nrfx_timer_enable(&timer);
     }
 
+    // Early GPIO setup before the power rail come up
+    {
+        // Tell the FPGA to start with the embedded flash.
+        nrf_gpio_cfg_output(FPGA_MODE1_PIN);
+        nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
+    }
+
     // Power up everything for normal operation.
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
     {

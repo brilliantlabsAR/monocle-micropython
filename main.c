@@ -70,6 +70,103 @@ extern uint32_t _heap_end;
 // Indicate that SPI completed the transfer from the interrupt handler to main loop.
 static volatile bool m_xfer_done = true;
 
+// ECX336CN datasheet section 10.1
+uint8_t const ecx336cn_config[] = {
+    [0x00] = 0x9E, // [0]=0 -> enter power save mode
+    [0x01] = 0x20,
+    /* * */
+    [0x03] = 0x20, // 1125
+    [0x04] = 0x3F,
+    [0x05] = 0xC8, // 1125  DITHERON, LUMINANCE=0x00=2000cd/m2=medium (Datasheet 10.8)
+    /* * */
+    [0x07] = 0x40,
+    [0x08] = 0x80, // Luminance adjustment: OTPCALDAC_REGDIS=0 (preset mode per reg 5), white chromaticity: OTPDG_REGDIS=0 (preset mode, default)
+    /* * */
+    [0x0A] = 0x10,
+    /* * */
+    [0x0F] = 0x56,
+    /* * */
+    [0x20] = 0x01,
+    /* * */
+    [0x22] = 0x40,
+    [0x23] = 0x40,
+    [0x24] = 0x40,
+    [0x25] = 0x80,
+    [0x26] = 0x40,
+    [0x27] = 0x40,
+    [0x28] = 0x40,
+    [0x29] = 0x0B,
+    [0x2A] = 0xBE, // CALDAC=190 (ignored, since OTPCALDAC_REGDIS=0)
+    [0x2B] = 0x3C,
+    [0x2C] = 0x02,
+    [0x2D] = 0x7A,
+    [0x2E] = 0x02,
+    [0x2F] = 0xFA,
+    [0x30] = 0x26,
+    [0x31] = 0x01,
+    [0x32] = 0xB6,
+    /* * */
+    [0x34] = 0x03,
+    [0x35] = 0x60, // 1125
+    /* * */
+    [0x37] = 0x76,
+    [0x38] = 0x02,
+    [0x39] = 0xFE,
+    [0x3A] = 0x02,
+    [0x3B] = 0x71, // 1125
+    /* * */
+    [0x3D] = 0x1B,
+    /* * */
+    [0x3F] = 0x1C,
+    [0x40] = 0x02, // 1125
+    [0x41] = 0x4D, // 1125
+    [0x42] = 0x02, // 1125
+    [0x43] = 0x4E, // 1125
+    [0x44] = 0x80,
+    /* * */
+    [0x47] = 0x2D, // 1125
+    [0x48] = 0x08,
+    [0x49] = 0x01, // 1125
+    [0x4A] = 0x7E, // 1125
+    [0x4B] = 0x08,
+    [0x4C] = 0x0A, // 1125
+    [0x4D] = 0x04, // 1125
+    /* * */
+    [0x4F] = 0x3A, // 1125
+    [0x50] = 0x01, // 1125
+    [0x51] = 0x58, // 1125
+    [0x52] = 0x01,
+    [0x53] = 0x2D,
+    [0x54] = 0x01,
+    [0x55] = 0x15, // 1125
+    /* * */
+    [0x57] = 0x2B,
+    [0x58] = 0x11, // 1125
+    [0x59] = 0x02,
+    [0x5A] = 0x11, // 1125
+    [0x5B] = 0x02,
+    [0x5C] = 0x25,
+    [0x5D] = 0x04, // 1125
+    [0x5E] = 0x0B, // 1125
+    /* * */
+    [0x60] = 0x23,
+    [0x61] = 0x02,
+    [0x62] = 0x1A, // 1125
+    /* * */
+    [0x64] = 0x0A, // 1125
+    [0x65] = 0x01, // 1125
+    [0x66] = 0x8C, // 1125
+    [0x67] = 0x30, // 1125
+    /* * */
+    [0x69] = 0x00, // 1125
+    /* * */
+    [0x6D] = 0x00, // 1125
+    /* * */
+    [0x6F] = 0x60,
+    /* * */
+    [0x79] = 0x68,
+};
+
 void spim_event_handler(nrfx_spim_evt_t const *p_event, void *p_context)
 {
     m_xfer_done = true;
@@ -216,14 +313,8 @@ int main(void)
 
     // Check if external flash has an FPGA image and boot it
     {
-        // flash_init();
         // nrf_gpio_pin_write(FLASH_CS_N_PIN, true);
         // nrf_gpio_cfg_output(FLASH_CS_N_PIN);
-
-        // fpga_init();
-        // Start the FPGA with
-        nrf_gpio_cfg_output(FPGA_MODE1_PIN);
-        nrf_gpio_pin_write(FPGA_MODE1_PIN, false);
 
         // Let the FPGA start as soon as it has the power on.
         nrf_gpio_cfg_output(FPGA_RECONFIG_N_PIN);
@@ -245,103 +336,6 @@ int main(void)
 
     // Setup display
     {
-        // Datasheet section 10.1
-        uint8_t const ecx336cn_config[] = {
-            [0x00] = 0x9E, // [0]=0 -> enter power save mode
-            [0x01] = 0x20,
-            /* * */
-            [0x03] = 0x20, // 1125
-            [0x04] = 0x3F,
-            [0x05] = 0xC8, // 1125  DITHERON, LUMINANCE=0x00=2000cd/m2=medium (Datasheet 10.8)
-            /* * */
-            [0x07] = 0x40,
-            [0x08] = 0x80, // Luminance adjustment: OTPCALDAC_REGDIS=0 (preset mode per reg 5), white chromaticity: OTPDG_REGDIS=0 (preset mode, default)
-            /* * */
-            [0x0A] = 0x10,
-            /* * */
-            [0x0F] = 0x56,
-            /* * */
-            [0x20] = 0x01,
-            /* * */
-            [0x22] = 0x40,
-            [0x23] = 0x40,
-            [0x24] = 0x40,
-            [0x25] = 0x80,
-            [0x26] = 0x40,
-            [0x27] = 0x40,
-            [0x28] = 0x40,
-            [0x29] = 0x0B,
-            [0x2A] = 0xBE, // CALDAC=190 (ignored, since OTPCALDAC_REGDIS=0)
-            [0x2B] = 0x3C,
-            [0x2C] = 0x02,
-            [0x2D] = 0x7A,
-            [0x2E] = 0x02,
-            [0x2F] = 0xFA,
-            [0x30] = 0x26,
-            [0x31] = 0x01,
-            [0x32] = 0xB6,
-            /* * */
-            [0x34] = 0x03,
-            [0x35] = 0x60, // 1125
-            /* * */
-            [0x37] = 0x76,
-            [0x38] = 0x02,
-            [0x39] = 0xFE,
-            [0x3A] = 0x02,
-            [0x3B] = 0x71, // 1125
-            /* * */
-            [0x3D] = 0x1B,
-            /* * */
-            [0x3F] = 0x1C,
-            [0x40] = 0x02, // 1125
-            [0x41] = 0x4D, // 1125
-            [0x42] = 0x02, // 1125
-            [0x43] = 0x4E, // 1125
-            [0x44] = 0x80,
-            /* * */
-            [0x47] = 0x2D, // 1125
-            [0x48] = 0x08,
-            [0x49] = 0x01, // 1125
-            [0x4A] = 0x7E, // 1125
-            [0x4B] = 0x08,
-            [0x4C] = 0x0A, // 1125
-            [0x4D] = 0x04, // 1125
-            /* * */
-            [0x4F] = 0x3A, // 1125
-            [0x50] = 0x01, // 1125
-            [0x51] = 0x58, // 1125
-            [0x52] = 0x01,
-            [0x53] = 0x2D,
-            [0x54] = 0x01,
-            [0x55] = 0x15, // 1125
-            /* * */
-            [0x57] = 0x2B,
-            [0x58] = 0x11, // 1125
-            [0x59] = 0x02,
-            [0x5A] = 0x11, // 1125
-            [0x5B] = 0x02,
-            [0x5C] = 0x25,
-            [0x5D] = 0x04, // 1125
-            [0x5E] = 0x0B, // 1125
-            /* * */
-            [0x60] = 0x23,
-            [0x61] = 0x02,
-            [0x62] = 0x1A, // 1125
-            /* * */
-            [0x64] = 0x0A, // 1125
-            [0x65] = 0x01, // 1125
-            [0x66] = 0x8C, // 1125
-            [0x67] = 0x30, // 1125
-            /* * */
-            [0x69] = 0x00, // 1125
-            /* * */
-            [0x6D] = 0x00, // 1125
-            /* * */
-            [0x6F] = 0x60,
-            /* * */
-            [0x79] = 0x68,
-        };
-
         // configure CS pin for the Display (for active low)
         // nrf_gpio_pin_set(ECX336CN_CS_N_PIN);
         // nrf_gpio_cfg_output(ECX336CN_CS_N_PIN);
