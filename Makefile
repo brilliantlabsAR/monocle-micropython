@@ -104,7 +104,6 @@ SRC_C += mphalport.c
 
 SRC_C += driver/bluetooth_data_protocol.c
 SRC_C += driver/bluetooth_low_energy.c
-SRC_C += tools/fontgen/font.c
 
 SRC_C += micropython/extmod/moduasyncio.c
 SRC_C += micropython/extmod/modubinascii.c
