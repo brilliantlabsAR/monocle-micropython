@@ -169,19 +169,6 @@ void ecx336cn_deinit(void)
 }
 
 /**
- * Configure the luminance level of the display.
- * @param level Predefined level of luminance.
- */
-void ecx336cn_set_luminance(ecx336cn_luminance_t level)
-{
-    // maximum value value is 4
-    app_err(level > 3);
-
-    // LUMINANCE is register 0x05[3:0]; preserve other bits
-    ecx336cn_write_byte(0x05, (ecx336cn_read_byte(0x05) & 0xF8) | level);
-}
-
-/**
  * Put the display to sleep power mode.
  */
 void ecx336cn_sleep(void)
