@@ -24,8 +24,18 @@
 
 #pragma once
 
-#include "mpconfigport.h"
 #include "nrfx_rtc.h"
+#include "mpconfigport.h"
+
+typedef int mp_int_t;
+typedef unsigned int mp_uint_t;
+typedef long mp_off_t;
 
 int mp_hal_generate_random_seed(void);
 void mp_hal_rtc_callback(nrfx_rtc_int_type_t int_type);
+void mp_hal_print_strn(void *env, const char *str, size_t len);
+mp_uint_t mp_hal_ticks_ms(void);
+mp_uint_t mp_hal_ticks_us(void);
+void mp_hal_delay_ms(mp_uint_t ms);
+void mp_hal_delay_us(mp_uint_t us);
+void mp_hal_set_interrupt_char(char c);

@@ -24,9 +24,8 @@
 
 #pragma once
 
-#include "mphalport.h"
-#include <stdint.h>
 #include <alloca.h>
+#include "mphalport.h"
 
 #define MICROPY_BANNER_MACHINE "Monocle on nRF52832"
 
@@ -108,7 +107,7 @@
 #define MICROPY_PY_BUILTINS_COMPLEX (0)
 #define MICROPY_FLOAT_IMPL (MICROPY_FLOAT_IMPL_FLOAT)
 #define MICROPY_LONGINT_IMPL (MICROPY_LONGINT_IMPL_MPZ)
-// #define MP_NEED_LOG2 (1)
+#define MP_NEED_LOG2 (1)
 
 #define MICROPY_PY_UBINASCII (1)
 #define MICROPY_PY_UBINASCII_CRC32 (1)
@@ -133,15 +132,13 @@
 #define MICROPY_PY_URE_SUB (1)
 #define MICROPY_PY_UHEAPQ (1)
 
+#define MICROPY_PY_UTIME_MP_HAL (1)
+
 #define MICROPY_MAKE_POINTER_CALLABLE(p) ((void *)((mp_uint_t)(p) | 1))
 
 #define MICROPY_EPOCH_IS_1970 (1)
 
 #define MP_SSIZE_MAX (0x7fffffff)
-
-typedef int mp_int_t;
-typedef unsigned int mp_uint_t;
-typedef long mp_off_t;
 
 #define MP_STATE_PORT MP_STATE_VM
 

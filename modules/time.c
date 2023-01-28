@@ -23,44 +23,74 @@
  */
 
 #include <time.h>
+#include <stdlib.h>
 
-#include "py/qstr.h"
-#include "py/nlr.h"
 #include "py/runtime.h"
 #include "shared/timeutils/timeutils.h"
 #include "extmod/utime_mphal.h"
 #include "nrfx_systick.h"
+#include "mphalport.h"
 
-uint64_t time_seconds;
+uint64_t time_since_boot;
 uint64_t time_zone_offset;
 
-STATIC mp_obj_t time___init__(void)
+STATIC mp_obj_t time_epoch(size_t n_args, const mp_obj_t *args)
 {
-    if (time_seconds == 0)
+    if (n_args == 0)
     {
-        mp_hal_start_ticker_timer();
+        return mp_obj_new_int(time_since_boot + mp_hal_ticks_ms() / 1000);
     }
-
-    return mp_const_none;
+    else
+    {
+        mp_int_t epoch_s = mp_obj_get_int(args[0]);
+        mp_int_t uptime_s = mp_hal_ticks_ms() / 1000;
+        if (epoch_s < uptime_s)
+        {
+            mp_raise_ValueError(MP_ERROR_TEXT("time too low"));
+        }
+        time_since_boot = epoch_s - uptime_s;
+        return mp_const_none;
+    }
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(time___init___obj, time___init__);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_epoch_obj, 0, 1, time_epoch);
 
-STATIC mp_obj_t time_sleep(mp_obj_t secs_in)
+STATIC mp_obj_t time_sleep(mp_obj_t secs)
 {
-    uint64_t secs = mp_obj_get_int(secs_in);
-
-    nrfx_systick_delay_ms(secs * 1000);
+    nrfx_systick_delay_ms(mp_obj_get_int(secs) / 1000);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(time_sleep_obj, time_sleep);
 
-STATIC mp_obj_t time_zone(mp_obj_t hours, mp_obj_t minutes)
+STATIC mp_obj_t time_zone(size_t n_args, const mp_obj_t *args)
 {
-    time_zone_offset = mp_obj_get_int(hours) * 3600;
-    time_zone_offset += mp_obj_get_int(minutes) * 60;
-    return mp_const_none;
+    if (n_args == 0)
+    {
+        return mp_obj_new_int(time_zone_offset);
+    }
+    else
+    {
+        char const *s =  mp_obj_str_get_str(args[1]);
+        char *end = NULL;
+
+        long hours = strtol(s, &end, 10);
+        if (end == s || *end != ':')
+        {
+            mp_raise_ValueError(MP_ERROR_TEXT("invalid hour format"));
+        }
+
+        s = end + 1;
+
+        long minutes = strtol(s, &end, 10);
+        if (end == s || *end != '\0' || minutes < 0)
+        {
+            mp_raise_ValueError(MP_ERROR_TEXT("invalid minute format"));
+        }
+
+        time_zone_offset = hours * 3600 + minutes * 60;
+        return mp_const_none;
+    }
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(time_zone_obj, time_zone);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_zone_obj, 0, 1, time_zone);
 
 STATIC mp_obj_t time_time(size_t n_args, const mp_obj_t *args)
 {
@@ -69,7 +99,7 @@ STATIC mp_obj_t time_time(size_t n_args, const mp_obj_t *args)
     // Get current date and time.
     if (n_args == 0 || args[0] == mp_const_none)
     {
-        seconds = time_seconds;
+        seconds = time_since_boot + mp_hal_ticks_ms() / 1000;
     }
     else
     {
