@@ -266,6 +266,22 @@ int main(void)
         app_err(nrfx_saadc_channel_config(&channel));
     }
 
+    // Setup an RTC counting milliseconds since now
+    {
+        static nrfx_rtc_config_t rtc_config = NRFX_RTC_DEFAULT_CONFIG;
+        nrfx_rtc_t rtc = NRFX_RTC_INSTANCE(0);
+
+        /** TODO automate the timer reset
+        uint32 event = nrf_rtc_event_address_get(&rtc, NRF_RTC_EVENT_COMPARE_0);
+        uint32 task = nrf_rtc_task_address_get(&rtc, NRF_RTC_TASK_CLEAR);
+        nrf_ppi_channel_endpoint_setup(NRF_PPI_CHANNEL0, event, task);
+        nrf_ppi_channel_enable(NRF_PPI_CHANNEL0);
+        **/
+
+        app_err(nrfx_rtc_init(&rtc, &rtc_config, mp_hal_rtc_callback));
+        nrfx_rtc_enable(&rtc);
+    }
+
     // Set up BLE
     ble_init();
 

@@ -28,6 +28,7 @@
 #include "py/runtime.h"
 #include "mpconfigport.h"
 #include "driver/bluetooth_low_energy.h"
+#include "nrfx_rtc.h"
 
 const char help_text[] = {
     "Welcome to MicroPython!\n\n"
@@ -112,4 +113,16 @@ void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len)
 int mp_hal_generate_random_seed(void)
 {
     return 0;
+}
+
+static uint32_t uptime_ms;
+
+void mp_hal_rtc_callback(nrfx_rtc_int_type_t int_type)
+{
+    uptime_ms += (int_type == NRFX_RTC_INT_COMPARE0);
+}
+
+mp_uint_t mp_hal_ticks_ms(void)
+{
+    return utime_ms;
 }

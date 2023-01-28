@@ -25,11 +25,7 @@
 #pragma once
 
 #include "mpconfigport.h"
-
-// TODO we can remove this and use the keyboard interrupt functions
-static inline void mp_hal_set_interrupt_char(char c)
-{
-    (void)c;
-}
+#include "nrfx_rtc.h"
 
 int mp_hal_generate_random_seed(void);
+void mp_hal_rtc_callback(nrfx_rtc_int_type_t int_type);

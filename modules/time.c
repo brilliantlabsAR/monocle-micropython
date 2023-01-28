@@ -27,33 +27,23 @@
 #include "py/qstr.h"
 #include "py/nlr.h"
 #include "py/runtime.h"
-
+#include "shared/timeutils/timeutils.h"
+#include "extmod/utime_mphal.h"
 #include "nrfx_systick.h"
 
-uint64_t time_at_init;
+uint64_t time_seconds;
 uint64_t time_zone_offset;
 
 STATIC mp_obj_t time___init__(void)
 {
+    if (time_seconds == 0)
+    {
+        mp_hal_start_ticker_timer();
+    }
+
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(time___init___obj, time___init__);
-
-// STATIC mp_obj_t time_epoch(size_t n_args, const mp_obj_t *args)
-// {
-//     if (n_args == 0)
-//         return mp_obj_new_int(time_at_init + timer_get_uptime_ms() / 1000);
-//     if (n_args == 1)
-//         time_at_init = mp_obj_get_int(args[0]) - timer_get_uptime_ms() / 1000;
-//     return mp_const_none;
-// }
-// STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_epoch_obj, 0, 1, time_epoch);
-
-STATIC mp_obj_t time_ticks_ms(void)
-{
-    return 0; // TODO mp_obj_new_int(timer_get_uptime_ms());
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(time_ticks_ms_obj, time_ticks_ms);
 
 STATIC mp_obj_t time_sleep(mp_obj_t secs_in)
 {
@@ -64,114 +54,77 @@ STATIC mp_obj_t time_sleep(mp_obj_t secs_in)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(time_sleep_obj, time_sleep);
 
-STATIC mp_obj_t time_sleep_ms(mp_obj_t msecs_in)
+STATIC mp_obj_t time_zone(mp_obj_t hours, mp_obj_t minutes)
 {
-    uint64_t msecs = mp_obj_get_int(msecs_in);
-
-    nrfx_systick_delay_ms(msecs);
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(time_sleep_ms_obj, time_sleep_ms);
-
-STATIC mp_obj_t time_zone(mp_obj_t hours_in, mp_obj_t minutes_in)
-{
-    int16_t hours = mp_obj_get_int(hours_in);
-    int16_t minutes = mp_obj_get_int(minutes_in);
-
-    time_zone_offset = hours * 3600 + minutes * 60;
+    time_zone_offset = mp_obj_get_int(hours) * 3600;
+    time_zone_offset += mp_obj_get_int(minutes) * 60;
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(time_zone_obj, time_zone);
 
-static inline bool isleap(int year)
-{
-    return ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
-}
-
-static inline int mdays(int mon, int year)
-{
-    return (mon == 2) ? (28 + isleap(year)) : (30 + (mon + (mon > 7)) % 2);
-}
-
 STATIC mp_obj_t time_time(size_t n_args, const mp_obj_t *args)
 {
-    mp_obj_t dict_out = mp_obj_new_dict(0);
-    mp_obj_dict_t *dict = MP_OBJ_TO_PTR(dict_out);
-    time_t t;
-    int tm_sec, tm_min, tm_hour, tm_mday, tm_mon, tm_year, days;
+    mp_int_t seconds;
 
-    // get the time to convert from one way or another
-    if (n_args == 0)
-        t = 0; // TODO t = time_at_init + timer_get_uptime_ms() / 1000;
+    // Get current date and time.
+    if (n_args == 0 || args[0] == mp_const_none)
+    {
+        seconds = time_seconds;
+    }
     else
-        t = mp_obj_get_int(args[0]);
+    {
+        seconds = mp_obj_get_int(args[0]);
+    }
 
-    // apply the time zone offset to get local time
-    t += time_zone_offset;
-
-    // compute time components
-    tm_sec = t % 60;
-    t /= 60;
-    tm_min = t % 60;
-    t /= 60;
-    tm_hour = t % 24;
-    t /= 24;
-
-    // compute date components
-    for (tm_year = 1970; t >= (days = (365 + isleap(tm_year))); tm_year++)
-        t -= days;
-    for (tm_mon = 1; t >= (days = mdays(tm_mon, tm_year)); tm_mon++)
-        t -= days;
-    tm_mday = t + 1;
-
-    // fill the fields of a python dict
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_sec), MP_OBJ_NEW_SMALL_INT(tm_sec));
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_min), MP_OBJ_NEW_SMALL_INT(tm_min));
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_hour), MP_OBJ_NEW_SMALL_INT(tm_hour));
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_mday), MP_OBJ_NEW_SMALL_INT(tm_mday));
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_mon), MP_OBJ_NEW_SMALL_INT(tm_mon));
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_year), MP_OBJ_NEW_SMALL_INT(tm_year));
-
-    // return the dict
-    return dict_out;
+    // Convert given seconds to tuple.
+    timeutils_struct_time_t tm;
+    timeutils_seconds_since_epoch_to_struct_time(seconds, &tm);
+    mp_obj_t tuple[8] = {
+        tuple[0] = mp_obj_new_int(tm.tm_year),
+        tuple[1] = mp_obj_new_int(tm.tm_mon),
+        tuple[2] = mp_obj_new_int(tm.tm_mday),
+        tuple[3] = mp_obj_new_int(tm.tm_hour),
+        tuple[4] = mp_obj_new_int(tm.tm_min),
+        tuple[5] = mp_obj_new_int(tm.tm_sec),
+        tuple[6] = mp_obj_new_int(tm.tm_wday),
+        tuple[7] = mp_obj_new_int(tm.tm_yday),
+    };
+    return mp_obj_new_tuple(8, tuple);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_time_obj, 0, 1, time_time);
 
 STATIC mp_obj_t time_mktime(mp_obj_t dict)
 {
-    int sec = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_sec)));
-    int min = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_min)));
-    int hour = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_hour)));
-    int day = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_mday)));
-    int mon = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_mon)));
-    int year = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_year)));
-
-    // accumulate seconds from the time
-    sec = sec + min * 60 + hour * 3600;
-
-    // accumulate seconds from the date
-    for (mon--; mon > 0; mon--)
-        day = day + mdays(mon, year);
-    day = day - 1 + year / 400 * 146097 + year % 400 / 100 * 36524 + year % 100 / 4 * 1461 + year % 4 / 1 * 365;
-    sec += (day - 719527) * 86400;
-
-    // the result as an integer
-    return mp_obj_new_int(sec);
+    mp_int_t year = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_year)));
+    mp_int_t mon = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_mon)));
+    mp_int_t mday = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_mday)));
+    mp_int_t hour = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_hour)));
+    mp_int_t min = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_min)));
+    mp_int_t sec = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_sec)));
+    return mp_obj_new_int(timeutils_mktime(year, mon, mday, hour, min, sec));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(time_mktime_obj, time_mktime);
 
 STATIC const mp_rom_map_elem_t time_module_globals_table[] = {
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_time)},
-    {MP_ROM_QSTR(MP_QSTR___init__), MP_ROM_PTR(&time___init___obj)},
+    {MP_ROM_QSTR(MP_QSTR___name__),     MP_ROM_QSTR(MP_QSTR_time)},
 
-    // methods
-    // {MP_ROM_QSTR(MP_QSTR_epoch), MP_ROM_PTR(&time_epoch_obj)},
-    {MP_ROM_QSTR(MP_QSTR_ticks_ms), MP_ROM_PTR(&time_ticks_ms_obj)},
-    {MP_ROM_QSTR(MP_QSTR_sleep), MP_ROM_PTR(&time_sleep_obj)},
-    {MP_ROM_QSTR(MP_QSTR_sleep_ms), MP_ROM_PTR(&time_sleep_ms_obj)},
-    {MP_ROM_QSTR(MP_QSTR_mktime), MP_ROM_PTR(&time_mktime_obj)},
-    {MP_ROM_QSTR(MP_QSTR_time), MP_ROM_PTR(&time_time_obj)},
-    {MP_ROM_QSTR(MP_QSTR_zone), MP_ROM_PTR(&time_zone_obj)},
+    // custom methods
+    {MP_ROM_QSTR(MP_QSTR_mktime),       MP_ROM_PTR(&time_mktime_obj)},
+    {MP_ROM_QSTR(MP_QSTR_time),         MP_ROM_PTR(&time_time_obj)},
+    {MP_ROM_QSTR(MP_QSTR_zone),         MP_ROM_PTR(&time_zone_obj)},
+    {MP_ROM_QSTR(MP_QSTR_epoch),        MP_ROM_PTR(&time_epoch_obj)},
+    {MP_ROM_QSTR(MP_QSTR_sleep),        MP_ROM_PTR(&time_sleep_obj)},
+
+    // standard methods
+    {MP_ROM_QSTR(MP_QSTR_sleep),        MP_ROM_PTR(&mp_utime_sleep_obj)},
+    {MP_ROM_QSTR(MP_QSTR_sleep_ms),     MP_ROM_PTR(&mp_utime_sleep_ms_obj)},
+    {MP_ROM_QSTR(MP_QSTR_sleep_us),     MP_ROM_PTR(&mp_utime_sleep_us_obj)},
+    {MP_ROM_QSTR(MP_QSTR_ticks_ms),     MP_ROM_PTR(&mp_utime_ticks_ms_obj)},
+    {MP_ROM_QSTR(MP_QSTR_ticks_us),     MP_ROM_PTR(&mp_utime_ticks_us_obj)},
+    {MP_ROM_QSTR(MP_QSTR_ticks_cpu),    MP_ROM_PTR(&mp_utime_ticks_cpu_obj)},
+    {MP_ROM_QSTR(MP_QSTR_ticks_diff),   MP_ROM_PTR(&mp_utime_ticks_diff_obj)},
+    {MP_ROM_QSTR(MP_QSTR_ticks_add),    MP_ROM_PTR(&mp_utime_ticks_add_obj)},
+    {MP_ROM_QSTR(MP_QSTR_time_ns),      MP_ROM_PTR(&mp_utime_time_ns_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(time_module_globals, time_module_globals_table);
 

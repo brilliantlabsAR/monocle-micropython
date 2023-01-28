@@ -135,6 +135,8 @@
 
 #define MICROPY_MAKE_POINTER_CALLABLE(p) ((void *)((mp_uint_t)(p) | 1))
 
+#define MICROPY_EPOCH_IS_1970 (1)
+
 #define MP_SSIZE_MAX (0x7fffffff)
 
 typedef int mp_int_t;
