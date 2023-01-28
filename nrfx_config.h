@@ -24,6 +24,14 @@
 
 #pragma once
 
+#include "nrf.h"
+
+// For every module, it might be necessary to set the IRQ priority to
+// 7 so that the Nordic Uart Service (NUS) gets a higher priority.
+
+#define NRFX_LOG_ENABLED 1
+#define NRFX_LOG_UART_DISABLED 1
+
 #define NRFX_GPIOTE_ENABLED 1
 #define NRFX_GPIOTE_CONFIG_NUM_OF_LOW_POWER_EVENTS 1
 #define NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY 7
