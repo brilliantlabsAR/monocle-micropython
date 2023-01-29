@@ -24,11 +24,12 @@
 
 #include <math.h>
 #include "monocle.h"
+#include "nrf_gpio.h"
+#include "nrf_sdm.h"
+#include "nrf_soc.h"
+#include "nrfx_systick.h"
 #include "nrfx_timer.h"
 #include "nrfx_twim.h"
-#include "nrfx_systick.h"
-#include "nrf_gpio.h"
-#include "nrf_soc.h"
 
 static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
 static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
@@ -65,9 +66,24 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
         // Put PMIC main bias into low power mode
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x10, 0x20, 0x20).fail);
 
+        // Disable all GPIO pins
+        for (uint8_t pin; pin < NUMBER_OF_PINS; pin++)
+        {
+            nrf_gpio_cfg_default(pin);
+        }
+
+        // Set the wakeup pin to be the touch input
         nrf_gpio_cfg_sense_input(TOUCH_INTERRUPT_PIN,
                                  NRF_GPIO_PIN_NOPULL,
                                  NRF_GPIO_PIN_SENSE_LOW);
+
+        // Power down either using the softdevice power off function, or directly
+        uint8_t softdevice_enabled;
+        app_err(sd_softdevice_is_enabled(&softdevice_enabled));
+        if (softdevice_enabled)
+        {
+            app_err(sd_power_system_off());
+        }
 
         NRF_POWER->SYSTEMOFF = 1;
 
@@ -122,8 +138,8 @@ void monocle_critical_startup(void)
         // Set junction regulation temperature to 70 degrees
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x23, 0xE0, 0x20).fail);
 
-        // Set the fast charge current value to 75mA
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x24, 0xFC, 0x24).fail);
+        // Set the fast charge current value to 120mA
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x24, 0xFC, 0x3C).fail);
 
         // Set the Vcool & Vwarm current to 75mA, and enable the thermistor
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x25, 0xFE, 0x26).fail);
@@ -183,8 +199,6 @@ void monocle_critical_startup(void)
 
         nrfx_timer_enable(&timer);
     }
-
-    // TODO ignoring all display-related functions below also work
 
     // Power up everything for normal operation.
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
