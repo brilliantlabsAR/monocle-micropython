@@ -51,9 +51,10 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
     (void)p_context;
 
     // Get the CHG value from STAT_CHG_B
-    i2c_response_t battery_charging_resp = i2c_read(PMIC_I2C_ADDRESS, 0x03, 0x0C);
-    app_err(battery_charging_resp.fail);
-    if (battery_charging_resp.value)
+    i2c_response_t charging_response = i2c_read(PMIC_I2C_ADDRESS, 0x03, 0x0C);
+    app_err(charging_response.fail);
+
+    if (charging_response.value)
     {
         // Turn off Bluetooth
         app_err(sd_softdevice_disable());
@@ -105,13 +106,17 @@ void monocle_critical_startup(void)
 
     // Set up the I2C buses
     {
-        nrfx_twim_config_t bus_0_config = NRFX_TWIM_DEFAULT_CONFIG(PMIC_TOUCH_I2C_SCL_PIN,
-                                                                   PMIC_TOUCH_I2C_SDA_PIN);
-        bus_0_config.frequency = NRF_TWIM_FREQ_100K;
+        nrfx_twim_config_t bus_0_config = NRFX_TWIM_DEFAULT_CONFIG(
+            PMIC_TOUCH_I2C_SCL_PIN,
+            PMIC_TOUCH_I2C_SDA_PIN);
 
-        nrfx_twim_config_t bus_1_config = NRFX_TWIM_DEFAULT_CONFIG(CAMERA_I2C_SCL_PIN,
-                                                                   CAMERA_I2C_SDA_PIN);
-        bus_1_config.frequency = NRF_TWIM_FREQ_100K;
+        bus_0_config.frequency = NRF_TWIM_FREQ_100K; // TODO speed this up
+
+        nrfx_twim_config_t bus_1_config = NRFX_TWIM_DEFAULT_CONFIG(
+            CAMERA_I2C_SCL_PIN,
+            CAMERA_I2C_SDA_PIN);
+
+        bus_1_config.frequency = NRF_TWIM_FREQ_100K; // TODO speed this up
 
         app_err(nrfx_twim_init(&i2c_bus_0, &bus_0_config, NULL, NULL));
         app_err(nrfx_twim_init(&i2c_bus_1, &bus_1_config, NULL, NULL));
@@ -266,9 +271,9 @@ void monocle_critical_startup(void)
 
 void monocle_enter_bootloader(void)
 {
-    // Set the persistent memory flag telling the bootloader to go into DFU mode.
+    // Set the persistent memory flag telling the bootloader to go into DFU mode
     sd_power_gpregret_set(0, 0xB1);
 
-    // Reset the CPU, giving control to the bootloader.
+    // Reset the CPU, giving control to the bootloader
     NVIC_SystemReset();
 }

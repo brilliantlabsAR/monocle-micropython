@@ -79,7 +79,7 @@ i2c_response_t i2c_read(uint8_t device_address_7bit,
         .value = 0x00,
     };
 
-    // Create the tx payload, bus handle and transfer descriptor
+    // Create the tx payload, bus handle and transfer descriptors
     uint8_t tx_payload[2] = {(uint8_t)(register_address), 0};
 
     nrfx_twim_t i2c_handle = i2c_bus_0;
