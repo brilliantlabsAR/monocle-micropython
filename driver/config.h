@@ -21,45 +21,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-// Bluetooth params
-#define BLE_DEVICE_NAME "Monocle"
-
-// 0 is reserved for SoftDevice
-#define TIMER_INSTANCE 2
-#define TIMER_MAX_HANDLERS 2
-
-// I2C addresses
-
-// SPI
-
-#define SPI_MAX_XFER_LEN 255
-
-// OV5640
-
+// TODO remove/move these
 #define OV5640_WIDTH 1280
 #define OV5640_HEIGHT 720
-
-// ECX664CN
-
 #define ECX336CN_WIDTH 640
-#define ECX336CN_HEIGHT 400
-
-// LIGJOJPEG
-
-#define JOJPEG_WIDTH_MAX OV5640_WIDTH
-
-// LIGGFX
-
-#define GFX_OBJ_NUM
-
-// Driver declaration
-
-#define DRIVER(name)                    \
-    {                                   \
-        static bool ready = false;      \
-        if (ready)                      \
-            return;                     \
-        else                            \
-            ready = true;               \
-        PRINTF("DRIVER(%s)\r\n", name); \
-    }

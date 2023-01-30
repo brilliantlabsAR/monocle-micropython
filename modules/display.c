@@ -31,21 +31,23 @@
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
 
-#include "driver/bluetooth_data_protocol.h"
 #include "driver/config.h"
 
 #include "font.h"
 
-#define FPGA_ADDR_ALIGN  128
+#define FPGA_ADDR_ALIGN 128
 
-#define LEN(x)      (sizeof(x) / sizeof*(x))
-#define VAL(str)    #str
-#define STR(str)    VAL(str)
-#define ABS(x)      ((x) > 0 ? (x) : -(x))
+#define LEN(x) (sizeof(x) / sizeof *(x))
+#define VAL(str) #str
+#define STR(str) VAL(str)
+#define ABS(x) ((x) > 0 ? (x) : -(x))
 
-#define YUV422_BLACK    { 0x80, 0x00 }
+#define YUV422_BLACK \
+    {                \
+        0x80, 0x00   \
+    }
 
-#define LINE_THICKNESS  4
+#define LINE_THICKNESS 4
 
 typedef struct
 {
@@ -123,11 +125,11 @@ static inline uint8_t ecx336cn_read_byte(uint8_t addr)
 STATIC mp_obj_t display_brightness(mp_obj_t brightness)
 {
     int tab[] = {
-        1,  // DIM      750  cd/m2
-        2,  // LOW      1250 cd/m2
-        0,  // MEDIUM   2000 cd/m2, this is the default
-        3,  // HIGH     3000 cd/m2
-        4,  // BRIGHT   4000 cd/m2
+        1, // DIM      750  cd/m2
+        2, // LOW      1250 cd/m2
+        0, // MEDIUM   2000 cd/m2, this is the default
+        3, // HIGH     3000 cd/m2
+        4, // BRIGHT   4000 cd/m2
     };
 
     if (mp_obj_get_int(brightness) >= MP_ARRAY_SIZE(tab))
@@ -171,7 +173,7 @@ static void render_rectangle(row_t row, obj_t *obj)
  * Get the x coordinate with a line (x0,y0,x1,y1) for the slice at the y coordinate.
  */
 static inline int16_t intersect_line(int16_t y,
-        int16_t obj_x, int16_t obj_y, int16_t obj_width, int16_t obj_height, bool flip)
+                                     int16_t obj_x, int16_t obj_y, int16_t obj_width, int16_t obj_height, bool flip)
 {
     // Thales theorem to find the intersection of the line with our line.
     // y0--------------------------+ [a1,b2] is the line we draw
@@ -311,7 +313,7 @@ static void render_text(row_t row, obj_t *obj)
         row_t local = {
             .buf = row.buf + x * 2,
             .len = row.len - x * 2,
-            .y = row.y - obj->y
+            .y = row.y - obj->y,
         };
 
         // render the glyph, reduce the buffer to only the section to draw into,
@@ -423,7 +425,7 @@ STATIC void flush_blocks(row_t yuv422, size_t pos, size_t len)
 
     // set the base address
     uint32_t u32 = yuv422.y * yuv422.len + pos;
-    uint8_t base[sizeof u32] = { u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0 };
+    uint8_t base[sizeof u32] = {u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0};
     assert(u32 < OV5640_WIDTH * OV5640_HEIGHT * 2);
     fpga_cmd_write(0x4410, base, sizeof base);
 
@@ -457,7 +459,7 @@ STATIC void flush_row(row_t yuv422)
         size_t beg, end;
 
         // find the start position
-        for (;; i+= FPGA_ADDR_ALIGN)
+        for (;; i += FPGA_ADDR_ALIGN)
         {
             if (i == yuv422.len)
             {
@@ -471,7 +473,7 @@ STATIC void flush_row(row_t yuv422)
         beg = i;
 
         // find the end position
-        for (; i < yuv422.len; i+= FPGA_ADDR_ALIGN)
+        for (; i < yuv422.len; i += FPGA_ADDR_ALIGN)
         {
             if (!block_has_content(yuv422, i))
             {
@@ -487,8 +489,9 @@ STATIC void flush_row(row_t yuv422)
 STATIC mp_obj_t display_show(void)
 {
     uint8_t buf[ECX336CN_WIDTH * 2];
-    uint8_t buf2[1 << 15]; memset(buf2, 0, sizeof buf2);
-    row_t yuv422 = { .buf = buf, .len = sizeof buf, .y = 0 };
+    uint8_t buf2[1 << 15];
+    memset(buf2, 0, sizeof buf2);
+    row_t yuv422 = {.buf = buf, .len = sizeof buf, .y = 0};
 
     // fill the display with YUV422 black pixels
     fpga_cmd_write(0x4405, NULL, 0); // enable graphics
@@ -525,9 +528,9 @@ STATIC void new_obj(int type, mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t h
     uint8_t g = (rgb >> 8) & 0xFF;
     uint8_t b = (rgb >> 0) & 0xFF;
     uint8_t yuv444[3] = {
-        (uint8_t)(128.0 + 0.29900 * (r) + 0.58700 * (g) + 0.11400 * (b) - 128.0),
-        (uint8_t)(128.0 - 0.16874 * (r) - 0.33126 * (g) + 0.50000 * (b)),
-        (uint8_t)(128.0 + 0.50000 * (r) - 0.41869 * (g) - 0.08131 * (b)),
+        (uint8_t)(128.0 + 0.29900 * (r) + 0.58700 * (g) + 0.11400 * (b)-128.0),
+        (uint8_t)(128.0 - 0.16874 * (r)-0.33126 * (g) + 0.50000 * (b)),
+        (uint8_t)(128.0 + 0.50000 * (r)-0.41869 * (g)-0.08131 * (b)),
     };
     obj_t *gfx;
 
@@ -566,7 +569,7 @@ STATIC mp_obj_t display_line(size_t argc, mp_obj_t const args[])
     mp_int_t x2 = mp_obj_get_int(args[2]);
     mp_int_t y2 = mp_obj_get_int(args[3]);
     mp_int_t rgb = mp_obj_get_int(args[4]);
-    arg_t arg = { .u32 = (x1 < x2) != (y1 < y2) };
+    arg_t arg = {.u32 = (x1 < x2) != (y1 < y2)};
     mp_int_t width = ABS(x1 - x2);
     mp_int_t height = ABS(y1 - y2);
     mp_int_t x = MIN(x1, x2);
@@ -588,7 +591,7 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_line_obj, 5, 5, display_line);
 
 STATIC mp_obj_t display_text(size_t argc, mp_obj_t const args[])
 {
-    arg_t arg = { .ptr = mp_obj_str_get_str(args[0]) };
+    arg_t arg = {.ptr = mp_obj_str_get_str(args[0])};
     mp_int_t x = mp_obj_get_int(args[1]);
     mp_int_t y = mp_obj_get_int(args[2]);
     mp_int_t rgb = mp_obj_get_int(args[3]);
@@ -639,21 +642,21 @@ STATIC mp_obj_t display_vline(size_t argc, mp_obj_t const args[])
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_vline_obj, 4, 4, display_vline);
 
 STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_display) },
-    { MP_ROM_QSTR(MP_QSTR_fill),        MP_ROM_PTR(&display_fill_obj) },
-    { MP_ROM_QSTR(MP_QSTR_line),        MP_ROM_PTR(&display_line_obj) },
-    { MP_ROM_QSTR(MP_QSTR_text),        MP_ROM_PTR(&display_text_obj) },
-    { MP_ROM_QSTR(MP_QSTR_hline),       MP_ROM_PTR(&display_hline_obj) },
-    { MP_ROM_QSTR(MP_QSTR_vline),       MP_ROM_PTR(&display_vline_obj) },
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_display)},
+    {MP_ROM_QSTR(MP_QSTR_fill), MP_ROM_PTR(&display_fill_obj)},
+    {MP_ROM_QSTR(MP_QSTR_line), MP_ROM_PTR(&display_line_obj)},
+    {MP_ROM_QSTR(MP_QSTR_text), MP_ROM_PTR(&display_text_obj)},
+    {MP_ROM_QSTR(MP_QSTR_hline), MP_ROM_PTR(&display_hline_obj)},
+    {MP_ROM_QSTR(MP_QSTR_vline), MP_ROM_PTR(&display_vline_obj)},
 
     // methods
-    { MP_ROM_QSTR(MP_QSTR_show),        MP_ROM_PTR(&display_show_obj) },
-    { MP_ROM_QSTR(MP_QSTR_brightness),  MP_ROM_PTR(&display_brightness_obj) },
+    {MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&display_show_obj)},
+    {MP_ROM_QSTR(MP_QSTR_brightness), MP_ROM_PTR(&display_brightness_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(display_module_globals, display_module_globals_table);
 
 const mp_obj_module_t display_module = {
-    .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t*)&display_module_globals,
+    .base = {&mp_type_module},
+    .globals = (mp_obj_dict_t *)&display_module_globals,
 };
 MP_REGISTER_MODULE(MP_QSTR_display, display_module);

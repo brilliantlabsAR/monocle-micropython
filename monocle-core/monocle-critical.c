@@ -177,7 +177,7 @@ void monocle_critical_startup(void)
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x63, 0xFF, 0x0A).fail); // Proximity thresholds
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x22, 0x22).fail); // Redo ATI and enable event mode
 
-        // TODO fix this delay
+        // TODO optimize this delay
         nrfx_systick_delay_ms(1000);
     }
 
