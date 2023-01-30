@@ -28,7 +28,7 @@
 #include "py/runtime.h"
 #include "mpconfigport.h"
 #include "driver/bluetooth_low_energy.h"
-#include "nrfx_rtc.h"
+#include "nrfx_timer.h"
 #include "nrfx_systick.h"
 
 const char help_text[] = {
@@ -45,27 +45,27 @@ const char help_text[] = {
     "help(module_name)\n"};
 
 // this overflows after 49 days without reboot.
-static uint32_t rtc_overflows;
+static volatile uint32_t uptime_ms;
 
-void mp_hal_rtc_callback(nrfx_rtc_int_type_t int_type)
+void mp_hal_timer_1ms_callback(nrf_timer_event_t event, void *context)
 {
-    SEGGER_RTT_printf(0, "%s\r\n", __func__);
-    rtc_overflows += (int_type == NRFX_RTC_INT_OVERFLOW);
+    (void)event;
+    uptime_ms++;
 }
 
 mp_uint_t mp_hal_ticks_ms(void)
 {
-    return (uint64_t)(1000 * rtc_overflows / RTC_INPUT_FREQ);
+    return uptime_ms;
 }
 
 mp_uint_t mp_hal_ticks_us(void)
 {
-    return (uint64_t)(1000 * mp_hal_ticks_ms());
+    return uptime_ms * 1000;
 }
 
 mp_uint_t mp_hal_ticks_ns(void)
 {
-    return (uint64_t)(1000 * 1000 * mp_hal_ticks_ms());
+    return uptime_ms * 1000 * 1000;
 }
 
 mp_uint_t mp_hal_ticks_cpu(void)

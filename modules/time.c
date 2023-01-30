@@ -38,7 +38,6 @@ STATIC mp_obj_t time_epoch(size_t n_args, const mp_obj_t *args)
 {
     if (n_args == 0)
     {
-        SEGGER_RTT_printf(0, "ticks_ms=%d\r\n", mp_hal_ticks_ms());
         return mp_obj_new_int(time_since_boot + mp_hal_ticks_ms() / 1000);
     }
     else

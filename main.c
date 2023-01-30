@@ -53,7 +53,7 @@
 #include "nrfx_gpiote.h"
 #include "nrf_nvic.h"
 #include "nrfx_saadc.h"
-#include "nrfx_rtc.h"
+#include "nrfx_timer.h"
 #include "nrfx_glue.h"
 
 #include "driver/bluetooth_low_energy.h"
@@ -269,12 +269,22 @@ int main(void)
 
     // Setup an RTC counting milliseconds since now
     {
-        static nrfx_rtc_config_t rtc_config = NRFX_RTC_DEFAULT_CONFIG;
-        nrfx_rtc_t rtc = NRFX_RTC_INSTANCE(0);
+        static nrfx_timer_config_t config = NRFX_TIMER_DEFAULT_CONFIG;
+        nrfx_timer_t timer = NRFX_TIMER_INSTANCE(3);
 
-        app_err(nrfx_rtc_init(&rtc, &rtc_config, mp_hal_rtc_callback));
-        nrfx_rtc_enable(&rtc);
-        nrfx_rtc_overflow_enable(&rtc, true);
+        // Prepare the configuration structure.
+        config.frequency = NRF_TIMER_FREQ_125kHz;
+        config.mode = NRF_TIMER_MODE_TIMER;
+        config.bit_width = NRF_TIMER_BIT_WIDTH_8;
+
+        app_err(nrfx_timer_init(&timer, &config, &mp_hal_timer_1ms_callback));
+
+        // Raise an interrupt every 1ms: 125 kHz / 125
+        nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 125,
+                                    NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
+
+        // Start the timer, letting timer_add_task() append more of them while running.
+        nrfx_timer_enable(&timer);
     }
 
     // Set up BLE
