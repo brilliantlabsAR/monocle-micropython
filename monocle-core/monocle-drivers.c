@@ -73,33 +73,37 @@ i2c_response_t i2c_read(uint8_t device_address_7bit,
         return (i2c_response_t){.fail = false, .value = 0x00};
     }
 
+    // Populate the default response in case of failure
     i2c_response_t i2c_response = {
-        .fail = true, // Default if failure
+        .fail = true,
         .value = 0x00,
     };
+
+    // Create the tx payload, bus handle and transfer descriptor
+    uint8_t tx_payload[2] = {(uint8_t)(register_address), 0};
+
+    nrfx_twim_t i2c_handle = i2c_bus_0;
+
+    nrfx_twim_xfer_desc_t i2c_tx = NRFX_TWIM_XFER_DESC_TX(device_address_7bit,
+                                                          tx_payload,
+                                                          1);
+
+    // Switch bus and use 16-bit addressing if the camera is requested
+    if (device_address_7bit == CAMERA_I2C_ADDRESS)
+    {
+        i2c_handle = i2c_bus_1;
+        tx_payload[0] = (uint8_t)(register_address >> 8);
+        tx_payload[1] = (uint8_t)register_address;
+        i2c_tx.primary_length = 2;
+    }
+
+    nrfx_twim_xfer_desc_t i2c_rx = NRFX_TWIM_XFER_DESC_RX(device_address_7bit,
+                                                          &i2c_response.value,
+                                                          1);
 
     // Try several times
     for (uint8_t i = 0; i < 3; i++)
     {
-        nrfx_twim_t i2c_handle = i2c_bus_0;
-
-        nrfx_twim_xfer_desc_t i2c_tx = NRFX_TWIM_XFER_DESC_TX(
-            device_address_7bit,
-            (uint8_t *)&register_address,
-            1);
-
-        // Switch bus and use 16-bit addressing if the camera is requested
-        if (device_address_7bit == CAMERA_I2C_ADDRESS)
-        {
-            i2c_handle = i2c_bus_1;
-            i2c_tx.primary_length = 2;
-        }
-
-        nrfx_twim_xfer_desc_t i2c_rx = NRFX_TWIM_XFER_DESC_RX(
-            device_address_7bit,
-            &i2c_response.value,
-            1);
-
         nrfx_err_t tx_err = nrfx_twim_xfer(&i2c_handle, &i2c_tx, 0);
 
         if (tx_err == NRFX_ERROR_BUSY ||
@@ -155,28 +159,28 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
     uint8_t updated_value = (resp.value & ~register_mask) |
                             (set_value & register_mask);
 
-    uint8_t payload[3] = {(uint8_t)register_address, updated_value, 0};
+    // Create the tx payload, bus handle and transfer descriptor
+    uint8_t tx_payload[3] = {(uint8_t)register_address, updated_value, 0};
+
+    nrfx_twim_t i2c_handle = i2c_bus_0;
+
+    nrfx_twim_xfer_desc_t i2c_tx = NRFX_TWIM_XFER_DESC_TX(device_address_7bit,
+                                                          tx_payload,
+                                                          2);
+
+    // Switch bus and use 16-bit addressing if the camera is requested
+    if (device_address_7bit == CAMERA_I2C_ADDRESS)
+    {
+        i2c_handle = i2c_bus_1;
+        tx_payload[0] = (uint8_t)(register_address >> 8);
+        tx_payload[1] = (uint8_t)register_address;
+        tx_payload[2] = updated_value;
+        i2c_tx.primary_length = 3;
+    }
 
     // Try several times
     for (uint8_t i = 0; i < 3; i++)
     {
-        nrfx_twim_t i2c_handle = i2c_bus_0;
-
-        nrfx_twim_xfer_desc_t i2c_tx = NRFX_TWIM_XFER_DESC_TX(
-            device_address_7bit,
-            payload,
-            2);
-
-        // Switch bus and use 16-bit addressing if the camera is requested
-        if (device_address_7bit == CAMERA_I2C_ADDRESS)
-        {
-            i2c_handle = i2c_bus_1;
-            payload[0] = (uint8_t)register_address;
-            payload[1] = (uint8_t)(register_address << 8);
-            payload[2] = updated_value;
-            i2c_tx.primary_length = 3;
-        }
-
         nrfx_err_t err = nrfx_twim_xfer(&i2c_handle, &i2c_tx, 0);
 
         if (err == NRFX_ERROR_BUSY ||
