@@ -262,12 +262,8 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
  */
 int main(void)
 {
-    // Set up debug logging
-    {
-        SEGGER_RTT_Init();
-        log_clear();
-        log("MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ") ");
-    }
+    log_clear();
+    log("MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ") ");
 
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();

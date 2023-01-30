@@ -28,11 +28,14 @@
 #include "nrf_sdm.h"
 #include "nrf_soc.h"
 #include "nrfx_systick.h"
+#include "nrf_power.h"
 #include "nrfx_timer.h"
 #include "nrfx_twim.h"
+#include "nrfx_spim.h"
 
 static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
 static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
+static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
 
 /**
  * @brief Startup and PMIC initialization.
@@ -52,6 +55,9 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
     app_err(battery_charging_resp.fail);
     if (battery_charging_resp.value)
     {
+        // Turn off Bluetooth
+        app_err(sd_softdevice_disable());
+
         // Turn off all the rails
         // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x04).fail); // Turn off 10V on PMIC GPIO2
@@ -66,8 +72,12 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
         // Put PMIC main bias into low power mode
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x10, 0x20, 0x20).fail);
 
-        // Disable all GPIO pins
-        for (uint8_t pin; pin < NUMBER_OF_PINS; pin++)
+        // Disable all busses and GPIO pins
+        nrfx_twim_uninit(&i2c_bus_0);
+        nrfx_twim_uninit(&i2c_bus_1);
+        nrfx_spim_uninit(&spi_bus_2);
+
+        for (uint8_t pin = 0; pin < NUMBER_OF_PINS; pin++)
         {
             nrf_gpio_cfg_default(pin);
         }
@@ -77,27 +87,21 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
                                  NRF_GPIO_PIN_NOPULL,
                                  NRF_GPIO_PIN_SENSE_LOW);
 
-        // Power down either using the softdevice power off function, or directly
-        uint8_t softdevice_enabled;
-        app_err(sd_softdevice_is_enabled(&softdevice_enabled));
-        if (softdevice_enabled)
-        {
-            app_err(sd_power_system_off());
-        }
-
+        // Power down
         NRF_POWER->SYSTEMOFF = 1;
+        __DSB();
 
-        // Never return
-        while (1)
-        {
-        }
+        // We should never return from here
     }
 }
 
 void monocle_critical_startup(void)
 {
     // Enable the the DC/DC convertor
-    NRF_POWER->DCDCEN = 0x00000001;
+    NRF_POWER->DCDCEN = 1;
+
+    // Enable systick timer functions
+    nrfx_systick_init();
 
     // Set up the I2C buses
     {
@@ -173,12 +177,8 @@ void monocle_critical_startup(void)
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x63, 0xFF, 0x0A).fail); // Proximity thresholds
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x22, 0x22).fail); // Redo ATI and enable event mode
                                                                       // TODO what interrupts are enabled?
-
-        // Delay to complete configuration
-        for (int i = 0; i < 10000000; i++)
-        {
-            __asm volatile("nop");
-        }
+        // TODO fix this delay
+        nrfx_systick_delay_ms(1000);
     }
 
     check_if_battery_charging_and_sleep(0, NULL); // This won't return if charging
@@ -203,8 +203,6 @@ void monocle_critical_startup(void)
     // Power up everything for normal operation.
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
     {
-        nrfx_systick_init();
-
         // Tell the FPGA to start with the embedded flash.
         nrf_gpio_pin_clear(FPGA_MODE1_PIN);
         nrf_gpio_cfg_output(FPGA_MODE1_PIN);
