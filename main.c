@@ -240,7 +240,7 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
 int main(void)
 {
     log_clear();
-    log("MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ") ");
+    log("MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ").");
 
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();
@@ -281,14 +281,23 @@ int main(void)
 
     // Setup camera
     {
-        // Set to 0V = hold camera in reset.
-        // nrf_gpio_pin_clear(CAMERA_RESET_PIN);
-        // nrf_gpio_cfg_output(CAMERA_RESET_PIN);
+        nrf_gpio_cfg_output(CAMERA_RESET_PIN);
+        nrf_gpio_pin_set(CAMERA_RESET_PIN);
 
-        // // Set to 0V = not asserted.
-        // nrf_gpio_pin_clear(CAMERA_SLEEP_PIN);
-        // nrf_gpio_cfg_output(CAMERA_SLEEP_PIN);
-        // ov5640_init();
+        // Read the camera CID (one of them)
+        i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
+
+        if (resp.fail || resp.value != 0x56)
+        {
+            log("Camera not found.");
+            monocle_set_led(RED_LED, true);
+        }
+
+        // TODO camera configuration (don't error check)
+
+        // Put the camera to sleep
+        nrf_gpio_cfg_output(CAMERA_SLEEP_PIN);
+        nrf_gpio_pin_set(CAMERA_SLEEP_PIN);
     }
 
     // Setup display

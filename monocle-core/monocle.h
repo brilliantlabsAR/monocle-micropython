@@ -93,18 +93,12 @@ typedef struct i2c_response_t
     uint8_t value;
 } i2c_response_t;
 
-typedef union i2c_register_address
-{
-    uint8_t register_address_8bit;
-    uint16_t register_address_16bit;
-} i2c_register_address;
-
 i2c_response_t i2c_read(uint8_t device_address_7bit,
-                        uint8_t register_address,
+                        uint16_t register_address,
                         uint8_t register_mask);
 
 i2c_response_t i2c_write(uint8_t device_address_7bit,
-                         uint8_t register_address,
+                         uint16_t register_address,
                          uint8_t register_mask,
                          uint8_t set_value);
 
