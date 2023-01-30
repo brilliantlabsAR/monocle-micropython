@@ -70,10 +70,15 @@ static touch_action_t decode_touch_action(uint8_t button, uint8_t action)
 STATIC mp_obj_t touch_bind(mp_obj_t button, mp_obj_t action, mp_obj_t callback)
 {
     if (mp_obj_get_int(button) >= 2)
+    {
         mp_raise_ValueError(MP_ERROR_TEXT("must be touch.A or touch.B"));
+    }
 
     if (mp_obj_get_int(action) >= 3)
-        mp_raise_ValueError(MP_ERROR_TEXT("must be touch.TOUCH, touch.DEEP_TOUCH, or touch.PROXIMITY"));
+    {
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("must be touch.TOUCH, touch.DEEP_TOUCH, or touch.PROXIMITY"));
+    }
 
     touch_action_t touch_action = decode_touch_action(mp_obj_get_int(button),
                                                       mp_obj_get_int(action));
@@ -88,10 +93,15 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(touch_bind_obj, touch_bind);
 STATIC mp_obj_t touch_unbind(mp_obj_t button, mp_obj_t action)
 {
     if (mp_obj_get_int(button) >= 2)
+    {
         mp_raise_ValueError(MP_ERROR_TEXT("must be touch.A or touch.B"));
+    }
 
     if (mp_obj_get_int(action) >= 3)
-        mp_raise_ValueError(MP_ERROR_TEXT("must be touch.TOUCH, touch.DEEP_TOUCH, or touch.PROXIMITY"));
+    {
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("must be touch.TOUCH, touch.DEEP_TOUCH, or touch.PROXIMITY"));
+    }
 
     touch_action_t touch_action = decode_touch_action(mp_obj_get_int(button),
                                                       mp_obj_get_int(action));
@@ -103,13 +113,12 @@ STATIC mp_obj_t touch_unbind(mp_obj_t button, mp_obj_t action)
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(touch_unbind_obj, touch_unbind);
 
 STATIC const mp_rom_map_elem_t touch_module_globals_table[] = {
+
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_touch)},
 
-    // methods
     {MP_ROM_QSTR(MP_QSTR_bind), MP_ROM_PTR(&touch_bind_obj)},
     {MP_ROM_QSTR(MP_QSTR_unbind), MP_ROM_PTR(&touch_unbind_obj)},
 
-    // constants
     {MP_ROM_QSTR(MP_QSTR_A), MP_OBJ_NEW_SMALL_INT(0)},
     {MP_ROM_QSTR(MP_QSTR_B), MP_OBJ_NEW_SMALL_INT(1)},
     {MP_ROM_QSTR(MP_QSTR_TOUCH), MP_OBJ_NEW_SMALL_INT(0)},

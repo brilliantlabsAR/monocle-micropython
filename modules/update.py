@@ -22,8 +22,10 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
+import __update
+
 def fpga():
-    print("hello")
+    raise NotImplementedError
 
 def micropython():
-    print("hello")
+    __update.nrf52()

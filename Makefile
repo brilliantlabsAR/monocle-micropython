@@ -102,7 +102,6 @@ SRC_C += monocle-core/monocle-drivers.c
 SRC_C += monocle-core/monocle-startup.c
 SRC_C += mphalport.c
 
-SRC_C += driver/bluetooth_data_protocol.c
 SRC_C += driver/bluetooth_low_energy.c
 
 SRC_C += micropython/extmod/moduasyncio.c
@@ -197,10 +196,10 @@ flash: build/application.hex
 	nrfjprog --program $< -f nrf52 --verify
 	nrfjprog --reset -f nrf52
 
-release:
-	sed -i 's/NEXT_RELEASE/$(RELEASE)/' CHANGELOG.md
-	git commit -am "Release $(RELEASE)"
-	git tag $(RELEASE)
+release: clean build/application.hex
+	sed -i 's/NEXT_RELEASE/$(BUILD_VERSION)/' CHANGELOG.md
+	git commit -am "Release $(BUILD_VERSION)"
+	git tag $(BUILD_VERSION)
 
 include micropython/py/mkrules.mk
 

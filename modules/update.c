@@ -22,34 +22,26 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-#pragma once
+#include "monocle.h"
+#include "py/runtime.h"
 
-#define NRFX_GPIOTE_ENABLED 1
-#define NRFX_GPIOTE_CONFIG_NUM_OF_LOW_POWER_EVENTS 1
-#define NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY 7
+STATIC mp_obj_t update_nrf52(void)
+{
+    monocle_enter_bootloader();
 
-#define NRFX_TWIM0_ENABLED 1
-#define NRFX_TWIM_ENABLED 1
-#define NRFX_TWIM1_ENABLED 1
-#define NRFX_TWIM_DEFAULT_CONFIG_IRQ_PRIORITY 7
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(update_nrf52_obj, update_nrf52);
 
-#define NRFX_SPIM_ENABLED 1
-#define NRFX_SPIM2_ENABLED 1
-#define NRFX_SPIM_DEFAULT_CONFIG_IRQ_PRIORITY 7
+STATIC const mp_rom_map_elem_t update_module_globals_table[] = {
 
-#define NRFX_RTC_ENABLED 1
-#define NRFX_RTC0_ENABLED 1
-#define NRFX_RTC1_ENABLED 1
-#define NRFX_RTC2_ENABLED 1
-#define NRFX_RTC_DEFAULT_CONFIG_IRQ_PRIORITY 7
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR___update)},
+    {MP_ROM_QSTR(MP_QSTR_nrf52), MP_ROM_PTR(&update_nrf52_obj)},
+};
+STATIC MP_DEFINE_CONST_DICT(update_module_globals, update_module_globals_table);
 
-#define NRFX_SYSTICK_ENABLED 1
-
-#define NRFX_TIMER_ENABLED 1
-#define NRFX_TIMER0_ENABLED 1 // Used by the SoftDevice
-#define NRFX_TIMER1_ENABLED 1 // Used for "from machine import Timer"
-#define NRFX_TIMER4_ENABLED 1 // Used for checking battery state
-#define NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY 7
-
-#define NRFX_SAADC_ENABLED 1
-#define NRFX_SAADC_DEFAULT_CONFIG_IRQ_PRIORITY 7
+const mp_obj_module_t update_module = {
+    .base = {&mp_type_module},
+    .globals = (mp_obj_dict_t *)&update_module_globals,
+};
+MP_REGISTER_MODULE(MP_QSTR___update, update_module);

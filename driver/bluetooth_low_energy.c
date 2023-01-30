@@ -42,7 +42,6 @@
 
 #define BLE_ADV_MAX_SIZE 31
 #define BLE_UUID_COUNT 2
-#define BLE_DEVICE_NAME "Monocle"
 
 /** Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go. */
 #define RING_BUFFER_LENGTH (1024 + 45)
@@ -710,8 +709,11 @@ void ble_init(void)
     ble_gap_conn_sec_mode_t sec_mode;
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
-    // Set device name. Last four characters are taken from MAC address ;
-    app_err(sd_ble_gap_device_name_set(&sec_mode, (const uint8_t *)BLE_DEVICE_NAME, sizeof BLE_DEVICE_NAME - 1));
+    // Set device name. Last four characters are taken from MAC address
+    const char device_name[] = "monocle";
+    app_err(sd_ble_gap_device_name_set(&sec_mode,
+                                       (const uint8_t *)device_name,
+                                       sizeof(device_name) - 1));
 
     // Set connection parameters
     ble_gap_conn_params_t gap_conn_params = {0};
@@ -722,7 +724,7 @@ void ble_init(void)
     app_err(sd_ble_gap_ppcp_set(&gap_conn_params));
 
     // Add name to advertising payload
-    ble_adv_add_device_name(BLE_DEVICE_NAME);
+    ble_adv_add_device_name(device_name);
 
     // Set discovery mode flag
     ble_adv_add_discovery_mode();

@@ -61,7 +61,7 @@ static uint16_t __bswap_16(uint16_t in)
  */
 static inline void ov5640_set_reset(bool state)
 {
-    nrf_gpio_pin_write(OV5640_RESETB_N_PIN, !state);
+    nrf_gpio_pin_write(CAMERA_RESET_PIN, !state);
 }
 
 /*
@@ -70,7 +70,7 @@ static inline void ov5640_set_reset(bool state)
  */
 static void ov5640_set_power(bool state)
 {
-    nrf_gpio_pin_write(OV5640_PWDN_PIN, !state);
+    nrf_gpio_pin_write(CAMERA_SLEEP_PIN, !state);
 }
 
 /**
@@ -97,8 +97,8 @@ static uint8_t ov5640_read_reg(uint16_t reg)
  */
 void ov5640_deinit(void)
 {
-    nrf_gpio_cfg_default(OV5640_RESETB_N_PIN);
-    nrf_gpio_cfg_default(OV5640_PWDN_PIN);
+    nrf_gpio_cfg_default(CAMERA_RESET_PIN);
+    nrf_gpio_cfg_default(CAMERA_SLEEP_PIN);
 }
 
 /**

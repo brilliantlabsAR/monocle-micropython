@@ -43,20 +43,20 @@ void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len)
 {
     uint8_t cmd_buf[2] = {cmd >> 8, cmd >> 0};
 
-    spi_chip_select(FPGA_CS_N_PIN);
+    spi_chip_select(FPGA_CS_PIN);
     spi_write(cmd_buf, sizeof cmd_buf);
     spi_write(buf, len);
-    spi_chip_deselect(FPGA_CS_N_PIN);
+    spi_chip_deselect(FPGA_CS_PIN);
 }
 
 void fpga_cmd_read(uint16_t cmd, uint8_t *buf, size_t len)
 {
     uint8_t cmd_buf[2] = {(cmd >> 8) & 0xFF, (cmd >> 0) & 0xFF};
 
-    spi_chip_select(FPGA_CS_N_PIN);
+    spi_chip_select(FPGA_CS_PIN);
     spi_write(cmd_buf, sizeof cmd_buf);
     spi_read(buf, len);
-    spi_chip_deselect(FPGA_CS_N_PIN);
+    spi_chip_deselect(FPGA_CS_PIN);
 }
 
 STATIC mp_obj_t mod_fpga___init__(void)

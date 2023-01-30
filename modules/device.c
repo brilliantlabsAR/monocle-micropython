@@ -23,6 +23,7 @@
  */
 
 #include <stdio.h>
+#include <math.h>
 
 #include "monocle.h"
 
@@ -67,10 +68,23 @@ STATIC mp_obj_t device_battery_level(void)
     // V = (raw / 10bits) * Vref * (1/NRFgain) * AMUXgain
     float voltage = ((float)result / 1024.0f) * 0.6f * 2.0f * (4.5f / 1.25f);
 
-    // TODO correct this according to a polynomial of the battery curve
-    uint8_t percentage = (uint8_t)((100.0f / 4.35f) * voltage);
+    // Percentage is based on a polynomial. Details in tools/battery-model
+    float percentage = roundf(-118.13699f * powf(voltage, 3.0f) +
+                              1249.63556f * powf(voltage, 2.0f) -
+                              4276.33059f * voltage +
+                              4764.47488f);
 
-    return mp_obj_new_int_from_uint(percentage);
+    if (percentage < 0.0f)
+    {
+        percentage = 0.0f;
+    }
+
+    if (percentage > 100.0f)
+    {
+        percentage = 100.0f;
+    }
+
+    return mp_obj_new_int_from_uint((uint8_t)percentage);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_battery_level_obj, device_battery_level);
 

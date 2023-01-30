@@ -24,14 +24,18 @@
 
 #include <math.h>
 #include "monocle.h"
+#include "nrf_gpio.h"
+#include "nrf_sdm.h"
+#include "nrf_soc.h"
+#include "nrfx_systick.h"
+#include "nrf_power.h"
 #include "nrfx_timer.h"
 #include "nrfx_twim.h"
-#include "nrfx_systick.h"
-#include "nrf_gpio.h"
-#include "nrf_soc.h"
+#include "nrfx_spim.h"
 
 static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
 static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
+static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
 
 /**
  * @brief Startup and PMIC initialization.
@@ -51,6 +55,9 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
     app_err(battery_charging_resp.fail);
     if (battery_charging_resp.value)
     {
+        // Turn off Bluetooth
+        app_err(sd_softdevice_disable());
+
         // Turn off all the rails
         // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x04).fail); // Turn off 10V on PMIC GPIO2
@@ -65,25 +72,36 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
         // Put PMIC main bias into low power mode
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x10, 0x20, 0x20).fail);
 
-        // Set up the touch interrupt pin
+        // Disable all busses and GPIO pins
+        nrfx_twim_uninit(&i2c_bus_0);
+        nrfx_twim_uninit(&i2c_bus_1);
+        nrfx_spim_uninit(&spi_bus_2);
 
+        for (uint8_t pin = 0; pin < NUMBER_OF_PINS; pin++)
+        {
+            nrf_gpio_cfg_default(pin);
+        }
+
+        // Set the wakeup pin to be the touch input
         nrf_gpio_cfg_sense_input(TOUCH_INTERRUPT_PIN,
                                  NRF_GPIO_PIN_NOPULL,
                                  NRF_GPIO_PIN_SENSE_LOW);
 
+        // Power down
         NRF_POWER->SYSTEMOFF = 1;
+        __DSB();
 
-        // Never return
-        while (1)
-        {
-        }
+        // We should never return from here
     }
 }
 
 void monocle_critical_startup(void)
 {
-    // Enable the the DC DC convertor
-    NRF_POWER->DCDCEN = 0x00000001;
+    // Enable the the DC/DC convertor
+    NRF_POWER->DCDCEN = 1;
+
+    // Enable systick timer functions
+    nrfx_systick_init();
 
     // Set up the I2C buses
     {
@@ -112,22 +130,27 @@ void monocle_critical_startup(void)
             app_err(resp.value);
         }
 
-        // Set up battery charger voltage & current
-        float voltage = 4.3f;
-        float current = 70.0f;
+        // Vhot & Vwarm = 45 degrees. Vcool = 15 degrees. Vcold = 0 degrees
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x20, 0xFF, 0x2E).fail);
 
-        uint8_t voltage_setting = (uint8_t)round((voltage - 3.6f) / 0.025f) << 2;
-        uint8_t current_setting = (uint8_t)round((current - 7.5f) / 7.5f) << 2;
+        // Set CHGIN limit to 475mA
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x21, 0x1C, 0x10).fail);
 
-        // TODO set temperature cutouts
+        // Charge termination current = 5%
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x22, 0x18, 0x00).fail);
 
-        // Apply the constant voltage setting
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x26, 0xFC, voltage_setting).fail);
-        // TODO set the JETIA voltage
+        // Set junction regulation temperature to 70 degrees
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x23, 0xE0, 0x20).fail);
 
-        // Apply the constant current setting
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x24, 0xFC, current_setting).fail);
-        // TODO set the JETIA current
+        // Set the fast charge current value to 120mA
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x24, 0xFC, 0x3C).fail);
+
+        // Set the Vcool & Vwarm current to 75mA, and enable the thermistor
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x25, 0xFE, 0x26).fail);
+
+        // Set constant voltage to 4.3V for both fast charge and JEITA
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x26, 0xFC, 0x70).fail);
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x27, 0xFC, 0x70).fail);
     }
 
     // Configure the touch IC
@@ -141,7 +164,7 @@ void monocle_critical_startup(void)
 
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x60, 0x60).fail); // Ack resets and enable event mode
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD1, 0xFF, 0x03).fail); // Enable ch0 and ch1
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD2, 0x20, 0x20).fail); // Disable auto power mode switching // TODO enable ULP mode
+        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD2, 0x20, 0x20).fail); // Disable auto power mode switching
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x40, 0xFF, 0x01).fail); // Enable rx0 to cap sensing
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x41, 0xFF, 0x02).fail); // Enable rx1 to cap sensing
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x43, 0x60, 0x20).fail); // 15pf, 1/8 divider on ch0
@@ -153,16 +176,28 @@ void monocle_critical_startup(void)
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x61, 0xFF, 0x0A).fail); // Proximity thresholds
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x63, 0xFF, 0x0A).fail); // Proximity thresholds
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x22, 0x22).fail); // Redo ATI and enable event mode
-                                                                      // TODO what interrupts are enabled?
 
-        // Delay to complete configuration
-        for (int i = 0; i < 10000000; i++)
-        {
-            __asm volatile("nop");
-        }
+        // TODO optimize this delay
+        nrfx_systick_delay_ms(1000);
     }
 
-    check_if_battery_charging_and_sleep(0, NULL); // This won't return if charging
+    // Start SPI before sleeping otherwise we'll crash
+    {
+        nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
+            FPGA_FLASH_SPI_SCK_PIN,
+            FPGA_FLASH_SPI_SDO_PIN,
+            FPGA_FLASH_SPI_SDI_PIN,
+            NRFX_SPIM_PIN_NOT_USED);
+
+        config.frequency = NRF_SPIM_FREQ_4M;
+        config.mode = NRF_SPIM_MODE_3;
+        config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
+
+        app_err(nrfx_spim_init(&spi_bus_2, &config, NULL, NULL));
+    }
+
+    // This wont return if Monocle is charging
+    check_if_battery_charging_and_sleep(0, NULL);
 
     // Set up a timer for checking charge state periodically
     {
@@ -181,20 +216,16 @@ void monocle_critical_startup(void)
         nrfx_timer_enable(&timer);
     }
 
-    // TODO ignoring all display-related functions below also work
-
     // Power up everything for normal operation.
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
     {
-        nrfx_systick_init();
-
         // Tell the FPGA to start with the embedded flash.
-        nrf_gpio_pin_clear(FPGA_MODE1_PIN);
-        nrf_gpio_cfg_output(FPGA_MODE1_PIN);
+        nrf_gpio_pin_clear(FPGA_CS_PIN);
+        nrf_gpio_cfg_output(FPGA_CS_PIN);
 
         // Display: 9. Power Supply Sequence (datasheet p.11)
-        nrf_gpio_pin_clear(ECX336CN_XCLR_PIN);
-        nrf_gpio_cfg_output(ECX336CN_XCLR_PIN);
+        nrf_gpio_pin_clear(DISPLAY_RESET_PIN);
+        nrf_gpio_cfg_output(DISPLAY_RESET_PIN);
 
         // Set SBB2 to 1.2V and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2D, 0xFF, 0x08).fail);
@@ -219,7 +250,7 @@ void monocle_critical_startup(void)
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0F).fail);
 
         // Display: 9. Power Supply Sequence (datasheet p.11)
-        nrf_gpio_pin_set(ECX336CN_XCLR_PIN);
+        nrf_gpio_pin_set(DISPLAY_RESET_PIN);
 
         // Enable the 10V boost
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x0C).fail);

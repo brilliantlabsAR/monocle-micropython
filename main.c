@@ -55,9 +55,7 @@
 #include "nrfx_rtc.h"
 #include "nrfx_glue.h"
 
-#include "driver/bluetooth_data_protocol.h"
 #include "driver/bluetooth_low_energy.h"
-#include "driver/config.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 
@@ -66,8 +64,7 @@ extern uint32_t _stack_bot;
 extern uint32_t _heap_start;
 extern uint32_t _heap_end;
 
-// Indicate that SPI completed the transfer from the interrupt handler to main loop.
-static volatile bool m_xfer_done = true;
+static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
 
 // ECX336CN datasheet section 10.1
 uint8_t const ecx336cn_config[] = {
@@ -166,11 +163,6 @@ uint8_t const ecx336cn_config[] = {
     [0x79] = 0x68,
 };
 
-void spim_event_handler(nrfx_spim_evt_t const *p_event, void *p_context)
-{
-    m_xfer_done = true;
-}
-
 void spi_chip_select(uint8_t cs_pin)
 {
     nrf_gpio_pin_clear(cs_pin);
@@ -183,28 +175,13 @@ void spi_chip_deselect(uint8_t cs_pin)
     nrfx_systick_delay_us(100);
 }
 
-static void spi_xfer_chunk(nrfx_spim_xfer_desc_t *xfer)
-{
-    const nrfx_spim_t spi2 = NRFX_SPIM_INSTANCE(2);
-
-    // wait for any pending SPI operation to complete
-    while (!m_xfer_done)
-        sd_app_evt_wait();
-
-    // Start the transaction and wait for the interrupt handler to warn us it is done.
-    m_xfer_done = false;
-    app_err(nrfx_spim_xfer(&spi2, xfer, 0));
-    while (!m_xfer_done)
-        __WFE();
-}
-
 void spi_read(uint8_t *buf, size_t len)
 {
     for (size_t n = 0; len > 0; len -= n, buf += n)
     {
         n = MIN(255, len);
         nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, n);
-        spi_xfer_chunk(&xfer);
+        app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
     }
 }
 
@@ -214,16 +191,16 @@ void spi_write(uint8_t const *buf, size_t len)
     {
         n = MIN(255, len);
         nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, n);
-        spi_xfer_chunk(&xfer);
+        app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
     }
 }
 
 static inline const void ecx336cn_write_byte(uint8_t addr, uint8_t data)
 {
-    spi_chip_select(ECX336CN_CS_N_PIN);
+    spi_chip_select(DISPLAY_CS_PIN);
     spi_write(&addr, 1);
     spi_write(&data, 1);
-    spi_chip_deselect(ECX336CN_CS_N_PIN);
+    spi_chip_deselect(DISPLAY_CS_PIN);
 }
 
 static inline uint8_t ecx336cn_read_byte(uint8_t addr)
@@ -233,10 +210,10 @@ static inline uint8_t ecx336cn_read_byte(uint8_t addr)
     ecx336cn_write_byte(0x80, 0x01);
     ecx336cn_write_byte(0x81, addr);
 
-    spi_chip_select(ECX336CN_CS_N_PIN);
+    spi_chip_select(DISPLAY_CS_PIN);
     spi_write(&addr, 1);
     spi_read(&data, 1);
-    spi_chip_deselect(ECX336CN_CS_N_PIN);
+    spi_chip_deselect(DISPLAY_CS_PIN);
 
     return data;
 }
@@ -262,12 +239,8 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
  */
 int main(void)
 {
-    // Set up debug logging
-    {
-        SEGGER_RTT_Init();
-        log_clear();
-        log("MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ") ");
-    }
+    log_clear();
+    log("MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ") ");
 
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();
@@ -296,47 +269,33 @@ int main(void)
     // Set up BLE
     ble_init();
 
-    // Set up the SPI bus to the FPGA and external flash IC
-    {
-        const nrfx_spim_t spi2 = NRFX_SPIM_INSTANCE(2);
-
-        nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
-            SPI2_SCK_PIN, SPI2_MOSI_PIN, SPI2_MISO_PIN, NRFX_SPIM_PIN_NOT_USED);
-
-        config.frequency = NRF_SPIM_FREQ_4M;
-        config.mode = NRF_SPIM_MODE_3;
-        config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
-
-        app_err(nrfx_spim_init(&spi2, &config, spim_event_handler, NULL));
-    }
-
     // Check if external flash has an FPGA image and boot it
     {
-        // nrf_gpio_pin_set(FLASH_CS_N_PIN);
-        // nrf_gpio_cfg_output(FLASH_CS_N_PIN);
+        // nrf_gpio_pin_set(FLASH_CS_PIN);
+        // nrf_gpio_cfg_output(FLASH_CS_PIN);
 
         // Let the FPGA start as soon as it has the power on.
-        nrf_gpio_cfg_output(FPGA_RECONFIG_N_PIN);
-        nrf_gpio_pin_set(FPGA_RECONFIG_N_PIN);
+        nrf_gpio_cfg_output(FPGA_INTERRUPT_PIN);
+        nrf_gpio_pin_set(FPGA_INTERRUPT_PIN);
     }
 
     // Setup camera
     {
         // Set to 0V = hold camera in reset.
-        // nrf_gpio_pin_clear(OV5640_RESETB_N_PIN);
-        // nrf_gpio_cfg_output(OV5640_RESETB_N_PIN);
+        // nrf_gpio_pin_clear(CAMERA_RESET_PIN);
+        // nrf_gpio_cfg_output(CAMERA_RESET_PIN);
 
         // // Set to 0V = not asserted.
-        // nrf_gpio_pin_clear(OV5640_PWDN_PIN);
-        // nrf_gpio_cfg_output(OV5640_PWDN_PIN);
+        // nrf_gpio_pin_clear(CAMERA_SLEEP_PIN);
+        // nrf_gpio_cfg_output(CAMERA_SLEEP_PIN);
         // ov5640_init();
     }
 
     // Setup display
     {
         // configure CS pin for the Display (for active low)
-        nrf_gpio_pin_set(ECX336CN_CS_N_PIN);
-        nrf_gpio_cfg_output(ECX336CN_CS_N_PIN);
+        nrf_gpio_cfg_output(DISPLAY_CS_PIN);
+        nrf_gpio_pin_set(DISPLAY_CS_PIN);
 
         ecx336cn_write_byte(0x00, 0x9E); // enter power saving mode (YUV)
         // it is now possible to turn off the 10V rail
