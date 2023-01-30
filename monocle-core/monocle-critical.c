@@ -164,7 +164,7 @@ void monocle_critical_startup(void)
 
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x60, 0x60).fail); // Ack resets and enable event mode
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD1, 0xFF, 0x03).fail); // Enable ch0 and ch1
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD2, 0x20, 0x20).fail); // Disable auto power mode switching // TODO enable ULP mode
+        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD2, 0x20, 0x20).fail); // Disable auto power mode switching
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x40, 0xFF, 0x01).fail); // Enable rx0 to cap sensing
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x41, 0xFF, 0x02).fail); // Enable rx1 to cap sensing
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x43, 0x60, 0x20).fail); // 15pf, 1/8 divider on ch0
@@ -176,12 +176,28 @@ void monocle_critical_startup(void)
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x61, 0xFF, 0x0A).fail); // Proximity thresholds
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x63, 0xFF, 0x0A).fail); // Proximity thresholds
         app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x22, 0x22).fail); // Redo ATI and enable event mode
-                                                                      // TODO what interrupts are enabled?
+
         // TODO fix this delay
         nrfx_systick_delay_ms(1000);
     }
 
-    check_if_battery_charging_and_sleep(0, NULL); // This won't return if charging
+    // Start SPI before sleeping otherwise we'll crash
+    {
+        nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
+            FPGA_FLASH_SPI_SCK_PIN,
+            FPGA_FLASH_SPI_SDO_PIN,
+            FPGA_FLASH_SPI_SDI_PIN,
+            NRFX_SPIM_PIN_NOT_USED);
+
+        config.frequency = NRF_SPIM_FREQ_4M;
+        config.mode = NRF_SPIM_MODE_3;
+        config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
+
+        app_err(nrfx_spim_init(&spi_bus_2, &config, NULL, NULL));
+    }
+
+    // This wont return if Monocle is charging
+    check_if_battery_charging_and_sleep(0, NULL);
 
     // Set up a timer for checking charge state periodically
     {
@@ -204,12 +220,12 @@ void monocle_critical_startup(void)
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
     {
         // Tell the FPGA to start with the embedded flash.
-        nrf_gpio_pin_clear(FPGA_MODE1_PIN);
-        nrf_gpio_cfg_output(FPGA_MODE1_PIN);
+        nrf_gpio_pin_clear(FPGA_CS_PIN);
+        nrf_gpio_cfg_output(FPGA_CS_PIN);
 
         // Display: 9. Power Supply Sequence (datasheet p.11)
-        nrf_gpio_pin_clear(ECX336CN_XCLR_PIN);
-        nrf_gpio_cfg_output(ECX336CN_XCLR_PIN);
+        nrf_gpio_pin_clear(DISPLAY_RESET_PIN);
+        nrf_gpio_cfg_output(DISPLAY_RESET_PIN);
 
         // Set SBB2 to 1.2V and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2D, 0xFF, 0x08).fail);
@@ -234,7 +250,7 @@ void monocle_critical_startup(void)
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0F).fail);
 
         // Display: 9. Power Supply Sequence (datasheet p.11)
-        nrf_gpio_pin_set(ECX336CN_XCLR_PIN);
+        nrf_gpio_pin_set(DISPLAY_RESET_PIN);
 
         // Enable the 10V boost
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x0C).fail);
