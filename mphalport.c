@@ -49,6 +49,7 @@ static uint32_t rtc_overflows;
 
 void mp_hal_rtc_callback(nrfx_rtc_int_type_t int_type)
 {
+    SEGGER_RTT_printf(0, "%s\r\n", __func__);
     rtc_overflows += (int_type == NRFX_RTC_INT_OVERFLOW);
 }
 

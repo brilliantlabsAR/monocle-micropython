@@ -274,6 +274,7 @@ int main(void)
 
         app_err(nrfx_rtc_init(&rtc, &rtc_config, mp_hal_rtc_callback));
         nrfx_rtc_enable(&rtc);
+        nrfx_rtc_overflow_enable(&rtc, true);
     }
 
     // Set up BLE

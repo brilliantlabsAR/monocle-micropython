@@ -38,6 +38,7 @@ STATIC mp_obj_t time_epoch(size_t n_args, const mp_obj_t *args)
 {
     if (n_args == 0)
     {
+        SEGGER_RTT_printf(0, "ticks_ms=%d\r\n", mp_hal_ticks_ms());
         return mp_obj_new_int(time_since_boot + mp_hal_ticks_ms() / 1000);
     }
     else
@@ -125,12 +126,16 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_time_obj, 0, 1, time_time);
 
 STATIC mp_obj_t time_mktime(mp_obj_t dict)
 {
+    if (!mp_obj_is_type(dict, &mp_type_dict))
+    {
+        mp_raise_TypeError(MP_ERROR_TEXT("argument must be a dict"));
+    }
     mp_int_t year = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_year)));
-    mp_int_t mon = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_mon)));
+    mp_int_t mon  = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_mon)));
     mp_int_t mday = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_mday)));
     mp_int_t hour = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_hour)));
-    mp_int_t min = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_min)));
-    mp_int_t sec = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_sec)));
+    mp_int_t min  = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_min)));
+    mp_int_t sec  = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_sec)));
     return mp_obj_new_int(timeutils_mktime(year, mon, mday, hour, min, sec));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(time_mktime_obj, time_mktime);
