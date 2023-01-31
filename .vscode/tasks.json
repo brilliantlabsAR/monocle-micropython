@@ -44,6 +44,26 @@
             },
         },
         {
+            "label": "Release",
+            "type": "shell",
+            "command": "make release",
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "presentation": {
+                "echo": false,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+        },
+        {
             "label": "Clean",
             "type": "shell",
             "command": "make clean",

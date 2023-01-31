@@ -164,6 +164,10 @@ uint8_t const ecx336cn_config[] = {
     [0x79] = 0x68,
 };
 
+// TODO clean up all these SPI functions into a simple driver
+void fpga_cmd_read(uint16_t cmd, uint8_t *buf, size_t len);
+void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len);
+
 void spi_chip_select(uint8_t cs_pin)
 {
     nrf_gpio_pin_clear(cs_pin);
@@ -240,8 +244,8 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
  */
 int main(void)
 {
-    SEGGER_RTT_printf(0, RTT_CTRL_CLEAR "\r");
-    SEGGER_RTT_printf(0, "MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ") ");
+    NRFX_LOG_ERROR(RTT_CTRL_CLEAR "\rMicroPython on Monocle - " BUILD_VERSION
+                                  " (" MICROPY_GIT_HASH ").");
 
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();
@@ -266,6 +270,12 @@ int main(void)
 
         app_err(nrfx_saadc_channel_config(&channel));
     }
+
+    // Set up the remaining GPIO
+    // TODO move these to the monocle folder
+    nrf_gpio_cfg_output(FPGA_INTERRUPT_PIN);
+    nrf_gpio_cfg_output(FPGA_CS_PIN);
+    nrf_gpio_cfg_output(FLASH_CS_PIN);
 
     // Setup an RTC counting milliseconds since now
     {
@@ -293,23 +303,9 @@ int main(void)
     // Check if external flash has an FPGA image and boot it
     {
         // nrf_gpio_pin_set(FLASH_CS_PIN);
-        // nrf_gpio_cfg_output(FLASH_CS_PIN);
 
         // Let the FPGA start as soon as it has the power on.
-        nrf_gpio_cfg_output(FPGA_INTERRUPT_PIN);
         nrf_gpio_pin_set(FPGA_INTERRUPT_PIN);
-    }
-
-    // Setup camera
-    {
-        // Set to 0V = hold camera in reset.
-        // nrf_gpio_pin_clear(CAMERA_RESET_PIN);
-        // nrf_gpio_cfg_output(CAMERA_RESET_PIN);
-
-        // // Set to 0V = not asserted.
-        // nrf_gpio_pin_clear(CAMERA_SLEEP_PIN);
-        // nrf_gpio_cfg_output(CAMERA_SLEEP_PIN);
-        // ov5640_init();
     }
 
     // Setup display
@@ -331,6 +327,28 @@ int main(void)
 
         // check that 0x29 changed from default 0x0A to 0x0B
         app_err(ecx336cn_read_byte(0x29) != 0x0B);
+    }
+
+    // Setup camera
+    {
+        nrfx_systick_delay_ms(750); // TODO optimize the FPGA to not need this delay
+        fpga_cmd_write(0x1009, NULL, 0);
+        nrf_gpio_pin_clear(CAMERA_SLEEP_PIN);
+        nrf_gpio_pin_clear(CAMERA_RESET_PIN);
+
+        // Read the camera CID (one of them)
+        i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
+
+        if (resp.fail || resp.value != 0x56)
+        {
+            NRFX_LOG_ERROR("Error: Camera not found.");
+            monocle_set_led(RED_LED, true);
+        }
+
+        // TODO camera configuration (don't error check)
+
+        // Put the camera to sleep
+        nrf_gpio_pin_set(CAMERA_SLEEP_PIN);
     }
 
     // Initialise the stack pointer for the main thread

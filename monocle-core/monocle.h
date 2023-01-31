@@ -27,7 +27,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "nrfx.h"
-#include "SEGGER_RTT.h"
+#include "nrfx_log.h"
 
 /**
  * @brief Monocle PCB pinout.
@@ -36,8 +36,8 @@
 #define BATTERY_LEVEL_PIN NRF_SAADC_INPUT_AIN1 //
 #define CAMERA_I2C_SCL_PIN 18                  //
 #define CAMERA_I2C_SDA_PIN 16                  //
-#define CAMERA_RESET_PIN 0                     // Active low
-#define CAMERA_SLEEP_PIN 1                     //
+#define CAMERA_RESET_PIN 20                    //
+#define CAMERA_SLEEP_PIN 29                    //
 #define DISPLAY_CS_PIN 6                       // Active low
 #define DISPLAY_RESET_PIN 15                   // Active low
 #define FLASH_CS_PIN 4                         // Active low
@@ -93,36 +93,30 @@ typedef struct i2c_response_t
     uint8_t value;
 } i2c_response_t;
 
-typedef union i2c_register_address
-{
-    uint8_t register_address_8bit;
-    uint16_t register_address_16bit;
-} i2c_register_address;
-
 i2c_response_t i2c_read(uint8_t device_address_7bit,
-                        uint8_t register_address,
+                        uint16_t register_address,
                         uint8_t register_mask);
 
 i2c_response_t i2c_write(uint8_t device_address_7bit,
-                         uint8_t register_address,
+                         uint16_t register_address,
                          uint8_t register_mask,
                          uint8_t set_value);
 
 /**
- * @brief Logging and error handling macros.
+ * @brief Error handling macro.
  */
 
-#define app_err(eval)                                                          \
-    do                                                                         \
-    {                                                                          \
-        nrfx_err_t err = (eval);                                               \
-        if (0x0000FFFF & err)                                                  \
-        {                                                                      \
-            SEGGER_RTT_printf(0, "App error code: 0x%x at %s:%u\r\n", err, __FILE__, __LINE__); \
-            if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk)              \
-            {                                                                  \
-                __BKPT();                                                      \
-            }                                                                  \
-            NVIC_SystemReset();                                                \
-        }                                                                      \
+#define app_err(eval)                                                        \
+    do                                                                       \
+    {                                                                        \
+        nrfx_err_t err = (eval);                                             \
+        if (0x0000FFFF & err)                                                \
+        {                                                                    \
+            NRFX_LOG_ERROR("Error: 0x%x at %s:%u", err, __FILE__, __LINE__); \
+            if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk)            \
+            {                                                                \
+                __BKPT();                                                    \
+            }                                                                \
+            NVIC_SystemReset();                                              \
+        }                                                                    \
     } while (0)
