@@ -45,6 +45,36 @@ nrfjprog --program *.hex --chiperase -f nrf52 --verify --reset
     1. Build & flash
     1. Clean
 
+### Generating final release `.hex` and DFU `.zip` files
+
+1. Download and install [nrfutil](https://www.nordicsemi.com/Products/Development-tools/nRF-Util) including the `nrf5sdk-tools` package:
+
+    ```sh
+    chmod +x nrfutil
+    # Make sure to add nrfutil to your path
+    nrfutil install nrf5sdk-tools
+    ```
+
+1. Generate a settings file:
+
+    ```sh
+    nrfutil settings generate --family NRF52 --application build/application.hex --application-version 0 --bootloader-version 0 --bl-settings-version 2 build/settings.hex
+    ```
+
+1. Download and install the `mergehex` tool which is a part of the [nRF Command Line Tools](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools).
+
+1. Merge the settings, bootloader, softdevice and application hex files:
+
+    ```sh
+    mergehex -m build/settings.hex build/application.hex softdevice/s132_nrf52_7.3.0_softdevice.hex bootloader/build/nrf52832_xxaa_s132.hex -o build/release.hex
+    ```
+
+1. Create the DFU zip package using the command:
+
+    ```sh
+    nrfutil pkg generate --hw-version 52 --application-version 0 --application build/application.hex --sd-req 0x0124 --key-file bootloader/published_privkey.pem build/release.zip
+    ```
+    
 ## FPGA
 
 For information on developing and flashing the FPGA binary. Check the [Monocle FPGA](https://github.com/brilliantlabsAR/monocle-fpga) repository.
