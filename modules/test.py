@@ -43,17 +43,17 @@ def mod_time():
     print("Test setting and checking the time")
     __test("time.now(1674252171)", None)
     __test("time.now()", 1674252171)
-    __test("time.time()", {'timezone': '00:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 22, 'year': 2023, 'dst': 'no'})
+    __test("time.time()", {'timezone': '00:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 22, 'year': 2023})
 
     print("Check time dict at a specified epoch")
-    __test("time.now(1674253104)", {'timezone': '00:00', 'weekday': 'friday', 'minute': 18, 'day': 20, 'yearday': 20, 'month': 1, 'second': 24, 'hour': 22, 'year': 2023, 'dst': 'no'})
+    __test("time.now(1674253104)", {'timezone': '00:00', 'weekday': 'friday', 'minute': 18, 'day': 20, 'yearday': 20, 'month': 1, 'second': 24, 'hour': 22, 'year': 2023})
 
     print("Test timezones")
     __test("time.zone('5:30')", None)
     __test("time.zone()", '05:30')
-    __test("time.now()", {'timezone': '05:30', 'weekday': 'saturday', 'minute': 32, 'day': 21, 'yearday': 21, 'month': 1, 'second': 51, 'hour': 3, 'year': 2023, 'dst': 'no'})
+    __test("time.now()", {'timezone': '05:30', 'weekday': 'saturday', 'minute': 32, 'day': 21, 'yearday': 21, 'month': 1, 'second': 51, 'hour': 3, 'year': 2023})
     __test("time.zone('-12:00')", None)
-    __test("time.now()", {'timezone': '-12:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 10, 'year': 2023, 'dst': 'no'})
+    __test("time.now()", {'timezone': '-12:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 10, 'year': 2023})
 
     print("Test getting epochs from time dict")
 
@@ -117,6 +117,6 @@ def mod_display():
     display.line(600,0, 300,400, 0xFFFFFF); display.show()
     display.line(640,0, 300,400, 0xFFFFFF); display.show()
 
-def all():
+def run():
     mod_time()
     mod_display()
