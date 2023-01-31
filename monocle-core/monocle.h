@@ -36,8 +36,8 @@
 #define BATTERY_LEVEL_PIN NRF_SAADC_INPUT_AIN1 //
 #define CAMERA_I2C_SCL_PIN 18                  //
 #define CAMERA_I2C_SDA_PIN 16                  //
-#define CAMERA_RESET_PIN 0                     // Active low
-#define CAMERA_SLEEP_PIN 1                     //
+#define CAMERA_RESET_PIN 20                    // Active low
+#define CAMERA_SLEEP_PIN 29                    //
 #define DISPLAY_CS_PIN 6                       // Active low
 #define DISPLAY_RESET_PIN 15                   // Active low
 #define FLASH_CS_PIN 4                         // Active low

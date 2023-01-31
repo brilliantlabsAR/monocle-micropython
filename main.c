@@ -163,6 +163,10 @@ uint8_t const ecx336cn_config[] = {
     [0x79] = 0x68,
 };
 
+// TODO clean up all these SPI functions into a simple driver
+void fpga_cmd_read(uint16_t cmd, uint8_t *buf, size_t len);
+void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len);
+
 void spi_chip_select(uint8_t cs_pin)
 {
     nrf_gpio_pin_clear(cs_pin);
@@ -266,38 +270,22 @@ int main(void)
         app_err(nrfx_saadc_channel_config(&channel));
     }
 
+    // Set up the remaining GPIO
+    // TODO move these to the monocle folder
+    nrf_gpio_cfg_output(FPGA_INTERRUPT_PIN);
+    nrf_gpio_cfg_output(FPGA_CS_PIN);
+    nrf_gpio_cfg_output(FLASH_CS_PIN);
+    nrf_gpio_cfg_output(CAMERA_SLEEP_PIN);
+
     // Set up BLE
     ble_init();
 
     // Check if external flash has an FPGA image and boot it
     {
         // nrf_gpio_pin_set(FLASH_CS_PIN);
-        // nrf_gpio_cfg_output(FLASH_CS_PIN);
 
         // Let the FPGA start as soon as it has the power on.
-        nrf_gpio_cfg_output(FPGA_INTERRUPT_PIN);
         nrf_gpio_pin_set(FPGA_INTERRUPT_PIN);
-    }
-
-    // Setup camera
-    {
-        nrf_gpio_cfg_output(CAMERA_RESET_PIN);
-        nrf_gpio_pin_set(CAMERA_RESET_PIN);
-
-        // Read the camera CID (one of them)
-        i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
-
-        if (resp.fail || resp.value != 0x56)
-        {
-            log("Camera not found.");
-            monocle_set_led(RED_LED, true);
-        }
-
-        // TODO camera configuration (don't error check)
-
-        // Put the camera to sleep
-        nrf_gpio_cfg_output(CAMERA_SLEEP_PIN);
-        nrf_gpio_pin_set(CAMERA_SLEEP_PIN);
     }
 
     // Setup display
@@ -319,6 +307,28 @@ int main(void)
 
         // check that 0x29 changed from default 0x0A to 0x0B
         app_err(ecx336cn_read_byte(0x29) != 0x0B);
+    }
+
+    // Setup camera
+    {
+        nrfx_systick_delay_ms(750); // TODO optimize the FPGA to not need this delay
+        fpga_cmd_write(0x1009, NULL, 0);
+        nrf_gpio_pin_clear(CAMERA_SLEEP_PIN);
+        nrf_gpio_pin_clear(CAMERA_RESET_PIN);
+
+        // Read the camera CID (one of them)
+        i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
+
+        if (resp.fail || resp.value != 0x56)
+        {
+            log("Camera not found.");
+            monocle_set_led(RED_LED, true);
+        }
+
+        // TODO camera configuration (don't error check)
+
+        // Put the camera to sleep
+        nrf_gpio_pin_set(CAMERA_SLEEP_PIN);
     }
 
     // Initialise the stack pointer for the main thread
