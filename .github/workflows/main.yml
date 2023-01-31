@@ -2,9 +2,9 @@ name: build_on_push
 
 on:
   push:
-    branches: [ "main", "develop_branch" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "develop_branch" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -17,38 +17,12 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt install gcc-arm-none-eabi libnewlib-arm-none-eabi
-          pip install --user nrfutil intelhex
-          curl -o nrf-command-line-tools.deb https://nsscprodmedia.blob.core.windows.net/prod/software-and-other-downloads/desktop-software/nrf-command-line-tools/sw/versions-10-x-x/10-19-0/nrf-command-line-tools_10.19.0_amd64.deb
-          sudo dpkg -i nrf-command-line-tools.deb
 
       - name: Bootstrap the dependencies
         run: |
-          git submodule init nrfx
-          git submodule init micropython
-          git submodule update --recursive
-          make -C micropython/ports/nrf/ submodules
+          git submodule update --init
+          git -C micropython submodule update --init lib/micropython-lib
 
       - name: Build the firmware
         run: |
-          make release
-
-      - name: Upload release.hex
-        uses: actions/upload-artifact@v3
-        with:
-          name: firmware.hex
-          path: build/application.hex
-          retention-days: 5
-
-      - name: Upload application.elf
-        uses: actions/upload-artifact@v3
-        with:
-          name: application.elf
-          path: build/application.elf
-          retention-days: 5
-
-      - name: Upload application.map
-        uses: actions/upload-artifact@v3
-        with:
-          name: application.map
-          path: build/application.map
-          retention-days: 5
+          make
