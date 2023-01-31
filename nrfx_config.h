@@ -24,6 +24,14 @@
 
 #pragma once
 
+#include "nrf.h"
+
+// For every module, it might be necessary to set the IRQ priority to
+// 7 so that the Nordic Uart Service (NUS) gets a higher priority.
+
+#define NRFX_LOG_ENABLED 1
+#define NRFX_LOG_UART_DISABLED 1
+
 #define NRFX_GPIOTE_ENABLED 1
 #define NRFX_GPIOTE_CONFIG_NUM_OF_LOW_POWER_EVENTS 1
 #define NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY 7
@@ -48,6 +56,7 @@
 #define NRFX_TIMER_ENABLED 1
 #define NRFX_TIMER0_ENABLED 1 // Used by the SoftDevice
 #define NRFX_TIMER1_ENABLED 1 // Used for "from machine import Timer"
+#define NRFX_TIMER3_ENABLED 1 // Used for maintaining the time
 #define NRFX_TIMER4_ENABLED 1 // Used for checking battery state
 #define NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY 7
 
