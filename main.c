@@ -244,8 +244,8 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
  */
 int main(void)
 {
-    SEGGER_RTT_printf(0, RTT_CTRL_CLEAR "\r");
-    SEGGER_RTT_printf(0, "MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ").\r\n");
+    NRFX_LOG_ERROR(RTT_CTRL_CLEAR "\rMicroPython on Monocle - " BUILD_VERSION
+                                  " (" MICROPY_GIT_HASH ").");
 
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();
@@ -341,7 +341,7 @@ int main(void)
 
         if (resp.fail || resp.value != 0x56)
         {
-            log("Camera not found.");
+            NRFX_LOG_ERROR("Error: Camera not found.");
             monocle_set_led(RED_LED, true);
         }
 
