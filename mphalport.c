@@ -58,16 +58,6 @@ mp_uint_t mp_hal_ticks_ms(void)
     return uptime_ms;
 }
 
-mp_uint_t mp_hal_ticks_us(void)
-{
-    return uptime_ms * 1000;
-}
-
-mp_uint_t mp_hal_ticks_ns(void)
-{
-    return uptime_ms * 1000 * 1000;
-}
-
 mp_uint_t mp_hal_ticks_cpu(void)
 {
     return 0;
