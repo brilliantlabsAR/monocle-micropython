@@ -56,7 +56,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_epoch_obj, 0, 1, time_epoch);
 
 STATIC mp_obj_t time_sleep(mp_obj_t secs)
 {
-    nrfx_systick_delay_ms(mp_obj_get_int(secs) / 1000);
+    nrfx_systick_delay_ms(mp_obj_get_int(secs) * 1000);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(time_sleep_obj, time_sleep);
