@@ -34,6 +34,7 @@
 #include "py/runtime.h"
 #include "py/stackctrl.h"
 #include "py/builtin.h"
+#include "mphalport.h"
 
 #include "shared/readline/readline.h"
 #include "shared/runtime/pyexec.h"
@@ -52,7 +53,7 @@
 #include "nrfx_gpiote.h"
 #include "nrf_nvic.h"
 #include "nrfx_saadc.h"
-#include "nrfx_rtc.h"
+#include "nrfx_timer.h"
 #include "nrfx_glue.h"
 
 #include "driver/bluetooth_low_energy.h"
@@ -243,8 +244,8 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
  */
 int main(void)
 {
-    log_clear();
-    log("MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ").");
+    SEGGER_RTT_printf(0, RTT_CTRL_CLEAR "\r");
+    SEGGER_RTT_printf(0, "MicroPython on Monocle - " BUILD_VERSION " (" MICROPY_GIT_HASH ").\r\n");
 
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();
@@ -275,7 +276,26 @@ int main(void)
     nrf_gpio_cfg_output(FPGA_INTERRUPT_PIN);
     nrf_gpio_cfg_output(FPGA_CS_PIN);
     nrf_gpio_cfg_output(FLASH_CS_PIN);
-    nrf_gpio_cfg_output(CAMERA_SLEEP_PIN);
+
+    // Setup an RTC counting milliseconds since now
+    {
+        static nrfx_timer_config_t config = NRFX_TIMER_DEFAULT_CONFIG;
+        nrfx_timer_t timer = NRFX_TIMER_INSTANCE(3);
+
+        // Prepare the configuration structure.
+        config.frequency = NRF_TIMER_FREQ_125kHz;
+        config.mode = NRF_TIMER_MODE_TIMER;
+        config.bit_width = NRF_TIMER_BIT_WIDTH_8;
+
+        app_err(nrfx_timer_init(&timer, &config, &mp_hal_timer_1ms_callback));
+
+        // Raise an interrupt every 1ms: 125 kHz / 125
+        nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 125,
+                                    NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
+
+        // Start the timer, letting timer_add_task() append more of them while running.
+        nrfx_timer_enable(&timer);
+    }
 
     // Set up BLE
     ble_init();

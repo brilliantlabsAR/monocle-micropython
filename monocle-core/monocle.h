@@ -106,17 +106,13 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
  * @brief Logging and error handling macros.
  */
 
-#define log(format, ...) SEGGER_RTT_printf(0, "\r\n" format, ##__VA_ARGS__)
-
-#define log_clear() SEGGER_RTT_printf(0, RTT_CTRL_CLEAR "\r");
-
 #define app_err(eval)                                                          \
     do                                                                         \
     {                                                                          \
         nrfx_err_t err = (eval);                                               \
         if (0x0000FFFF & err)                                                  \
         {                                                                      \
-            log("App error code: 0x%x at %s:%u\r\n", err, __FILE__, __LINE__); \
+            SEGGER_RTT_printf(0, "App error code: 0x%x at %s:%u\r\n", err, __FILE__, __LINE__); \
             if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk)              \
             {                                                                  \
                 __BKPT();                                                      \

@@ -26,27 +26,27 @@ jobs:
           git submodule update --recursive
           make -C micropython/ports/nrf/ submodules
 
-      - name: Build the firmware and issue a release
+      - name: Build the firmware
         run: |
-          make -C port
+          make
 
       - name: Upload release.hex
         uses: actions/upload-artifact@v3
         with:
           name: firmware.hex
-          path: port/build/firmware.hex
+          path: build/application.hex
           retention-days: 5
 
-      - name: Upload firmware.zip
+      - name: Upload application.elf
         uses: actions/upload-artifact@v3
         with:
-          name: firmware.zip
-          path: port/build/firmware.zip
+          name: application.elf
+          path: build/application.elf
           retention-days: 5
 
       - name: Upload application.map
         uses: actions/upload-artifact@v3
         with:
           name: application.map
-          path: port/build/application.map
+          path: build/application.map
           retention-days: 5

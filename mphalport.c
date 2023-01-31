@@ -28,6 +28,8 @@
 #include "py/runtime.h"
 #include "mpconfigport.h"
 #include "driver/bluetooth_low_energy.h"
+#include "nrfx_timer.h"
+#include "nrfx_systick.h"
 
 const char help_text[] = {
     "Welcome to MicroPython!\n\n"
@@ -42,41 +44,56 @@ const char help_text[] = {
     "For details on a specific module, import it, and then type "
     "help(module_name)\n"};
 
-// TODO
-void mp_hal_delay_ms(mp_uint_t ms)
+// this overflows after 49 days without reboot.
+static volatile uint32_t uptime_ms;
+
+void mp_hal_timer_1ms_callback(nrf_timer_event_t event, void *context)
 {
-    // uint64_t delay = ms * 1000;
-
-    // uint64_t t0 = esp_timer_get_time();
-
-    // while (esp_timer_get_time() - t0 < delay)
-    // {
-    // vTaskDelay(1);
-    // mp_handle_pending(true);
-    // }
+    (void)event;
+    uptime_ms++;
 }
 
-// TODO
-void mp_hal_delay_us(mp_uint_t us)
-{
-    // uint64_t t0 = esp_timer_get_time();
-
-    // while (esp_timer_get_time() - t0 < us)
-    // {
-    // mp_handle_pending(true);
-    // }
-}
-
-// TODO
 mp_uint_t mp_hal_ticks_ms(void)
 {
+    return uptime_ms;
+}
+
+mp_uint_t mp_hal_ticks_us(void)
+{
+    return uptime_ms * 1000;
+}
+
+mp_uint_t mp_hal_ticks_ns(void)
+{
+    return uptime_ms * 1000 * 1000;
+}
+
+mp_uint_t mp_hal_ticks_cpu(void)
+{
     return 0;
 }
 
-// TODO
-mp_uint_t mp_hal_ticks_us(void)
+uint64_t mp_hal_time_ns(void)
 {
     return 0;
+}
+
+void mp_hal_delay_ms(mp_uint_t ms)
+{
+    for (uint64_t step; ms > 0; ms -= step)
+    {
+        step = MIN(ms, UINT32_MAX);
+        nrfx_systick_delay_ms(step);
+    }
+}
+
+void mp_hal_delay_us(mp_uint_t us)
+{
+    for (uint64_t step; us > 0; us -= step)
+    {
+        step = MIN(us, UINT32_MAX);
+        nrfx_systick_delay_us(step);
+    }
 }
 
 mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs)
@@ -106,6 +123,11 @@ int mp_hal_stdin_rx_chr(void)
 void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len)
 {
     ble_nus_tx(str, len);
+}
+
+void mp_hal_set_interrupt_char(char c)
+{
+    (void)c;
 }
 
 // TODO
