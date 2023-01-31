@@ -118,6 +118,7 @@ SRC_C += modules/fpga.c
 SRC_C += modules/led.c
 SRC_C += modules/time.c
 SRC_C += modules/touch.c
+SRC_C += modules/update.c
 
 SRC_C += segger/SEGGER_RTT_printf.c
 SRC_C += segger/SEGGER_RTT_Syscalls_GCC.c

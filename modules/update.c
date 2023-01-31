@@ -31,7 +31,7 @@ STATIC mp_obj_t update_nrf52(void)
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(update_nrf52_obj, update_nrf52);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(update_nrf52_obj, update_nrf52);
 
 STATIC const mp_rom_map_elem_t update_module_globals_table[] = {
 
