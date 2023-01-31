@@ -37,7 +37,8 @@ def __test(evaluate, expected):
         print(f"Failed - {evaluate} == {response}. Expected: {expected}")
 
 # Tests for individual modules
-def __time():
+def mod_time():
+    print("[ time ]")
 
     print("Test setting and checking the time")
     __test("time.now(1674252171)", None)
@@ -71,8 +72,10 @@ def __time():
     __test("time.zone('1:20')", ValueError)
     __test("time.sleep(-1)", ValueError)
 
-def __display():
-    # line scanning the screen bound to the left
+def mod_display():
+    print("[ display ]")
+
+    print("line scanning the screen bound to the left")
     display.line(0,0,   640,200, 0xFFFFFF); display.show()
     display.line(0,50,  640,200, 0xFFFFFF); display.show()
     display.line(0,100, 640,200, 0xFFFFFF); display.show()
@@ -83,7 +86,7 @@ def __display():
     display.line(0,350, 640,200, 0xFFFFFF); display.show()
     display.line(0,400, 640,200, 0xFFFFFF); display.show()
 
-    # line scanning the screen bound to the right
+    print("line scanning the screen bound to the right")
     display.line(640,0,   0,200, 0xFFFFFF); display.show()
     display.line(640,50,  0,200, 0xFFFFFF); display.show()
     display.line(640,100, 0,200, 0xFFFFFF); display.show()
@@ -94,7 +97,7 @@ def __display():
     display.line(640,350, 0,200, 0xFFFFFF); display.show()
     display.line(640,400, 0,200, 0xFFFFFF); display.show()
 
-    # line scanning the screen bound to the top
+    print("line scanning the screen bound to the top")
     display.line(300,0,   0,400, 0xFFFFFF); display.show()
     display.line(300,0, 100,400, 0xFFFFFF); display.show()
     display.line(300,0, 200,400, 0xFFFFFF); display.show()
@@ -104,7 +107,7 @@ def __display():
     display.line(300,0, 600,400, 0xFFFFFF); display.show()
     display.line(300,0, 640,400, 0xFFFFFF); display.show()
 
-    # line scanning the screen bound to the bottom
+    print("line scanning the screen bound to the bottom")
     display.line(  0,0, 300,400, 0xFFFFFF); display.show()
     display.line(100,0, 300,400, 0xFFFFFF); display.show()
     display.line(200,0, 300,400, 0xFFFFFF); display.show()
@@ -115,7 +118,5 @@ def __display():
     display.line(640,0, 300,400, 0xFFFFFF); display.show()
 
 def all():
-    print("\r\n[ time ]")
-    __time()
-    print("\r\n[ display ]")
-    __display()
+    mod_time()
+    mod_display()
