@@ -18,6 +18,8 @@ jobs:
         run: |
           sudo apt install gcc-arm-none-eabi libnewlib-arm-none-eabi
           pip install --user nrfutil intelhex
+          curl -o nrf-command-line-tools.deb https://nsscprodmedia.blob.core.windows.net/prod/software-and-other-downloads/desktop-software/nrf-command-line-tools/sw/versions-10-x-x/10-19-0/nrf-command-line-tools_10.19.0_amd64.deb
+          sudo dpkg -i nrf-command-line-tools.deb
 
       - name: Bootstrap the dependencies
         run: |
@@ -28,7 +30,7 @@ jobs:
 
       - name: Build the firmware
         run: |
-          make
+          make release
 
       - name: Upload release.hex
         uses: actions/upload-artifact@v3
