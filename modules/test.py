@@ -41,9 +41,9 @@ def mod_time():
     print("[ time ]")
 
     print("Test setting and checking the time")
-    __test("time.now(1674252171)", None)
-    __test("time.now()", 1674252171)
-    __test("time.time()", {'timezone': '00:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 22, 'year': 2023})
+    __test("time.time(1674252171)", None)
+    __test("time.time()", 1674252171)
+    __test("time.now()", {'timezone': '00:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 22, 'year': 2023})
 
     print("Check time dict at a specified epoch")
     __test("time.now(1674253104)", {'timezone': '00:00', 'weekday': 'friday', 'minute': 18, 'day': 20, 'yearday': 20, 'month': 1, 'second': 24, 'hour': 22, 'year': 2023})
