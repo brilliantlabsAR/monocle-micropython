@@ -36,21 +36,32 @@ uint64_t time_zone_offset;
 
 STATIC mp_obj_t time_now(size_t n_args, const mp_obj_t *args)
 {
-    if (n_args == 0)
+    mp_int_t seconds;
+
+    // Get current date and time.
+    if (n_args == 0 || args[0] == mp_const_none)
     {
-        return mp_obj_new_int(time_since_boot + mp_hal_ticks_ms() / 1000);
+        seconds = time_since_boot + mp_hal_ticks_ms() / 1000;
     }
     else
     {
-        mp_int_t now_s = mp_obj_get_int(args[0]);
-        mp_int_t uptime_s = mp_hal_ticks_ms() / 1000;
-        if (now_s < uptime_s)
-        {
-            mp_raise_ValueError(MP_ERROR_TEXT("time too low"));
-        }
-        time_since_boot = now_s - uptime_s;
-        return mp_const_none;
+        seconds = mp_obj_get_int(args[0]);
     }
+
+    // Convert given seconds to tuple.
+    timeutils_struct_time_t tm;
+    timeutils_seconds_since_epoch_to_struct_time(seconds, &tm);
+    mp_obj_t tuple[8] = {
+        tuple[0] = mp_obj_new_int(tm.tm_year),
+        tuple[1] = mp_obj_new_int(tm.tm_mon),
+        tuple[2] = mp_obj_new_int(tm.tm_mday),
+        tuple[3] = mp_obj_new_int(tm.tm_hour),
+        tuple[4] = mp_obj_new_int(tm.tm_min),
+        tuple[5] = mp_obj_new_int(tm.tm_sec),
+        tuple[6] = mp_obj_new_int(tm.tm_wday),
+        tuple[7] = mp_obj_new_int(tm.tm_yday),
+    };
+    return mp_obj_new_tuple(8, tuple);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_now_obj, 0, 1, time_now);
 
@@ -87,32 +98,21 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_zone_obj, 0, 1, time_zone);
 
 STATIC mp_obj_t time_time(size_t n_args, const mp_obj_t *args)
 {
-    mp_int_t seconds;
-
-    // Get current date and time.
-    if (n_args == 0 || args[0] == mp_const_none)
+    if (n_args == 0)
     {
-        seconds = time_since_boot + mp_hal_ticks_ms() / 1000;
+        return mp_obj_new_int(time_since_boot + mp_hal_ticks_ms() / 1000);
     }
     else
     {
-        seconds = mp_obj_get_int(args[0]);
+        mp_int_t now_s = mp_obj_get_int(args[0]);
+        mp_int_t uptime_s = mp_hal_ticks_ms() / 1000;
+        if (now_s < uptime_s)
+        {
+            mp_raise_ValueError(MP_ERROR_TEXT("time too low"));
+        }
+        time_since_boot = now_s - uptime_s;
+        return mp_const_none;
     }
-
-    // Convert given seconds to tuple.
-    timeutils_struct_time_t tm;
-    timeutils_seconds_since_epoch_to_struct_time(seconds, &tm);
-    mp_obj_t tuple[8] = {
-        tuple[0] = mp_obj_new_int(tm.tm_year),
-        tuple[1] = mp_obj_new_int(tm.tm_mon),
-        tuple[2] = mp_obj_new_int(tm.tm_mday),
-        tuple[3] = mp_obj_new_int(tm.tm_hour),
-        tuple[4] = mp_obj_new_int(tm.tm_min),
-        tuple[5] = mp_obj_new_int(tm.tm_sec),
-        tuple[6] = mp_obj_new_int(tm.tm_wday),
-        tuple[7] = mp_obj_new_int(tm.tm_yday),
-    };
-    return mp_obj_new_tuple(8, tuple);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_time_obj, 0, 1, time_time);
 
