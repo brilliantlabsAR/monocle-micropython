@@ -24,6 +24,7 @@
 
 #include <time.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "py/runtime.h"
 #include "shared/timeutils/timeutils.h"
@@ -32,13 +33,13 @@
 #include "mphalport.h"
 
 uint64_t time_since_boot;
-uint64_t time_zone_offset;
+uint16_t zone_offset;
+
+static char const *wday_list[] = {"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"};
 
 STATIC mp_obj_t time_now(size_t n_args, const mp_obj_t *args)
 {
     mp_int_t seconds;
-
-    // Get current date and time.
     if (n_args == 0 || args[0] == mp_const_none)
     {
         seconds = time_since_boot + mp_hal_ticks_ms() / 1000;
@@ -48,20 +49,27 @@ STATIC mp_obj_t time_now(size_t n_args, const mp_obj_t *args)
         seconds = mp_obj_get_int(args[0]);
     }
 
-    // Convert given seconds to tuple.
     timeutils_struct_time_t tm;
     timeutils_seconds_since_epoch_to_struct_time(seconds, &tm);
-    mp_obj_t tuple[8] = {
-        tuple[0] = mp_obj_new_int(tm.tm_year),
-        tuple[1] = mp_obj_new_int(tm.tm_mon),
-        tuple[2] = mp_obj_new_int(tm.tm_mday),
-        tuple[3] = mp_obj_new_int(tm.tm_hour),
-        tuple[4] = mp_obj_new_int(tm.tm_min),
-        tuple[5] = mp_obj_new_int(tm.tm_sec),
-        tuple[6] = mp_obj_new_int(tm.tm_wday),
-        tuple[7] = mp_obj_new_int(tm.tm_yday),
-    };
-    return mp_obj_new_tuple(8, tuple);
+
+    char zone_str[sizeof("1092:59")];
+    snprintf(zone_str, sizeof zone_str, "%02d:%02d", zone_offset / 60, zone_offset % 60);
+    mp_obj_t zone_obj = mp_obj_new_str(zone_str, strlen(zone_str));
+
+    char const *wday_str = wday_list[tm.tm_wday % 7];
+    mp_obj_t wday_obj = mp_obj_new_str(wday_str, strlen(wday_str));
+
+    mp_obj_t dict = mp_obj_new_dict(9);
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_timezone), zone_obj);
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_weekday), wday_obj);
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_minute), mp_obj_new_int(tm.tm_min));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_day), mp_obj_new_int(tm.tm_mday));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_yearday), mp_obj_new_int(tm.tm_yday));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_month), mp_obj_new_int(tm.tm_mon));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_second), mp_obj_new_int(tm.tm_sec));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_hour), mp_obj_new_int(tm.tm_hour));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_year), mp_obj_new_int(tm.tm_year));
+    return dict;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_now_obj, 0, 1, time_now);
 
@@ -69,7 +77,7 @@ STATIC mp_obj_t time_zone(size_t n_args, const mp_obj_t *args)
 {
     if (n_args == 0)
     {
-        return mp_obj_new_int(time_zone_offset);
+        return mp_obj_new_int(zone_offset);
     }
     else
     {
@@ -90,7 +98,7 @@ STATIC mp_obj_t time_zone(size_t n_args, const mp_obj_t *args)
             mp_raise_ValueError(MP_ERROR_TEXT("invalid minute format"));
         }
 
-        time_zone_offset = hours * 3600 + minutes * 60;
+        zone_offset = hours * 3600 + minutes * 60;
         return mp_const_none;
     }
 }
