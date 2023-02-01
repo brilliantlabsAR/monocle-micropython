@@ -36,6 +36,8 @@
 #include "font.h"
 
 #define FPGA_ADDR_ALIGN 128
+#define ECX336CN_WIDTH 640
+#define ECX336CN_HEIGHT 400
 
 #define LEN(x) (sizeof(x) / sizeof *(x))
 #define VAL(str) #str
@@ -146,6 +148,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(display_brightness_obj, &display_brightness);
 
 static inline void draw_pixel(row_t row, int16_t x, uint8_t yuv444[3])
 {
+    // TODO this flips the screen horizontally on purpose
+    x = row.len / 2 - x;
+
     if (x * 2 + 0 < row.len)
     {
         row.buf[x * 2 + 0] = yuv444[1 + x % 2];
@@ -257,16 +262,16 @@ static inline bool get_glyph_bit(glyph_t *glyph, int16_t x, int16_t y)
  *
  * @param glpyh The glyph to render.
  */
-static inline void draw_glyph(row_t row, glyph_t *glyph, uint8_t yuv444[3])
+static inline void draw_glyph(row_t row, int16_t x0, glyph_t *glyph, uint16_t y0, uint8_t yuv444[3])
 {
     // for each vertical position
-    for (int16_t x = 0; x < glyph->width && x < row.len / 2; x++)
+    for (int16_t x = 0; x < glyph->width; x++)
     {
         // check if the bit is set
-        if (get_glyph_bit(glyph, x, row.y) == true)
+        if (get_glyph_bit(glyph, x, y0) == true)
         {
             // and only if so, fill the buffer with it
-            draw_pixel(row, x, yuv444);
+            draw_pixel(row, x0 + x, yuv444);
         }
     }
 }
@@ -310,15 +315,9 @@ static void render_text(row_t row, obj_t *obj)
         // search the glyph within the font data
         glyph = get_glyph(font, *s);
 
-        row_t local = {
-            .buf = row.buf + x * 2,
-            .len = row.len - x * 2,
-            .y = row.y - obj->y,
-        };
-
         // render the glyph, reduce the buffer to only the section to draw into,
         // y coordinate is adjusted to be height within the glyph
-        draw_glyph(local, &glyph, obj->yuv444);
+        draw_glyph(row, x, &glyph, row.y - obj->y, obj->yuv444);
         x += glyph.width + glyph_gap_width;
     }
 }
@@ -424,9 +423,10 @@ STATIC void flush_blocks(row_t yuv422, size_t pos, size_t len)
     }
 
     // set the base address
-    uint32_t u32 = yuv422.y * yuv422.len + pos;
+    // TODO this flips the display vertically on purpose
+    uint32_t u32 = (ECX336CN_HEIGHT - 1 - yuv422.y) * yuv422.len + pos;
+    assert(u32 < ECX336CN_WIDTH * ECX336CN_HEIGHT * 2);
     uint8_t base[sizeof u32] = {u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0};
-    assert(u32 < OV5640_WIDTH * OV5640_HEIGHT * 2);
     fpga_cmd_write(0x4410, base, sizeof base);
 
     // Flush the content of the screen skipping empty bytes.
@@ -499,7 +499,7 @@ STATIC mp_obj_t display_show(void)
     nrfx_systick_delay_ms(30);
 
     // Walk through every line of the display, render it, send it to the FPGA.
-    for (; yuv422.y < OV5640_HEIGHT; yuv422.y++)
+    for (; yuv422.y < ECX336CN_HEIGHT; yuv422.y++)
     {
         // Clean the row before writing to it
         fill_black(yuv422);
@@ -608,7 +608,7 @@ STATIC mp_obj_t display_fill(mp_obj_t rgb_in)
     mp_int_t rgb = mp_obj_get_int(rgb_in);
     arg_t none = {0};
 
-    new_obj(OBJ_RECTANGLE, 0, 0, OV5640_WIDTH, OV5640_HEIGHT, rgb, none);
+    new_obj(OBJ_RECTANGLE, 0, 0, ECX336CN_WIDTH, ECX336CN_HEIGHT, rgb, none);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(display_fill_obj, display_fill);
