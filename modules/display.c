@@ -36,8 +36,8 @@
 #include "font.h"
 
 #define FPGA_ADDR_ALIGN 128
-#define ECX336CN_WIDTH 640
-#define ECX336CN_HEIGHT 400
+#define DISPLAY_WIDTH 640
+#define DISPLAY_HEIGHT 400
 
 #define LEN(x) (sizeof(x) / sizeof *(x))
 #define VAL(str) #str
@@ -424,8 +424,8 @@ STATIC void flush_blocks(row_t yuv422, size_t pos, size_t len)
 
     // set the base address
     // TODO this flips the display vertically on purpose
-    uint32_t u32 = (ECX336CN_HEIGHT - 1 - yuv422.y) * yuv422.len + pos;
-    assert(u32 < ECX336CN_WIDTH * ECX336CN_HEIGHT * 2);
+    uint32_t u32 = (DISPLAY_HEIGHT - 1 - yuv422.y) * yuv422.len + pos;
+    assert(u32 < DISPLAY_WIDTH * DISPLAY_HEIGHT * 2);
     uint8_t base[sizeof u32] = {u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0};
     fpga_cmd_write(0x4410, base, sizeof base);
 
@@ -488,7 +488,7 @@ STATIC void flush_row(row_t yuv422)
 
 STATIC mp_obj_t display_show(void)
 {
-    uint8_t buf[ECX336CN_WIDTH * 2];
+    uint8_t buf[DISPLAY_WIDTH * 2];
     uint8_t buf2[1 << 15];
     memset(buf2, 0, sizeof buf2);
     row_t yuv422 = {.buf = buf, .len = sizeof buf, .y = 0};
@@ -499,7 +499,7 @@ STATIC mp_obj_t display_show(void)
     nrfx_systick_delay_ms(30);
 
     // Walk through every line of the display, render it, send it to the FPGA.
-    for (; yuv422.y < ECX336CN_HEIGHT; yuv422.y++)
+    for (; yuv422.y < DISPLAY_HEIGHT; yuv422.y++)
     {
         // Clean the row before writing to it
         fill_black(yuv422);
@@ -608,7 +608,7 @@ STATIC mp_obj_t display_fill(mp_obj_t rgb_in)
     mp_int_t rgb = mp_obj_get_int(rgb_in);
     arg_t none = {0};
 
-    new_obj(OBJ_RECTANGLE, 0, 0, ECX336CN_WIDTH, ECX336CN_HEIGHT, rgb, none);
+    new_obj(OBJ_RECTANGLE, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, rgb, none);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(display_fill_obj, display_fill);
