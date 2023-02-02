@@ -32,56 +32,28 @@
 #include "nrfx_systick.h"
 #include "mphalport.h"
 
-uint64_t time_since_boot;
-uint16_t zone_offset;
+uint64_t seconds_since_boot;
+mp_int_t zone_minutes;
 
-static char const *wday_list[] = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"};
+STATIC char const *wday_list[] = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"};
 
-STATIC mp_obj_t time_now(size_t n_args, const mp_obj_t *args)
+STATIC mp_obj_t obj_new_zone_str(void)
 {
-    mp_int_t seconds;
-    if (n_args == 0 || args[0] == mp_const_none)
-    {
-        seconds = time_since_boot + mp_hal_ticks_ms() / 1000;
-    }
-    else
-    {
-        seconds = mp_obj_get_int(args[0]);
-    }
+    char buf[sizeof("+HH:MM")];
 
-    timeutils_struct_time_t tm;
-    timeutils_seconds_since_epoch_to_struct_time(seconds, &tm);
-
-    char zone_str[sizeof("1092:59")];
-    snprintf(zone_str, sizeof zone_str, "%02d:%02d", zone_offset / 60, zone_offset % 60);
-    mp_obj_t zone_obj = mp_obj_new_str(zone_str, strlen(zone_str));
-
-    char const *wday_str = wday_list[tm.tm_wday % 7];
-    mp_obj_t wday_obj = mp_obj_new_str(wday_str, strlen(wday_str));
-
-    mp_obj_t dict = mp_obj_new_dict(9);
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_timezone), zone_obj);
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_weekday), wday_obj);
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_minute), mp_obj_new_int(tm.tm_min));
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_day), mp_obj_new_int(tm.tm_mday));
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_yearday), mp_obj_new_int(tm.tm_yday));
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_month), mp_obj_new_int(tm.tm_mon));
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_second), mp_obj_new_int(tm.tm_sec));
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_hour), mp_obj_new_int(tm.tm_hour));
-    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_year), mp_obj_new_int(tm.tm_year));
-    return dict;
+    snprintf(buf, sizeof(buf), "%02d:%02d", zone_minutes / 60, zone_minutes % 60);
+    return mp_obj_new_str(buf, strlen(buf));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_now_obj, 0, 1, time_now);
 
 STATIC mp_obj_t time_zone(size_t n_args, const mp_obj_t *args)
 {
     if (n_args == 0)
     {
-        return mp_obj_new_int(zone_offset);
+        return obj_new_zone_str();
     }
     else
     {
-        char const *s =  mp_obj_str_get_str(args[1]);
+        char const *s =  mp_obj_str_get_str(args[0]);
         char *end = NULL;
 
         long hours = strtol(s, &end, 10);
@@ -98,17 +70,50 @@ STATIC mp_obj_t time_zone(size_t n_args, const mp_obj_t *args)
             mp_raise_ValueError(MP_ERROR_TEXT("invalid minute format"));
         }
 
-        zone_offset = hours * 3600 + minutes * 60;
+        zone_minutes = hours * 60 + minutes;
         return mp_const_none;
     }
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_zone_obj, 0, 1, time_zone);
 
+STATIC mp_obj_t time_now(size_t n_args, const mp_obj_t *args)
+{
+    mp_int_t seconds;
+    if (n_args == 0 || args[0] == mp_const_none)
+    {
+        seconds = seconds_since_boot + mp_hal_ticks_ms() / 1000;
+    }
+    else
+    {
+        seconds = mp_obj_get_int(args[0]);
+    }
+    seconds += zone_minutes * 60;
+
+    timeutils_struct_time_t tm;
+    timeutils_seconds_since_epoch_to_struct_time(seconds, &tm);
+
+    char const *wday_str = wday_list[tm.tm_wday % 7];
+    mp_obj_t wday_obj = mp_obj_new_str(wday_str, strlen(wday_str));
+
+    mp_obj_t dict = mp_obj_new_dict(9);
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_timezone), obj_new_zone_str());
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_weekday), wday_obj);
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_minute), mp_obj_new_int(tm.tm_min));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_day), mp_obj_new_int(tm.tm_mday));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_yearday), mp_obj_new_int(tm.tm_yday));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_month), mp_obj_new_int(tm.tm_mon));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_second), mp_obj_new_int(tm.tm_sec));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_hour), mp_obj_new_int(tm.tm_hour));
+    mp_obj_dict_store(dict, MP_ROM_QSTR(MP_QSTR_year), mp_obj_new_int(tm.tm_year));
+    return dict;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_now_obj, 0, 1, time_now);
+
 STATIC mp_obj_t time_time(size_t n_args, const mp_obj_t *args)
 {
     if (n_args == 0)
     {
-        return mp_obj_new_int(time_since_boot + mp_hal_ticks_ms() / 1000);
+        return mp_obj_new_int(seconds_since_boot + mp_hal_ticks_ms() / 1000);
     }
     else
     {
@@ -118,7 +123,7 @@ STATIC mp_obj_t time_time(size_t n_args, const mp_obj_t *args)
         {
             mp_raise_ValueError(MP_ERROR_TEXT("time too low"));
         }
-        time_since_boot = now_s - uptime_s;
+        seconds_since_boot = now_s - uptime_s;
         return mp_const_none;
     }
 }
