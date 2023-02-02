@@ -35,7 +35,7 @@
 uint64_t time_since_boot;
 uint16_t zone_offset;
 
-static char const *wday_list[] = {"sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"};
+static char const *wday_list[] = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"};
 
 STATIC mp_obj_t time_now(size_t n_args, const mp_obj_t *args)
 {
