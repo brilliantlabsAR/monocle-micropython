@@ -102,14 +102,14 @@ STATIC mp_obj_t time_now(size_t n_args, const mp_obj_t *args)
         now = mp_obj_get_int(args[0]);
     }
 
-    now += time_zone_hour_offset;
+    now += time_zone_hour_offset * 3600;
     if (time_zone_hour_offset >= 0)
     {
-        now += time_zone_minute_offset;
+        now += time_zone_minute_offset * 60;
     }
     else
     {
-        now -= time_zone_minute_offset;
+        now -= time_zone_minute_offset * 60;
     }
 
     timeutils_seconds_since_epoch_to_struct_time(now, &tm);
@@ -237,7 +237,7 @@ STATIC mp_obj_t time_mktime(mp_obj_t dict)
     mon  = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_month)));
     mday = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_day)));
     hour = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_hour)));
-    min  = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_minute)));
+    min  = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_minute) + 1));
     sec  = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_second)));
 
     return mp_obj_new_int(timeutils_mktime(year, mon, mday, hour, min, sec));
