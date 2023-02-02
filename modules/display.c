@@ -643,13 +643,14 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_vline_obj, 4, 4, display_vline);
 
 STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_display)},
-    {MP_ROM_QSTR(MP_QSTR_fill), MP_ROM_PTR(&display_fill_obj)},
-    {MP_ROM_QSTR(MP_QSTR_line), MP_ROM_PTR(&display_line_obj)},
-    {MP_ROM_QSTR(MP_QSTR_text), MP_ROM_PTR(&display_text_obj)},
-    {MP_ROM_QSTR(MP_QSTR_hline), MP_ROM_PTR(&display_hline_obj)},
-    {MP_ROM_QSTR(MP_QSTR_vline), MP_ROM_PTR(&display_vline_obj)},
+    {MP_ROM_QSTR(MP_QSTR_fill),     MP_ROM_PTR(&display_fill_obj)},
+    {MP_ROM_QSTR(MP_QSTR_line),     MP_ROM_PTR(&display_line_obj)},
+    {MP_ROM_QSTR(MP_QSTR_text),     MP_ROM_PTR(&display_text_obj)},
+    {MP_ROM_QSTR(MP_QSTR_hline),    MP_ROM_PTR(&display_hline_obj)},
+    {MP_ROM_QSTR(MP_QSTR_vline),    MP_ROM_PTR(&display_vline_obj)},
+    {MP_ROM_QSTR(MP_QSTR_WIDTH),    MP_OBJ_NEW_SMALL_INT(DISPLAY_WIDTH)},
+    {MP_ROM_QSTR(MP_QSTR_HEIGHT),   MP_OBJ_NEW_SMALL_INT(DISPLAY_HEIGHT)},
 
-    // methods
     {MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&display_show_obj)},
     {MP_ROM_QSTR(MP_QSTR_brightness), MP_ROM_PTR(&display_brightness_obj)},
 };
