@@ -117,6 +117,10 @@ def mod_display():
     display.line(600,0, 300,400, 0xFFFFFF); display.show()
     display.line(640,0, 300,400, 0xFFFFFF); display.show()
 
+    print("\nTest constants")
+    __test("display.WIDTH", 640)
+    __test("display.HEIGHT", 400)
+
 def run():
     mod_time()
     mod_display()
