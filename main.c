@@ -60,6 +60,7 @@
 #include "ble.h"
 
 #include "driver/bluetooth_low_energy.h"
+#include "ring.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 

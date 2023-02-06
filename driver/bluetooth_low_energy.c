@@ -56,34 +56,6 @@ uint16_t ble_negotiated_mtu;
 ring_buf_t nus_rx;
 ring_buf_t nus_tx;
 
-bool ring_full(ring_buf_t const *ring)
-{
-    uint16_t next = ring->tail + 1;
-    if (next == sizeof(ring->buffer))
-        next = 0;
-    return next == ring->head;
-}
-
-bool ring_empty(ring_buf_t const *ring)
-{
-    return ring->head == ring->tail;
-}
-
-void ring_push(ring_buf_t *ring, uint8_t byte)
-{
-    ring->buffer[ring->tail++] = byte;
-    if (ring->tail == sizeof(ring->buffer))
-        ring->tail = 0;
-}
-
-uint8_t ring_pop(ring_buf_t *ring)
-{
-    uint8_t byte = ring->buffer[ring->head++];
-    if (ring->head == sizeof(ring->buffer))
-        ring->head = 0;
-    return byte;
-}
-
 /**
  * Send a buffer out, retrying continuously until it goes to completion (with success or failure).
  */

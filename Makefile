@@ -101,6 +101,7 @@ SRC_C += monocle-core/monocle-critical.c
 SRC_C += monocle-core/monocle-drivers.c
 SRC_C += monocle-core/monocle-startup.c
 SRC_C += mphalport.c
+SRC_C += ring.c
 
 SRC_C += driver/bluetooth_low_energy.c
 
