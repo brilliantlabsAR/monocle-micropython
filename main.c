@@ -55,12 +55,12 @@
 #include "nrfx_saadc.h"
 #include "nrfx_timer.h"
 #include "nrfx_glue.h"
+#include "nrf_soc.h"
 #include "ble_gatts.h"
 #include "ble_gattc.h"
 #include "ble.h"
 
 #include "driver/bluetooth_low_energy.h"
-#include "ring.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 
@@ -97,10 +97,22 @@ static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
     }
 
 // Advertising data which needs to stay in scope between connections.
-uint8_t ble_adv_len;
-uint8_t ble_adv_buf[31];
-ble_uuid128_t ble_nus_uuid128 = UUID128(6E, 40, 00, 00, B5, A3, F3, 93, E0, A9, E5, 0E, 24, DC, CA, 9E);
-ble_uuid128_t ble_raw_uuid128 = UUID128(E5, 70, 00, 00, 7B, AC, 42, 9A, B4, CE, 57, FF, 90, 0F, 47, 9D);
+static uint8_t ble_adv_len;
+static uint8_t ble_adv_buf[31];
+static uint8_t ble_adv_handle = BLE_GAP_ADV_SET_HANDLE_NOT_SET;
+static ble_uuid128_t ble_nus_uuid128 = UUID128(6E, 40, 00, 00, B5, A3, F3, 93, E0, A9, E5, 0E, 24, DC, CA, 9E);
+static ble_uuid128_t ble_raw_uuid128 = UUID128(E5, 70, 00, 00, 7B, AC, 42, 9A, B4, CE, 57, FF, 90, 0F, 47, 9D);
+static uint16_t ble_nus_service_handle;
+static uint16_t ble_raw_service_handle;
+ble_gatts_char_handles_t ble_nus_tx_char;
+ble_gatts_char_handles_t ble_nus_rx_char;
+ble_gatts_char_handles_t ble_raw_tx_char;
+ble_gatts_char_handles_t ble_raw_rx_char;
+uint16_t ble_conn_handle = BLE_CONN_HANDLE_INVALID;
+uint16_t ble_negotiated_mtu;
+ring_buf_t nus_rx;
+ring_buf_t nus_tx;
+
 
 // ECX336CN datasheet section 10.1
 uint8_t const ecx336cn_config[] = {
@@ -274,6 +286,43 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
     touch_event_handler(touch_action);
 }
 
+bool ring_full(ring_buf_t const *ring)
+{
+    uint16_t next = ring->tail + 1;
+
+    if (next == sizeof(ring->buffer))
+    {
+        next = 0;
+    }
+    return next == ring->head;
+}
+
+bool ring_empty(ring_buf_t const *ring)
+{
+    return ring->head == ring->tail;
+}
+
+void ring_push(ring_buf_t *ring, uint8_t byte)
+{
+    ring->buffer[ring->tail++] = byte;
+
+    if (ring->tail == sizeof(ring->buffer))
+    {
+        ring->tail = 0;
+    }
+}
+
+uint8_t ring_pop(ring_buf_t *ring)
+{
+    uint8_t byte = ring->buffer[ring->head++];
+
+    if (ring->head == sizeof(ring->buffer))
+    {
+        ring->head = 0;
+    }
+    return byte;
+}
+
 static inline void ble_adv_add_device_name(const char *name)
 {
     ble_adv_buf[ble_adv_len++] = 1 + strlen(name);
@@ -327,7 +376,7 @@ static inline void ble_adv_start(void)
 /**
  * Add rx characteristic to the advertisement.
  */
-static void ble_service_add_characteristic_rx(ble_service_t *service, ble_uuid_t *uuid)
+static void ble_add_rx_characteristic(uint16_t service_handle, ble_gatts_char_handles_t *rx_char, ble_uuid_t *uuid)
 {
     ble_gatts_char_md_t rx_char_md = {0};
     rx_char_md.char_props.write = 1;
@@ -345,14 +394,14 @@ static void ble_service_add_characteristic_rx(ble_service_t *service, ble_uuid_t
     rx_attr.init_len = sizeof(uint8_t);
     rx_attr.max_len = BLE_MAX_MTU_LENGTH - 3;
 
-    app_err(sd_ble_gatts_characteristic_add(service->handle, &rx_char_md, &rx_attr,
-                                            &service->rx_characteristic));
+    app_err(sd_ble_gatts_characteristic_add(service_handle, &rx_char_md, &rx_attr,
+                                            rx_char));
 }
 
 /**
  * Add tx characteristic to the advertisement.
  */
-static void ble_service_add_characteristic_tx(ble_service_t *service, ble_uuid_t *uuid)
+static void ble_add_tx_characteristic(uint16_t service_handle, ble_gatts_char_handles_t *tx_char, ble_uuid_t *uuid)
 {
     ble_gatts_char_md_t tx_char_md = {0};
     tx_char_md.char_props.notify = 1;
@@ -369,14 +418,12 @@ static void ble_service_add_characteristic_tx(ble_service_t *service, ble_uuid_t
     tx_attr.init_len = sizeof(uint8_t);
     tx_attr.max_len = BLE_MAX_MTU_LENGTH - 3;
 
-    app_err(sd_ble_gatts_characteristic_add(service->handle, &tx_char_md, &tx_attr,
-                                            &service->tx_characteristic));
+    app_err(sd_ble_gatts_characteristic_add(service_handle, &tx_char_md, &tx_attr,
+                                            tx_char));
 }
 
 static void ble_configure_nus_service(ble_uuid_t *service_uuid)
 {
-    ble_service_t *service = &ble_nus_service;
-
     // Set the 16 bit UUIDs for the service and characteristics
     service_uuid->uuid = 0x0001;
     ble_uuid_t rx_uuid = {.uuid = 0x0002};
@@ -385,15 +432,15 @@ static void ble_configure_nus_service(ble_uuid_t *service_uuid)
     app_err(sd_ble_uuid_vs_add(&ble_nus_uuid128, &service_uuid->type));
 
     app_err(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
-                                     service_uuid, &service->handle));
+                                     service_uuid, &ble_nus_service_handle));
 
     // Copy the service UUID type to both rx and tx UUID
     rx_uuid.type = service_uuid->type;
     tx_uuid.type = service_uuid->type;
 
     // Add tx and rx characteristics to the advertisement.
-    ble_service_add_characteristic_rx(service, &rx_uuid);
-    ble_service_add_characteristic_tx(service, &tx_uuid);
+    ble_add_rx_characteristic(ble_nus_service_handle, &ble_nus_rx_char, &rx_uuid);
+    ble_add_tx_characteristic(ble_nus_service_handle, &ble_nus_tx_char, &tx_uuid);
 }
 
 /**
@@ -401,8 +448,6 @@ static void ble_configure_nus_service(ble_uuid_t *service_uuid)
  */
 void ble_configure_raw_service(ble_uuid_t *service_uuid)
 {
-    ble_service_t *service = &ble_raw_service;
-
     // Set the 16 bit UUIDs for the service and characteristics
     service_uuid->uuid = 0x0001;
     ble_uuid_t rx_uuid = {.uuid = 0x0002};
@@ -411,15 +456,15 @@ void ble_configure_raw_service(ble_uuid_t *service_uuid)
     app_err(sd_ble_uuid_vs_add(&ble_raw_uuid128, &service_uuid->type));
 
     app_err(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
-                                     service_uuid, &service->handle));
+                                     service_uuid, &ble_raw_service_handle));
 
     // Copy the service UUID type to both rx and tx UUID
     rx_uuid.type = service_uuid->type;
     tx_uuid.type = service_uuid->type;
 
     // Add tx and rx characteristics to the advertisement.
-    ble_service_add_characteristic_rx(service, &rx_uuid);
-    ble_service_add_characteristic_tx(service, &tx_uuid);
+    ble_add_rx_characteristic(ble_raw_service_handle, &ble_raw_rx_char, &rx_uuid);
+    ble_add_tx_characteristic(ble_raw_service_handle, &ble_raw_tx_char, &tx_uuid);
 }
 
 /**

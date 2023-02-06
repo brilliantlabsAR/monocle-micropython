@@ -109,11 +109,11 @@ mp_import_stat_t mp_import_stat(const char *path)
 /**
  * Send a buffer out, retrying continuously until it goes to completion (with success or failure).
  */
-static void ble_tx(ble_service_t *service, uint8_t const *buf, uint16_t len)
+static void ble_tx(ble_gatts_char_handles_t *tx_char, uint8_t const *buf, uint16_t len)
 {
     nrfx_err_t err;
     ble_gatts_hvx_params_t hvx_params = {
-        .handle = service->tx_characteristic.value_handle,
+        .handle = tx_char->value_handle,
         .p_data = buf,
         .p_len = (uint16_t *)&len,
         .type = BLE_GATT_HVX_NOTIFICATION,
@@ -164,7 +164,7 @@ static void ble_nus_flush_tx(void)
         if (len >= ble_negotiated_mtu)
             break;
     }
-    ble_tx(&ble_nus_service, buf, len);
+    ble_tx(&ble_nus_tx_char, buf, len);
 }
 
 int mp_hal_stdin_rx_chr(void)

@@ -27,29 +27,30 @@
  */
 
 #include "ble_gatts.h"
-#include "ring.h"
 
 #define BLE_MAX_MTU_LENGTH 128
 
+// Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go.
+#define RING_BUFFER_LENGTH (1024 + 45)
+
 /**
- * @brief Holds the handles for the conenction and characteristics.
- * Convenient for use in interrupts, to get all service-specific data
- * we need to carry around.
+ * @brief Ring buffers for the repl rx and tx data which goes over BLE.
  */
 typedef struct
 {
-    uint16_t handle;
-    ble_gatts_char_handles_t rx_characteristic;
-    ble_gatts_char_handles_t tx_characteristic;
-} ble_service_t;
+    uint8_t buffer[RING_BUFFER_LENGTH];
+    uint16_t head;
+    uint16_t tail;
+} ring_buf_t;
 
 extern uint16_t ble_negotiated_mtu;
-
 extern ring_buf_t nus_rx;
 extern ring_buf_t nus_tx;
 extern uint16_t ble_conn_handle;
-extern uint8_t ble_adv_handle;
-extern void ble_on_connect(void);
-extern void ble_on_disconnect(void);
-extern ble_service_t ble_nus_service;
-extern ble_service_t ble_raw_service;
+extern ble_gatts_char_handles_t ble_nus_tx_char;
+extern ble_gatts_char_handles_t ble_raw_tx_char;
+
+bool ring_full(ring_buf_t const *ring);
+bool ring_empty(ring_buf_t const *ring);
+void ring_push(ring_buf_t *ring, uint8_t byte);
+uint8_t ring_pop(ring_buf_t *ring);
