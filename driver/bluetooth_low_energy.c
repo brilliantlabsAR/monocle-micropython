@@ -22,21 +22,8 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/**
- * Bluetooth Low Energy (BLE) driver with Nordic UART Service console.
- */
-
 #include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
-#include <string.h>
-
 #include "ble.h"
-#include "nrf_clock.h"
-#include "nrf_sdm.h"
-#include "nrf_nvic.h"
-#include "nrfx_log.h"
-#include "monocle.h"
 
 #include "driver/bluetooth_low_energy.h"
 
@@ -55,34 +42,3 @@ uint16_t ble_negotiated_mtu;
 
 ring_buf_t nus_rx;
 ring_buf_t nus_tx;
-
-/**
- * Send a buffer out, retrying continuously until it goes to completion (with success or failure).
- */
-void ble_tx(ble_service_t *service, uint8_t const *buf, uint16_t len)
-{
-    nrfx_err_t err;
-    ble_gatts_hvx_params_t hvx_params = {
-        .handle = service->tx_characteristic.value_handle,
-        .p_data = buf,
-        .p_len = (uint16_t *)&len,
-        .type = BLE_GATT_HVX_NOTIFICATION,
-    };
-
-    do
-    {
-        app_err(ble_conn_handle == BLE_CONN_HANDLE_INVALID);
-
-        // Send the data
-        err = sd_ble_gatts_hvx(ble_conn_handle, &hvx_params);
-
-        // Retry if resources are unavailable.
-    } while (err == NRF_ERROR_RESOURCES);
-
-    // Ignore errors if not connected
-    if (err == NRF_ERROR_INVALID_STATE || err == BLE_ERROR_INVALID_CONN_HANDLE)
-        return;
-
-    // Catch other errors
-    app_err(err);
-}

@@ -53,8 +53,3 @@ extern void ble_on_connect(void);
 extern void ble_on_disconnect(void);
 extern ble_service_t ble_nus_service;
 extern ble_service_t ble_raw_service;
-
-void ble_nus_tx(char const *buf, size_t len);
-void ble_raw_tx(uint8_t const *buf, uint16_t len);
-int ble_nus_rx(void);
-void ble_tx(ble_service_t *service, uint8_t const *buf, uint16_t len);

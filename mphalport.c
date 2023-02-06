@@ -107,6 +107,37 @@ mp_import_stat_t mp_import_stat(const char *path)
 }
 
 /**
+ * Send a buffer out, retrying continuously until it goes to completion (with success or failure).
+ */
+static void ble_tx(ble_service_t *service, uint8_t const *buf, uint16_t len)
+{
+    nrfx_err_t err;
+    ble_gatts_hvx_params_t hvx_params = {
+        .handle = service->tx_characteristic.value_handle,
+        .p_data = buf,
+        .p_len = (uint16_t *)&len,
+        .type = BLE_GATT_HVX_NOTIFICATION,
+    };
+
+    do
+    {
+        app_err(ble_conn_handle == BLE_CONN_HANDLE_INVALID);
+
+        // Send the data
+        err = sd_ble_gatts_hvx(ble_conn_handle, &hvx_params);
+
+        // Retry if resources are unavailable.
+    } while (err == NRF_ERROR_RESOURCES);
+
+    // Ignore errors if not connected
+    if (err == NRF_ERROR_INVALID_STATE || err == BLE_ERROR_INVALID_CONN_HANDLE)
+        return;
+
+    // Catch other errors
+    app_err(err);
+}
+
+/**
  * Sends all buffered data in the tx ring buffer over BLE.
  */
 static void ble_nus_flush_tx(void)
