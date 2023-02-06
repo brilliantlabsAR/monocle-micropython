@@ -28,13 +28,10 @@
 
 static mp_obj_t bluetooth_send(mp_obj_t buffer_in)
 {
-    if (!mp_obj_is_type(buffer_in, &mp_type_bytes) && !mp_obj_is_type(buffer_in, &mp_type_bytearray))
-    {
-        mp_raise_TypeError(MP_ERROR_TEXT("buffer type must be bytes or bytearray"));
-    }
-    mp_obj_array_t *array = MP_OBJ_TO_PTR(buffer_in);
+    mp_buffer_info_t array;
+    mp_get_buffer_raise(buffer_in, &array, MP_BUFFER_READ);
 
-    ble_raw_tx(array->items, array->len);
+    ble_raw_tx(array.buf, array.len);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(bluetooth_send_obj, bluetooth_send);
