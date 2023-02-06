@@ -26,6 +26,8 @@
  * and the custom media transfer protocol.
  */
 
+#include "ble_gatts.h"
+
 #define BLE_MAX_MTU_LENGTH 128
 
 // Buffer sizes for REPL ring buffers; +45 allows a bytearray to be printed in one go.
@@ -41,6 +43,18 @@ typedef struct
     uint16_t tail;
 } ring_buf_t;
 
+/**
+ * @brief Holds the handles for the conenction and characteristics.
+ * Convenient for use in interrupts, to get all service-specific data
+ * we need to carry around.
+ */
+typedef struct
+{
+    uint16_t handle;
+    ble_gatts_char_handles_t rx_characteristic;
+    ble_gatts_char_handles_t tx_characteristic;
+} ble_service_t;
+
 extern uint16_t ble_negotiated_mtu;
 
 extern ring_buf_t nus_rx;
@@ -49,8 +63,9 @@ extern uint16_t ble_conn_handle;
 extern uint8_t ble_adv_handle;
 extern void ble_on_connect(void);
 extern void ble_on_disconnect(void);
+extern ble_service_t ble_nus_service;
+extern ble_service_t ble_raw_service;
 
-void ble_init(void);
 void ble_nus_tx(char const *buf, size_t len);
 void ble_raw_tx(uint8_t const *buf, uint16_t len);
 int ble_nus_rx(void);
