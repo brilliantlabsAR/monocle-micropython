@@ -352,27 +352,6 @@ static inline void ble_adv_add_uuid(ble_uuid_t *uuid)
     *p_adv_size += len;
 }
 
-static inline void ble_adv_start(void)
-{
-    ble_gap_adv_data_t adv_data = {
-        .adv_data.p_data = ble_adv_buf,
-        .adv_data.len = ble_adv_len,
-    };
-
-    // Set up advertising parameters
-    ble_gap_adv_params_t adv_params = {0};
-    adv_params.properties.type = BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED;
-    adv_params.primary_phy = BLE_GAP_PHY_AUTO;
-    adv_params.secondary_phy = BLE_GAP_PHY_AUTO;
-    adv_params.interval = (20 * 1000) / 625;
-
-    // Configure the advertising set
-    app_err(sd_ble_gap_adv_set_configure(&ble_adv_handle, &adv_data, &adv_params));
-
-    // Start the configured BLE advertisement
-    app_err(sd_ble_gap_adv_start(ble_adv_handle, 1));
-}
-
 /**
  * Add rx characteristic to the advertisement.
  */
@@ -518,74 +497,6 @@ void ble_configure_softdevice(void)
 static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
 {
     app_err(0x5D000000 & id);
-}
-
-
-/**
- * @brief Initialise the bluetooth low energy driver.
- * Initialises the softdevice and Bluetooth functionality.
- * It features a single GATT profile for UART communication, used by the REPL.
- */
-static void ble_init(void)
-{
-    // Init LF clock
-    nrf_clock_lf_cfg_t clock_config = {
-        .source = NRF_CLOCK_LF_SRC_XTAL,
-        .rc_ctiv = 0,
-        .rc_temp_ctiv = 0,
-        .accuracy = NRF_CLOCK_LF_ACCURACY_10_PPM};
-
-    // Enable the softdevice
-    app_err(sd_softdevice_enable(&clock_config, softdevice_assert_handler));
-
-    // Enable softdevice interrupt
-    app_err(sd_nvic_EnableIRQ((IRQn_Type)SD_EVT_IRQn));
-
-    // Enable the DC-DC convertor
-    app_err(sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE));
-
-    // Set configuration parameters for the SoftDevice suitable for this code.
-    ble_configure_softdevice();
-
-    // Start bluetooth. `ram_start` is the address of a variable containing an address, defined in the linker script.
-    // It updates that address with another one planning ahead the RAM needed by the softdevice.
-    app_err(sd_ble_enable(&ram_start));
-
-    // Set security to open
-    ble_gap_conn_sec_mode_t sec_mode;
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
-
-    // Set device name. Last four characters are taken from MAC address
-    const char device_name[] = "monocle";
-    app_err(sd_ble_gap_device_name_set(&sec_mode,
-                                       (const uint8_t *)device_name,
-                                       sizeof(device_name) - 1));
-
-    // Set connection parameters
-    ble_gap_conn_params_t gap_conn_params = {0};
-    gap_conn_params.min_conn_interval = (15 * 1000) / 1250;
-    gap_conn_params.max_conn_interval = (15 * 1000) / 1250;
-    gap_conn_params.slave_latency = 3;
-    gap_conn_params.conn_sup_timeout = (2000 * 1000) / 10000;
-    app_err(sd_ble_gap_ppcp_set(&gap_conn_params));
-
-    // Add name to advertising payload
-    ble_adv_add_device_name(device_name);
-
-    // Set discovery mode flag
-    ble_adv_add_discovery_mode();
-
-    ble_uuid_t nus_service_uuid, raw_service_uuid;
-
-    // Configure the Nordic UART Service (NUS) and custom "raw" service.
-    ble_configure_nus_service(&nus_service_uuid);
-    ble_configure_raw_service(&raw_service_uuid);
-
-    // Add only the Nordic UART Service to the advertisement.
-    ble_adv_add_uuid(&nus_service_uuid);
-
-    // Submit the adv now that it is complete.
-    ble_adv_start();
 }
 
 void SWI2_IRQHandler(void)
@@ -855,8 +766,83 @@ int main(void)
         nrfx_timer_enable(&timer);
     }
 
-    // Set up BLE
-    ble_init();
+    // Setup BLE
+    {
+        // Init LF clock
+        nrf_clock_lf_cfg_t clock_config = {
+            .source = NRF_CLOCK_LF_SRC_XTAL,
+            .rc_ctiv = 0,
+            .rc_temp_ctiv = 0,
+            .accuracy = NRF_CLOCK_LF_ACCURACY_10_PPM};
+
+        // Enable the softdevice
+        app_err(sd_softdevice_enable(&clock_config, softdevice_assert_handler));
+
+        // Enable softdevice interrupt
+        app_err(sd_nvic_EnableIRQ((IRQn_Type)SD_EVT_IRQn));
+
+        // Enable the DC-DC convertor
+        app_err(sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE));
+
+        // Set configuration parameters for the SoftDevice suitable for this code.
+        ble_configure_softdevice();
+
+        // Start bluetooth. `ram_start` is the address of a variable containing an address, defined in the linker script.
+        // It updates that address with another one planning ahead the RAM needed by the softdevice.
+        app_err(sd_ble_enable(&ram_start));
+
+        // Set security to open
+        ble_gap_conn_sec_mode_t sec_mode;
+        BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
+
+        // Set device name. Last four characters are taken from MAC address
+        const char device_name[] = "monocle";
+        app_err(sd_ble_gap_device_name_set(&sec_mode,
+                                           (const uint8_t *)device_name,
+                                           sizeof(device_name) - 1));
+
+        // Set connection parameters
+        ble_gap_conn_params_t gap_conn_params = {0};
+        gap_conn_params.min_conn_interval = (15 * 1000) / 1250;
+        gap_conn_params.max_conn_interval = (15 * 1000) / 1250;
+        gap_conn_params.slave_latency = 3;
+        gap_conn_params.conn_sup_timeout = (2000 * 1000) / 10000;
+        app_err(sd_ble_gap_ppcp_set(&gap_conn_params));
+
+        // Add name to advertising payload
+        ble_adv_add_device_name(device_name);
+
+        // Set discovery mode flag
+        ble_adv_add_discovery_mode();
+
+        ble_uuid_t nus_service_uuid, raw_service_uuid;
+
+        // Configure the Nordic UART Service (NUS) and custom "raw" service.
+        ble_configure_nus_service(&nus_service_uuid);
+        ble_configure_raw_service(&raw_service_uuid);
+
+        // Add only the Nordic UART Service to the advertisement.
+        ble_adv_add_uuid(&nus_service_uuid);
+
+        // Submit the adv now that it is complete.
+        ble_gap_adv_data_t adv_data = {
+            .adv_data.p_data = ble_adv_buf,
+            .adv_data.len = ble_adv_len,
+        };
+    
+        // Set up advertising parameters
+        ble_gap_adv_params_t adv_params = {0};
+        adv_params.properties.type = BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED;
+        adv_params.primary_phy = BLE_GAP_PHY_AUTO;
+        adv_params.secondary_phy = BLE_GAP_PHY_AUTO;
+        adv_params.interval = (20 * 1000) / 625;
+    
+        // Configure the advertising set
+        app_err(sd_ble_gap_adv_set_configure(&ble_adv_handle, &adv_data, &adv_params));
+    
+        // Start the configured BLE advertisement
+        app_err(sd_ble_gap_adv_start(ble_adv_handle, 1));
+    }
 
     // Check if external flash has an FPGA image and boot it
     {
