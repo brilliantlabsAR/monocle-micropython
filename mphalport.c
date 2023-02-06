@@ -137,6 +137,11 @@ static void ble_tx(ble_gatts_char_handles_t *tx_char, uint8_t const *buf, uint16
     app_err(err);
 }
 
+void ble_raw_tx(uint8_t const *buf, size_t len)
+{
+    ble_tx(&ble_raw_tx_char, buf, len);
+}
+
 /**
  * Sends all buffered data in the tx ring buffer over BLE.
  */

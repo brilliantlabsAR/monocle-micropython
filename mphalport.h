@@ -38,3 +38,6 @@ mp_uint_t mp_hal_ticks_ms(void);
 void mp_hal_delay_ms(mp_uint_t ms);
 void mp_hal_delay_us(mp_uint_t us);
 void mp_hal_set_interrupt_char(char c);
+
+// raw bluetooth stream for camera trasnfers.
+void ble_raw_tx(uint8_t const *buf, size_t len);
