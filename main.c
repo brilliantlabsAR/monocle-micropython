@@ -324,9 +324,6 @@ int main(void)
 
         // the 10V power rail needs to be turned back on first
         ecx336cn_write_byte(0x00, 0x9F); // exit power saving mode (YUV)
-
-        // check that 0x29 changed from default 0x0A to 0x0B
-        app_err(ecx336cn_read_byte(0x29) != 0x0B);
     }
 
     // Setup camera
