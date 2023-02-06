@@ -151,14 +151,14 @@ static void ble_nus_flush_tx(void)
         return;
 
     // If there's no data to send, simply return
-    if (ring_empty(&nus_tx))
+    if (ring_empty(&ble_nus_tx))
         return;
 
     // For all the remaining characters, i.e until the heads come back together
-    while (!ring_empty(&nus_tx))
+    while (!ring_empty(&ble_nus_tx))
     {
         // Copy over a character from the tail to the outgoing buffer
-        buf[len++] = ring_pop(&nus_tx);
+        buf[len++] = ring_pop(&ble_nus_tx);
 
         // Break if we over-run the negotiated MTU size, send the rest later
         if (len >= ble_negotiated_mtu)
@@ -169,28 +169,28 @@ static void ble_nus_flush_tx(void)
 
 int mp_hal_stdin_rx_chr(void)
 {
-    while (ring_empty(&nus_rx))
+    while (ring_empty(&ble_nus_rx))
     {
         // While waiting for incoming data, we can push outgoing data
         ble_nus_flush_tx();
 
         // If there's nothing to do
-        if (ring_empty(&nus_tx) && ring_empty(&nus_rx))
+        if (ring_empty(&ble_nus_tx) && ring_empty(&ble_nus_rx))
             // Wait for events to save power
             sd_app_evt_wait();
     }
 
     // Return next character from the RX buffer.
-    return ring_pop(&nus_rx);
+    return ring_pop(&ble_nus_rx);
 }
 
 void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len)
 {
     for (size_t i = 0; i < len; i++)
     {
-        while (ring_full(&nus_tx))
+        while (ring_full(&ble_nus_tx))
             ble_nus_flush_tx();
-        ring_push(&nus_tx, str[i]);
+        ring_push(&ble_nus_tx, str[i]);
     }
 }
 

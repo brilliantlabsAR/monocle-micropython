@@ -44,8 +44,8 @@ typedef struct
 } ring_buf_t;
 
 extern uint16_t ble_negotiated_mtu;
-extern ring_buf_t nus_rx;
-extern ring_buf_t nus_tx;
+extern ring_buf_t ble_nus_rx;
+extern ring_buf_t ble_nus_tx;
 extern uint16_t ble_conn_handle;
 extern ble_gatts_char_handles_t ble_nus_tx_char;
 extern ble_gatts_char_handles_t ble_raw_tx_char;

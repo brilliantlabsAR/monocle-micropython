@@ -110,8 +110,8 @@ ble_gatts_char_handles_t ble_raw_tx_char;
 ble_gatts_char_handles_t ble_raw_rx_char;
 uint16_t ble_conn_handle = BLE_CONN_HANDLE_INVALID;
 uint16_t ble_negotiated_mtu;
-ring_buf_t nus_rx;
-ring_buf_t nus_tx;
+ring_buf_t ble_nus_rx;
+ring_buf_t ble_nus_tx;
 
 
 // ECX336CN datasheet section 10.1
@@ -579,11 +579,11 @@ void SWI2_IRQHandler(void)
                      length++)
                 {
                     // Break if the ring buffer is full, we can't write more
-                    if (ring_full(&nus_rx))
+                    if (ring_full(&ble_nus_rx))
                         break;
 
                     // Copy a character into the ring buffer
-                    ring_push(&nus_rx, ble_evt->evt.gatts_evt.params.write.data[length]);
+                    ring_push(&ble_nus_rx, ble_evt->evt.gatts_evt.params.write.data[length]);
                 }
                 break;
             }
