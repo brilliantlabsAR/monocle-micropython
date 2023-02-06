@@ -60,7 +60,7 @@
 #include "ble_gattc.h"
 #include "ble.h"
 
-#include "driver/bluetooth_low_energy.h"
+#include "bluetooth.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 

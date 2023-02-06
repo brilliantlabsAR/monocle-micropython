@@ -27,7 +27,7 @@
 #include "py/lexer.h"
 #include "py/runtime.h"
 #include "mpconfigport.h"
-#include "driver/bluetooth_low_energy.h"
+#include "bluetooth.h"
 #include "nrfx_timer.h"
 #include "nrfx_systick.h"
 #include "nrf_soc.h"
