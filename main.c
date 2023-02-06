@@ -447,51 +447,6 @@ void ble_configure_raw_service(ble_uuid_t *service_uuid)
 }
 
 /**
- * @brief Setup BLE parameters adapted to this driver.
- */
-void ble_configure_softdevice(void)
-{
-    // Add GAP configuration to the BLE stack
-    ble_cfg_t cfg;
-    cfg.conn_cfg.conn_cfg_tag = 1;
-    cfg.conn_cfg.params.gap_conn_cfg.conn_count = 1;
-    cfg.conn_cfg.params.gap_conn_cfg.event_length = 3;
-    app_err(sd_ble_cfg_set(BLE_CONN_CFG_GAP, &cfg, ram_start));
-
-    // Set BLE role to peripheral only
-    memset(&cfg, 0, sizeof(cfg));
-    cfg.gap_cfg.role_count_cfg.periph_role_count = 1;
-    app_err(sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &cfg, ram_start));
-
-    // Set max MTU size
-    memset(&cfg, 0, sizeof(cfg));
-    cfg.conn_cfg.conn_cfg_tag = 1;
-    cfg.conn_cfg.params.gatt_conn_cfg.att_mtu = BLE_MAX_MTU_LENGTH;
-    app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATT, &cfg, ram_start));
-
-    // Configure a single queued transfer
-    memset(&cfg, 0, sizeof(cfg));
-    cfg.conn_cfg.conn_cfg_tag = 1;
-    cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 1;
-    app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &cfg, ram_start));
-
-    // Configure number of custom UUIDs
-    memset(&cfg, 0, sizeof(cfg));
-    cfg.common_cfg.vs_uuid_cfg.vs_uuid_count = 2;
-    app_err(sd_ble_cfg_set(BLE_COMMON_CFG_VS_UUID, &cfg, ram_start));
-
-    // Configure GATTS attribute table
-    memset(&cfg, 0, sizeof(cfg));
-    cfg.gatts_cfg.attr_tab_size.attr_tab_size = 1408;
-    app_err(sd_ble_cfg_set(BLE_GATTS_CFG_ATTR_TAB_SIZE, &cfg, ram_start));
-
-    // No service changed attribute needed
-    memset(&cfg, 0, sizeof(cfg));
-    cfg.gatts_cfg.service_changed.service_changed = 0;
-    app_err(sd_ble_cfg_set(BLE_GATTS_CFG_SERVICE_CHANGED, &cfg, ram_start));
-}
-
-/**
  * @brief Softdevice // assert handler. Called whenever softdevice crashes.
  */
 static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
@@ -766,7 +721,7 @@ int main(void)
         nrfx_timer_enable(&timer);
     }
 
-    // Setup BLE
+    // Setup the SoftDevice
     {
         // Init LF clock
         nrf_clock_lf_cfg_t clock_config = {
@@ -784,11 +739,51 @@ int main(void)
         // Enable the DC-DC convertor
         app_err(sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE));
 
-        // Set configuration parameters for the SoftDevice suitable for this code.
-        ble_configure_softdevice();
+        // Add GAP configuration to the BLE stack
+        ble_cfg_t cfg;
+        cfg.conn_cfg.conn_cfg_tag = 1;
+        cfg.conn_cfg.params.gap_conn_cfg.conn_count = 1;
+        cfg.conn_cfg.params.gap_conn_cfg.event_length = 3;
+        app_err(sd_ble_cfg_set(BLE_CONN_CFG_GAP, &cfg, ram_start));
 
-        // Start bluetooth. `ram_start` is the address of a variable containing an address, defined in the linker script.
-        // It updates that address with another one planning ahead the RAM needed by the softdevice.
+        // Set BLE role to peripheral only
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.gap_cfg.role_count_cfg.periph_role_count = 1;
+        app_err(sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &cfg, ram_start));
+
+        // Set max MTU size
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.conn_cfg.conn_cfg_tag = 1;
+        cfg.conn_cfg.params.gatt_conn_cfg.att_mtu = BLE_MAX_MTU_LENGTH;
+        app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATT, &cfg, ram_start));
+
+        // Configure a single queued transfer
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.conn_cfg.conn_cfg_tag = 1;
+        cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 1;
+        app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &cfg, ram_start));
+
+        // Configure number of custom UUIDs
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.common_cfg.vs_uuid_cfg.vs_uuid_count = 2;
+        app_err(sd_ble_cfg_set(BLE_COMMON_CFG_VS_UUID, &cfg, ram_start));
+
+        // Configure GATTS attribute table
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.gatts_cfg.attr_tab_size.attr_tab_size = 1408;
+        app_err(sd_ble_cfg_set(BLE_GATTS_CFG_ATTR_TAB_SIZE, &cfg, ram_start));
+
+        // No service changed attribute needed
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.gatts_cfg.service_changed.service_changed = 0;
+        app_err(sd_ble_cfg_set(BLE_GATTS_CFG_SERVICE_CHANGED, &cfg, ram_start));
+    }
+
+    // Setup BLE
+    {
+        // Start bluetooth. `ram_start` is the address of a variable containing
+        // an address, defined in the linker script. It updates that address
+        // with another one planning ahead the RAM needed by the softdevice.
         app_err(sd_ble_enable(&ram_start));
 
         // Set security to open
@@ -829,17 +824,17 @@ int main(void)
             .adv_data.p_data = ble_adv_buf,
             .adv_data.len = ble_adv_len,
         };
-    
+
         // Set up advertising parameters
         ble_gap_adv_params_t adv_params = {0};
         adv_params.properties.type = BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED;
         adv_params.primary_phy = BLE_GAP_PHY_AUTO;
         adv_params.secondary_phy = BLE_GAP_PHY_AUTO;
         adv_params.interval = (20 * 1000) / 625;
-    
+
         // Configure the advertising set
         app_err(sd_ble_gap_adv_set_configure(&ble_adv_handle, &adv_data, &adv_params));
-    
+
         // Start the configured BLE advertisement
         app_err(sd_ble_gap_adv_start(ble_adv_handle, 1));
     }
