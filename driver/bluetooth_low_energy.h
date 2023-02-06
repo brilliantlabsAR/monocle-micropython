@@ -69,7 +69,7 @@ extern ble_service_t ble_raw_service;
 void ble_nus_tx(char const *buf, size_t len);
 void ble_raw_tx(uint8_t const *buf, uint16_t len);
 int ble_nus_rx(void);
-bool ble_nus_is_rx_pending(void);
+void ble_tx(ble_service_t *service, uint8_t const *buf, uint16_t len);
 
 // wrapper over ring buffer operations;
 bool ring_full(ring_buf_t const *ring);
