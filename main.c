@@ -775,6 +775,7 @@ int main(void)
     // Setup the camera
     {
         nrfx_systick_delay_ms(750); // TODO optimize the FPGA to not need this delay
+        nrfx_systick_delay_ms(5000); 
         fpga_cmd_write(0x1009, NULL, 0);
 
         // Power on sequence, references: Datasheet section 2.7.1; Application Notes section 3.1.1
