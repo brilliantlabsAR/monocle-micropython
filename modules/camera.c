@@ -83,52 +83,6 @@ const mp_obj_module_t camera_module = {
     .globals = (mp_obj_dict_t *)&camera_module_globals,
 };
 MP_REGISTER_MODULE(MP_QSTR_camera, camera_module);
-/*
- * This file is part of the MicroPython for Monocle:
- *      https://github.com/Itsbrilliantlabs/monocle-micropython
- *
- * Authored by: Shreyas Hemachandra <shreyas.hemachandran@gmail.com>
- * Authored by: Nathan Ashelman <nathan@itsbrilliant.co>
- * Authored by: Josuah Demangeon <me@josuah.net>
- *
- * ISC Licence
- *
- * Copyright © 2022 Brilliant Labs Inc.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
- * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
- * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
- * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
- * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
- * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- */
-
-/**
- * OV5640 camera module driver.
- */
-
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-
-#include "nrfx_systick.h"
-#include "nrfx_log.h"
-#include "nrfx_twi.h"
-
-#include "critical_functions.h"
-
-#include "driver/config.h"
-#include "driver/ov5640_data.h"
-#include "driver/ov5640.h"
-#include "driver/timer.h"
-
-#define LEN(x) (sizeof(x) / sizeof *(x))
 
 /**
  * Swap the byte order.
@@ -159,39 +113,12 @@ static void ov5640_set_power(bool state)
 }
 
 /**
- * Read a byte of data from the provided registry address.
- * @param reg Register address (16 bit)
- * @return uint8_t A byte read data
- */
-static uint8_t ov5640_read_reg(uint16_t reg)
-{
-    uint8_t w_buf[2];
-    uint8_t ret_val = 0;
-    uint16_t swaped = __bswap_16(reg);
-
-    memcpy(w_buf, &swaped, 2);
-    // if (!i2c_write(OV5640_I2C, CAMERA_I2C_ADDRESS, w_buf, 2))
-    // return 0;
-    // if (!i2c_read(OV5640_I2C, CAMERA_I2C_ADDRESS, &ret_val, 1))
-    // return 0;
-    return ret_val;
-}
-
-/**
  * Revert the configuration of the camera module.
  */
 void ov5640_deinit(void)
 {
     nrf_gpio_cfg_default(CAMERA_RESET_PIN);
     nrf_gpio_cfg_default(CAMERA_SLEEP_PIN);
-}
-
-/**
- * Put camera into low-power mode, preserving configuration.
- */
-void ov5640_pwr_sleep(void)
-{
-    ov5640_set_power(true);
 }
 
 /**
@@ -205,14 +132,14 @@ void ov5640_pwr_wake(void)
 /**
  * Change ov5640 config for 1x zoom.
  */
-void ov5640_mode_1x(void)
+void ov5640_zoom_1x(void)
 {
     // use group write to update the group of registers in the same frame
     // (guaranteed to be written prior to the internal latch at the frame boundary).
     // see Datasheet section 2.6
     ov5640_write_reg(0x3212, 0x03); // start group 3 -- for some reason this makes transition worse!
-    for (size_t i = 0; i < LEN(ov5640_rgb565_1x_tbl); i++)
-        ov5640_write_reg(ov5640_rgb565_1x_tbl[i].addr, ov5640_rgb565_1x_tbl[i].value);
+    for (size_t i = 0; i < ov5640_rgb565_1x_len; i++)
+        ov5640_write_reg(ov5640_rgb565_1x_p[i].addr, ov5640_rgb565_1x_p[i].value);
     ov5640_write_reg(0x3212, 0x13); // end group 3
     ov5640_write_reg(0x3212, 0xA3); // launch group 3
 }
@@ -220,13 +147,13 @@ void ov5640_mode_1x(void)
 /**
  * NWA: change ov5640 config for 2x zoom, also used for 4x.
  */
-void ov5640_mode_2x(void)
+void ov5640_zoom_2x(void)
 {
     // start group 3
     ov5640_write_reg(0x3212, 0x03);
 
-    for (size_t i = 0; i < LEN(ov5640_rgb565_2x_tbl); i++)
-        ov5640_write_reg(ov5640_rgb565_2x_tbl[i].addr, ov5640_rgb565_2x_tbl[i].value);
+    for (size_t i = 0; i < ov5640_rgb565_2x_len; i++)
+        ov5640_write_reg(ov5640_rgb565_2x_p[i].addr, ov5640_rgb565_2x_p[i].value);
 
     // end group 3
     ov5640_write_reg(0x3212, 0x13);
@@ -267,7 +194,7 @@ void ov5640_light_mode(uint8_t mode)
 {
     ov5640_write_reg(0x3212, 0x03); // start group 3
     for (int i = 0; i < 7; i++)
-        ov5640_write_reg(0x3400 + i, ov5640_lightmode_tbl[mode][i]);
+        ov5640_write_reg(0x3400 + i, ov5640_lightmode_p[mode][i]);
     ov5640_write_reg(0x3212, 0x13); // end group 3
     ov5640_write_reg(0x3212, 0xA3); // launch group 3
 }
@@ -376,12 +303,12 @@ void ov5640_sharpness(uint8_t sharp)
  * Configures effects.
  * @param eft refer `Effect configs`
  */
-void ov5640_special_effects(uint8_t eft)
+void ov5640_special_effects(uint8_t effect)
 {
     ov5640_write_reg(0x3212, 0x03); // start group 3
-    ov5640_write_reg(0x5580, ov5640_effects_tbl[eft][0]);
-    ov5640_write_reg(0x5583, ov5640_effects_tbl[eft][1]); // sat U
-    ov5640_write_reg(0x5584, ov5640_effects_tbl[eft][2]); // sat V
+    ov5640_write_reg(0x5580, ov5640_effects_p[effect][0]);
+    ov5640_write_reg(0x5583, ov5640_effects_p[effect][1]); // sat U
+    ov5640_write_reg(0x5584, ov5640_effects_p[effect][2]); // sat V
     ov5640_write_reg(0x5003, 0x08);
     ov5640_write_reg(0x3212, 0x13); // end group 3
     ov5640_write_reg(0x3212, 0xA3); // launch group 3
@@ -396,26 +323,6 @@ void ov5640_flash_ctrl(bool on)
     ov5640_write_reg(0x3016, 0x02);
     ov5640_write_reg(0x301C, 0x02);
     ov5640_write_reg(0x3019, on ? 0x02 : 0x00);
-}
-
-/**
- * Mirrors camera output (horizontal flip).
- * @param on 1 to turn on, 0 to turn off
- */
-void ov5640_mirror(bool on)
-{
-    uint8_t reg = ov5640_read_reg(0x3821);
-    ov5640_write_reg(0x3821, on ? (reg | 0x06) : (reg & 0xF9));
-}
-
-/**
- * Flips camera output (vertical flip).
- * @param on 1 to turn on, 0 to turn off
- */
-void ov5640_flip(bool on)
-{
-    uint8_t reg = ov5640_read_reg(0x3820);
-    ov5640_write_reg(0x3820, (on) ? (reg | 0x06) : (reg & 0xF9));
 }
 
 /**
@@ -455,8 +362,8 @@ void ov5640_focus_init(void)
     ov5640_write_reg(0x3000, 0x20);
 
     // program ov5640 MCU firmware
-    for (size_t i = 0; i < LEN(ov5640_af_config_tbl); i++)
-        ov5640_write_reg(0x8000 + i, ov5640_af_config_tbl[i]);
+    for (size_t i = 0; i < ov5640_af_config_len; i++)
+        ov5640_write_reg(0x8000 + i, ov5640_af_config_p[i]);
 
     ov5640_write_reg(0x3022, 0x00); // ? undocumented
     ov5640_write_reg(0x3023, 0x00); // ?
@@ -490,5 +397,4 @@ void ov5640_init(void)
     ov5640_brightness(4);
     ov5640_contrast(3);
     ov5640_sharpness(33);
-    ov5640_flip(true);
 }
