@@ -55,8 +55,12 @@
 #include "nrfx_saadc.h"
 #include "nrfx_timer.h"
 #include "nrfx_glue.h"
+#include "nrf_soc.h"
+#include "ble_gatts.h"
+#include "ble_gattc.h"
+#include "ble.h"
 
-#include "driver/bluetooth_low_energy.h"
+#include "bluetooth.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 
@@ -64,8 +68,51 @@ extern uint32_t _stack_top;
 extern uint32_t _stack_bot;
 extern uint32_t _heap_start;
 extern uint32_t _heap_end;
+extern uint32_t _ram_start;
+static uint32_t ram_start = (uint32_t)&_ram_start;
 
 static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
+
+// Reverse the byte order to be easier to declare.
+#define UUID128(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) \
+    {                                                           \
+        .uuid128 = {                                            \
+            0x##p,                                              \
+            0x##o,                                              \
+            0x##n,                                              \
+            0x##m,                                              \
+            0x##l,                                              \
+            0x##k,                                              \
+            0x##j,                                              \
+            0x##i,                                              \
+            0x##h,                                              \
+            0x##g,                                              \
+            0x##f,                                              \
+            0x##e,                                              \
+            0x##d,                                              \
+            0x##c,                                              \
+            0x##b,                                              \
+            0x##a,                                              \
+        }                                                       \
+    }
+
+// Advertising data which needs to stay in scope between connections.
+static uint8_t ble_adv_len;
+static uint8_t ble_adv_buf[31];
+static uint8_t ble_adv_handle = BLE_GAP_ADV_SET_HANDLE_NOT_SET;
+static ble_uuid128_t ble_nus_uuid128 = UUID128(6E, 40, 00, 00, B5, A3, F3, 93, E0, A9, E5, 0E, 24, DC, CA, 9E);
+static ble_uuid128_t ble_raw_uuid128 = UUID128(E5, 70, 00, 00, 7B, AC, 42, 9A, B4, CE, 57, FF, 90, 0F, 47, 9D);
+static uint16_t ble_nus_service_handle;
+static uint16_t ble_raw_service_handle;
+ble_gatts_char_handles_t ble_nus_tx_char;
+ble_gatts_char_handles_t ble_nus_rx_char;
+ble_gatts_char_handles_t ble_raw_tx_char;
+ble_gatts_char_handles_t ble_raw_rx_char;
+uint16_t ble_conn_handle = BLE_CONN_HANDLE_INVALID;
+uint16_t ble_negotiated_mtu;
+ring_buf_t ble_nus_rx;
+ring_buf_t ble_nus_tx;
+
 
 // ECX336CN datasheet section 10.1
 uint8_t const ecx336cn_config[] = {
@@ -239,6 +286,383 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
     touch_event_handler(touch_action);
 }
 
+bool ring_full(ring_buf_t const *ring)
+{
+    uint16_t next = ring->tail + 1;
+
+    if (next == sizeof(ring->buffer))
+    {
+        next = 0;
+    }
+    return next == ring->head;
+}
+
+bool ring_empty(ring_buf_t const *ring)
+{
+    return ring->head == ring->tail;
+}
+
+void ring_push(ring_buf_t *ring, uint8_t byte)
+{
+    ring->buffer[ring->tail++] = byte;
+
+    if (ring->tail == sizeof(ring->buffer))
+    {
+        ring->tail = 0;
+    }
+}
+
+uint8_t ring_pop(ring_buf_t *ring)
+{
+    uint8_t byte = ring->buffer[ring->head++];
+
+    if (ring->head == sizeof(ring->buffer))
+    {
+        ring->head = 0;
+    }
+    return byte;
+}
+
+static inline void ble_adv_add_device_name(const char *name)
+{
+    ble_adv_buf[ble_adv_len++] = 1 + strlen(name);
+    ble_adv_buf[ble_adv_len++] = BLE_GAP_AD_TYPE_COMPLETE_LOCAL_NAME;
+    memcpy(&ble_adv_buf[ble_adv_len], name, strlen(name));
+    ble_adv_len += strlen(name);
+}
+
+static inline void ble_adv_add_discovery_mode(void)
+{
+    ble_adv_buf[ble_adv_len++] = 2;
+    ble_adv_buf[ble_adv_len++] = BLE_GAP_AD_TYPE_FLAGS;
+    ble_adv_buf[ble_adv_len++] = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
+}
+
+static inline void ble_adv_add_uuid(ble_uuid_t *uuid)
+{
+    uint8_t len;
+    uint8_t *p_adv_size;
+
+    p_adv_size = &ble_adv_buf[ble_adv_len];
+    ble_adv_buf[ble_adv_len++] = 1;
+    ble_adv_buf[ble_adv_len++] = BLE_GAP_AD_TYPE_128BIT_SERVICE_UUID_MORE_AVAILABLE;
+
+    app_err(sd_ble_uuid_encode(uuid, &len, &ble_adv_buf[ble_adv_len]));
+    ble_adv_len += len;
+    *p_adv_size += len;
+}
+
+/**
+ * Add rx characteristic to the advertisement.
+ */
+static void ble_add_rx_characteristic(uint16_t service_handle, ble_gatts_char_handles_t *rx_char, ble_uuid_t *uuid)
+{
+    ble_gatts_char_md_t rx_char_md = {0};
+    rx_char_md.char_props.write = 1;
+    rx_char_md.char_props.write_wo_resp = 1;
+
+    ble_gatts_attr_md_t rx_attr_md = {0};
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&rx_attr_md.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&rx_attr_md.write_perm);
+    rx_attr_md.vloc = BLE_GATTS_VLOC_STACK;
+    rx_attr_md.vlen = 1;
+
+    ble_gatts_attr_t rx_attr = {0};
+    rx_attr.p_uuid = uuid;
+    rx_attr.p_attr_md = &rx_attr_md;
+    rx_attr.init_len = sizeof(uint8_t);
+    rx_attr.max_len = BLE_MAX_MTU_LENGTH - 3;
+
+    app_err(sd_ble_gatts_characteristic_add(service_handle, &rx_char_md, &rx_attr,
+                                            rx_char));
+}
+
+/**
+ * Add tx characteristic to the advertisement.
+ */
+static void ble_add_tx_characteristic(uint16_t service_handle, ble_gatts_char_handles_t *tx_char, ble_uuid_t *uuid)
+{
+    ble_gatts_char_md_t tx_char_md = {0};
+    tx_char_md.char_props.notify = 1;
+
+    ble_gatts_attr_md_t tx_attr_md = {0};
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&tx_attr_md.read_perm);
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&tx_attr_md.write_perm);
+    tx_attr_md.vloc = BLE_GATTS_VLOC_STACK;
+    tx_attr_md.vlen = 1;
+
+    ble_gatts_attr_t tx_attr = {0};
+    tx_attr.p_uuid = uuid;
+    tx_attr.p_attr_md = &tx_attr_md;
+    tx_attr.init_len = sizeof(uint8_t);
+    tx_attr.max_len = BLE_MAX_MTU_LENGTH - 3;
+
+    app_err(sd_ble_gatts_characteristic_add(service_handle, &tx_char_md, &tx_attr,
+                                            tx_char));
+}
+
+static void ble_configure_nus_service(ble_uuid_t *service_uuid)
+{
+    // Set the 16 bit UUIDs for the service and characteristics
+    service_uuid->uuid = 0x0001;
+    ble_uuid_t rx_uuid = {.uuid = 0x0002};
+    ble_uuid_t tx_uuid = {.uuid = 0x0003};
+
+    app_err(sd_ble_uuid_vs_add(&ble_nus_uuid128, &service_uuid->type));
+
+    app_err(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
+                                     service_uuid, &ble_nus_service_handle));
+
+    // Copy the service UUID type to both rx and tx UUID
+    rx_uuid.type = service_uuid->type;
+    tx_uuid.type = service_uuid->type;
+
+    // Add tx and rx characteristics to the advertisement.
+    ble_add_rx_characteristic(ble_nus_service_handle, &ble_nus_rx_char, &rx_uuid);
+    ble_add_tx_characteristic(ble_nus_service_handle, &ble_nus_tx_char, &tx_uuid);
+}
+
+/**
+ * @brief setup the service UUID for the raw service used for media transfer.
+ */
+void ble_configure_raw_service(ble_uuid_t *service_uuid)
+{
+    // Set the 16 bit UUIDs for the service and characteristics
+    service_uuid->uuid = 0x0001;
+    ble_uuid_t rx_uuid = {.uuid = 0x0002};
+    ble_uuid_t tx_uuid = {.uuid = 0x0003};
+
+    app_err(sd_ble_uuid_vs_add(&ble_raw_uuid128, &service_uuid->type));
+
+    app_err(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
+                                     service_uuid, &ble_raw_service_handle));
+
+    // Copy the service UUID type to both rx and tx UUID
+    rx_uuid.type = service_uuid->type;
+    tx_uuid.type = service_uuid->type;
+
+    // Add tx and rx characteristics to the advertisement.
+    ble_add_rx_characteristic(ble_raw_service_handle, &ble_raw_rx_char, &rx_uuid);
+    ble_add_tx_characteristic(ble_raw_service_handle, &ble_raw_tx_char, &tx_uuid);
+}
+
+/**
+ * @brief Softdevice // assert handler. Called whenever softdevice crashes.
+ */
+static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
+{
+    app_err(0x5D000000 & id);
+}
+
+void SWI2_IRQHandler(void)
+{
+    uint32_t evt_id;
+    uint8_t ble_evt_buffer[sizeof(ble_evt_t) + BLE_MAX_MTU_LENGTH];
+
+    // While any softdevice events are pending, service flash operations
+    while (sd_evt_get(&evt_id) != NRF_ERROR_NOT_FOUND)
+    {
+        switch (evt_id)
+        {
+        case NRF_EVT_FLASH_OPERATION_SUCCESS:
+            {
+                // TODO In case we add a filesystem in the future
+                break;
+            }
+
+        case NRF_EVT_FLASH_OPERATION_ERROR:
+            {
+                // TODO In case we add a filesystem in the future
+                break;
+            }
+
+        default:
+        {
+            break;
+        }
+        }
+    }
+
+    // While any BLE events are pending
+    while (1)
+    {
+        // Pull an event from the queue
+        uint16_t buffer_len = sizeof(ble_evt_buffer);
+        uint32_t status = sd_ble_evt_get(ble_evt_buffer, &buffer_len);
+
+        // If we get the done status, we can exit the handler
+        if (status == NRF_ERROR_NOT_FOUND)
+            break;
+
+        // Check for other errors
+        app_err(status);
+
+        // Make a pointer from the buffer which we can use to find the event
+        ble_evt_t *ble_evt = (ble_evt_t *)ble_evt_buffer;
+
+        // Otherwise on NRF_SUCCESS, we service the new event
+        volatile uint16_t ble_evt_id = ble_evt->header.evt_id;
+        switch (ble_evt_id)
+        {
+
+        // When connected
+        case BLE_GAP_EVT_CONNECTED:
+            {
+                // Set the connection service
+                ble_conn_handle = ble_evt->evt.gap_evt.conn_handle;
+
+                // Update connection parameters
+                ble_gap_conn_params_t conn_params;
+
+                app_err(sd_ble_gap_ppcp_get(&conn_params));
+
+                app_err(sd_ble_gap_conn_param_update(ble_conn_handle, &conn_params));
+
+                app_err(sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0));
+
+                break;
+            }
+
+        // When disconnected
+        case BLE_GAP_EVT_DISCONNECTED:
+            {
+                // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+
+                // Clear the connection service
+                ble_conn_handle = BLE_CONN_HANDLE_INVALID;
+
+                // Start advertising
+                app_err(sd_ble_gap_adv_start(ble_adv_handle, 1));
+                break;
+            }
+
+        // On a phy update request, set the phy speed automatically
+        case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
+            {
+                // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+
+                ble_gap_phys_t const phys = {
+                    .rx_phys = BLE_GAP_PHY_AUTO,
+                    .tx_phys = BLE_GAP_PHY_AUTO,
+                };
+                app_err(sd_ble_gap_phy_update(ble_evt->evt.gap_evt.conn_handle, &phys));
+                break;
+            }
+
+        // Handle requests for changing MTU length
+        case BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST:
+            {
+                // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+
+                // The client's desired MTU size
+                uint16_t client_mtu =
+                    ble_evt->evt.gatts_evt.params.exchange_mtu_request.client_rx_mtu;
+
+                // Respond with our max MTU size
+                sd_ble_gatts_exchange_mtu_reply(ble_conn_handle, BLE_MAX_MTU_LENGTH);
+
+                // Choose the smaller MTU as the final length we'll use
+                // -3 bytes to accommodate for Op-code and attribute service
+                ble_negotiated_mtu = BLE_MAX_MTU_LENGTH < client_mtu
+                                         ? BLE_MAX_MTU_LENGTH - 3
+                                         : client_mtu - 3;
+                break;
+            }
+
+        // When data arrives, we can write it to the buffer
+        case BLE_GATTS_EVT_WRITE:
+            {
+                // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+                // For the entire incoming string
+                for (uint16_t length = 0;
+                     length < ble_evt->evt.gatts_evt.params.write.len;
+                     length++)
+                {
+                    // Break if the ring buffer is full, we can't write more
+                    if (ring_full(&ble_nus_rx))
+                        break;
+
+                    // Copy a character into the ring buffer
+                    ring_push(&ble_nus_rx, ble_evt->evt.gatts_evt.params.write.data[length]);
+                }
+                break;
+            }
+
+        // Disconnect on GATT Client timeout
+        case BLE_GATTC_EVT_TIMEOUT:
+            {
+                // assert(!"not reached");
+                break;
+            }
+
+        // Disconnect on GATT Server timeout
+        case BLE_GATTS_EVT_TIMEOUT:
+            {
+                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+                app_err(sd_ble_gap_disconnect(ble_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
+                break;
+            }
+
+        // Updates system attributes after a new connection event
+        case BLE_GATTS_EVT_SYS_ATTR_MISSING:
+            {
+                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+                app_err(sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0));
+                break;
+            }
+
+        // We don't support pairing, so reply with that message
+        case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
+            {
+                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+                app_err(sd_ble_gap_sec_params_reply(ble_conn_handle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL));
+                break;
+            }
+
+        case BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST:
+            {
+                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+                app_err(sd_ble_gap_data_length_update(ble_conn_handle, NULL, NULL));
+                break;
+            }
+
+        case BLE_GAP_EVT_SEC_INFO_REQUEST:
+            {
+                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+                app_err(sd_ble_gap_sec_info_reply(ble_conn_handle, NULL, NULL, NULL));
+                break;
+            }
+
+        case BLE_GAP_EVT_SEC_REQUEST:
+            {
+                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+                app_err(sd_ble_gap_authenticate(ble_conn_handle, NULL));
+                break;
+            }
+
+        case BLE_GAP_EVT_AUTH_KEY_REQUEST:
+            {
+                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+                app_err(sd_ble_gap_auth_key_reply(ble_conn_handle, BLE_GAP_AUTH_KEY_TYPE_NONE, NULL));
+                break;
+            }
+
+        case BLE_EVT_USER_MEM_REQUEST:
+        case BLE_GAP_EVT_CONN_PARAM_UPDATE_REQUEST:
+        {
+            // assert(!"only expected on Bluetooth Centrals, not on Peripherals");
+            break;
+        }
+
+        default:
+        {
+            // ignore unused events
+            break;
+        }
+        }
+    }
+}
+
 /**
  * @brief Main application called from Reset_Handler().
  */
@@ -297,8 +721,123 @@ int main(void)
         nrfx_timer_enable(&timer);
     }
 
-    // Set up BLE
-    ble_init();
+    // Setup the SoftDevice
+    {
+        // Init LF clock
+        nrf_clock_lf_cfg_t clock_config = {
+            .source = NRF_CLOCK_LF_SRC_XTAL,
+            .rc_ctiv = 0,
+            .rc_temp_ctiv = 0,
+            .accuracy = NRF_CLOCK_LF_ACCURACY_10_PPM};
+
+        // Enable the softdevice
+        app_err(sd_softdevice_enable(&clock_config, softdevice_assert_handler));
+
+        // Enable softdevice interrupt
+        app_err(sd_nvic_EnableIRQ((IRQn_Type)SD_EVT_IRQn));
+
+        // Enable the DC-DC convertor
+        app_err(sd_power_dcdc_mode_set(NRF_POWER_DCDC_ENABLE));
+
+        // Add GAP configuration to the BLE stack
+        ble_cfg_t cfg;
+        cfg.conn_cfg.conn_cfg_tag = 1;
+        cfg.conn_cfg.params.gap_conn_cfg.conn_count = 1;
+        cfg.conn_cfg.params.gap_conn_cfg.event_length = 3;
+        app_err(sd_ble_cfg_set(BLE_CONN_CFG_GAP, &cfg, ram_start));
+
+        // Set BLE role to peripheral only
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.gap_cfg.role_count_cfg.periph_role_count = 1;
+        app_err(sd_ble_cfg_set(BLE_GAP_CFG_ROLE_COUNT, &cfg, ram_start));
+
+        // Set max MTU size
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.conn_cfg.conn_cfg_tag = 1;
+        cfg.conn_cfg.params.gatt_conn_cfg.att_mtu = BLE_MAX_MTU_LENGTH;
+        app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATT, &cfg, ram_start));
+
+        // Configure a single queued transfer
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.conn_cfg.conn_cfg_tag = 1;
+        cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 1;
+        app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &cfg, ram_start));
+
+        // Configure number of custom UUIDs
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.common_cfg.vs_uuid_cfg.vs_uuid_count = 2;
+        app_err(sd_ble_cfg_set(BLE_COMMON_CFG_VS_UUID, &cfg, ram_start));
+
+        // Configure GATTS attribute table
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.gatts_cfg.attr_tab_size.attr_tab_size = 1408;
+        app_err(sd_ble_cfg_set(BLE_GATTS_CFG_ATTR_TAB_SIZE, &cfg, ram_start));
+
+        // No service changed attribute needed
+        memset(&cfg, 0, sizeof(cfg));
+        cfg.gatts_cfg.service_changed.service_changed = 0;
+        app_err(sd_ble_cfg_set(BLE_GATTS_CFG_SERVICE_CHANGED, &cfg, ram_start));
+    }
+
+    // Setup BLE
+    {
+        // Start bluetooth. `ram_start` is the address of a variable containing
+        // an address, defined in the linker script. It updates that address
+        // with another one planning ahead the RAM needed by the softdevice.
+        app_err(sd_ble_enable(&ram_start));
+
+        // Set security to open
+        ble_gap_conn_sec_mode_t sec_mode;
+        BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
+
+        // Set device name. Last four characters are taken from MAC address
+        const char device_name[] = "monocle";
+        app_err(sd_ble_gap_device_name_set(&sec_mode,
+                                           (const uint8_t *)device_name,
+                                           sizeof(device_name) - 1));
+
+        // Set connection parameters
+        ble_gap_conn_params_t gap_conn_params = {0};
+        gap_conn_params.min_conn_interval = (15 * 1000) / 1250;
+        gap_conn_params.max_conn_interval = (15 * 1000) / 1250;
+        gap_conn_params.slave_latency = 3;
+        gap_conn_params.conn_sup_timeout = (2000 * 1000) / 10000;
+        app_err(sd_ble_gap_ppcp_set(&gap_conn_params));
+
+        // Add name to advertising payload
+        ble_adv_add_device_name(device_name);
+
+        // Set discovery mode flag
+        ble_adv_add_discovery_mode();
+
+        ble_uuid_t nus_service_uuid, raw_service_uuid;
+
+        // Configure the Nordic UART Service (NUS) and custom "raw" service.
+        ble_configure_nus_service(&nus_service_uuid);
+        ble_configure_raw_service(&raw_service_uuid);
+
+        // Add only the Nordic UART Service to the advertisement.
+        ble_adv_add_uuid(&nus_service_uuid);
+
+        // Submit the adv now that it is complete.
+        ble_gap_adv_data_t adv_data = {
+            .adv_data.p_data = ble_adv_buf,
+            .adv_data.len = ble_adv_len,
+        };
+
+        // Set up advertising parameters
+        ble_gap_adv_params_t adv_params = {0};
+        adv_params.properties.type = BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED;
+        adv_params.primary_phy = BLE_GAP_PHY_AUTO;
+        adv_params.secondary_phy = BLE_GAP_PHY_AUTO;
+        adv_params.interval = (20 * 1000) / 625;
+
+        // Configure the advertising set
+        app_err(sd_ble_gap_adv_set_configure(&ble_adv_handle, &adv_data, &adv_params));
+
+        // Start the configured BLE advertisement
+        app_err(sd_ble_gap_adv_start(ble_adv_handle, 1));
+    }
 
     // Check if external flash has an FPGA image and boot it
     {
