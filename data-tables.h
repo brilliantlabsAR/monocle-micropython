@@ -53,5 +53,8 @@ extern const ov5640_conf_t *ov5640_rgb565_2x_p;
 extern const size_t ov5640_uxga_init_len;
 extern const ov5640_conf_t *ov5640_uxga_init_p;
 
+extern const size_t ov5640_yuv422_direct_len;
+extern const ov5640_conf_t *ov5640_yuv422_direct_p;
+
 extern const size_t ov5640_af_config_len;
 extern const uint8_t *ov5640_af_config_p;

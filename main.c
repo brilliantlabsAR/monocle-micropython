@@ -57,6 +57,7 @@
 #include "nrfx_timer.h"
 #include "nrfx_glue.h"
 #include "nrf_soc.h"
+#include "nrf_gpio.h"
 #include "ble_gatts.h"
 #include "ble_gattc.h"
 #include "ble.h"
@@ -759,9 +760,9 @@ int main(void)
         ecx336cn_write_byte(0x00, 0x9E); // enter power saving mode (YUV)
         // it is now possible to turn off the 10V rail
 
-        for (size_t i = 0; i < ecx336cn_config_len; i++)
+        for (size_t i = 0; i < MP_ARRAY_SIZE(ecx336cn_config_tbl); i++)
         {
-            ecx336cn_write_byte(i, ecx336cn_config_p[i]);
+            ecx336cn_write_byte(i, ecx336cn_config_tbl[i]);
         }
 
         // the 10V power rail needs to be turned back on first
@@ -773,11 +774,21 @@ int main(void)
 
     // Setup the camera
     {
-        nrfx_systick_delay_ms(5000); // TODO used for fpga programming in the meantime, only for debugging
         nrfx_systick_delay_ms(750); // TODO optimize the FPGA to not need this delay
         fpga_cmd_write(0x1009, NULL, 0);
-        nrf_gpio_pin_clear(CAMERA_SLEEP_PIN);
-        nrf_gpio_pin_clear(CAMERA_RESET_PIN);
+
+        // Power on sequence, references: Datasheet section 2.7.1; Application Notes section 3.1.1
+        // assume XCLK signal coming from the FPGA
+        nrf_gpio_pin_write(CAMERA_SLEEP_PIN, true);
+        nrf_gpio_pin_write(CAMERA_RESET_PIN, !true);
+        nrfx_systick_delay_ms(5);
+        nrfx_systick_delay_ms(8);
+        nrf_gpio_pin_write(CAMERA_SLEEP_PIN, false);
+        nrfx_systick_delay_ms(2);
+        nrf_gpio_pin_write(CAMERA_RESET_PIN, !false);
+        nrfx_systick_delay_ms(20);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3103, 0xFF, 0x11).fail); // system clock from pad
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3008, 0xFF, 0x82).fail);
 
         // Read the camera CID (one of them)
         i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
@@ -787,29 +798,18 @@ int main(void)
             monocle_set_led(RED_LED, true);
         }
 
-        // set zoom level
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x03).fail); // start group 3
-        for (size_t i = 0; i < ov5640_rgb565_1x_len; i++)
-            app_err(i2c_write(CAMERA_I2C_ADDRESS, ov5640_rgb565_1x_p[i].addr, 0xFF, ov5640_rgb565_1x_p[i].value).fail);
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x13).fail); // end group 3
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA3).fail); // launch group 3
-
-        // reduce camera output image size
-        const uint16_t camera_reduced_width = 640;
-        const uint16_t camera_reduced_height = 400;
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x03).fail); // start group 3
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3808, 0xFF, camera_reduced_width >> 8).fail);    // DVPHO, upper byte
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3809, 0xFF, camera_reduced_width & 0xFF).fail);  // DVPHO, lower byte
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x380a, 0xFF, camera_reduced_height >> 8).fail);   // DVPVO, upper byte
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x380b, 0xFF, camera_reduced_height & 0xFF).fail); // DVPVO, lower byte
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x13).fail); // end group 3
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA3).fail); // launch group 3
+        // combined configuration table for YUV422 mode
+        for (size_t i = 0; i < MP_ARRAY_SIZE(ov5640_yuv422_direct_tbl); i++)
+        {
+            app_err(i2c_write(CAMERA_I2C_ADDRESS, ov5640_yuv422_direct_tbl[i].addr, 0xFF,
+                              ov5640_yuv422_direct_tbl[i].value).fail);
+        }
 
         // configure focus data
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3000, 0xFF, 0x20).fail); // reset MCU
         // program ov5640 MCU firmware
-        for (size_t i = 0; i < ov5640_af_config_len; i++)
-            app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x8000 + i, 0xFF, ov5640_af_config_p[i]).fail);
+        for (size_t i = 0; i < MP_ARRAY_SIZE(ov5640_af_config_tbl); i++)
+            app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x8000 + i, 0xFF, ov5640_af_config_tbl[i]).fail);
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3022, 0xFF, 0x00).fail); // ? undocumented
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3023, 0xFF, 0x00).fail); // ?
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3024, 0xFF, 0x00).fail); // ?
@@ -822,8 +822,8 @@ int main(void)
 
         // configure light mode
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x03).fail); // start group 3
-        for (int i = 0; i < ov5640_lightmode_len; i++)
-            i2c_write(CAMERA_I2C_ADDRESS, 0x3400 + i, 0xFF, ov5640_lightmode_p[0][i]);
+        for (int i = 0; i < MP_ARRAY_SIZE(ov5640_lightmode_tbl); i++)
+            i2c_write(CAMERA_I2C_ADDRESS, 0x3400 + i, 0xFF, ov5640_lightmode_tbl[0][i]);
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x13).fail); // end group 3
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA3).fail); // launch group 3
 
@@ -832,8 +832,8 @@ int main(void)
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5381, 0xFF, 0x1C).fail);
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5382, 0xFF, 0x5A).fail);
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5383, 0xFF, 0x06).fail);
-        for (int i = 0; i < ov5640_saturation_len; i++)
-            app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5384 + i, 0xFF, ov5640_saturation_p[3][i]).fail);
+        for (int i = 0; i < MP_ARRAY_SIZE(ov5640_saturation_tbl); i++)
+            app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5384 + i, 0xFF, ov5640_saturation_tbl[3][i]).fail);
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x538b, 0xFF, 0x98).fail);
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x538a, 0xFF, 0x01).fail);
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x13).fail); // end group 3
