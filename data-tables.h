@@ -21,7 +21,37 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-// TODO remove/move these
-#define OV5640_WIDTH 1280
-#define OV5640_HEIGHT 720
-#define ECX336CN_WIDTH 640
+#pragma once
+#include <stdint.h>
+
+typedef struct {
+    uint16_t addr;
+    uint8_t value;
+} ov5640_conf_t;
+
+extern const size_t ecx336cn_config_len;
+extern const uint8_t *ecx336cn_config_p;
+
+extern const size_t ov5640_lightmode_len;
+extern const uint8_t (*ov5640_lightmode_p)[7];
+
+extern const size_t ov5640_saturation_len;
+extern const uint8_t (*ov5640_saturation_p)[6];
+
+extern const size_t ov5640_effects_len;
+extern const uint8_t (*ov5640_effects_p)[3];
+
+extern const size_t ov5640_rgb565_len;
+extern const ov5640_conf_t *ov5640_rgb565_p;
+
+extern const size_t ov5640_rgb565_1x_len;
+extern const ov5640_conf_t *ov5640_rgb565_1x_p;
+
+extern const size_t ov5640_rgb565_2x_len;
+extern const ov5640_conf_t *ov5640_rgb565_2x_p;
+
+extern const size_t ov5640_uxga_init_len;
+extern const ov5640_conf_t *ov5640_uxga_init_p;
+
+extern const size_t ov5640_af_config_len;
+extern const uint8_t *ov5640_af_config_p;

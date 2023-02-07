@@ -21,16 +21,156 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-// TODO: Rename tables from RGB to YUV; perhaps with a complier switch between them
-// TODO: consolidate ov5640_uxga_init_tbl & ov5640_rgb565_tbl & ov5640_rgb565_tbl_1x into one for faster bootup
+#include <stddef.h>
+#include <stdint.h>
+#include "data-tables.h"
 
-typedef struct {
-    uint16_t addr;
-    uint8_t value;
-} ov5640_conf_t;
+#define ARRAY_SIZE(x) (sizeof((x)) / sizeof(*(x)))
 
-/** 4.4fps, skipping off, max 2560x1600 ISP Input Size */
+/*--- ECX336CN display -------------------------------------------------------*/
+
+const uint8_t ecx336cn_config_tbl[] = {
+    // ECX336CN datasheet section 10.1
+
+    [0x00] = 0x9E, // [0]=0 -> enter power save mode
+    [0x01] = 0x20,
+    /* * */
+    [0x03] = 0x20, // 1125
+    [0x04] = 0x3F,
+    [0x05] = 0xC8, // 1125  DITHERON, LUMINANCE=0x00=2000cd/m2=medium (Datasheet 10.8)
+    /* * */
+    [0x07] = 0x40,
+    [0x08] = 0x80, // Luminance adjustment: OTPCALDAC_REGDIS=0 (preset mode per reg 5), white chromaticity: OTPDG_REGDIS=0 (preset mode, default)
+    /* * */
+    [0x0A] = 0x10,
+    /* * */
+    [0x0F] = 0x56,
+    /* * */
+    [0x20] = 0x01,
+    /* * */
+    [0x22] = 0x40,
+    [0x23] = 0x40,
+    [0x24] = 0x40,
+    [0x25] = 0x80,
+    [0x26] = 0x40,
+    [0x27] = 0x40,
+    [0x28] = 0x40,
+    [0x29] = 0x0B,
+    [0x2A] = 0xBE, // CALDAC=190 (ignored, since OTPCALDAC_REGDIS=0)
+    [0x2B] = 0x3C,
+    [0x2C] = 0x02,
+    [0x2D] = 0x7A,
+    [0x2E] = 0x02,
+    [0x2F] = 0xFA,
+    [0x30] = 0x26,
+    [0x31] = 0x01,
+    [0x32] = 0xB6,
+    /* * */
+    [0x34] = 0x03,
+    [0x35] = 0x60, // 1125
+    /* * */
+    [0x37] = 0x76,
+    [0x38] = 0x02,
+    [0x39] = 0xFE,
+    [0x3A] = 0x02,
+    [0x3B] = 0x71, // 1125
+    /* * */
+    [0x3D] = 0x1B,
+    /* * */
+    [0x3F] = 0x1C,
+    [0x40] = 0x02, // 1125
+    [0x41] = 0x4D, // 1125
+    [0x42] = 0x02, // 1125
+    [0x43] = 0x4E, // 1125
+    [0x44] = 0x80,
+    /* * */
+    [0x47] = 0x2D, // 1125
+    [0x48] = 0x08,
+    [0x49] = 0x01, // 1125
+    [0x4A] = 0x7E, // 1125
+    [0x4B] = 0x08,
+    [0x4C] = 0x0A, // 1125
+    [0x4D] = 0x04, // 1125
+    /* * */
+    [0x4F] = 0x3A, // 1125
+    [0x50] = 0x01, // 1125
+    [0x51] = 0x58, // 1125
+    [0x52] = 0x01,
+    [0x53] = 0x2D,
+    [0x54] = 0x01,
+    [0x55] = 0x15, // 1125
+    /* * */
+    [0x57] = 0x2B,
+    [0x58] = 0x11, // 1125
+    [0x59] = 0x02,
+    [0x5A] = 0x11, // 1125
+    [0x5B] = 0x02,
+    [0x5C] = 0x25,
+    [0x5D] = 0x04, // 1125
+    [0x5E] = 0x0B, // 1125
+    /* * */
+    [0x60] = 0x23,
+    [0x61] = 0x02,
+    [0x62] = 0x1A, // 1125
+    /* * */
+    [0x64] = 0x0A, // 1125
+    [0x65] = 0x01, // 1125
+    [0x66] = 0x8C, // 1125
+    [0x67] = 0x30, // 1125
+    /* * */
+    [0x69] = 0x00, // 1125
+    /* * */
+    [0x6D] = 0x00, // 1125
+    /* * */
+    [0x6F] = 0x60,
+    /* * */
+    [0x79] = 0x68,
+};
+const size_t ecx336cn_config_len = ARRAY_SIZE(ecx336cn_config_tbl);
+const uint8_t *ecx336cn_config_p = ecx336cn_config_tbl;
+
+/*--- OV5640 camera ----------------------------------------------------------*/
+
+// AWB Light mode config [0..4] [Auto, Sunny, Office, Cloudy, Home].
+const uint8_t ov5640_lightmode_tbl[][7] = {
+    {0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x00},
+    {0x06, 0x1C, 0x04, 0x00, 0x04, 0xF3, 0x01},
+    {0x05, 0x48, 0x04, 0x00, 0x07, 0xCF, 0x01},
+    {0x06, 0x48, 0x04, 0x00, 0x04, 0xD3, 0x01},
+    {0x04, 0x10, 0x04, 0x00, 0x08, 0x40, 0x01},
+};
+const size_t ov5640_lightmode_len = ARRAY_SIZE(ov5640_lightmode_tbl);
+const uint8_t (*ov5640_lightmode_p)[7] = ov5640_lightmode_tbl;
+
+// Color saturation config [0..6] [-3, -2, -1, 0, 1, 2, 3]>
+const uint8_t ov5640_saturation_tbl[][6] = {
+    {0x0C, 0x30, 0x3D, 0x3E, 0x3D, 0x01},
+    {0x10, 0x3D, 0x4D, 0x4E, 0x4D, 0x01},
+    {0x15, 0x52, 0x66, 0x68, 0x66, 0x02},
+    {0x1A, 0x66, 0x80, 0x82, 0x80, 0x02},
+    {0x1F, 0x7A, 0x9A, 0x9C, 0x9A, 0x02},
+    {0x24, 0x8F, 0xB3, 0xB6, 0xB3, 0x03},
+    {0x2B, 0xAB, 0xD6, 0xDA, 0xD6, 0x04},
+};
+const size_t ov5640_saturation_len = ARRAY_SIZE(ov5640_saturation_tbl);
+const uint8_t (*ov5640_saturation_p)[6] = ov5640_saturation_tbl;
+
+// Effect configs [0..6] [Normal (off), Blueish (cool light), Redish (warm), Black & White, Sepia, Negative, Greenish]
+const uint8_t ov5640_effects_tbl[][3] = {
+    {0x06, 0x40, 0x10},
+    {0x1E, 0xA0, 0x40},
+    {0x1E, 0x80, 0xC0},
+    {0x1E, 0x80, 0x80},
+    {0x1E, 0x40, 0xA0},
+    {0x40, 0x40, 0x10},
+    {0x1E, 0x60, 0x60},
+};
+const size_t ov5640_effects_len = ARRAY_SIZE(ov5640_effects_tbl);
+const uint8_t (*ov5640_effects_p)[3] = ov5640_effects_tbl;
+
+// 4.4fps, skipping off, max 2560x1600 ISP Input Size
 const ov5640_conf_t ov5640_rgb565_tbl[] = {
+
     // YUV mode
     { 0x4300, 0x30 }, // YUV 422, YUYV
     { 0x501f, 0x00 }, // YUV 422
@@ -109,8 +249,10 @@ const ov5640_conf_t ov5640_rgb565_tbl[] = {
     { 0x5001, 0xA3 }, // SDE on, scale on, UV average off, color matrix on, AWB on
     { 0x3503, 0x00 }, // AEC/AGC on (auto)
 }; 
+const size_t ov5640_rgb565_len = ARRAY_SIZE(ov5640_rgb565_tbl);
+const ov5640_conf_t *ov5640_rgb565_p = ov5640_rgb565_tbl;
 
-/** Configuration content for for setting the 1x zoom level. */
+// Configuration content for for setting the 1x zoom level.
 // Changes for 1x zoom at 15fps:
 // skipping on, HS=16, VS=14, HW=2607, VH=1705, HTS=1528, VTS=900
 const ov5640_conf_t ov5640_rgb565_1x_tbl[] = {
@@ -149,8 +291,10 @@ const ov5640_conf_t ov5640_rgb565_1x_tbl[] = {
     { 0x3812, 0x00 },
     { 0x3813, 0x2e },
 }; 
+const size_t ov5640_rgb565_1x_len = ARRAY_SIZE(ov5640_rgb565_1x_tbl);
+const ov5640_conf_t *ov5640_rgb565_1x_p = ov5640_rgb565_1x_tbl;
 
-/** Configuration content for for setting the 2x zoom level. */
+// Configuration content for for setting the 2x zoom level.
 // Changes for 2x & 4x zoom at 15fps:
 // Skipping off, HS=0x0298=664, VS=0x01B5=437, HW=0x07A7=1959, VH=0x0502=1282,
 // HTS, VTS no change
@@ -178,10 +322,11 @@ const ov5640_conf_t ov5640_rgb565_2x_tbl[] = {
     { 0x3812, 0x00 },
     { 0x3813, 0x18 },
 }; 
+const size_t ov5640_rgb565_2x_len = ARRAY_SIZE(ov5640_rgb565_2x_tbl);
+const ov5640_conf_t *ov5640_rgb565_2x_p = ov5640_rgb565_2x_tbl;
 
-/** Configuration content for initializing UXGA. */
-const ov5640_conf_t ov5640_uxga_init_tbl[]= 
-{   
+// Configuration content for initializing UXGA.
+const ov5640_conf_t ov5640_uxga_init_tbl[] = {
     // 24MHz input clock, 24MHz PCLK
     { 0x3008, 0x42 }, // software power down, bit[6]
     { 0x3103, 0x03 }, // system clock from PLL, bit[1]
@@ -411,11 +556,11 @@ const ov5640_conf_t ov5640_uxga_init_tbl[]=
     { 0x3008, 0x02 }, // wake up from standby, bit[6]
     { 0x4740, 0X21 }, // VSYNC
 };  
+const size_t ov5640_uxga_init_len = ARRAY_SIZE(ov5640_uxga_init_tbl);
+const ov5640_conf_t *ov5640_uxga_init_p = ov5640_uxga_init_tbl;
 
-/**
- * Auto Focus Initialization, written starting at register 0x8000.
- * Datasheet Section 6.3
- */
+// Auto Focus Initialization, written starting at register 0x8000.
+// Datasheet Section 6.3
 const uint8_t ov5640_af_config_tbl[] = {
     0x02, 0x0F, 0xD6, 0x02, 0x0A, 0x39, 0xC2, 0x01, 0x22, 0x22, 0x00, 0x02, 0x0F, 0xB2, 0xE5, 0x1F, // 0x8000
     0x70, 0x72, 0xF5, 0x1E, 0xD2, 0x35, 0xFF, 0xEF, 0x25, 0xE0, 0x24, 0x4E, 0xF8, 0xE4, 0xF6, 0x08, // 0x8010
@@ -673,3 +818,5 @@ const uint8_t ov5640_af_config_tbl[] = {
     0x93, 0xF5, 0x82, 0x8E, 0x83, 0x22, 0x78, 0x7F, 0xE4, 0xF6, 0xD8, 0xFD, 0x75, 0x81, 0xCD, 0x02, // 0x8FD0
     0x0C, 0x98, 0x8F, 0x82, 0x8E, 0x83, 0x75, 0xF0, 0x04, 0xED, 0x02, 0x06, 0xA5,                   // 0x8FE0
 }; 
+const size_t ov5640_af_config_len = ARRAY_SIZE(ov5640_af_config_tbl);
+const uint8_t *ov5640_af_config_p = ov5640_af_config_tbl;

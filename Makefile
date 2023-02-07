@@ -101,6 +101,7 @@ SRC_C += monocle-core/monocle-critical.c
 SRC_C += monocle-core/monocle-drivers.c
 SRC_C += monocle-core/monocle-startup.c
 SRC_C += mphalport.c
+SRC_C += data-tables.c
 
 SRC_C += micropython/extmod/moduasyncio.c
 SRC_C += micropython/extmod/moduselect.c
