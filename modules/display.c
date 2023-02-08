@@ -31,6 +31,7 @@
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
 
+#include "math.h"
 #include "font.h"
 
 #define FPGA_ADDR_ALIGN 128
@@ -91,37 +92,6 @@ size_t obj_num;
 static uint8_t const *font = font_50;
 static int16_t glyph_gap_width = 2;
 
-// TODO use a header
-void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len);
-void fpga_cmd_read(uint16_t cmd, uint8_t *buf, size_t len);
-void spi_chip_select(uint8_t cs_pin);
-void spi_chip_deselect(uint8_t cs_pin);
-void spi_read(uint8_t *buf, size_t len);
-void spi_write(uint8_t const *buf, size_t len);
-
-static inline const void ecx336cn_write_byte(uint8_t addr, uint8_t data)
-{
-    spi_chip_select(DISPLAY_CS_PIN);
-    spi_write(&addr, 1);
-    spi_write(&data, 1);
-    spi_chip_deselect(DISPLAY_CS_PIN);
-}
-
-static inline uint8_t ecx336cn_read_byte(uint8_t addr)
-{
-    uint8_t data;
-
-    ecx336cn_write_byte(0x80, 0x01);
-    ecx336cn_write_byte(0x81, addr);
-
-    spi_chip_select(DISPLAY_CS_PIN);
-    spi_write(&addr, 1);
-    spi_read(&data, 1);
-    spi_chip_deselect(DISPLAY_CS_PIN);
-
-    return data;
-}
-
 STATIC mp_obj_t display_brightness(mp_obj_t brightness)
 {
     int tab[] = {
@@ -138,7 +108,8 @@ STATIC mp_obj_t display_brightness(mp_obj_t brightness)
     }
 
     uint8_t level = tab[mp_obj_get_int(brightness)];
-    ecx336cn_write_byte(0x05, (ecx336cn_read_byte(0x05) & 0xF8) | level);
+    uint8_t command[2] = {0x05, 0xC8 | level};
+    spi_write(DISPLAY, command, 2, false);
 
     return mp_const_none;
 }
@@ -425,10 +396,34 @@ STATIC void flush_blocks(row_t yuv422, size_t pos, size_t len)
     uint32_t u32 = (DISPLAY_HEIGHT - 1 - yuv422.y) * yuv422.len + pos;
     assert(u32 < DISPLAY_WIDTH * DISPLAY_HEIGHT * 2);
     uint8_t base[sizeof u32] = {u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0};
-    fpga_cmd_write(0x4410, base, sizeof base);
+
+    uint8_t base_addr_command[2] = {0x44, 0x10};
+    spi_write(FPGA, base_addr_command, 2, true);
+    NRFX_LOG_ERROR("Base = %u", sizeof(base));
+    spi_write(FPGA, base, sizeof(base), false);
 
     // Flush the content of the screen skipping empty bytes.
-    fpga_cmd_write(0x4411, yuv422.buf + pos, len);
+    uint8_t data_command[2] = {0x44, 0x11};
+    spi_write(FPGA, data_command, 2, true);
+
+    NRFX_LOG_ERROR("Total = %u", len);
+
+    uint8_t chunks = (uint8_t)ceil((double)len / (double)255);
+    for (uint8_t chunk = 0; chunk < chunks; chunk++)
+    {
+        size_t chunk_size = 255;
+        bool cs_hold = true;
+
+        // The last chunk will be smaller
+        if (chunk == chunks - 1)
+        {
+            chunk_size = 255 - ((chunks * 255) - len);
+            cs_hold = false;
+        }
+
+        NRFX_LOG_ERROR("sent = %u. cs = %u", chunk_size, cs_hold);
+        spi_write(FPGA, yuv422.buf + pos + (chunk * 255), chunk_size, cs_hold);
+    }
 }
 
 STATIC bool block_has_content(row_t yuv422, size_t pos)
@@ -492,8 +487,11 @@ STATIC mp_obj_t display_show(void)
     row_t yuv422 = {.buf = buf, .len = sizeof buf, .y = 0};
 
     // fill the display with YUV422 black pixels
-    fpga_cmd_write(0x4405, NULL, 0); // enable graphics
-    fpga_cmd_write(0x4406, NULL, 0); // clear the framebuffer
+    uint8_t enable_command[2] = {0x44, 0x05};
+    spi_write(FPGA, enable_command, 2, false);
+
+    uint8_t clear_command[2] = {0x44, 0x06};
+    spi_write(FPGA, clear_command, 2, false);
     nrfx_systick_delay_ms(30);
 
     // Walk through every line of the display, render it, send it to the FPGA.
@@ -510,7 +508,8 @@ STATIC mp_obj_t display_show(void)
     }
 
     // The framebuffer we wrote to is ready, now we can display it.
-    fpga_cmd_write(0x4407, NULL, 0);
+    uint8_t buffer_swap_command[2] = {0x44, 0x07};
+    spi_write(FPGA, buffer_swap_command, 2, false);
 
     // Empty the list of elements to draw.
     memset(obj_list, 0, sizeof obj_list);
@@ -641,13 +640,13 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(display_vline_obj, 4, 4, display_vline);
 
 STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_display)},
-    {MP_ROM_QSTR(MP_QSTR_fill),     MP_ROM_PTR(&display_fill_obj)},
-    {MP_ROM_QSTR(MP_QSTR_line),     MP_ROM_PTR(&display_line_obj)},
-    {MP_ROM_QSTR(MP_QSTR_text),     MP_ROM_PTR(&display_text_obj)},
-    {MP_ROM_QSTR(MP_QSTR_hline),    MP_ROM_PTR(&display_hline_obj)},
-    {MP_ROM_QSTR(MP_QSTR_vline),    MP_ROM_PTR(&display_vline_obj)},
-    {MP_ROM_QSTR(MP_QSTR_WIDTH),    MP_OBJ_NEW_SMALL_INT(DISPLAY_WIDTH)},
-    {MP_ROM_QSTR(MP_QSTR_HEIGHT),   MP_OBJ_NEW_SMALL_INT(DISPLAY_HEIGHT)},
+    {MP_ROM_QSTR(MP_QSTR_fill), MP_ROM_PTR(&display_fill_obj)},
+    {MP_ROM_QSTR(MP_QSTR_line), MP_ROM_PTR(&display_line_obj)},
+    {MP_ROM_QSTR(MP_QSTR_text), MP_ROM_PTR(&display_text_obj)},
+    {MP_ROM_QSTR(MP_QSTR_hline), MP_ROM_PTR(&display_hline_obj)},
+    {MP_ROM_QSTR(MP_QSTR_vline), MP_ROM_PTR(&display_vline_obj)},
+    {MP_ROM_QSTR(MP_QSTR_WIDTH), MP_OBJ_NEW_SMALL_INT(DISPLAY_WIDTH)},
+    {MP_ROM_QSTR(MP_QSTR_HEIGHT), MP_OBJ_NEW_SMALL_INT(DISPLAY_HEIGHT)},
 
     {MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&display_show_obj)},
     {MP_ROM_QSTR(MP_QSTR_brightness), MP_ROM_PTR(&display_brightness_obj)},

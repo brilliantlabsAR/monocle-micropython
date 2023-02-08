@@ -73,8 +73,6 @@ extern uint32_t _heap_end;
 extern uint32_t _ram_start;
 static uint32_t ram_start = (uint32_t)&_ram_start;
 
-static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
-
 // Reverse the byte order to be easier to declare.
 #define UUID128(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p) \
     {                                                           \
@@ -115,64 +113,265 @@ uint16_t ble_negotiated_mtu;
 ring_buf_t ble_nus_rx;
 ring_buf_t ble_nus_tx;
 
-// TODO clean up all these SPI functions into a simple driver
-void fpga_cmd_read(uint16_t cmd, uint8_t *buf, size_t len);
-void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len);
 
-void spi_chip_select(uint8_t cs_pin)
-{
-    nrf_gpio_pin_clear(cs_pin);
-    nrfx_systick_delay_us(100);
-}
-
-void spi_chip_deselect(uint8_t cs_pin)
-{
-    nrf_gpio_pin_set(cs_pin);
-    nrfx_systick_delay_us(100);
-}
-
-void spi_read(uint8_t *buf, size_t len)
-{
-    for (size_t n = 0; len > 0; len -= n, buf += n)
-    {
-        n = MIN(255, len);
-        nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(buf, n);
-        app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
-    }
-}
-
-void spi_write(uint8_t const *buf, size_t len)
-{
-    for (size_t n = 0; len > 0; len -= n, buf += n)
-    {
-        n = MIN(255, len);
-        nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(buf, n);
-        app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
-    }
-}
-
-static inline const void ecx336cn_write_byte(uint8_t addr, uint8_t data)
-{
-    spi_chip_select(DISPLAY_CS_PIN);
-    spi_write(&addr, 1);
-    spi_write(&data, 1);
-    spi_chip_deselect(DISPLAY_CS_PIN);
-}
-
-static inline uint8_t ecx336cn_read_byte(uint8_t addr)
-{
-    uint8_t data;
-
-    ecx336cn_write_byte(0x80, 0x01);
-    ecx336cn_write_byte(0x81, addr);
-
-    spi_chip_select(DISPLAY_CS_PIN);
-    spi_write(&addr, 1);
-    spi_read(&data, 1);
-    spi_chip_deselect(DISPLAY_CS_PIN);
-
-    return data;
-}
+uint8_t const display_config[] = {
+    0x00,
+    0x9F,
+    0x01,
+    0x20,
+    0x02,
+    0x00,
+    0x03,
+    0x20,
+    0x04,
+    0x3F,
+    0x05,
+    0xC8,
+    0x06,
+    0x00,
+    0x07,
+    0x40,
+    0x08,
+    0x80,
+    0x09,
+    0x00,
+    0x0A,
+    0x10,
+    0x0B,
+    0x00,
+    0x0C,
+    0x00,
+    0x0D,
+    0x00,
+    0x0E,
+    0x00,
+    0x0F,
+    0x56,
+    0x10,
+    0x00,
+    0x11,
+    0x00,
+    0x12,
+    0x00,
+    0x13,
+    0x00,
+    0x14,
+    0x00,
+    0x15,
+    0x00,
+    0x16,
+    0x00,
+    0x17,
+    0x00,
+    0x18,
+    0x00,
+    0x19,
+    0x00,
+    0x1A,
+    0x00,
+    0x1B,
+    0x00,
+    0x1C,
+    0x00,
+    0x1D,
+    0x00,
+    0x1E,
+    0x00,
+    0x1F,
+    0x00,
+    0x20,
+    0x01,
+    0x21,
+    0x00,
+    0x22,
+    0x40,
+    0x23,
+    0x40,
+    0x24,
+    0x40,
+    0x25,
+    0x80,
+    0x26,
+    0x40,
+    0x27,
+    0x40,
+    0x28,
+    0x40,
+    0x29,
+    0x0B,
+    0x2A,
+    0xBE,
+    0x2B,
+    0x3C,
+    0x2C,
+    0x02,
+    0x2D,
+    0x7A,
+    0x2E,
+    0x02,
+    0x2F,
+    0xFA,
+    0x30,
+    0x26,
+    0x31,
+    0x01,
+    0x32,
+    0xB6,
+    0x33,
+    0x00,
+    0x34,
+    0x03,
+    0x35,
+    0x5A,
+    0x36,
+    0x00,
+    0x37,
+    0x76,
+    0x38,
+    0x02,
+    0x39,
+    0xFE,
+    0x3A,
+    0x02,
+    0x3B,
+    0x0D,
+    0x3C,
+    0x00,
+    0x3D,
+    0x1B,
+    0x3E,
+    0x00,
+    0x3F,
+    0x1C,
+    0x40,
+    0x01,
+    0x41,
+    0xF3,
+    0x42,
+    0x01,
+    0x43,
+    0xF4,
+    0x44,
+    0x80,
+    0x45,
+    0x00,
+    0x46,
+    0x00,
+    0x47,
+    0x2D,
+    0x48,
+    0x08,
+    0x49,
+    0x01,
+    0x4A,
+    0x7E,
+    0x4B,
+    0x08,
+    0x4C,
+    0x0A,
+    0x4D,
+    0x04,
+    0x4E,
+    0x00,
+    0x4F,
+    0x3A,
+    0x50,
+    0x01,
+    0x51,
+    0x58,
+    0x52,
+    0x01,
+    0x53,
+    0x2D,
+    0x54,
+    0x01,
+    0x55,
+    0x15,
+    0x56,
+    0x00,
+    0x57,
+    0x2B,
+    0x58,
+    0x11,
+    0x59,
+    0x02,
+    0x5A,
+    0x11,
+    0x5B,
+    0x02,
+    0x5C,
+    0x25,
+    0x5D,
+    0x04,
+    0x5E,
+    0x0B,
+    0x5F,
+    0x00,
+    0x60,
+    0x23,
+    0x61,
+    0x02,
+    0x62,
+    0x1A,
+    0x63,
+    0x00,
+    0x64,
+    0x0A,
+    0x65,
+    0x01,
+    0x66,
+    0x8C,
+    0x67,
+    0x30,
+    0x68,
+    0x00,
+    0x69,
+    0x00,
+    0x6A,
+    0x00,
+    0x6B,
+    0x00,
+    0x6C,
+    0x00,
+    0x6D,
+    0x00,
+    0x6E,
+    0x00,
+    0x6F,
+    0x60,
+    0x70,
+    0x00,
+    0x71,
+    0x00,
+    0x72,
+    0x00,
+    0x73,
+    0x00,
+    0x74,
+    0x00,
+    0x75,
+    0x00,
+    0x76,
+    0x00,
+    0x77,
+    0x00,
+    0x78,
+    0x00,
+    0x79,
+    0x68,
+    0x7A,
+    0x00,
+    0x7B,
+    0x00,
+    0x7C,
+    0x00,
+    0x7D,
+    0x00,
+    0x7E,
+    0x00,
+    0x7F,
+    0x00,
+};
 
 static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
                                     nrf_gpiote_polarity_t polarity)
@@ -369,16 +568,16 @@ void SWI2_IRQHandler(void)
         switch (evt_id)
         {
         case NRF_EVT_FLASH_OPERATION_SUCCESS:
-            {
-                // TODO In case we add a filesystem in the future
-                break;
-            }
+        {
+            // TODO In case we add a filesystem in the future
+            break;
+        }
 
         case NRF_EVT_FLASH_OPERATION_ERROR:
-            {
-                // TODO In case we add a filesystem in the future
-                break;
-            }
+        {
+            // TODO In case we add a filesystem in the future
+            break;
+        }
 
         default:
         {
@@ -411,145 +610,145 @@ void SWI2_IRQHandler(void)
 
         // When connected
         case BLE_GAP_EVT_CONNECTED:
-            {
-                // Set the connection service
-                ble_conn_handle = ble_evt->evt.gap_evt.conn_handle;
+        {
+            // Set the connection service
+            ble_conn_handle = ble_evt->evt.gap_evt.conn_handle;
 
-                // Update connection parameters
-                ble_gap_conn_params_t conn_params;
+            // Update connection parameters
+            ble_gap_conn_params_t conn_params;
 
-                app_err(sd_ble_gap_ppcp_get(&conn_params));
+            app_err(sd_ble_gap_ppcp_get(&conn_params));
 
-                app_err(sd_ble_gap_conn_param_update(ble_conn_handle, &conn_params));
+            app_err(sd_ble_gap_conn_param_update(ble_conn_handle, &conn_params));
 
-                app_err(sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0));
+            app_err(sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0));
 
-                break;
-            }
+            break;
+        }
 
         // When disconnected
         case BLE_GAP_EVT_DISCONNECTED:
-            {
-                // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+        {
+            // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
 
-                // Clear the connection service
-                ble_conn_handle = BLE_CONN_HANDLE_INVALID;
+            // Clear the connection service
+            ble_conn_handle = BLE_CONN_HANDLE_INVALID;
 
-                // Start advertising
-                app_err(sd_ble_gap_adv_start(ble_adv_handle, 1));
-                break;
-            }
+            // Start advertising
+            app_err(sd_ble_gap_adv_start(ble_adv_handle, 1));
+            break;
+        }
 
         // On a phy update request, set the phy speed automatically
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
-            {
-                // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+        {
+            // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
 
-                ble_gap_phys_t const phys = {
-                    .rx_phys = BLE_GAP_PHY_AUTO,
-                    .tx_phys = BLE_GAP_PHY_AUTO,
-                };
-                app_err(sd_ble_gap_phy_update(ble_evt->evt.gap_evt.conn_handle, &phys));
-                break;
-            }
+            ble_gap_phys_t const phys = {
+                .rx_phys = BLE_GAP_PHY_AUTO,
+                .tx_phys = BLE_GAP_PHY_AUTO,
+            };
+            app_err(sd_ble_gap_phy_update(ble_evt->evt.gap_evt.conn_handle, &phys));
+            break;
+        }
 
         // Handle requests for changing MTU length
         case BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST:
-            {
-                // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+        {
+            // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
 
-                // The client's desired MTU size
-                uint16_t client_mtu =
-                    ble_evt->evt.gatts_evt.params.exchange_mtu_request.client_rx_mtu;
+            // The client's desired MTU size
+            uint16_t client_mtu =
+                ble_evt->evt.gatts_evt.params.exchange_mtu_request.client_rx_mtu;
 
-                // Respond with our max MTU size
-                sd_ble_gatts_exchange_mtu_reply(ble_conn_handle, BLE_MAX_MTU_LENGTH);
+            // Respond with our max MTU size
+            sd_ble_gatts_exchange_mtu_reply(ble_conn_handle, BLE_MAX_MTU_LENGTH);
 
-                // Choose the smaller MTU as the final length we'll use
-                // -3 bytes to accommodate for Op-code and attribute service
-                ble_negotiated_mtu = BLE_MAX_MTU_LENGTH < client_mtu
-                                         ? BLE_MAX_MTU_LENGTH - 3
-                                         : client_mtu - 3;
-                break;
-            }
+            // Choose the smaller MTU as the final length we'll use
+            // -3 bytes to accommodate for Op-code and attribute service
+            ble_negotiated_mtu = BLE_MAX_MTU_LENGTH < client_mtu
+                                     ? BLE_MAX_MTU_LENGTH - 3
+                                     : client_mtu - 3;
+            break;
+        }
 
         // When data arrives, we can write it to the buffer
         case BLE_GATTS_EVT_WRITE:
+        {
+            // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            // For the entire incoming string
+            for (uint16_t length = 0;
+                 length < ble_evt->evt.gatts_evt.params.write.len;
+                 length++)
             {
-                // // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-                // For the entire incoming string
-                for (uint16_t length = 0;
-                     length < ble_evt->evt.gatts_evt.params.write.len;
-                     length++)
-                {
-                    // Break if the ring buffer is full, we can't write more
-                    if (ring_full(&ble_nus_rx))
-                        break;
+                // Break if the ring buffer is full, we can't write more
+                if (ring_full(&ble_nus_rx))
+                    break;
 
-                    // Copy a character into the ring buffer
-                    ring_push(&ble_nus_rx, ble_evt->evt.gatts_evt.params.write.data[length]);
-                }
-                break;
+                // Copy a character into the ring buffer
+                ring_push(&ble_nus_rx, ble_evt->evt.gatts_evt.params.write.data[length]);
             }
+            break;
+        }
 
         // Disconnect on GATT Client timeout
         case BLE_GATTC_EVT_TIMEOUT:
-            {
-                // assert(!"not reached");
-                break;
-            }
+        {
+            // assert(!"not reached");
+            break;
+        }
 
         // Disconnect on GATT Server timeout
         case BLE_GATTS_EVT_TIMEOUT:
-            {
-                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-                app_err(sd_ble_gap_disconnect(ble_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
-                break;
-            }
+        {
+            // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            app_err(sd_ble_gap_disconnect(ble_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION));
+            break;
+        }
 
         // Updates system attributes after a new connection event
         case BLE_GATTS_EVT_SYS_ATTR_MISSING:
-            {
-                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-                app_err(sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0));
-                break;
-            }
+        {
+            // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            app_err(sd_ble_gatts_sys_attr_set(ble_conn_handle, NULL, 0, 0));
+            break;
+        }
 
         // We don't support pairing, so reply with that message
         case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
-            {
-                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-                app_err(sd_ble_gap_sec_params_reply(ble_conn_handle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL));
-                break;
-            }
+        {
+            // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            app_err(sd_ble_gap_sec_params_reply(ble_conn_handle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL));
+            break;
+        }
 
         case BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST:
-            {
-                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-                app_err(sd_ble_gap_data_length_update(ble_conn_handle, NULL, NULL));
-                break;
-            }
+        {
+            // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            app_err(sd_ble_gap_data_length_update(ble_conn_handle, NULL, NULL));
+            break;
+        }
 
         case BLE_GAP_EVT_SEC_INFO_REQUEST:
-            {
-                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-                app_err(sd_ble_gap_sec_info_reply(ble_conn_handle, NULL, NULL, NULL));
-                break;
-            }
+        {
+            // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            app_err(sd_ble_gap_sec_info_reply(ble_conn_handle, NULL, NULL, NULL));
+            break;
+        }
 
         case BLE_GAP_EVT_SEC_REQUEST:
-            {
-                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-                app_err(sd_ble_gap_authenticate(ble_conn_handle, NULL));
-                break;
-            }
+        {
+            // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            app_err(sd_ble_gap_authenticate(ble_conn_handle, NULL));
+            break;
+        }
 
         case BLE_GAP_EVT_AUTH_KEY_REQUEST:
-            {
-                // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
-                app_err(sd_ble_gap_auth_key_reply(ble_conn_handle, BLE_GAP_AUTH_KEY_TYPE_NONE, NULL));
-                break;
-            }
+        {
+            // assert(ble_evt->evt.gap_evt.conn_handle == ble_conn_handle);
+            app_err(sd_ble_gap_auth_key_reply(ble_conn_handle, BLE_GAP_AUTH_KEY_TYPE_NONE, NULL));
+            break;
+        }
 
         case BLE_EVT_USER_MEM_REQUEST:
         case BLE_GAP_EVT_CONN_PARAM_UPDATE_REQUEST:
@@ -600,10 +799,15 @@ int main(void)
     }
 
     // Set up the remaining GPIO
-    // TODO move these to the monocle folder
-    nrf_gpio_cfg_output(FPGA_INTERRUPT_PIN);
-    nrf_gpio_cfg_output(FPGA_CS_PIN);
-    nrf_gpio_cfg_output(FLASH_CS_PIN);
+    {
+        nrf_gpio_cfg_output(CAMERA_RESET_PIN);
+        nrf_gpio_cfg_output(CAMERA_SLEEP_PIN);
+        nrf_gpio_cfg_output(DISPLAY_CS_PIN);
+        nrf_gpio_cfg_output(DISPLAY_RESET_PIN);
+        nrf_gpio_cfg_output(FLASH_CS_PIN);
+        nrf_gpio_cfg_output(FPGA_CS_PIN);
+        nrf_gpio_cfg_output(FPGA_INTERRUPT_CONFIG_PIN);
+    }
 
     // Setup an RTC counting milliseconds since now
     {
@@ -745,35 +949,28 @@ int main(void)
 
     // Check if external flash has an FPGA image and boot it
     {
-        // nrf_gpio_pin_set(FLASH_CS_PIN);
+        // TODO
 
-        // Let the FPGA start as soon as it has the power on.
-        nrf_gpio_pin_set(FPGA_INTERRUPT_PIN);
+        // Otherwise boot from the internal image of the FPGA
+        nrf_gpio_pin_set(FPGA_INTERRUPT_CONFIG_PIN);
     }
 
-    // Setup the display
+    // Setup and start the display
     {
-        // configure CS pin for the Display (for active low)
-        nrf_gpio_cfg_output(DISPLAY_CS_PIN);
-        nrf_gpio_pin_set(DISPLAY_CS_PIN);
-
-        ecx336cn_write_byte(0x00, 0x9E); // enter power saving mode (YUV)
-        // it is now possible to turn off the 10V rail
-
-        for (size_t i = 0; i < MP_ARRAY_SIZE(ecx336cn_config_tbl); i++)
+        // Each byte of the configuration must be sent in pairs
+        for (size_t i = 0; i < sizeof(display_config); i += 2)
         {
-            ecx336cn_write_byte(i, ecx336cn_config_tbl[i]);
+            uint8_t command[2] = {display_config[i],      // Address
+                                  display_config[i + 1]}; // Value
+            spi_write(DISPLAY, command, 2, false);
         }
-
-        // the 10V power rail needs to be turned back on first
-        ecx336cn_write_byte(0x00, 0x9F); // exit power saving mode (YUV)
     }
 
     // Setup the camera
     {
         nrfx_systick_delay_ms(750); // TODO optimize the FPGA to not need this delay
         nrfx_systick_delay_ms(5000); 
-    NRFX_LOG_ERROR("camera setup");
+        NRFX_LOG_ERROR("camera setup");
         fpga_cmd_write(0x1009, NULL, 0);
 
         // Power on sequence, references: Datasheet section 2.7.1; Application Notes section 3.1.1
@@ -786,6 +983,13 @@ int main(void)
         nrfx_systick_delay_ms(2);
         nrf_gpio_pin_write(CAMERA_RESET_PIN, !false);
         nrfx_systick_delay_ms(20);
+
+        // TODO optimize the FPGA to not need this delay
+        nrfx_systick_delay_ms(750);
+
+        // TODO optimize this away. Ask the FPGA to start the camera clock
+        uint8_t command[2] = {0x10, 0x06};
+        spi_write(FPGA, command, 2, false);
 
         // Read the camera CID (one of them)
         i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);

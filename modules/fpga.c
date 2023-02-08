@@ -22,122 +22,129 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <stddef.h>
-
-#include "py/obj.h"
-#include "py/objarray.h"
+#include "monocle.h"
 #include "py/runtime.h"
 
-#include "nrfx_log.h"
-#include "nrfx_spim.h"
-
-// TODO use a header
-void spi_chip_select(uint8_t cs_pin);
-void spi_chip_deselect(uint8_t cs_pin);
-void spi_read(uint8_t *buf, size_t len);
-void spi_write(uint8_t const *buf, size_t len);
-
-void fpga_cmd_write(uint16_t cmd, const uint8_t *buf, size_t len)
+STATIC mp_obj_t fpga_read(mp_obj_t addr_16bit, mp_obj_t n)
 {
-    uint8_t cmd_buf[2] = {cmd >> 8, cmd >> 0};
-
-    spi_chip_select(FPGA_CS_PIN);
-    spi_write(cmd_buf, sizeof cmd_buf);
-    spi_write(buf, len);
-    spi_chip_deselect(FPGA_CS_PIN);
-}
-
-void fpga_cmd_read(uint16_t cmd, uint8_t *buf, size_t len)
-{
-    uint8_t cmd_buf[2] = {(cmd >> 8) & 0xFF, (cmd >> 0) & 0xFF};
-
-    spi_chip_select(FPGA_CS_PIN);
-    spi_write(cmd_buf, sizeof cmd_buf);
-    spi_read(buf, len);
-    spi_chip_deselect(FPGA_CS_PIN);
-}
-
-STATIC mp_obj_t mod_fpga___init__(void)
-{
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_fpga___init___obj, mod_fpga___init__);
-
-static inline void spi_write_u16(uint16_t u16)
-{
-    uint8_t buf[2] = {u16 >> 8, u16 >> 0};
-    spi_write(buf, sizeof buf);
-}
-
-STATIC mp_obj_t fpga_read(mp_obj_t addr_in, mp_obj_t len_in)
-{
-    uint16_t addr = mp_obj_get_int(addr_in);
-    size_t len = mp_obj_get_int(len_in);
-
-    // Allocate a buffer for reading data into
-    uint8_t *buf = m_malloc(len);
-
-    // Create a list where we'll return the bytes
-    mp_obj_t return_list = mp_obj_new_list(0, NULL);
-
-    // Read on the SPI using the command and address given
-    fpga_cmd_read(addr, buf, len);
-
-    // Copy the read bytes into the list object
-    for (size_t i = 0; i < len; i++)
+    if (mp_obj_get_int(n) > 255)
     {
-        mp_obj_list_append(return_list, MP_OBJ_NEW_SMALL_INT(buf[i]));
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("n must be less than or equal to 255"));
     }
 
-    // Free the temporary buffer
-    m_free(buf);
+    // TODO
+    // if (app_fpga_get_power_state() == false)
+    // {
+    //     mp_raise_msg(&mp_type_OSError, "FPGA is not powered");
+    // }
 
-    // Return the list
-    return MP_OBJ_FROM_PTR(return_list);
+    uint16_t addr = mp_obj_get_int(addr_16bit);
+    uint8_t addr_bytes[2] = {(uint8_t)(addr >> 8), (uint8_t)addr};
+
+    uint8_t *buffer = m_malloc(mp_obj_get_int(n));
+
+    spi_write(FPGA, addr_bytes, 2, true);
+    spi_read(FPGA, buffer, mp_obj_get_int(n));
+
+    mp_obj_t bytes = mp_obj_new_bytes(buffer, mp_obj_get_int(n));
+
+    m_free(buffer);
+
+    return bytes;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(fpga_read_obj, fpga_read);
 
-STATIC mp_obj_t fpga_write(mp_obj_t addr_in, mp_obj_t list_in)
+STATIC mp_obj_t fpga_write(mp_obj_t addr_16bit, mp_obj_t bytes)
 {
-    uint16_t addr = mp_obj_get_int(addr_in);
+    size_t n;
+    const char *buffer = mp_obj_str_get_data(bytes, &n);
 
-    // Extract the buffer of elements and size from the python object.
-    size_t len = 0;
-    mp_obj_t *list = NULL;
-    mp_obj_list_get(list_in, &len, &list);
-
-    // Create a contiguous region with the bytes to read in.
-    uint8_t *buf = m_malloc(len);
-
-    // Copy the write bytes into the a continuous buffer
-    for (size_t i = 0; i < len; i++)
+    if (n > 255)
     {
-        buf[i] = mp_obj_get_int(list[i]);
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("input buffer size must be less than 255 bytes"));
     }
 
-    // Fetch the buffer content from SPI
-    fpga_cmd_write(addr, buf, len);
+    // TODO
+    // if (app_fpga_get_power_state() == false)
+    // {
+    //     mp_raise_msg(&mp_type_OSError, "FPGA is not powered");
+    // }
 
-    // Free the temporary buffer
-    m_free(buf);
+    uint16_t addr = mp_obj_get_int(addr_16bit);
+    uint8_t addr_bytes[2] = {(uint8_t)(addr >> 8), (uint8_t)addr};
+
+    spi_write(FPGA, addr_bytes, 2, true);
+    spi_write(FPGA, (uint8_t *)buffer, n, false);
 
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_2(fpga_write_obj, &fpga_write);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(fpga_write_obj, fpga_write);
+
+STATIC mp_obj_t fpga_power(size_t n_args, const mp_obj_t *args)
+{
+    // TODO
+    bool current_power_state = true; // app_fpga_get_power_state();
+
+    if (n_args == 0)
+    {
+        if (current_power_state)
+        {
+            return MP_OBJ_NEW_QSTR(MP_QSTR_ON);
+        }
+
+        return MP_OBJ_NEW_QSTR(MP_QSTR_OFF);
+    }
+
+    if (mp_obj_get_type(args[0]) != &mp_type_bool)
+    {
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("input argument must be either True or False"));
+    }
+
+    bool new_power_state = (bool)mp_obj_get_int(args[0]);
+
+    if (new_power_state == current_power_state)
+    {
+        return mp_const_none;
+    }
+
+    // TODO
+    // app_fpga_set_power_state(new_power_state);
+
+    if (new_power_state == true)
+    {
+        // TODO
+        // app_fpga_boot_stored_bitstream();
+    }
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(fpga_power_obj, 0, 1, fpga_power);
 
 STATIC mp_obj_t fpga_status(void)
 {
-    return mp_const_none;
+    // TODO
+    // if (app_fpga_get_power_state() == false)
+    // {
+    // return MP_OBJ_NEW_QSTR(MP_QSTR_NOT_POWERED);
+    // }
+
+    // if (gpio_get_level(fpga_configuration_done_pin))
+    // {
+    return MP_OBJ_NEW_QSTR(MP_QSTR_RUNNING);
+    // }
+    // return MP_OBJ_NEW_QSTR(MP_QSTR_BAD_BITSTREAM);
 }
 MP_DEFINE_CONST_FUN_OBJ_0(fpga_status_obj, &fpga_status);
 
 STATIC const mp_rom_map_elem_t fpga_module_globals_table[] = {
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_fpga)},
-    {MP_ROM_QSTR(MP_QSTR___init__), MP_ROM_PTR(&mod_fpga___init___obj)},
 
-    // methods
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_fpga)},
     {MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&fpga_write_obj)},
     {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&fpga_read_obj)},
+    {MP_ROM_QSTR(MP_QSTR_power), MP_ROM_PTR(&fpga_power_obj)},
     {MP_ROM_QSTR(MP_QSTR_status), MP_ROM_PTR(&fpga_status_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(fpga_module_globals, fpga_module_globals_table);
