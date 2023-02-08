@@ -230,6 +230,7 @@ void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
 
     nrf_gpio_pin_clear(cs_pin);
 
+    // TODO prevent blocking here, and add a mutex
     nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(data, length);
     app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
 
@@ -256,6 +257,7 @@ void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
 
     nrf_gpio_pin_clear(cs_pin);
 
+    // TODO prevent blocking here, and add a mutex
     nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(data, length);
     app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
 
