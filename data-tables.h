@@ -21,173 +21,126 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-// TODO: Rename tables from RGB to YUV; perhaps with a complier switch between them
-// TODO: consolidate ov5640_uxga_init_tbl & ov5640_rgb565_tbl & ov5640_rgb565_tbl_1x into one for faster bootup
+#pragma once
+#include <stdint.h>
 
 typedef struct {
     uint16_t addr;
     uint8_t value;
 } ov5640_conf_t;
 
-/** 4.4fps, skipping off, max 2560x1600 ISP Input Size */
-const ov5640_conf_t ov5640_rgb565_tbl[] = {
-    // YUV mode
-    { 0x4300, 0x30 }, // YUV 422, YUYV
-    { 0x501f, 0x00 }, // YUV 422
+/*--- ECX336CN display -------------------------------------------------------*/
 
-    // original code was: 1280x800, 15fps
+const uint8_t ecx336cn_config_tbl[] = {
+    // ECX336CN datasheet section 10.1
 
-    // input clock 24Mhz, PCLK 42Mhz
-    { 0x3035, 0x41 }, // PLL DEFAULT PCLK = 41MHz
-    { 0x3036, 0x69 }, // PLL
-    { 0x3c07, 0x07 }, // lightmeter 1 threshold[7:0]
-    { 0x3820, 0x40 }, // [2-1] flip off
-    { 0x3821, 0x00 }, // [2-1] mirror off | [0] binning off
+    [0x00] = 0x9E, // [0]=0 -> enter power save mode
+    [0x01] = 0x20,
+    /* * */
+    [0x03] = 0x20, // 1125
+    [0x04] = 0x3F,
+    [0x05] = 0xC8, // 1125  DITHERON, LUMINANCE=0x00=2000cd/m2=medium (Datasheet 10.8)
+    /* * */
+    [0x07] = 0x40,
+    [0x08] = 0x80, // Luminance adjustment: OTPCALDAC_REGDIS=0 (preset mode per reg 5), white chromaticity: OTPDG_REGDIS=0 (preset mode, default)
+    /* * */
+    [0x0A] = 0x10,
+    /* * */
+    [0x0F] = 0x56,
+    /* * */
+    [0x20] = 0x01,
+    /* * */
+    [0x22] = 0x40,
+    [0x23] = 0x40,
+    [0x24] = 0x40,
+    [0x25] = 0x80,
+    [0x26] = 0x40,
+    [0x27] = 0x40,
+    [0x28] = 0x40,
+    [0x29] = 0x0B,
+    [0x2A] = 0xBE, // CALDAC=190 (ignored, since OTPCALDAC_REGDIS=0)
+    [0x2B] = 0x3C,
+    [0x2C] = 0x02,
+    [0x2D] = 0x7A,
+    [0x2E] = 0x02,
+    [0x2F] = 0xFA,
+    [0x30] = 0x26,
+    [0x31] = 0x01,
+    [0x32] = 0xB6,
+    /* * */
+    [0x34] = 0x03,
+    [0x35] = 0x60, // 1125
+    /* * */
+    [0x37] = 0x76,
+    [0x38] = 0x02,
+    [0x39] = 0xFE,
+    [0x3A] = 0x02,
+    [0x3B] = 0x71, // 1125
+    /* * */
+    [0x3D] = 0x1B,
+    /* * */
+    [0x3F] = 0x1C,
+    [0x40] = 0x02, // 1125
+    [0x41] = 0x4D, // 1125
+    [0x42] = 0x02, // 1125
+    [0x43] = 0x4E, // 1125
+    [0x44] = 0x80,
+    /* * */
+    [0x47] = 0x2D, // 1125
+    [0x48] = 0x08,
+    [0x49] = 0x01, // 1125
+    [0x4A] = 0x7E, // 1125
+    [0x4B] = 0x08,
+    [0x4C] = 0x0A, // 1125
+    [0x4D] = 0x04, // 1125
+    /* * */
+    [0x4F] = 0x3A, // 1125
+    [0x50] = 0x01, // 1125
+    [0x51] = 0x58, // 1125
+    [0x52] = 0x01,
+    [0x53] = 0x2D,
+    [0x54] = 0x01,
+    [0x55] = 0x15, // 1125
+    /* * */
+    [0x57] = 0x2B,
+    [0x58] = 0x11, // 1125
+    [0x59] = 0x02,
+    [0x5A] = 0x11, // 1125
+    [0x5B] = 0x02,
+    [0x5C] = 0x25,
+    [0x5D] = 0x04, // 1125
+    [0x5E] = 0x0B, // 1125
+    /* * */
+    [0x60] = 0x23,
+    [0x61] = 0x02,
+    [0x62] = 0x1A, // 1125
+    /* * */
+    [0x64] = 0x0A, // 1125
+    [0x65] = 0x01, // 1125
+    [0x66] = 0x8C, // 1125
+    [0x67] = 0x30, // 1125
+    /* * */
+    [0x69] = 0x00, // 1125
+    /* * */
+    [0x6D] = 0x00, // 1125
+    /* * */
+    [0x6F] = 0x60,
+    /* * */
+    [0x79] = 0x68,
+};
 
-    //{ 0x3814, 0x31 }, // timing X inc: odd=3, even=1 ?
-    { 0x3814, 0x11 }, // no skipping
+/*--- OV5640 camera ----------------------------------------------------------*/
 
-    //{ 0x3815, 0x31 }, // timing Y inc: odd=3, even=1 ?
-    { 0x3815, 0x11 }, // no skipping
-
-    // ISP input size (0,0) to (2623,1705)
-    { 0x3800, 0x00 }, // HS
-    { 0x3801, 0x10 }, // HS
-    { 0x3802, 0x00 }, // VS
-    { 0x3803, 0x0E }, // VS
-    { 0x3804, 0x0a }, // HW (HE)
-    { 0x3805, 0x2f }, // HW (HE)
-    { 0x3806, 0x06 }, // VH (VE)
-    { 0x3807, 0xa9 }, // VH (VE)
-
-    // Output size, 640x400 = 0x280 x 0x190
-    { 0x3808, 0x02 }, // DVPHO
-    { 0x3809, 0x80 }, // DVPHO
-    { 0x380a, 0x01 }, // DVPVO
-    { 0x380b, 0x90 }, // DVPVO
-
-    // Total horizontal size, 1528 --> 2844 -> 2812 -> 2766 (no skipping)
-    //{ 0x380c, 0x05 }, // HTS
-    //{ 0x380d, 0xF8 }, // HTS
-    { 0x380c, 0x0a }, // HTS
-    { 0x380d, 0xfc }, // HTS
-
-    // Total vertical size, 900 --> 1968 -> 1708 (no skipping)
-    //{ 0x380e, 0x03 }, // VTS
-    //{ 0x380f, 0x84 }, // VTS
-    { 0x380e, 0x06 }, // VTS
-    { 0x380f, 0xac }, // VTS
-    { 0x3813, 0x2e }, // Timing Voffset[7:0]
-
-    // Undocumented settings (not in Product Specification document)
-    { 0x3618, 0x00 }, // undocumented? (in Linux driver 0x00 or 0x04)
-    { 0x3612, 0x29 }, // undocumented? (in Linux driver 0x29 or once 0x2B)
-    { 0x3709, 0x52 }, // undocumented? (in Linux driver 0x52 or 0x12)
-    { 0x370c, 0x03 }, // undocumented? (in Linux driver 0x00 or 0x03)
-
-    // AEC
-    { 0x3a02, 0x02 }, // 60Hz max exposure
-    { 0x3a03, 0xe0 }, // 60Hz max exposure 
-    { 0x3a14, 0x02 }, // 50Hz max exposure
-    { 0x3a15, 0xe0 }, // 50Hz max exposure
-
-    // BLC
-    // is it enabled or not? 0x4000 not set anywhere else; default is enabled
-    // where are the other parameters?
-    { 0x4004, 0x02 }, // BLC line number
-
-    // seems JPEG-related, probably irrelevant for our purposes ?
-    { 0x3002, 0x1c }, // reset JFIFO, SFIFO, JPG
-    { 0x3006, 0xc3 }, // disable clock of JPEG2x, JPEG
-    { 0x4713, 0x03 }, // JPEG mode 3
-    { 0x4407, 0x04 }, // Quantization scale
-    { 0x460b, 0x37 }, // VFIFO debug mode, not documented
-
-    { 0x460c, 0x20 }, // DVP PCLK divider control by auto mode
-    { 0x4837, 0x16 }, // MIPI global timing
-    { 0x3824, 0x04 }, // PCLK manual divider (not used if "auto mode" as above)
-    { 0x5001, 0xA3 }, // SDE on, scale on, UV average off, color matrix on, AWB on
-    { 0x3503, 0x00 }, // AEC/AGC on (auto)
-}; 
-
-/** Configuration content for for setting the 1x zoom level. */
-// Changes for 1x zoom at 15fps:
-// skipping on, HS=16, VS=14, HW=2607, VH=1705, HTS=1528, VTS=900
-const ov5640_conf_t ov5640_rgb565_1x_tbl[] = {
-    // skipping: on
-    { 0x3814, 0x31 }, // timing X inc: odd=3, even=1 ?
-    { 0x3815, 0x31 }, // timing Y inc: odd=3, even=1 ?
-
-    // ISP input size 2592x1692
-    { 0x3800, 0x00 }, // HS
-    { 0x3801, 0x10 }, // HS -- 16
-    { 0x3802, 0x00 }, // VS
-    { 0x3803, 0x0E }, // VS -- 14
-    { 0x3804, 0x0a }, // HW (HE)
-    { 0x3805, 0x2f }, // HW (HE) -- 0x0A2F=2607
-    { 0x3806, 0x06 }, // VH (VE)
-    { 0x3807, 0xa9 }, // VH (VE) -- 0x06A9=1705
-
-    // Total horizontal size, 1528 (with skipping)
-    { 0x380c, 0x05 }, // HTS
-    { 0x380d, 0xF8 }, // HTS -- 0x05F8=1528
-    //{ 0x380c, 0x0a }, // HTS
-    //{ 0x380d, 0xfc }, // HTS
-
-    // Total vertical size, 900 (with skipping)
-    { 0x380e, 0x03 }, // VTS
-    { 0x380f, 0x84 }, // VTS -- 0x0384=900
-    //{ 0x380e, 0x06 }, // VTS
-    //{ 0x380f, 0xac }, // VTS -- 0x06AC=1708
-
-    // HOFFSET = 16 = 0x10
-    { 0x3810, 0x00 },
-    { 0x3811, 0x10 },
-
-    // VOFFSET = 46 = 0x2E
-    // pre-scaling size 2560x1600
-    { 0x3812, 0x00 },
-    { 0x3813, 0x2e },
-}; 
-
-/** Configuration content for for setting the 2x zoom level. */
-// Changes for 2x & 4x zoom at 15fps:
-// Skipping off, HS=0x0298=664, VS=0x01B5=437, HW=0x07A7=1959, VH=0x0502=1282,
-// HTS, VTS no change
-const ov5640_conf_t ov5640_rgb565_2x_tbl[] = {
-    // Skipping: off
-    { 0x3814, 0x11 }, // no skipping
-    { 0x3815, 0x11 }, // no skipping
-
-    // ISP input size 2592x1692
-    { 0x3800, 0x02 }, // HS
-    { 0x3801, 0x98 }, // HS -- 0x0298=664
-    { 0x3802, 0x01 }, // VS
-    { 0x3803, 0x90 }, // VS -- 0x0190=400
-    { 0x3804, 0x07 }, // HW (HE)
-    { 0x3805, 0xa7 }, // HW (HE) -- 0x07A7=1959
-    { 0x3806, 0x04 }, // VH (VE)
-    { 0x3807, 0xDF }, // VH (VE) -- 0x04DF=1247
-
-    // HOFFSET = 8 = 0x08
-    { 0x3810, 0x00 },
-    { 0x3811, 0x08 },
-
-    // VOFFSET = 24 = 0x18
-    // pre-scaling size 1280x800
-    { 0x3812, 0x00 },
-    { 0x3813, 0x18 },
-}; 
-
-/** Configuration content for initializing UXGA. */
-const ov5640_conf_t ov5640_uxga_init_tbl[]= 
-{   
-    // 24MHz input clock, 24MHz PCLK
+// Full initialization to target resolution
+const ov5640_conf_t ov5640_yuv422_direct_tbl[] = {
+    // 24MHz input clock, 42MHz PCLK
     { 0x3008, 0x42 }, // software power down, bit[6]
     { 0x3103, 0x03 }, // system clock from PLL, bit[1]
     { 0x3017, 0xff }, // FREX, Vsync, HREF, PCLK, D[9:6] output enable
     { 0x3018, 0xff }, // D[5:0], GPIO[1:0] output enable
     { 0x3034, 0x1a }, // MIPI 10-bit
+    { 0x3035, 0x41 }, // PLL
+    { 0x3036, 0x69 }, // PLL
     { 0x3037, 0x13 }, // PLL root divider, bit[4], PLL pre-divider, bit[3:0]
     { 0x3108, 0x01 }, // PCLK root divider, bit[5:4], SCLK2x root divider, bit[3:2]
 
@@ -226,15 +179,19 @@ const ov5640_conf_t ov5640_uxga_init_tbl[]=
     { 0x3c04, 0x28 }, // threshold low sum
     { 0x3c05, 0x98 }, // threshold high sum
     { 0x3c06, 0x00 }, // light meter 1 threshold[15:8]
-    { 0x3c07, 0x08 }, // light meter 1 threshold[7:0]
+    { 0x3c07, 0x07 }, // light meter 1 threshold[7:0]
     { 0x3c08, 0x00 }, // light meter 2 threshold[15:8]
     { 0x3c09, 0x1c }, // light meter 2 threshold[7:0]
     { 0x3c0a, 0x9c }, // sample number[15:8]
     { 0x3c0b, 0x40 }, // sample number[7:0]
+
+    // Windowing X_OFFSET, Y_OFFSET
+    // pre-scaling size 2560x1600
     { 0x3810, 0x00 }, // Timing Hoffset[11:8]
-    { 0x3811, 0x10 }, // Timing Hoffset[7:0]
+    { 0x3811, 0x10 }, // Timing Hoffset[7:0] HOFFSET = 16 = 0x10
     { 0x3812, 0x00 }, // Timing Voffset[10:8]
-    { 0x3813, 0x04 }, // Timing Voffset[7:0]
+    { 0x3813, 0x2e }, // Timing Voffset[7:0] VOFFSET = 46 = 0x2E
+
     { 0x3708, 0x64 },
     { 0x4001, 0x02 }, // BLC start from line 2
     { 0x4005, 0x1a }, // BLC always update
@@ -388,7 +345,7 @@ const ov5640_conf_t ov5640_uxga_init_tbl[]=
     // UV adjust
     { 0x5580, 0x06 }, // saturation on, bit[1]
     { 0x5583, 0x40 },
-    { 0x5584, 0x10 }, 
+    { 0x5584, 0x10 },
     { 0x5589, 0x10 },
     { 0x558a, 0x00 },
     { 0x558b, 0xf8 },
@@ -408,14 +365,74 @@ const ov5640_conf_t ov5640_uxga_init_tbl[]=
     { 0x530b, 0x04 }, // CIP sharpen TH offset 1
     { 0x530c, 0x06 }, // CIP sharpen TH offset 2
     { 0x5025, 0x00 },
-    { 0x3008, 0x02 }, // wake up from standby, bit[6]
-    { 0x4740, 0X21 }, // VSYNC
-};  
 
-/**
- * Auto Focus Initialization, written starting at register 0x8000.
- * Datasheet Section 6.3
- */
+    // VSYNC
+    { 0x4740, 0X21 },
+
+    // NEW
+    // skipping: on
+    { 0x3814, 0x31 }, // timing X inc: odd=3, even=1 ?
+    { 0x3815, 0x31 }, // timing Y inc: odd=3, even=1 ?
+
+    // ISP input size 2592x1692
+    { 0x3800, 0x00 }, // HS
+    { 0x3801, 0x10 }, // HS -- 16
+    { 0x3802, 0x00 }, // VS
+    { 0x3803, 0x0E }, // VS -- 14
+    { 0x3804, 0x0a }, // HW (HE)
+    { 0x3805, 0x2f }, // HW (HE) -- 0x0A2F=2607
+    { 0x3806, 0x06 }, // VH (VE)
+    { 0x3807, 0xa9 }, // VH (VE) -- 0x06A9=1705
+
+    // Output size, 640x400 = 0x280 x 0x190
+    { 0x3808, 0x02 }, // DVPHO
+    { 0x3809, 0x80 }, // DVPHO
+    { 0x380a, 0x01 }, // DVPVO
+    { 0x380b, 0x90 }, // DVPVO
+
+    // Total horizontal size, 1528 (with skipping)
+    { 0x380c, 0x05 }, // HTS
+    { 0x380d, 0xF8 }, // HTS -- 0x05F8=1528
+
+    // Total vertical size, 900 (with skipping)
+    { 0x380e, 0x03 }, // VTS
+    { 0x380f, 0x84 }, // VTS -- 0x0384=900
+
+    // Undocumented settings (not in Product Specification document)
+    { 0x3618, 0x00 }, // undocumented? (in Linux driver 0x00 or 0x04)
+    { 0x3612, 0x29 }, // undocumented? (in Linux driver 0x29 or once 0x2B)
+    { 0x3709, 0x52 }, // undocumented? (in Linux driver 0x52 or 0x12)
+    { 0x370c, 0x03 }, // undocumented? (in Linux driver 0x00 or 0x03)
+
+    // AEC
+    { 0x3a02, 0x02 }, // 60Hz max exposure
+    { 0x3a03, 0xe0 }, // 60Hz max exposure
+    { 0x3a14, 0x02 }, // 50Hz max exposure
+    { 0x3a15, 0xe0 }, // 50Hz max exposure
+
+    // BLC
+    // is it enabled or not? 0x4000 not set anywhere else; default is enabled
+    // where are the other parameters?
+    { 0x4004, 0x02 }, // BLC line number
+
+    // seems JPEG-related, probably irrelevant for our purposes ?
+    { 0x3002, 0x1c }, // reset JFIFO, SFIFO, JPG
+    { 0x3006, 0xc3 }, // disable clock of JPEG2x, JPEG
+    { 0x4713, 0x03 }, // JPEG mode 3
+    { 0x4407, 0x04 }, // Quantization scale
+    { 0x460b, 0x37 }, // VFIFO debug mode, not documented
+
+    { 0x460c, 0x20 }, // DVP PCLK divider control by auto mode
+    { 0x4837, 0x16 }, // MIPI global timing
+    { 0x3824, 0x04 }, // PCLK manual divider (not used if "auto mode" as above)
+    { 0x5001, 0xA3 }, // SDE on, scale on, UV average off, color matrix on, AWB on
+    { 0x3503, 0x00 }, // AEC/AGC on (auto)
+
+    { 0x3008, 0x02 }, // wake up from standby, bit[6]
+};
+
+// Auto Focus Initialization, written starting at register 0x8000.
+// Datasheet Section 6.3
 const uint8_t ov5640_af_config_tbl[] = {
     0x02, 0x0F, 0xD6, 0x02, 0x0A, 0x39, 0xC2, 0x01, 0x22, 0x22, 0x00, 0x02, 0x0F, 0xB2, 0xE5, 0x1F, // 0x8000
     0x70, 0x72, 0xF5, 0x1E, 0xD2, 0x35, 0xFF, 0xEF, 0x25, 0xE0, 0x24, 0x4E, 0xF8, 0xE4, 0xF6, 0x08, // 0x8010

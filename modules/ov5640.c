@@ -23,6 +23,14 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+#define OV5640_CHIPIDH          0x300A ///< OV5640 Chip ID Register address, high byte
+#define OV5640_CHIPIDL          0x300B ///< OV5640 Chip ID Register address, low byte
+#define OV5640_ID               0x5640 ///< OV5640 Chip ID, expected value
+#define OV5640_FPS              15     ///< frames per second, as implemented in camera configuration
+
+#define TRANSFER_CMPLT 0x00u
+#define TRANSFER_ERROR 0x01u
+
 /**
  * OV5640 camera module driver.
  */
@@ -42,8 +50,6 @@
 #include "driver/ov5640_data.h"
 #include "driver/ov5640.h"
 #include "driver/timer.h"
-
-#define LEN(x) (sizeof(x) / sizeof *(x))
 
 /**
  * Swap the byte order.
@@ -126,8 +132,8 @@ void ov5640_mode_1x(void)
     // (guaranteed to be written prior to the internal latch at the frame boundary).
     // see Datasheet section 2.6
     ov5640_write_reg(0x3212, 0x03); // start group 3 -- for some reason this makes transition worse!
-    for (size_t i = 0; i < LEN(ov5640_rgb565_1x_tbl); i++)
-        ov5640_write_reg(ov5640_rgb565_1x_tbl[i].addr, ov5640_rgb565_1x_tbl[i].value);
+    for (size_t i = 0; i < ov5640_rgb565_1x_len; i++)
+        ov5640_write_reg(ov5640_rgb565_1x_p[i].addr, ov5640_rgb565_1x_p[i].value);
     ov5640_write_reg(0x3212, 0x13); // end group 3
     ov5640_write_reg(0x3212, 0xA3); // launch group 3
 }
@@ -140,8 +146,8 @@ void ov5640_mode_2x(void)
     // start group 3
     ov5640_write_reg(0x3212, 0x03);
 
-    for (size_t i = 0; i < LEN(ov5640_rgb565_2x_tbl); i++)
-        ov5640_write_reg(ov5640_rgb565_2x_tbl[i].addr, ov5640_rgb565_2x_tbl[i].value);
+    for (size_t i = 0; i < ov5640_rgb565_2x_len; i++)
+        ov5640_write_reg(ov5640_rgb565_2x_p[i].addr, ov5640_rgb565_2x_p[i].value);
 
     // end group 3
     ov5640_write_reg(0x3212, 0x13);
@@ -175,7 +181,7 @@ void ov5640_reduce_size(uint16_t h_pixels, uint16_t v_pixels)
 }
 
 /** AWB Light mode config [0..4] [Auto, Sunny, Office, Cloudy, Home]. */
-const static uint8_t ov5640_lightmode_tbl[5][7] =
+const static uint8_t ov5640_lightmode_p[5][7] =
     {
         {0x04, 0x00, 0x04, 0x00, 0x04, 0x00, 0x00},
         {0x06, 0x1C, 0x04, 0x00, 0x04, 0xF3, 0x01},
@@ -192,7 +198,7 @@ void ov5640_light_mode(uint8_t mode)
 {
     ov5640_write_reg(0x3212, 0x03); // start group 3
     for (int i = 0; i < 7; i++)
-        ov5640_write_reg(0x3400 + i, ov5640_lightmode_tbl[mode][i]);
+        ov5640_write_reg(0x3400 + i, ov5640_lightmode_p[mode][i]);
     ov5640_write_reg(0x3212, 0x13); // end group 3
     ov5640_write_reg(0x3212, 0xA3); // launch group 3
 }
@@ -309,7 +315,7 @@ void ov5640_sharpness(uint8_t sharp)
     }
 }
 /** Effect configs [0..6] [Normal (off), Blueish (cool light), Redish (warm), Black & White, Sepia, Negative, Greenish] */
-const static uint8_t ov5640_effects_tbl[7][3] =
+const static uint8_t ov5640_effects_p[7][3] =
     {
         {0x06, 0x40, 0x10},
         {0x1E, 0xA0, 0x40},
@@ -327,9 +333,9 @@ const static uint8_t ov5640_effects_tbl[7][3] =
 void ov5640_special_effects(uint8_t eft)
 {
     ov5640_write_reg(0x3212, 0x03); // start group 3
-    ov5640_write_reg(0x5580, ov5640_effects_tbl[eft][0]);
-    ov5640_write_reg(0x5583, ov5640_effects_tbl[eft][1]); // sat U
-    ov5640_write_reg(0x5584, ov5640_effects_tbl[eft][2]); // sat V
+    ov5640_write_reg(0x5580, ov5640_effects_p[eft][0]);
+    ov5640_write_reg(0x5583, ov5640_effects_p[eft][1]); // sat U
+    ov5640_write_reg(0x5584, ov5640_effects_p[eft][2]); // sat V
     ov5640_write_reg(0x5003, 0x08);
     ov5640_write_reg(0x3212, 0x13); // end group 3
     ov5640_write_reg(0x3212, 0xA3); // launch group 3
@@ -403,8 +409,8 @@ void ov5640_focus_init(void)
     ov5640_write_reg(0x3000, 0x20);
 
     // program ov5640 MCU firmware
-    for (size_t i = 0; i < LEN(ov5640_af_config_tbl); i++)
-        ov5640_write_reg(0x8000 + i, ov5640_af_config_tbl[i]);
+    for (size_t i = 0; i < ov5640_af_config_len; i++)
+        ov5640_write_reg(0x8000 + i, ov5640_af_config_p[i]);
 
     ov5640_write_reg(0x3022, 0x00); // ? undocumented
     ov5640_write_reg(0x3023, 0x00); // ?

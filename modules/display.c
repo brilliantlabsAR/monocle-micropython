@@ -31,8 +31,6 @@
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
 
-#include "driver/config.h"
-
 #include "font.h"
 
 #define FPGA_ADDR_ALIGN 128

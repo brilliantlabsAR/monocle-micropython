@@ -143,16 +143,21 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
                          uint8_t register_mask,
                          uint8_t set_value)
 {
+    i2c_response_t resp = {.fail = false, .value = 0x00};
+
     if (not_real_hardware)
     {
-        return (i2c_response_t){.fail = false, .value = 0x00};
+        return resp;
     }
 
-    i2c_response_t resp = i2c_read(device_address_7bit, register_address, 0xFF);
-
-    if (resp.fail)
+    if (register_mask != 0xFF)
     {
-        return resp;
+        resp = i2c_read(device_address_7bit, register_address, 0xFF);
+
+        if (resp.fail)
+        {
+            return resp;
+        }
     }
 
     // Create a combined value with the existing data and the new value
@@ -201,6 +206,7 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
         if (i == 2)
         {
             resp.fail = true;
+            NRFX_LOG_ERROR("failed to write 0x%02X = 0x%02X", register_address, set_value);
             return resp;
         }
     }

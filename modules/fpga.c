@@ -31,8 +31,6 @@
 #include "nrfx_log.h"
 #include "nrfx_spim.h"
 
-#include "driver/config.h"
-
 // TODO use a header
 void spi_chip_select(uint8_t cs_pin);
 void spi_chip_deselect(uint8_t cs_pin);

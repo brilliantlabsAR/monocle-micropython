@@ -42,6 +42,7 @@
 
 #include "monocle.h"
 #include "touch.h"
+#include "data-tables.h"
 #include "nrfx.h"
 
 #include "nrfx_log.h"
@@ -56,6 +57,7 @@
 #include "nrfx_timer.h"
 #include "nrfx_glue.h"
 #include "nrf_soc.h"
+#include "nrf_gpio.h"
 #include "ble_gatts.h"
 #include "ble_gattc.h"
 #include "ble.h"
@@ -112,104 +114,6 @@ uint16_t ble_conn_handle = BLE_CONN_HANDLE_INVALID;
 uint16_t ble_negotiated_mtu;
 ring_buf_t ble_nus_rx;
 ring_buf_t ble_nus_tx;
-
-
-// ECX336CN datasheet section 10.1
-uint8_t const ecx336cn_config[] = {
-    [0x00] = 0x9E, // [0]=0 -> enter power save mode
-    [0x01] = 0x20,
-    /* * */
-    [0x03] = 0x20, // 1125
-    [0x04] = 0x3F,
-    [0x05] = 0xC8, // 1125  DITHERON, LUMINANCE=0x00=2000cd/m2=medium (Datasheet 10.8)
-    /* * */
-    [0x07] = 0x40,
-    [0x08] = 0x80, // Luminance adjustment: OTPCALDAC_REGDIS=0 (preset mode per reg 5), white chromaticity: OTPDG_REGDIS=0 (preset mode, default)
-    /* * */
-    [0x0A] = 0x10,
-    /* * */
-    [0x0F] = 0x56,
-    /* * */
-    [0x20] = 0x01,
-    /* * */
-    [0x22] = 0x40,
-    [0x23] = 0x40,
-    [0x24] = 0x40,
-    [0x25] = 0x80,
-    [0x26] = 0x40,
-    [0x27] = 0x40,
-    [0x28] = 0x40,
-    [0x29] = 0x0B,
-    [0x2A] = 0xBE, // CALDAC=190 (ignored, since OTPCALDAC_REGDIS=0)
-    [0x2B] = 0x3C,
-    [0x2C] = 0x02,
-    [0x2D] = 0x7A,
-    [0x2E] = 0x02,
-    [0x2F] = 0xFA,
-    [0x30] = 0x26,
-    [0x31] = 0x01,
-    [0x32] = 0xB6,
-    /* * */
-    [0x34] = 0x03,
-    [0x35] = 0x60, // 1125
-    /* * */
-    [0x37] = 0x76,
-    [0x38] = 0x02,
-    [0x39] = 0xFE,
-    [0x3A] = 0x02,
-    [0x3B] = 0x71, // 1125
-    /* * */
-    [0x3D] = 0x1B,
-    /* * */
-    [0x3F] = 0x1C,
-    [0x40] = 0x02, // 1125
-    [0x41] = 0x4D, // 1125
-    [0x42] = 0x02, // 1125
-    [0x43] = 0x4E, // 1125
-    [0x44] = 0x80,
-    /* * */
-    [0x47] = 0x2D, // 1125
-    [0x48] = 0x08,
-    [0x49] = 0x01, // 1125
-    [0x4A] = 0x7E, // 1125
-    [0x4B] = 0x08,
-    [0x4C] = 0x0A, // 1125
-    [0x4D] = 0x04, // 1125
-    /* * */
-    [0x4F] = 0x3A, // 1125
-    [0x50] = 0x01, // 1125
-    [0x51] = 0x58, // 1125
-    [0x52] = 0x01,
-    [0x53] = 0x2D,
-    [0x54] = 0x01,
-    [0x55] = 0x15, // 1125
-    /* * */
-    [0x57] = 0x2B,
-    [0x58] = 0x11, // 1125
-    [0x59] = 0x02,
-    [0x5A] = 0x11, // 1125
-    [0x5B] = 0x02,
-    [0x5C] = 0x25,
-    [0x5D] = 0x04, // 1125
-    [0x5E] = 0x0B, // 1125
-    /* * */
-    [0x60] = 0x23,
-    [0x61] = 0x02,
-    [0x62] = 0x1A, // 1125
-    /* * */
-    [0x64] = 0x0A, // 1125
-    [0x65] = 0x01, // 1125
-    [0x66] = 0x8C, // 1125
-    [0x67] = 0x30, // 1125
-    /* * */
-    [0x69] = 0x00, // 1125
-    /* * */
-    [0x6D] = 0x00, // 1125
-    /* * */
-    [0x6F] = 0x60,
-    /* * */
-    [0x79] = 0x68,
-};
 
 // TODO clean up all these SPI functions into a simple driver
 void fpga_cmd_read(uint16_t cmd, uint8_t *buf, size_t len);
@@ -847,7 +751,7 @@ int main(void)
         nrf_gpio_pin_set(FPGA_INTERRUPT_PIN);
     }
 
-    // Setup display
+    // Setup the display
     {
         // configure CS pin for the Display (for active low)
         nrf_gpio_cfg_output(DISPLAY_CS_PIN);
@@ -856,37 +760,137 @@ int main(void)
         ecx336cn_write_byte(0x00, 0x9E); // enter power saving mode (YUV)
         // it is now possible to turn off the 10V rail
 
-        for (size_t i = 0; i < sizeof(ecx336cn_config) / sizeof(*ecx336cn_config); i++)
+        for (size_t i = 0; i < MP_ARRAY_SIZE(ecx336cn_config_tbl); i++)
         {
-            ecx336cn_write_byte(i, ecx336cn_config[i]);
+            ecx336cn_write_byte(i, ecx336cn_config_tbl[i]);
         }
 
         // the 10V power rail needs to be turned back on first
         ecx336cn_write_byte(0x00, 0x9F); // exit power saving mode (YUV)
     }
 
-    // Setup camera
+    // Setup the camera
     {
         nrfx_systick_delay_ms(750); // TODO optimize the FPGA to not need this delay
+        nrfx_systick_delay_ms(5000); 
+    NRFX_LOG_ERROR("camera setup");
         fpga_cmd_write(0x1009, NULL, 0);
-        nrf_gpio_pin_clear(CAMERA_SLEEP_PIN);
-        nrf_gpio_pin_clear(CAMERA_RESET_PIN);
+
+        // Power on sequence, references: Datasheet section 2.7.1; Application Notes section 3.1.1
+        // assume XCLK signal coming from the FPGA
+        nrf_gpio_pin_write(CAMERA_SLEEP_PIN, true);
+        nrf_gpio_pin_write(CAMERA_RESET_PIN, !true);
+        nrfx_systick_delay_ms(5);
+        nrfx_systick_delay_ms(8);
+        nrf_gpio_pin_write(CAMERA_SLEEP_PIN, false);
+        nrfx_systick_delay_ms(2);
+        nrf_gpio_pin_write(CAMERA_RESET_PIN, !false);
+        nrfx_systick_delay_ms(20);
 
         // Read the camera CID (one of them)
         i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
-
         if (resp.fail || resp.value != 0x56)
         {
             NRFX_LOG_ERROR("Error: Camera not found.");
             monocle_set_led(RED_LED, true);
         }
 
-        // TODO camera configuration (don't error check)
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3103, 0xFF, 0x11).fail); // system clock from pad
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3008, 0xFF, 0x82).fail);
+
+        // combined configuration table for YUV422 mode
+        for (size_t i = 0; i < MP_ARRAY_SIZE(ov5640_yuv422_direct_tbl); i++)
+        {
+            app_err(i2c_write(CAMERA_I2C_ADDRESS, ov5640_yuv422_direct_tbl[i].addr, 0xFF,
+                              ov5640_yuv422_direct_tbl[i].value).fail);
+        }
+
+        // reduce camera output image size
+        const uint16_t camera_reduced_width = 640;
+        const uint16_t camera_reduced_height = 400;
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x03).fail); // start group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3808, 0xFF, camera_reduced_width >> 8).fail);    // DVPHO, upper byte
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3809, 0xFF, camera_reduced_width & 0xFF).fail);  // DVPHO, lower byte
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x380a, 0xFF, camera_reduced_height >> 8).fail);   // DVPVO, upper byte
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x380b, 0xFF, camera_reduced_height & 0xFF).fail); // DVPVO, lower byte
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x13).fail); // end group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA3).fail); // launch group 3
+
+        // configure focus data
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3000, 0xFF, 0x20).fail); // reset MCU
+        // program ov5640 MCU firmware
+        for (size_t i = 0; i < MP_ARRAY_SIZE(ov5640_af_config_tbl); i++)
+        {
+            app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x8000 + i, 0xFF, ov5640_af_config_tbl[i]).fail);
+        }
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3022, 0xFF, 0x00).fail); // ? undocumented
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3023, 0xFF, 0x00).fail); // ?
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3024, 0xFF, 0x00).fail); // ?
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3025, 0xFF, 0x00).fail); // ?
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3026, 0xFF, 0x00).fail); // ?
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3027, 0xFF, 0x00).fail); // ?
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3028, 0xFF, 0x00).fail); // ?
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3029, 0xFF, 0x7F).fail); // ?
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3000, 0xFF, 0x00).fail); // enable MCU
+
+        // configure light mode
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x03).fail); // start group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3400, 0xFF, 0x04).fail); // auto AWB value 0
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3401, 0xFF, 0x00).fail); // auto AWB value 1
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3402, 0xFF, 0x04).fail); // auto AWB value 2
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3403, 0xFF, 0x00).fail); // auto AWB value 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3404, 0xFF, 0x04).fail); // auto AWB value 4
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3405, 0xFF, 0x00).fail); // auto AWB value 5
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3406, 0xFF, 0x00).fail); // auto AWB value 6
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x13).fail); // end group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA3).fail); // launch group 3
+
+        // configure saturation
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x03).fail); // start group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5381, 0xFF, 0x1C).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5382, 0xFF, 0x5A).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5383, 0xFF, 0x06).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5384, 0xFF, 0x1A).fail); // saturation 0 value 0
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5385, 0xFF, 0x66).fail); // saturation 0 value 1
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5386, 0xFF, 0x80).fail); // saturation 0 value 2
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5387, 0xFF, 0x82).fail); // saturation 0 value 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5388, 0xFF, 0x80).fail); // saturation 0 value 4
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5389, 0xFF, 0x02).fail); // saturation 0 value 5
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x538a, 0xFF, 0x01).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x538b, 0xFF, 0x98).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x13).fail); // end group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA3).fail); // launch group 3
+
+        // configure brightness
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x03).fail); // start group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5587, 0xFF, 0x00).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5588, 0xFF, 0x01).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x13).fail); // end group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA3).fail); // launch group 3
+
+        // configure contrast
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x03).fail); // start group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5585, 0xFF, 0x1C).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5586, 0xFF, 0x2C).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x13).fail); // end group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA3).fail); // launch group 3
+
+        // configure sharpness
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5308, 0xFF, 0x25).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5300, 0xFF, 0x08).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5301, 0xFF, 0x30).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5302, 0xFF, 0x10).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5303, 0xFF, 0x00).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5309, 0xFF, 0x08).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x530a, 0xFF, 0x30).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x530b, 0xFF, 0x04).fail);
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x530c, 0xFF, 0x06).fail);
 
         // Put the camera to sleep
-        nrf_gpio_pin_set(CAMERA_SLEEP_PIN);
+        nrf_gpio_pin_write(CAMERA_SLEEP_PIN, false);
     }
 
+    NRFX_LOG_ERROR("preparing the repl");
     // Initialise the stack pointer for the main thread
     mp_stack_set_top(&_stack_top);
 
