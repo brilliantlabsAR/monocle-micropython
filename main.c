@@ -113,7 +113,6 @@ uint16_t ble_negotiated_mtu;
 ring_buf_t ble_nus_rx;
 ring_buf_t ble_nus_tx;
 
-
 uint8_t const display_config[] = {
     0x00,
     0x9F,
@@ -969,9 +968,12 @@ int main(void)
     // Setup the camera
     {
         nrfx_systick_delay_ms(750); // TODO optimize the FPGA to not need this delay
-        nrfx_systick_delay_ms(5000); 
+        nrfx_systick_delay_ms(5000);
         NRFX_LOG_ERROR("camera setup");
-        fpga_cmd_write(0x1009, NULL, 0);
+
+        // TODO optimize this away. Ask the FPGA to start the camera clock
+        uint8_t command[2] = {0x10, 0x06};
+        spi_write(FPGA, command, 2, false);
 
         // Power on sequence, references: Datasheet section 2.7.1; Application Notes section 3.1.1
         // assume XCLK signal coming from the FPGA
@@ -983,13 +985,6 @@ int main(void)
         nrfx_systick_delay_ms(2);
         nrf_gpio_pin_write(CAMERA_RESET_PIN, !false);
         nrfx_systick_delay_ms(20);
-
-        // TODO optimize the FPGA to not need this delay
-        nrfx_systick_delay_ms(750);
-
-        // TODO optimize this away. Ask the FPGA to start the camera clock
-        uint8_t command[2] = {0x10, 0x06};
-        spi_write(FPGA, command, 2, false);
 
         // Read the camera CID (one of them)
         i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
@@ -1006,19 +1001,20 @@ int main(void)
         for (size_t i = 0; i < MP_ARRAY_SIZE(ov5640_yuv422_direct_tbl); i++)
         {
             app_err(i2c_write(CAMERA_I2C_ADDRESS, ov5640_yuv422_direct_tbl[i].addr, 0xFF,
-                              ov5640_yuv422_direct_tbl[i].value).fail);
+                              ov5640_yuv422_direct_tbl[i].value)
+                        .fail);
         }
 
         // reduce camera output image size
         const uint16_t camera_reduced_width = 640;
         const uint16_t camera_reduced_height = 400;
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x03).fail); // start group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x03).fail);                         // start group 3
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3808, 0xFF, camera_reduced_width >> 8).fail);    // DVPHO, upper byte
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3809, 0xFF, camera_reduced_width & 0xFF).fail);  // DVPHO, lower byte
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x380a, 0xFF, camera_reduced_height >> 8).fail);   // DVPVO, upper byte
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x380b, 0xFF, camera_reduced_height & 0xFF).fail); // DVPVO, lower byte
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x13).fail); // end group 3
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA3).fail); // launch group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x13).fail);                         // end group 3
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA3).fail);                         // launch group 3
 
         // configure focus data
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3000, 0xFF, 0x20).fail); // reset MCU
