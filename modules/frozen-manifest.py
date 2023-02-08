@@ -24,13 +24,13 @@
 
 import os
 
-freeze("", "camera.py")
-freeze("", "display.py")
-freeze("", "microphone.py")
-freeze("", "update.py")
+module("display.py")
+module("microphone.py")
+module("update.py")
+module("camera.py")
 
 include("$(MPY_DIR)/extmod/uasyncio/manifest.py")
 
 # Always include tests unless we're doing a release build
 if os.getenv('REMOVE_TESTS_FOR_RELEASE') is None:
-    freeze("", "test.py")
+    module("test.py")

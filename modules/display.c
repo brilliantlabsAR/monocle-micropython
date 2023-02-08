@@ -31,7 +31,6 @@
 #include "nrfx_log.h"
 #include "nrfx_systick.h"
 
-#include "driver/config.h"
 #include "math.h"
 #include "font.h"
 
