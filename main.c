@@ -972,7 +972,7 @@ int main(void)
         NRFX_LOG_ERROR("camera setup");
 
         // TODO optimize this away. Ask the FPGA to start the camera clock
-        uint8_t command[2] = {0x10, 0x06};
+        uint8_t command[2] = {0x10, 0x09};
         spi_write(FPGA, command, 2, false);
 
         // Power on sequence, references: Datasheet section 2.7.1; Application Notes section 3.1.1
