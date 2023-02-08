@@ -23,6 +23,8 @@
  */
 
 #include "monocle.h"
+#include "nrf_gpio.h"
+#include "nrfx_spim.h"
 #include "nrfx_twim.h"
 
 /**
@@ -61,6 +63,7 @@ void monocle_set_led(led_t led, bool enable)
 
 static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
 static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
+static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
 
 static bool not_real_hardware = false;
 
@@ -206,4 +209,58 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
     }
 
     return resp;
+}
+
+void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
+{
+    uint8_t cs_pin;
+
+    switch (spi_device)
+    {
+    case DISPLAY:
+        cs_pin = DISPLAY_CS_PIN;
+        break;
+    case FPGA:
+        cs_pin = FPGA_CS_PIN;
+        break;
+    case FLASH:
+        cs_pin = FLASH_CS_PIN;
+        break;
+    }
+
+    nrf_gpio_pin_clear(cs_pin);
+
+    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(data, length);
+    app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
+
+    nrf_gpio_pin_set(cs_pin);
+}
+
+void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
+               bool hold_down_cs)
+{
+    uint8_t cs_pin;
+
+    switch (spi_device)
+    {
+    case DISPLAY:
+        cs_pin = DISPLAY_CS_PIN;
+        break;
+    case FPGA:
+        cs_pin = FPGA_CS_PIN;
+        break;
+    case FLASH:
+        cs_pin = FLASH_CS_PIN;
+        break;
+    }
+
+    nrf_gpio_pin_clear(cs_pin);
+
+    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(data, length);
+    app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
+
+    if (!hold_down_cs)
+    {
+        nrf_gpio_pin_set(cs_pin);
+    }
 }
