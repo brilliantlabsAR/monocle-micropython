@@ -53,7 +53,8 @@
 #include "nrfx_log.h"
 #include "nrfx_saadc.h"
 #include "nrfx_systick.h"
-#include "nrfx_timer.h"
+// #include "nrfx_timer.h"
+#include "nrfx_rtc.h"
 #include "nrfx.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
@@ -518,6 +519,8 @@ void SD_EVT_IRQHandler(void)
     }
 }
 
+void unused_rtc_event_handler(nrfx_rtc_int_type_t int_type) {}
+
 int main(void)
 {
     NRFX_LOG_ERROR(RTT_CTRL_CLEAR
@@ -566,24 +569,16 @@ int main(void)
         nrf_gpio_cfg_output(FPGA_INTERRUPT_CONFIG_PIN);
     }
 
-    // Setup an RTC counting milliseconds
+    // Setup the real time clock for micropython's time functions
     {
-        static nrfx_timer_config_t config = NRFX_TIMER_DEFAULT_CONFIG;
-        nrfx_timer_t timer = NRFX_TIMER_INSTANCE(3);
+        nrfx_rtc_t rtc = NRFX_RTC_INSTANCE(1);
+        nrfx_rtc_config_t config = NRFX_RTC_DEFAULT_CONFIG;
 
-        // Prepare the configuration structure.
-        config.frequency = NRF_TIMER_FREQ_125kHz;
-        config.mode = NRF_TIMER_MODE_TIMER;
-        config.bit_width = NRF_TIMER_BIT_WIDTH_8;
+        // 1024Hz = >1ms resolution
+        config.prescaler = RTC_FREQ_TO_PRESCALER(1024);
 
-        // TODO is there a way to make this more efficient?
-        app_err(nrfx_timer_init(&timer, &config, &mp_hal_timer_1ms_callback));
-
-        // Raise an interrupt every 1ms: 125 kHz / 125
-        nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 125,
-                                    NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
-
-        nrfx_timer_enable(&timer);
+        app_err(nrfx_rtc_init(&rtc, &config, unused_rtc_event_handler));
+        nrfx_rtc_enable(&rtc);
     }
 
     // Setup the Bluetooth

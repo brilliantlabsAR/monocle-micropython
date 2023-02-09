@@ -27,7 +27,7 @@
 #include "py/lexer.h"
 #include "py/runtime.h"
 #include "mpconfigport.h"
-#include "nrfx_timer.h"
+#include "nrfx_rtc.h"
 #include "nrfx_systick.h"
 #include "nrf_soc.h"
 
@@ -44,18 +44,17 @@ const char help_text[] = {
     "For details on a specific module, import it, and then type "
     "help(module_name)\n"};
 
-// this overflows after 49 days without reboot.
-static volatile uint32_t uptime_ms;
-
-void mp_hal_timer_1ms_callback(nrf_timer_event_t event, void *context)
-{
-    (void)event;
-    uptime_ms++;
-}
+static nrfx_rtc_t rtc = NRFX_RTC_INSTANCE(1);
 
 mp_uint_t mp_hal_ticks_ms(void)
 {
-    return uptime_ms;
+    uint32_t value = nrfx_rtc_counter_get(&rtc);
+
+    // Correct for the slightly faster tick frequency of 1024Hz
+    float ms = (float)value / 1024 * 1000;
+    NRFX_LOG_ERROR("Raw RTC value = %u. Corrected = %u", value, (uint32_t)ms);
+
+    return (mp_uint_t)ms;
 }
 
 mp_uint_t mp_hal_ticks_cpu(void)
