@@ -116,10 +116,5 @@
 
 #define MP_STATE_PORT MP_STATE_VM
 
-#define MICROPY_EVENT_POLL_HOOK              \
-    do                                       \
-    {                                        \
-        extern void mp_handle_pending(bool); \
-        mp_handle_pending(true);             \
-        __WFI();                             \
-    } while (0);
+void mp_event_poll_hook(void);
+#define MICROPY_EVENT_POLL_HOOK mp_event_poll_hook();

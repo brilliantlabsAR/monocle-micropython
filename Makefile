@@ -110,7 +110,6 @@ SRC_C += micropython/extmod/modujson.c
 SRC_C += micropython/extmod/modurandom.c
 SRC_C += micropython/extmod/modure.c
 SRC_C += micropython/extmod/utime_mphal.c
-SRC_C += modules/camera.c
 SRC_C += modules/device.c
 SRC_C += modules/display.c
 SRC_C += modules/fpga.c
