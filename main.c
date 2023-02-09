@@ -22,45 +22,39 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 #include <math.h>
+#include <stdbool.h>
+#include <stdint.h>
 
+#include "monocle.h"
+#include "touch.h"
+#include "config-tables.h"
+
+#include "genhdr/mpversion.h"
+#include "mpconfigport.h"
+#include "mphalport.h"
+#include "py/builtin.h"
 #include "py/compile.h"
 #include "py/gc.h"
 #include "py/mperrno.h"
 #include "py/repl.h"
 #include "py/runtime.h"
 #include "py/stackctrl.h"
-#include "py/builtin.h"
-#include "mphalport.h"
-
 #include "shared/readline/readline.h"
 #include "shared/runtime/pyexec.h"
-#include "genhdr/mpversion.h"
 
-#include "monocle.h"
-#include "touch.h"
-#include "data-tables.h"
-#include "nrfx.h"
-
-#include "nrfx_log.h"
-#include "nrf_sdm.h"
-#include "nrf_power.h"
-#include "nrfx_twi.h"
-#include "nrfx_spim.h"
-#include "nrfx_systick.h"
-#include "nrfx_gpiote.h"
-#include "nrf_nvic.h"
-#include "nrfx_saadc.h"
-#include "nrfx_timer.h"
-#include "nrfx_glue.h"
-#include "nrf_soc.h"
-#include "nrf_gpio.h"
-#include "ble_gatts.h"
 #include "ble_gattc.h"
 #include "ble.h"
+#include "nrf_gpio.h"
+#include "nrf_nvic.h"
+#include "nrf_sdm.h"
+#include "nrfx_glue.h"
+#include "nrfx_gpiote.h"
+#include "nrfx_log.h"
+#include "nrfx_saadc.h"
+#include "nrfx_systick.h"
+#include "nrfx_timer.h"
+#include "nrfx.h"
 
 nrf_nvic_state_t nrf_nvic_state = {{0}, 0};
 
@@ -185,7 +179,7 @@ void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len)
 
 int mp_hal_stdin_rx_chr(void)
 {
-    while (repl_rx.head == repl_rx.tail)
+    if (repl_rx.head == repl_rx.tail)
     {
         MICROPY_EVENT_POLL_HOOK;
         return 0;
@@ -411,8 +405,9 @@ void SD_EVT_IRQHandler(void)
 
 int main(void)
 {
-    NRFX_LOG_ERROR(RTT_CTRL_CLEAR "\rMicroPython on Monocle - " BUILD_VERSION
-                                  " (" MICROPY_GIT_HASH ").");
+    NRFX_LOG_ERROR(RTT_CTRL_CLEAR
+                   "\rMicroPython on Monocle - " BUILD_VERSION
+                   " (" MICROPY_GIT_HASH ").");
 
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();
@@ -420,9 +415,16 @@ int main(void)
     // Setup touch interrupt
     {
         app_err(nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY));
-        nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_HITOLO(false);
-        app_err(nrfx_gpiote_in_init(TOUCH_INTERRUPT_PIN, &config, touch_interrupt_handler));
-        nrfx_gpiote_in_event_enable(TOUCH_INTERRUPT_PIN, true);
+
+        nrfx_gpiote_in_config_t config =
+            NRFX_GPIOTE_CONFIG_IN_SENSE_HITOLO(false);
+
+        app_err(nrfx_gpiote_in_init(TOUCH_INTERRUPT_PIN,
+                                    &config,
+                                    touch_interrupt_handler));
+
+        nrfx_gpiote_in_event_enable(TOUCH_INTERRUPT_PIN,
+                                    true);
     }
 
     // Setup battery ADC input
@@ -449,7 +451,7 @@ int main(void)
         nrf_gpio_cfg_output(FPGA_INTERRUPT_CONFIG_PIN);
     }
 
-    // Setup an RTC counting milliseconds since now
+    // Setup an RTC counting milliseconds
     {
         static nrfx_timer_config_t config = NRFX_TIMER_DEFAULT_CONFIG;
         nrfx_timer_t timer = NRFX_TIMER_INSTANCE(3);
@@ -459,13 +461,13 @@ int main(void)
         config.mode = NRF_TIMER_MODE_TIMER;
         config.bit_width = NRF_TIMER_BIT_WIDTH_8;
 
+        // TODO is there a way to make this more efficient?
         app_err(nrfx_timer_init(&timer, &config, &mp_hal_timer_1ms_callback));
 
         // Raise an interrupt every 1ms: 125 kHz / 125
         nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 125,
                                     NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
 
-        // Start the timer, letting timer_add_task() append more of them while running.
         nrfx_timer_enable(&timer);
     }
 
@@ -523,7 +525,7 @@ int main(void)
         cfg.gatts_cfg.service_changed.service_changed = 0;
         app_err(sd_ble_cfg_set(BLE_GATTS_CFG_SERVICE_CHANGED, &cfg, ram_start));
 
-        // Start bluetooth. The ram_start returned is the total required RAM for SD
+        // Start the Softdevice
         app_err(sd_ble_enable(&ram_start));
 
         NRFX_LOG_ERROR("Softdevice using 0x%x bytes of RAM",
@@ -533,7 +535,7 @@ int main(void)
         ble_gap_conn_sec_mode_t sec_mode;
         BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
-        // Set device name. Last four characters are taken from MAC address
+        // Set device name
         const char device_name[] = "monocle";
         app_err(sd_ble_gap_device_name_set(&sec_mode,
                                            (const uint8_t *)device_name,
@@ -829,7 +831,6 @@ int main(void)
         nrf_gpio_pin_write(CAMERA_SLEEP_PIN, false);
     }
 
-    NRFX_LOG_ERROR("preparing the repl");
     // Initialise the stack pointer for the main thread
     mp_stack_set_top(&_stack_top);
 
