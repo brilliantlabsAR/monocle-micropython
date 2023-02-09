@@ -118,13 +118,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_reset_cause_obj, device_reset_cause);
 
 STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
 
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_device)},
-
     {MP_ROM_QSTR(MP_QSTR_NAME), MP_ROM_PTR(&device_name_obj)},
     {MP_ROM_QSTR(MP_QSTR_mac_address), MP_ROM_PTR(&device_mac_address_obj)},
     {MP_ROM_QSTR(MP_QSTR_VERSION), MP_ROM_PTR(&device_version_obj)},
     {MP_ROM_QSTR(MP_QSTR_GIT_TAG), MP_ROM_PTR(&device_git_tag_obj)},
-
     {MP_ROM_QSTR(MP_QSTR_battery_level), MP_ROM_PTR(&device_battery_level_obj)},
     {MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&device_reset_obj)},
     {MP_ROM_QSTR(MP_QSTR_reset_cause), MP_ROM_PTR(&device_reset_cause_obj)},

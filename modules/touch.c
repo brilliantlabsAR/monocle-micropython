@@ -114,8 +114,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(touch_unbind_obj, touch_unbind);
 
 STATIC const mp_rom_map_elem_t touch_module_globals_table[] = {
 
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_touch)},
-
     {MP_ROM_QSTR(MP_QSTR_bind), MP_ROM_PTR(&touch_bind_obj)},
     {MP_ROM_QSTR(MP_QSTR_unbind), MP_ROM_PTR(&touch_unbind_obj)},
 

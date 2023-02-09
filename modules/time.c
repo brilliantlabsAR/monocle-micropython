@@ -244,7 +244,6 @@ STATIC mp_obj_t time_mktime(mp_obj_t dict)
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(time_mktime_obj, time_mktime);
 
 STATIC const mp_rom_map_elem_t time_module_globals_table[] = {
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_time)},
 
     {MP_ROM_QSTR(MP_QSTR_mktime), MP_ROM_PTR(&time_mktime_obj)},
     {MP_ROM_QSTR(MP_QSTR_time), MP_ROM_PTR(&time_time_obj)},

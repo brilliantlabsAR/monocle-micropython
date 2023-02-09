@@ -35,7 +35,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(update_nrf52_obj, update_nrf52);
 
 STATIC const mp_rom_map_elem_t update_module_globals_table[] = {
 
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR___update)},
     {MP_ROM_QSTR(MP_QSTR_nrf52), MP_ROM_PTR(&update_nrf52_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(update_module_globals, update_module_globals_table);

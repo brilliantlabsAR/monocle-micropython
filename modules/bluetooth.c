@@ -45,7 +45,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(bluetooth_send_obj, bluetooth_send);
 
 static mp_obj_t bluetooth_receive(void)
 {
-
+    // TODO
     return mp_const_notimplemented;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(bluetooth_receive_obj, bluetooth_receive);
