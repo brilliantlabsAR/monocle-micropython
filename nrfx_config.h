@@ -48,15 +48,12 @@
 #define NRFX_RTC_ENABLED 1
 #define NRFX_RTC0_ENABLED 1
 #define NRFX_RTC1_ENABLED 1 // Used by micropython time functions
-#define NRFX_RTC2_ENABLED 0
 #define NRFX_RTC_DEFAULT_CONFIG_IRQ_PRIORITY 7
 
 #define NRFX_SYSTICK_ENABLED 1
 
 #define NRFX_TIMER_ENABLED 1
 #define NRFX_TIMER0_ENABLED 1 // Used by the SoftDevice
-#define NRFX_TIMER1_ENABLED 0
-#define NRFX_TIMER3_ENABLED 0
 #define NRFX_TIMER4_ENABLED 1 // Used for checking battery state
 #define NRFX_TIMER_DEFAULT_CONFIG_IRQ_PRIORITY 7
 

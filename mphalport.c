@@ -28,8 +28,6 @@
 #include "py/runtime.h"
 #include "mpconfigport.h"
 #include "nrfx_rtc.h"
-#include "nrfx_systick.h"
-#include "nrf_soc.h"
 
 const char help_text[] = {
     "Welcome to MicroPython!\n\n"
@@ -52,36 +50,23 @@ mp_uint_t mp_hal_ticks_ms(void)
 
     // Correct for the slightly faster tick frequency of 1024Hz
     float ms = (float)value / 1024 * 1000;
-    NRFX_LOG_ERROR("Raw RTC value = %u. Corrected = %u", value, (uint32_t)ms);
 
     return (mp_uint_t)ms;
 }
 
 mp_uint_t mp_hal_ticks_cpu(void)
 {
-    return 0;
-}
-
-uint64_t mp_hal_time_ns(void)
-{
+    // This doesn't seem to be used by anything so it's not implemented
     return 0;
 }
 
 void mp_hal_delay_ms(mp_uint_t ms)
 {
-    for (uint64_t step; ms > 0; ms -= step)
-    {
-        step = MIN(ms, UINT32_MAX);
-        nrfx_systick_delay_ms(step);
-    }
-}
+    mp_uint_t t0 = mp_hal_ticks_ms();
 
-void mp_hal_delay_us(mp_uint_t us)
-{
-    for (uint64_t step; us > 0; us -= step)
+    while (mp_hal_ticks_ms() - t0 < ms)
     {
-        step = MIN(us, UINT32_MAX);
-        nrfx_systick_delay_us(step);
+        MICROPY_EVENT_POLL_HOOK;
     }
 }
 
