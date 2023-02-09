@@ -399,14 +399,11 @@ STATIC void flush_blocks(row_t yuv422, size_t pos, size_t len)
 
     uint8_t base_addr_command[2] = {0x44, 0x10};
     spi_write(FPGA, base_addr_command, 2, true);
-    NRFX_LOG_ERROR("Base = %u", sizeof(base));
     spi_write(FPGA, base, sizeof(base), false);
 
     // Flush the content of the screen skipping empty bytes.
     uint8_t data_command[2] = {0x44, 0x11};
     spi_write(FPGA, data_command, 2, true);
-
-    NRFX_LOG_ERROR("Total = %u", len);
 
     uint8_t chunks = (uint8_t)ceil((double)len / (double)255);
     for (uint8_t chunk = 0; chunk < chunks; chunk++)
@@ -421,7 +418,6 @@ STATIC void flush_blocks(row_t yuv422, size_t pos, size_t len)
             cs_hold = false;
         }
 
-        NRFX_LOG_ERROR("sent = %u. cs = %u", chunk_size, cs_hold);
         spi_write(FPGA, yuv422.buf + pos + (chunk * 255), chunk_size, cs_hold);
     }
 }

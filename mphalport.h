@@ -39,5 +39,12 @@ void mp_hal_delay_ms(mp_uint_t ms);
 void mp_hal_delay_us(mp_uint_t us);
 void mp_hal_set_interrupt_char(char c);
 
-// raw bluetooth stream for camera trasnfers.
-void ble_raw_tx(uint8_t const *buf, size_t len);
+void ble_buffer_raw_tx_data(const uint8_t *bytes, size_t len);
+
+typedef enum ble_tx_channel_t
+{
+    REPL_TX,
+    DATA_TX,
+} ble_tx_channel_t;
+
+bool ble_are_tx_notifications_enabled(ble_tx_channel_t channel);

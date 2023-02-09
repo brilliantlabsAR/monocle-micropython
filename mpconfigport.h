@@ -26,7 +26,6 @@
 
 #include <alloca.h>
 #include "mphalport.h"
-#include "main.h"
 
 #define MICROPY_BANNER_MACHINE "Monocle on nRF52832"
 
@@ -117,4 +116,5 @@
 
 #define MP_STATE_PORT MP_STATE_VM
 
+void mp_event_poll_hook(void);
 #define MICROPY_EVENT_POLL_HOOK mp_event_poll_hook();

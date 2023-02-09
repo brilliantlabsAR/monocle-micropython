@@ -101,18 +101,61 @@ static struct ble_ring_buffer_t
     .tail = 0,
 },
   repl_tx = {
-      .buffer = "", .head = 0, .tail = 0,
-      // },
-      //   data_rx = {
-      //   .buffer = "",
-      //   .head = 0,
-      //   .tail = 0,
+      .buffer = "",
+      .head = 0,
+      .tail = 0,
+},
+  data_tx = {
+      .buffer = "",
+      .head = 0,
+      .tail = 0,
 };
 
-bool ble_send_data(/*ble_channel_t channel*/)
+bool ble_are_tx_notifications_enabled(ble_tx_channel_t channel)
 {
-    // TODO handle if the service handle is not valid
+    uint8_t value_buffer[2] = {0};
+
+    ble_gatts_value_t value = {.len = sizeof(value_buffer),
+                               .offset = 0,
+                               .p_value = &(value_buffer[0])};
+
+    // Read the CCCD attribute value for one of the tx characteristics
+    switch (channel)
+    {
+    case REPL_TX:
+    {
+        app_err(sd_ble_gatts_value_get(ble_handles.connection,
+                                       ble_handles.repl_tx_notification.cccd_handle,
+                                       &value));
+        break;
+    }
+
+    case DATA_TX:
+    {
+        app_err(sd_ble_gatts_value_get(ble_handles.connection,
+                                       ble_handles.data_tx_notification.cccd_handle,
+                                       &value));
+        break;
+    }
+    }
+
+    // Value of 0x0001 means that notifications are enabled
+    if (value_buffer[1] == 0x00 && value_buffer[0] == 0x01)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+static bool ble_send_repl_data(void)
+{
     if (ble_handles.connection == BLE_CONN_HANDLE_INVALID)
+    {
+        return true;
+    }
+
+    if (!ble_are_tx_notifications_enabled(REPL_TX))
     {
         return true;
     }
@@ -157,6 +200,78 @@ bool ble_send_data(/*ble_channel_t channel*/)
     }
 
     return false;
+}
+
+static bool ble_send_raw_data(void)
+{
+    if (ble_handles.connection == BLE_CONN_HANDLE_INVALID)
+    {
+        return true;
+    }
+
+    if (!ble_are_tx_notifications_enabled(DATA_TX))
+    {
+        return true;
+    }
+
+    if (data_tx.head == data_tx.tail)
+    {
+        return true;
+    }
+
+    uint8_t tx_buffer[BLE_PREFERRED_MAX_MTU] = "";
+    uint16_t tx_length = 0;
+
+    uint16_t buffered_tail = data_tx.tail;
+
+    while (buffered_tail != data_tx.head)
+    {
+        tx_buffer[tx_length++] = data_tx.buffer[buffered_tail++];
+
+        if (buffered_tail == sizeof(data_tx.buffer))
+        {
+            buffered_tail = 0;
+        }
+
+        if (tx_length == ble_negotiated_mtu)
+        {
+            break;
+        }
+    }
+
+    // Initialise the handle value parameters
+    ble_gatts_hvx_params_t hvx_params = {0};
+    hvx_params.handle = ble_handles.data_tx_notification.value_handle;
+    hvx_params.p_data = tx_buffer;
+    hvx_params.p_len = (uint16_t *)&tx_length;
+    hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
+
+    uint32_t status = sd_ble_gatts_hvx(ble_handles.connection, &hvx_params);
+
+    if (status == NRF_SUCCESS)
+    {
+        data_tx.tail = buffered_tail;
+    }
+
+    return false;
+}
+
+void ble_buffer_raw_tx_data(const uint8_t *bytes, size_t len)
+{
+    for (uint16_t position = 0; position < len; position++)
+    {
+        while (data_tx.head == data_tx.tail - 1)
+        {
+            MICROPY_EVENT_POLL_HOOK;
+        }
+
+        data_tx.buffer[data_tx.head++] = bytes[position];
+
+        if (data_tx.head == sizeof(data_tx.buffer))
+        {
+            data_tx.head = 0;
+        }
+    }
 }
 
 void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len)
@@ -870,7 +985,7 @@ int main(void)
 
 void mp_event_poll_hook(void)
 {
-    if (ble_send_data()) // TODO handle all channels
+    if (ble_send_repl_data() && ble_send_raw_data())
     {
         extern void mp_handle_pending(bool);
         mp_handle_pending(true);

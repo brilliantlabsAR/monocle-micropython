@@ -27,7 +27,6 @@
 #include "py/lexer.h"
 #include "py/runtime.h"
 #include "mpconfigport.h"
-#include "main.h"
 #include "nrfx_timer.h"
 #include "nrfx_systick.h"
 #include "nrf_soc.h"
