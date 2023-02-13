@@ -336,6 +336,8 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
     touch_event_handler(touch_action);
 }
 
+void unused_rtc_event_handler(nrfx_rtc_int_type_t int_type) {}
+
 static void softdevice_assert_handler(uint32_t id, uint32_t pc, uint32_t info)
 {
     app_err(0x5D000000 & id);
@@ -620,8 +622,12 @@ int main(void)
         // 1024Hz = >1ms resolution
         config.prescaler = RTC_FREQ_TO_PRESCALER(1024);
 
-        app_err(nrfx_rtc_init(&rtc, &config, rtc_event_handler));
+        app_err(nrfx_rtc_init(&rtc, &config, unused_rtc_event_handler));
         nrfx_rtc_enable(&rtc);
+
+        // Wake up the softdevice every ms so that MICROPY_EVENT_POLL_HOOK
+        // doesn't block for longer than it's supposed to
+        nrfx_rtc_tick_enable(&rtc, true);
     }
 
     // Setup the Bluetooth
