@@ -519,8 +519,6 @@ void SD_EVT_IRQHandler(void)
     }
 }
 
-void unused_rtc_event_handler(nrfx_rtc_int_type_t int_type) {}
-
 int main(void)
 {
     NRFX_LOG_ERROR(RTT_CTRL_CLEAR
@@ -577,7 +575,7 @@ int main(void)
         // 1024Hz = >1ms resolution
         config.prescaler = RTC_FREQ_TO_PRESCALER(1024);
 
-        app_err(nrfx_rtc_init(&rtc, &config, unused_rtc_event_handler));
+        app_err(nrfx_rtc_init(&rtc, &config, rtc_event_handler));
         nrfx_rtc_enable(&rtc);
     }
 

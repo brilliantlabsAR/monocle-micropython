@@ -28,10 +28,13 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "mphalport.h"
+#include "nrfx_rtc.h"
 
 typedef int mp_int_t;
 typedef unsigned int mp_uint_t;
 typedef long mp_off_t;
+
+void rtc_event_handler(nrfx_rtc_int_type_t int_type);
 
 mp_uint_t mp_hal_ticks_ms(void);
 
