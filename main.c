@@ -41,6 +41,7 @@
 #include "py/runtime.h"
 #include "py/stackctrl.h"
 #include "shared/readline/readline.h"
+#include "shared/runtime/interrupt_char.h"
 #include "shared/runtime/pyexec.h"
 
 #include "ble_gattc.h"
@@ -53,7 +54,6 @@
 #include "nrfx_log.h"
 #include "nrfx_saadc.h"
 #include "nrfx_systick.h"
-// #include "nrfx_timer.h"
 #include "nrfx_rtc.h"
 #include "nrfx.h"
 
@@ -102,6 +102,11 @@ static struct ble_ring_buffer_t
     .tail = 0,
 },
   repl_tx = {
+      .buffer = "",
+      .head = 0,
+      .tail = 0,
+},
+  data_rx = {
       .buffer = "",
       .head = 0,
       .tail = 0,
@@ -435,7 +440,9 @@ void SD_EVT_IRQHandler(void)
 
         case BLE_GATTS_EVT_WRITE:
         {
-            if (1 /** REPL service */)
+            // If REPL service
+            if (ble_evt->evt.gatts_evt.params.write.handle ==
+                ble_handles.repl_rx_unused.value_handle)
             {
                 for (uint16_t i = 0;
                      i < ble_evt->evt.gatts_evt.params.write.len;
@@ -453,10 +460,48 @@ void SD_EVT_IRQHandler(void)
                         break;
                     }
 
-                    repl_rx.buffer[repl_rx.head] =
-                        ble_evt->evt.gatts_evt.params.write.data[i];
+                    // Catch keyboard interrupts
+                    if (ble_evt->evt.gatts_evt.params.write.data[i] ==
+                        mp_interrupt_char)
+                    {
+                        mp_sched_keyboard_interrupt();
+                    }
+
+                    // Otherwise add the character to the ring buffer
+                    else
+                    {
+                        repl_rx.buffer[repl_rx.head] =
+                            ble_evt->evt.gatts_evt.params.write.data[i];
+                    }
 
                     repl_rx.head = next;
+                }
+            }
+
+            // If data service
+            if (ble_evt->evt.gatts_evt.params.write.handle ==
+                ble_handles.data_rx_unused.value_handle)
+            {
+                for (uint16_t i = 0;
+                     i < ble_evt->evt.gatts_evt.params.write.len;
+                     i++)
+                {
+                    uint16_t next = data_rx.head + 1;
+
+                    if (next == sizeof(data_rx.buffer))
+                    {
+                        next = 0;
+                    }
+
+                    if (next == data_rx.tail)
+                    {
+                        break;
+                    }
+
+                    data_rx.buffer[data_rx.head] =
+                        ble_evt->evt.gatts_evt.params.write.data[i];
+
+                    data_rx.head = next;
                 }
             }
 
@@ -519,8 +564,6 @@ void SD_EVT_IRQHandler(void)
     }
 }
 
-void unused_rtc_event_handler(nrfx_rtc_int_type_t int_type) {}
-
 int main(void)
 {
     NRFX_LOG_ERROR(RTT_CTRL_CLEAR
@@ -577,7 +620,7 @@ int main(void)
         // 1024Hz = >1ms resolution
         config.prescaler = RTC_FREQ_TO_PRESCALER(1024);
 
-        app_err(nrfx_rtc_init(&rtc, &config, unused_rtc_event_handler));
+        app_err(nrfx_rtc_init(&rtc, &config, rtc_event_handler));
         nrfx_rtc_enable(&rtc);
     }
 

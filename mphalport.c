@@ -44,6 +44,8 @@ const char help_text[] = {
 
 static nrfx_rtc_t rtc = NRFX_RTC_INSTANCE(1);
 
+static bool rtc_wakeup_flag;
+
 mp_uint_t mp_hal_ticks_ms(void)
 {
     uint32_t value = nrfx_rtc_counter_get(&rtc);
@@ -60,11 +62,21 @@ mp_uint_t mp_hal_ticks_cpu(void)
     return 0;
 }
 
+void rtc_event_handler(nrfx_rtc_int_type_t int_type)
+{
+    rtc_wakeup_flag = true;
+}
+
 void mp_hal_delay_ms(mp_uint_t ms)
 {
-    mp_uint_t t0 = mp_hal_ticks_ms();
+    nrfx_rtc_cc_set(&rtc,
+                    0,
+                    nrfx_rtc_counter_get(&rtc) + (ms * 1000 / 1024),
+                    true);
 
-    while (mp_hal_ticks_ms() - t0 < ms)
+    rtc_wakeup_flag = false;
+
+    while (!rtc_wakeup_flag)
     {
         MICROPY_EVENT_POLL_HOOK;
     }
@@ -87,11 +99,6 @@ mp_import_stat_t mp_import_stat(const char *path)
 {
     // File opening is currently not supported
     return MP_IMPORT_STAT_NO_EXIST;
-}
-
-void mp_hal_set_interrupt_char(char c)
-{
-    (void)c;
 }
 
 int mp_hal_generate_random_seed(void)
