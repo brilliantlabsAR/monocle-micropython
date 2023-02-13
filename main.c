@@ -737,6 +737,10 @@ int main(void)
                                                 &tx_attr,
                                                 &ble_handles.repl_tx_notification));
 
+        // Copy the service UUID type to both rx and tx UUID
+        rx_uuid.type = data_service_uuid.type;
+        tx_uuid.type = data_service_uuid.type;
+
         app_err(sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
                                          &data_service_uuid,
                                          &data_service_handle));
