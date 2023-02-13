@@ -69,9 +69,6 @@ void rtc_event_handler(nrfx_rtc_int_type_t int_type)
 
 void mp_hal_delay_ms(mp_uint_t ms)
 {
-    uint32_t now = nrfx_rtc_counter_get(&rtc);
-    uint32_t wakeup_at = now + (ms * 1000 / 1024);
-
     nrfx_rtc_cc_set(&rtc,
                     0,
                     nrfx_rtc_counter_get(&rtc) + (ms * 1000 / 1024),
@@ -102,11 +99,6 @@ mp_import_stat_t mp_import_stat(const char *path)
 {
     // File opening is currently not supported
     return MP_IMPORT_STAT_NO_EXIST;
-}
-
-void mp_hal_set_interrupt_char(char c)
-{
-    (void)c;
 }
 
 int mp_hal_generate_random_seed(void)

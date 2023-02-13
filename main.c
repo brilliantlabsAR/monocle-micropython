@@ -41,6 +41,7 @@
 #include "py/runtime.h"
 #include "py/stackctrl.h"
 #include "shared/readline/readline.h"
+#include "shared/runtime/interrupt_char.h"
 #include "shared/runtime/pyexec.h"
 
 #include "ble_gattc.h"
@@ -53,7 +54,6 @@
 #include "nrfx_log.h"
 #include "nrfx_saadc.h"
 #include "nrfx_systick.h"
-// #include "nrfx_timer.h"
 #include "nrfx_rtc.h"
 #include "nrfx.h"
 
@@ -453,8 +453,19 @@ void SD_EVT_IRQHandler(void)
                         break;
                     }
 
-                    repl_rx.buffer[repl_rx.head] =
-                        ble_evt->evt.gatts_evt.params.write.data[i];
+                    // Catch keyboard interrupts
+                    if (ble_evt->evt.gatts_evt.params.write.data[i] ==
+                        mp_interrupt_char)
+                    {
+                        mp_sched_keyboard_interrupt();
+                    }
+
+                    // Otherwise add the character to the ring buffer
+                    else
+                    {
+                        repl_rx.buffer[repl_rx.head] =
+                            ble_evt->evt.gatts_evt.params.write.data[i];
+                    }
 
                     repl_rx.head = next;
                 }
