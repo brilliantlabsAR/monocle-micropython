@@ -106,6 +106,11 @@ static struct ble_ring_buffer_t
       .head = 0,
       .tail = 0,
 },
+  data_rx = {
+      .buffer = "",
+      .head = 0,
+      .tail = 0,
+},
   data_tx = {
       .buffer = "",
       .head = 0,
@@ -435,7 +440,9 @@ void SD_EVT_IRQHandler(void)
 
         case BLE_GATTS_EVT_WRITE:
         {
-            if (1 /** REPL service */)
+            // If REPL service
+            if (ble_evt->evt.gatts_evt.params.write.handle ==
+                ble_handles.repl_rx_unused.value_handle)
             {
                 for (uint16_t i = 0;
                      i < ble_evt->evt.gatts_evt.params.write.len;
@@ -468,6 +475,33 @@ void SD_EVT_IRQHandler(void)
                     }
 
                     repl_rx.head = next;
+                }
+            }
+
+            // If data service
+            if (ble_evt->evt.gatts_evt.params.write.handle ==
+                ble_handles.data_rx_unused.value_handle)
+            {
+                for (uint16_t i = 0;
+                     i < ble_evt->evt.gatts_evt.params.write.len;
+                     i++)
+                {
+                    uint16_t next = data_rx.head + 1;
+
+                    if (next == sizeof(data_rx.buffer))
+                    {
+                        next = 0;
+                    }
+
+                    if (next == data_rx.tail)
+                    {
+                        break;
+                    }
+
+                    data_rx.buffer[data_rx.head] =
+                        ble_evt->evt.gatts_evt.params.write.data[i];
+
+                    data_rx.head = next;
                 }
             }
 
