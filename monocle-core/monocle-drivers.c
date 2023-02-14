@@ -65,7 +65,7 @@ static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
 static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
 static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
 
-static bool not_real_hardware = false;
+bool not_real_hardware = false;
 
 i2c_response_t i2c_read(uint8_t device_address_7bit,
                         uint16_t register_address,

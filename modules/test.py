@@ -22,8 +22,9 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import time
 import display
+import fpga
+import time
 
 def __test(evaluate, expected):
     try:
@@ -121,6 +122,13 @@ def mod_display():
     __test("display.WIDTH", 640)
     __test("display.HEIGHT", 400)
 
-def run():
-    mod_time()
+def mod_fpga():
+    __test("fpga.read(0x0000, 3)", b'\x00\x00\x00')
+    __test("fpga.read(0x0000, 256), ", ValueError)
+    __test("fpga.read(0x0000, 0), ", ValueError)
+    __test("fpga.read(0x0000, -1), ", ValueError)
+
+def all():
     mod_display()
+    mod_fpga()
+    mod_time()

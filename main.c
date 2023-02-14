@@ -871,11 +871,10 @@ int main(void)
 
     // Setup the camera
     {
-        nrfx_systick_delay_ms(750); // TODO optimize the FPGA to not need this delay
-        nrfx_systick_delay_ms(5000);
-        NRFX_LOG_ERROR("camera setup");
+        // TODO optimize the FPGA to not need this delay
+        nrfx_systick_delay_ms(750);
 
-        // TODO optimize this away. Ask the FPGA to start the camera clock
+        // Start the camera clock
         uint8_t command[2] = {0x10, 0x09};
         spi_write(FPGA, command, 2, false);
 
