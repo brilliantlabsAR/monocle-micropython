@@ -195,7 +195,7 @@ const camera_config_t camera_config[] = {
     {0x3731, 0x12}, // Undocumented
     {0x3600, 0x08}, // VCM control debug mode
     {0x3601, 0x33}, // VCM control debug mode
-    {0x302d, 0x60}, // System control. Doc says not to change this
+    {0x302d, 0x60}, // Datasheet says not to change this, but it's set in the linux driver
     {0x3620, 0x52}, // Undocumented
     {0x371b, 0x20}, // Undocumented
     {0x471c, 0x50}, // Undocumented
@@ -220,8 +220,7 @@ const camera_config_t camera_config[] = {
     {0x3812, 0x00}, // Timing Voffset[10:8]
     {0x3813, 0x2e}, // Timing Voffset[7:0] VOFFSET = 46 = 0x2E
     {0x4740, 0X21}, // VSync
-    // {0x3820, 0x41}, // Flip vertical
-    // {0x3821, 0x07}, // Mirror sensor register ???
+    {0x3820, 0x47}, // Flip image vertically
     {0x3814, 0x31}, // Timing Y increment
     {0x3815, 0x31}, // Timing X increment
     {0x3800, 0x00}, // Timing control
