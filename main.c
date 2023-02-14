@@ -872,7 +872,7 @@ int main(void)
 
     // Setup the camera
     {
-        // TODO optimize the FPGA to not need this delay
+        // TODO delay is required for the FPGA. We should remove it later
         nrfx_systick_delay_ms(750);
 
         // Start the camera clock
