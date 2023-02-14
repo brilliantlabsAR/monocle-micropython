@@ -22,13 +22,20 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
+import __camera
 import bluetooth
 import fpga
 import time
 
-def mirror():
-  fpga.write(0x1005, "")
-  fpga.write(0x3005, "")
+def overlay(enable):
+  if enable == True:
+    __camera.wake()
+    fpga.write(0x1005, "")
+    fpga.write(0x3005, "")
+  else:
+    fpga.write(0x3004, "")
+    fpga.write(0x1004, "")
+    __camera.sleep()
 
 def capture(url):
   """
@@ -55,6 +62,3 @@ def capture(url):
     buffer = fpga.read(0x5010, length)
 
     bluetooth.send(buffer)
-
-def power(power_on):
-  return NotImplemented

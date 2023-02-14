@@ -914,9 +914,8 @@ int main(void)
                         .fail);
         }
 
-        // TODO Put the camera to sleep
-        // app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x300E, 0xFF, 0x18).fail);
-        // nrf_gpio_pin_write(CAMERA_SLEEP_PIN, true);
+        // Put the camera to sleep
+        nrf_gpio_pin_write(CAMERA_SLEEP_PIN, true);
     }
 
     // Initialise the stack pointer for the main thread

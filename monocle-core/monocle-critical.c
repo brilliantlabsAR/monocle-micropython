@@ -149,7 +149,7 @@ void monocle_critical_startup(void)
         // Charge termination current = 5%
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x22, 0x18, 0x00).fail);
 
-        // Set junction regulation temperature to 70 degrees
+        // Set junction regulation temperature to 70 degrees TODO increase this?
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x23, 0xE0, 0x20).fail);
 
         // Set the fast charge current value to 120mA
@@ -220,6 +220,7 @@ void monocle_critical_startup(void)
                                 &timer_config,
                                 check_if_battery_charging_and_sleep));
 
+        // TODO make the timer faster
         nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 156250,
                                     NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
 
