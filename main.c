@@ -860,11 +860,12 @@ int main(void)
 
     // Setup and start the display
     {
-        // Each byte of the configuration must be sent in pairs
-        for (size_t i = 0; i < sizeof(display_config); i += 2)
+        for (size_t i = 0;
+             i < sizeof(display_config) / sizeof(display_config_t);
+             i++)
         {
-            uint8_t command[2] = {display_config[i],      // Address
-                                  display_config[i + 1]}; // Value
+            uint8_t command[2] = {display_config[i].address,
+                                  display_config[i].value};
             spi_write(DISPLAY, command, 2, false);
         }
     }
@@ -878,16 +879,14 @@ int main(void)
         uint8_t command[2] = {0x10, 0x09};
         spi_write(FPGA, command, 2, false);
 
-        // Power on sequence, references: Datasheet section 2.7.1; Application Notes section 3.1.1
-        // assume XCLK signal coming from the FPGA
+        // Reset sequence taken from Datasheet figure 2-3
+        nrf_gpio_pin_write(CAMERA_RESET_PIN, false);
         nrf_gpio_pin_write(CAMERA_SLEEP_PIN, true);
-        nrf_gpio_pin_write(CAMERA_RESET_PIN, !true);
-        nrfx_systick_delay_ms(5);
-        nrfx_systick_delay_ms(8);
+        nrfx_systick_delay_ms(5); // t2
         nrf_gpio_pin_write(CAMERA_SLEEP_PIN, false);
-        nrfx_systick_delay_ms(2);
-        nrf_gpio_pin_write(CAMERA_RESET_PIN, !false);
-        nrfx_systick_delay_ms(20);
+        nrfx_systick_delay_ms(1); // t3
+        nrf_gpio_pin_write(CAMERA_RESET_PIN, true);
+        nrfx_systick_delay_ms(20); // t4
 
         // Read the camera CID (one of them)
         i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
@@ -897,14 +896,19 @@ int main(void)
             monocle_set_led(RED_LED, true);
         }
 
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3103, 0xFF, 0x11).fail); // system clock from pad
+        // Software reset
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3008, 0xFF, 0x82).fail);
+        // nrfx_systick_delay_ms(5); // TODO This should be enabled, but it causes problems
 
-        // combined configuration table for YUV422 mode
-        for (size_t i = 0; i < MP_ARRAY_SIZE(ov5640_yuv422_direct_tbl); i++)
+        // Send the default configuration
+        for (size_t i = 0;
+             i < sizeof(camera_config) / sizeof(camera_config_t);
+             i++)
         {
-            app_err(i2c_write(CAMERA_I2C_ADDRESS, ov5640_yuv422_direct_tbl[i].addr, 0xFF,
-                              ov5640_yuv422_direct_tbl[i].value)
+            app_err(i2c_write(CAMERA_I2C_ADDRESS,
+                              camera_config[i].address,
+                              0xFF,
+                              camera_config[i].value)
                         .fail);
         }
 
