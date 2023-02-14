@@ -137,7 +137,7 @@ void monocle_critical_startup(void)
 
         if (resp.fail || resp.value != 0x02)
         {
-            app_err(resp.value);
+            not_real_hardware = true;
         }
 
         // Vhot & Vwarm = 45 degrees. Vcool = 15 degrees. Vcold = 0 degrees

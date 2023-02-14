@@ -22,8 +22,10 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import time
 import display
+import fpga
+import time
+import urandom
 
 def __test(evaluate, expected):
     try:
@@ -121,6 +123,17 @@ def mod_display():
     __test("display.WIDTH", 640)
     __test("display.HEIGHT", 400)
 
-def run():
-    mod_time()
+def mod_fpga():
+    __test("fpga.read(0x0000, 3)", b'\x00\x00\x00') # TODO make a who am I test
+    __test("fpga.read(0x0000, 256), ", ValueError)
+    __test("fpga.read(0x0000, 0), ", ValueError)
+    __test("fpga.read(0x0000, -1), ", ValueError)
+    __test("fpga.write(0x0000, '')", None)
+    __test("fpga.write(0x0000, 'hi')", None)
+    __test("fpga.write(0x0000, 'a'*256)", ValueError)
+    # TODO add power and status tests
+    
+def all():
     mod_display()
+    mod_fpga()
+    mod_time()

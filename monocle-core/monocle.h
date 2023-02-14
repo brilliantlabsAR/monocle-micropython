@@ -76,6 +76,12 @@ void monocle_critical_startup(void);
 void monocle_enter_bootloader(void);
 
 /**
+ * @brief Dev board mode flag. i.e. no PMIC, FPGA, display detected etc.
+ */
+
+extern bool not_real_hardware;
+
+/**
  * @brief I2C addresses.
  */
 

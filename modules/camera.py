@@ -26,6 +26,10 @@ import bluetooth
 import fpga
 import time
 
+def mirror():
+  fpga.write(0x1005, "")
+  fpga.write(0x3005, "")
+
 def capture(url):
   """
   Captures a single image from the camera, and sends it to a url provided. The

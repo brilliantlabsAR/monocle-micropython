@@ -27,10 +27,10 @@
 
 STATIC mp_obj_t fpga_read(mp_obj_t addr_16bit, mp_obj_t n)
 {
-    if (mp_obj_get_int(n) > 255)
+    if (mp_obj_get_int(n) < 1 || mp_obj_get_int(n) > 255)
     {
         mp_raise_ValueError(
-            MP_ERROR_TEXT("n must be less than or equal to 255"));
+            MP_ERROR_TEXT("n must be between 1 and 255"));
     }
 
     // TODO
@@ -75,8 +75,15 @@ STATIC mp_obj_t fpga_write(mp_obj_t addr_16bit, mp_obj_t bytes)
     uint16_t addr = mp_obj_get_int(addr_16bit);
     uint8_t addr_bytes[2] = {(uint8_t)(addr >> 8), (uint8_t)addr};
 
-    spi_write(FPGA, addr_bytes, 2, true);
-    spi_write(FPGA, (uint8_t *)buffer, n, false);
+    if (n == 0)
+    {
+        spi_write(FPGA, addr_bytes, 2, false);
+    }
+    else
+    {
+        spi_write(FPGA, addr_bytes, 2, true);
+        spi_write(FPGA, (uint8_t *)buffer, n, false);
+    }
 
     return mp_const_none;
 }
