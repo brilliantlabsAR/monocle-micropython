@@ -36,7 +36,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(camera_sleep_obj, camera_sleep);
 STATIC mp_obj_t camera_wake(void)
 {
     nrf_gpio_pin_write(CAMERA_SLEEP_PIN, false);
-    // TODO, do we need to do anything else here?
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(camera_wake_obj, camera_wake);
