@@ -116,6 +116,13 @@ STATIC mp_obj_t device_reset_cause(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_reset_cause_obj, device_reset_cause);
 
+STATIC mp_obj_t device_insomnia(mp_obj_t enabled)
+{
+    monocle_insomnia = mp_obj_is_true(enabled);
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(device_insomnia_obj, device_insomnia);
+
 STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_NAME), MP_ROM_PTR(&device_name_obj)},
@@ -123,6 +130,7 @@ STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_VERSION), MP_ROM_PTR(&device_version_obj)},
     {MP_ROM_QSTR(MP_QSTR_GIT_TAG), MP_ROM_PTR(&device_git_tag_obj)},
     {MP_ROM_QSTR(MP_QSTR_battery_level), MP_ROM_PTR(&device_battery_level_obj)},
+    {MP_ROM_QSTR(MP_QSTR_insomnia), MP_ROM_PTR(&device_insomnia_obj)},
     {MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&device_reset_obj)},
     {MP_ROM_QSTR(MP_QSTR_reset_cause), MP_ROM_PTR(&device_reset_cause_obj)},
 };

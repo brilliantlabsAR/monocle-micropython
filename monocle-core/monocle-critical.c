@@ -37,6 +37,8 @@ static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
 static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
 static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
 
+bool monocle_insomnia = false;
+
 /**
  * @brief Startup and PMIC initialization.
  *
@@ -54,7 +56,7 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
     i2c_response_t charging_response = i2c_read(PMIC_I2C_ADDRESS, 0x03, 0x0C);
     app_err(charging_response.fail);
 
-    if (charging_response.value)
+    if (!monocle_insomnia && charging_response.value)
     {
         // Turn off Bluetooth
         app_err(sd_softdevice_disable());
