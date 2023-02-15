@@ -603,17 +603,6 @@ int main(void)
         app_err(nrfx_saadc_channel_config(&channel));
     }
 
-    // Set up the remaining GPIO
-    {
-        nrf_gpio_cfg_output(CAMERA_RESET_PIN);
-        nrf_gpio_cfg_output(CAMERA_SLEEP_PIN);
-        nrf_gpio_cfg_output(DISPLAY_CS_PIN);
-        nrf_gpio_cfg_output(DISPLAY_RESET_PIN);
-        nrf_gpio_cfg_output(FLASH_CS_PIN);
-        nrf_gpio_cfg_output(FPGA_CS_PIN);
-        nrf_gpio_cfg_output(FPGA_INTERRUPT_CONFIG_PIN);
-    }
-
     // Setup the real time clock for micropython's time functions
     {
         nrfx_rtc_t rtc = NRFX_RTC_INSTANCE(1);
@@ -855,11 +844,22 @@ int main(void)
         // TODO
 
         // Otherwise boot from the internal image of the FPGA
-        nrf_gpio_pin_set(FPGA_INTERRUPT_CONFIG_PIN);
+        nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, false);
+
+        // FPGA should be ready by now. It needs 23ms after the rails go up
+        // Start configuration by bringing high the RECONFIG_N pin
+        nrf_gpio_pin_write(FPGA_RESET_PIN, true);
+        nrfx_systick_delay_ms(1); // 1ms to read MODE1 pin
+
+        // Set the mode pin high once sampled so it can be used as chip select
+        nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, true);
     }
 
-    // Setup and start the display
+    // Enable, and setup the display
     {
+        nrf_gpio_pin_write(DISPLAY_RESET_PIN, true);
+        nrfx_systick_delay_ms(1);
+
         for (size_t i = 0;
              i < sizeof(display_config) / sizeof(display_config_t);
              i++)
@@ -872,8 +872,8 @@ int main(void)
 
     // Setup the camera
     {
-        // TODO delay is required for the FPGA. We should remove it later
-        nrfx_systick_delay_ms(750);
+        // TODO why is this delay needed?
+        nrfx_systick_delay_ms(500);
 
         // Start the camera clock
         uint8_t command[2] = {0x10, 0x09};
@@ -898,8 +898,6 @@ int main(void)
 
         // Software reset
         app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3008, 0xFF, 0x82).fail);
-
-        // TODO This should be enabled, but it causes problems
         nrfx_systick_delay_ms(5);
 
         // Send the default configuration

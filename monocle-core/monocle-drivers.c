@@ -227,7 +227,7 @@ void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
         cs_pin = DISPLAY_CS_PIN;
         break;
     case FPGA:
-        cs_pin = FPGA_CS_PIN;
+        cs_pin = FPGA_CS_INT_MODE_PIN;
         break;
     case FLASH:
         cs_pin = FLASH_CS_PIN;
@@ -254,7 +254,7 @@ void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
         cs_pin = DISPLAY_CS_PIN;
         break;
     case FPGA:
-        cs_pin = FPGA_CS_PIN;
+        cs_pin = FPGA_CS_INT_MODE_PIN;
         break;
     case FLASH:
         cs_pin = FLASH_CS_PIN;
