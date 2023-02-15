@@ -35,6 +35,7 @@ def overlay(enable):
   else:
     fpga.write(0x3004, "")
     fpga.write(0x1004, "")
+    time.sleep_ms(100);
     __camera.sleep()
 
 def capture(url):
