@@ -258,6 +258,9 @@ void monocle_critical_startup(void)
     // Power up everything for normal operation.
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
     {
+        // Set the SBB drive strength
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2F, 0x03, 0x01).fail);
+
         // Set SBB2 to 1.2V with 500mA current limit and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2D, 0xFF, 0x08).fail);
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x7F, 0x6F).fail);
