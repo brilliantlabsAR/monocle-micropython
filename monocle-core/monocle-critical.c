@@ -220,8 +220,7 @@ void monocle_critical_startup(void)
                                 &timer_config,
                                 check_if_battery_charging_and_sleep));
 
-        // TODO make the timer faster
-        nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 156250,
+        nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 15625,
                                     NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
 
         nrfx_timer_enable(&timer);
