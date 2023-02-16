@@ -575,6 +575,84 @@ int main(void)
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();
 
+    // Check if external flash has an FPGA image and boot it
+    {
+        // TODO
+
+        // Otherwise boot from the internal image of the FPGA
+        nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, false);
+
+        // FPGA should be ready by now. It needs 23ms after the rails go up
+        // Start configuration by bringing high the RECONFIG_N pin
+        nrfx_systick_delay_ms(23); // Wait for READY flag in the FPGA. Max 23ms
+        nrf_gpio_pin_write(FPGA_RESET_PIN, true);
+        nrfx_systick_delay_ms(1); // 1ms to read MODE1 pin
+
+        // Set the mode pin high once sampled so it can be used as chip select
+        nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, true);
+    }
+
+    // Setup the camera
+    {
+        // TODO why is this delay needed?
+        nrfx_systick_delay_ms(500);
+
+        // Start the camera clock
+        uint8_t command[2] = {0x10, 0x09};
+        spi_write(FPGA, command, 2, false);
+
+        // Reset sequence taken from Datasheet figure 2-3
+        nrf_gpio_pin_write(CAMERA_RESET_PIN, false);
+        nrf_gpio_pin_write(CAMERA_SLEEP_PIN, true);
+        nrfx_systick_delay_ms(5); // t2
+        nrf_gpio_pin_write(CAMERA_SLEEP_PIN, false);
+        nrfx_systick_delay_ms(1); // t3
+        nrf_gpio_pin_write(CAMERA_RESET_PIN, true);
+        nrfx_systick_delay_ms(20); // t4
+
+        // Read the camera CID (one of them)
+        i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
+        if (resp.fail || resp.value != 0x56)
+        {
+            NRFX_LOG_ERROR("Error: Camera not found.");
+            monocle_set_led(RED_LED, true);
+        }
+
+        // Software reset
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3008, 0xFF, 0x82).fail);
+        nrfx_systick_delay_ms(5);
+
+        // Send the default configuration
+        for (size_t i = 0;
+             i < sizeof(camera_config) / sizeof(camera_config_t);
+             i++)
+        {
+            app_err(i2c_write(CAMERA_I2C_ADDRESS,
+                              camera_config[i].address,
+                              0xFF,
+                              camera_config[i].value)
+                        .fail);
+        }
+
+        // Put the camera to sleep
+        nrf_gpio_pin_write(CAMERA_SLEEP_PIN, true);
+    }
+
+    // Enable, and setup the display
+    {
+        nrf_gpio_pin_write(DISPLAY_RESET_PIN, true);
+        nrfx_systick_delay_ms(1);
+
+        for (size_t i = 0;
+             i < sizeof(display_config) / sizeof(display_config_t);
+             i++)
+        {
+            uint8_t command[2] = {display_config[i].address,
+                                  display_config[i].value};
+            spi_write(DISPLAY, command, 2, false);
+        }
+    }
+
     // Setup touch interrupt
     {
         app_err(nrfx_gpiote_init(NRFX_GPIOTE_DEFAULT_CONFIG_IRQ_PRIORITY));
@@ -601,17 +679,6 @@ int main(void)
         channel.channel_config.gain = NRF_SAADC_GAIN1_2;
 
         app_err(nrfx_saadc_channel_config(&channel));
-    }
-
-    // Set up the remaining GPIO
-    {
-        nrf_gpio_cfg_output(CAMERA_RESET_PIN);
-        nrf_gpio_cfg_output(CAMERA_SLEEP_PIN);
-        nrf_gpio_cfg_output(DISPLAY_CS_PIN);
-        nrf_gpio_cfg_output(DISPLAY_RESET_PIN);
-        nrf_gpio_cfg_output(FLASH_CS_PIN);
-        nrf_gpio_cfg_output(FPGA_CS_PIN);
-        nrf_gpio_cfg_output(FPGA_INTERRUPT_CONFIG_PIN);
     }
 
     // Setup the real time clock for micropython's time functions
@@ -848,75 +915,6 @@ int main(void)
 
         // Start advertising
         app_err(sd_ble_gap_adv_start(ble_handles.advertising, 1));
-    }
-
-    // Check if external flash has an FPGA image and boot it
-    {
-        // TODO
-
-        // Otherwise boot from the internal image of the FPGA
-        nrf_gpio_pin_set(FPGA_INTERRUPT_CONFIG_PIN);
-    }
-
-    // Setup and start the display
-    {
-        for (size_t i = 0;
-             i < sizeof(display_config) / sizeof(display_config_t);
-             i++)
-        {
-            uint8_t command[2] = {display_config[i].address,
-                                  display_config[i].value};
-            spi_write(DISPLAY, command, 2, false);
-        }
-    }
-
-    // Setup the camera
-    {
-        // TODO optimize the FPGA to not need this delay
-        nrfx_systick_delay_ms(750);
-
-        // Start the camera clock
-        uint8_t command[2] = {0x10, 0x09};
-        spi_write(FPGA, command, 2, false);
-
-        // Reset sequence taken from Datasheet figure 2-3
-        nrf_gpio_pin_write(CAMERA_RESET_PIN, false);
-        nrf_gpio_pin_write(CAMERA_SLEEP_PIN, true);
-        nrfx_systick_delay_ms(5); // t2
-        nrf_gpio_pin_write(CAMERA_SLEEP_PIN, false);
-        nrfx_systick_delay_ms(1); // t3
-        nrf_gpio_pin_write(CAMERA_RESET_PIN, true);
-        nrfx_systick_delay_ms(20); // t4
-
-        // Read the camera CID (one of them)
-        i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
-        if (resp.fail || resp.value != 0x56)
-        {
-            NRFX_LOG_ERROR("Error: Camera not found.");
-            monocle_set_led(RED_LED, true);
-        }
-
-        // Software reset
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3008, 0xFF, 0x82).fail);
-
-        // TODO This should be enabled, but it causes problems
-        nrfx_systick_delay_ms(5);
-
-        // Send the default configuration
-        for (size_t i = 0;
-             i < sizeof(camera_config) / sizeof(camera_config_t);
-             i++)
-        {
-            app_err(i2c_write(CAMERA_I2C_ADDRESS,
-                              camera_config[i].address,
-                              0xFF,
-                              camera_config[i].value)
-                        .fail);
-        }
-
-        // TODO Put the camera to sleep
-        // app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x300E, 0xFF, 0x18).fail);
-        // nrf_gpio_pin_write(CAMERA_SLEEP_PIN, true);
     }
 
     // Initialise the stack pointer for the main thread
