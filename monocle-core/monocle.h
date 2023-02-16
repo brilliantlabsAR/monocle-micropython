@@ -82,6 +82,12 @@ void monocle_enter_bootloader(void);
 extern bool not_real_hardware;
 
 /**
+ * @brief Prevents to go to sleep when the charge starts.
+ */
+
+extern bool monocle_insomnia;
+
+/**
  * @brief I2C addresses.
  */
 
