@@ -258,16 +258,19 @@ void monocle_critical_startup(void)
     // Power up everything for normal operation.
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
     {
-        // Set SBB2 to 1.2V and turn on
+        // Set SBB2 to 1.2V with 500mA current limit and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2D, 0xFF, 0x08).fail);
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x4F, 0x4F).fail);
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x7F, 0x6F).fail);
+
+        // Set SBB1 (1.8V) current limit to 500mA
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2C, 0x30, 0x20).fail);
 
         // Set LDO0 to load switch mode and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1F).fail);
 
-        // Set SBB0 to 2.8V and turn on
+        // Set SBB0 to 2.8V with 333mA current limit and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x29, 0xFF, 0x28).fail);
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x4F, 0x4F).fail);
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x7F, 0x7F).fail);
 
         // Configure LEDs on GPIO0 and GPIO1 as open drain outputs. Set to hi-z
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x11, 0x2D, 0x08).fail);
