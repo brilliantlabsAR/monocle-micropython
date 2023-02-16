@@ -23,6 +23,8 @@
  */
 
 #include "monocle.h"
+#include "nrf_gpio.h"
+#include "nrfx_spim.h"
 #include "nrfx_twim.h"
 
 /**
@@ -61,8 +63,9 @@ void monocle_set_led(led_t led, bool enable)
 
 static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
 static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
+static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
 
-static bool not_real_hardware = false;
+bool not_real_hardware = false;
 
 i2c_response_t i2c_read(uint8_t device_address_7bit,
                         uint16_t register_address,
@@ -143,16 +146,21 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
                          uint8_t register_mask,
                          uint8_t set_value)
 {
+    i2c_response_t resp = {.fail = false, .value = 0x00};
+
     if (not_real_hardware)
     {
-        return (i2c_response_t){.fail = false, .value = 0x00};
+        return resp;
     }
 
-    i2c_response_t resp = i2c_read(device_address_7bit, register_address, 0xFF);
-
-    if (resp.fail)
+    if (register_mask != 0xFF)
     {
-        return resp;
+        resp = i2c_read(device_address_7bit, register_address, 0xFF);
+
+        if (resp.fail)
+        {
+            return resp;
+        }
     }
 
     // Create a combined value with the existing data and the new value
@@ -201,9 +209,66 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
         if (i == 2)
         {
             resp.fail = true;
+            NRFX_LOG_ERROR("failed to write 0x%02X = 0x%02X", register_address, set_value);
             return resp;
         }
     }
 
     return resp;
+}
+
+void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
+{
+    uint8_t cs_pin;
+
+    switch (spi_device)
+    {
+    case DISPLAY:
+        cs_pin = DISPLAY_CS_PIN;
+        break;
+    case FPGA:
+        cs_pin = FPGA_CS_INT_MODE_PIN;
+        break;
+    case FLASH:
+        cs_pin = FLASH_CS_PIN;
+        break;
+    }
+
+    nrf_gpio_pin_clear(cs_pin);
+
+    // TODO prevent blocking here, and add a mutex
+    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(data, length);
+    app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
+
+    nrf_gpio_pin_set(cs_pin);
+}
+
+void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
+               bool hold_down_cs)
+{
+    uint8_t cs_pin;
+
+    switch (spi_device)
+    {
+    case DISPLAY:
+        cs_pin = DISPLAY_CS_PIN;
+        break;
+    case FPGA:
+        cs_pin = FPGA_CS_INT_MODE_PIN;
+        break;
+    case FLASH:
+        cs_pin = FLASH_CS_PIN;
+        break;
+    }
+
+    nrf_gpio_pin_clear(cs_pin);
+
+    // TODO prevent blocking here, and add a mutex
+    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(data, length);
+    app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
+
+    if (!hold_down_cs)
+    {
+        nrf_gpio_pin_set(cs_pin);
+    }
 }

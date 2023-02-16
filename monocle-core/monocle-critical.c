@@ -88,11 +88,16 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
                                  NRF_GPIO_PIN_NOPULL,
                                  NRF_GPIO_PIN_SENSE_LOW);
 
+        NRFX_LOG_ERROR("Going to sleep");
+
         // Power down
         NRF_POWER->SYSTEMOFF = 1;
         __DSB();
 
-        // We should never return from here
+        // We should never return from here. This is just for debug mode
+        while (true)
+        {
+        }
     }
 }
 
@@ -110,13 +115,13 @@ void monocle_critical_startup(void)
             PMIC_TOUCH_I2C_SCL_PIN,
             PMIC_TOUCH_I2C_SDA_PIN);
 
-        bus_0_config.frequency = NRF_TWIM_FREQ_100K; // TODO speed this up
+        bus_0_config.frequency = NRF_TWIM_FREQ_100K;
 
         nrfx_twim_config_t bus_1_config = NRFX_TWIM_DEFAULT_CONFIG(
             CAMERA_I2C_SCL_PIN,
             CAMERA_I2C_SDA_PIN);
 
-        bus_1_config.frequency = NRF_TWIM_FREQ_100K; // TODO speed this up
+        bus_1_config.frequency = NRF_TWIM_FREQ_100K;
 
         app_err(nrfx_twim_init(&i2c_bus_0, &bus_0_config, NULL, NULL));
         app_err(nrfx_twim_init(&i2c_bus_1, &bus_1_config, NULL, NULL));
@@ -132,7 +137,7 @@ void monocle_critical_startup(void)
 
         if (resp.fail || resp.value != 0x02)
         {
-            app_err(resp.value);
+            not_real_hardware = true;
         }
 
         // Vhot & Vwarm = 45 degrees. Vcool = 15 degrees. Vcold = 0 degrees
@@ -144,7 +149,7 @@ void monocle_critical_startup(void)
         // Charge termination current = 5%
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x22, 0x18, 0x00).fail);
 
-        // Set junction regulation temperature to 70 degrees
+        // Set junction regulation temperature to 70 degrees TODO increase this?
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x23, 0xE0, 0x20).fail);
 
         // Set the fast charge current value to 120mA
@@ -215,36 +220,59 @@ void monocle_critical_startup(void)
                                 &timer_config,
                                 check_if_battery_charging_and_sleep));
 
-        nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 156250,
+        nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 15625,
                                     NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
 
         nrfx_timer_enable(&timer);
     }
 
+    // Setup GPIOs and set initial values
+    {
+        nrf_gpio_cfg_output(CAMERA_SLEEP_PIN);
+        nrf_gpio_cfg_output(CAMERA_RESET_PIN);
+        nrf_gpio_cfg_output(DISPLAY_RESET_PIN);
+        nrf_gpio_cfg_output(FPGA_RESET_PIN);
+        nrf_gpio_cfg_output(DISPLAY_CS_PIN);
+        nrf_gpio_cfg_output(FLASH_CS_PIN);
+
+        // Set the FPGA CS pin as both open drain & input (for interrupt)
+        nrf_gpio_cfg(FPGA_CS_INT_MODE_PIN,
+                     NRF_GPIO_PIN_DIR_OUTPUT,
+                     NRF_GPIO_PIN_INPUT_CONNECT,
+                     NRF_GPIO_PIN_NOPULL,
+                     NRF_GPIO_PIN_S0D1,
+                     NRF_GPIO_PIN_NOSENSE);
+
+        // Keep camera, display and FPGA in reset
+        nrf_gpio_pin_write(CAMERA_RESET_PIN, false);
+        nrf_gpio_pin_write(DISPLAY_RESET_PIN, false);
+        nrf_gpio_pin_write(FPGA_RESET_PIN, false);
+
+        // Set the chip selects to high
+        nrf_gpio_pin_write(DISPLAY_CS_PIN, true);
+        nrf_gpio_pin_write(FLASH_CS_PIN, true);
+        nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, true);
+    }
+
     // Power up everything for normal operation.
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
     {
-        // Tell the FPGA to start with the embedded flash.
-        nrf_gpio_pin_clear(FPGA_CS_PIN);
-        nrf_gpio_cfg_output(FPGA_CS_PIN);
+        // Set the SBB drive strength
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2F, 0x03, 0x01).fail);
 
-        // Display: 9. Power Supply Sequence (datasheet p.11)
-        nrf_gpio_pin_clear(DISPLAY_RESET_PIN);
-        nrf_gpio_cfg_output(DISPLAY_RESET_PIN);
-
-        // Set SBB2 to 1.2V and turn on
+        // Set SBB2 to 1.2V with 500mA current limit and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2D, 0xFF, 0x08).fail);
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x4F, 0x4F).fail);
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x7F, 0x6F).fail);
+
+        // Set SBB1 (1.8V) current limit to 500mA
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2C, 0x30, 0x20).fail);
 
         // Set LDO0 to load switch mode and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1F).fail);
 
-        // Display: 9. Power Supply Sequence (datasheet p.11)
-        nrfx_systick_delay_ms(1);
-
-        // Set SBB0 to 2.8V and turn on
+        // Set SBB0 to 2.8V with 333mA current limit and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x29, 0xFF, 0x28).fail);
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x4F, 0x4F).fail);
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x7F, 0x7F).fail);
 
         // Configure LEDs on GPIO0 and GPIO1 as open drain outputs. Set to hi-z
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x11, 0x2D, 0x08).fail);
@@ -253,9 +281,6 @@ void monocle_critical_startup(void)
         // Set LDO1 to 3.3V and turn on
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3A, 0xFF, 0x64).fail);
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0F).fail);
-
-        // Display: 9. Power Supply Sequence (datasheet p.11)
-        nrf_gpio_pin_set(DISPLAY_RESET_PIN);
 
         // Enable the 10V boost
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x0C).fail);

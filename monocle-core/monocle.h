@@ -41,11 +41,11 @@
 #define DISPLAY_CS_PIN 6                       // Active low
 #define DISPLAY_RESET_PIN 15                   // Active low
 #define FLASH_CS_PIN 4                         // Active low
-#define FPGA_CS_PIN 8                          // Active low
+#define FPGA_CS_INT_MODE_PIN 8                 // Active low
 #define FPGA_FLASH_SPI_SCK_PIN 7               //
 #define FPGA_FLASH_SPI_SDI_PIN 10              //
 #define FPGA_FLASH_SPI_SDO_PIN 9               //
-#define FPGA_INTERRUPT_PIN 5                   //
+#define FPGA_RESET_PIN 5                       //
 #define PMIC_INTERRUPT_PIN 14                  //
 #define PMIC_TOUCH_I2C_SCL_PIN 17              //
 #define PMIC_TOUCH_I2C_SDA_PIN 13              //
@@ -76,6 +76,12 @@ void monocle_critical_startup(void);
 void monocle_enter_bootloader(void);
 
 /**
+ * @brief Dev board mode flag. i.e. no PMIC, FPGA, display detected etc.
+ */
+
+extern bool not_real_hardware;
+
+/**
  * @brief I2C addresses.
  */
 
@@ -101,6 +107,22 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
                          uint16_t register_address,
                          uint8_t register_mask,
                          uint8_t set_value);
+
+/**
+ * @brief Generic SPI driver.
+ */
+
+typedef enum spi_device_t
+{
+    DISPLAY,
+    FPGA,
+    FLASH
+} spi_device_t;
+
+void spi_read(spi_device_t spi_device, uint8_t *data, size_t length);
+
+void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
+               bool hold_down_cs);
 
 /**
  * @brief Error handling macro.

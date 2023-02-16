@@ -22,8 +22,10 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import time
 import display
+import fpga
+import time
+import urandom
 
 def __test(evaluate, expected):
     try:
@@ -37,42 +39,45 @@ def __test(evaluate, expected):
         print(f"Failed - {evaluate} == {response}. Expected: {expected}")
 
 # Tests for individual modules
-def t1():
+def mod_time():
+    print("\nModule time")
 
-    print("Test setting and checking the time")
+    print("\nTest setting and checking the time")
     __test("time.time(1674252171)", None)
     __test("time.time()", 1674252171)
-    __test("time.now()", {'timezone': '00:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 22, 'year': 2023, 'dst': 'no'})
-    
-    print("Check time dict at a specified epoch")
-    __test("time.now(1674253104)", {'timezone': '00:00', 'weekday': 'friday', 'minute': 18, 'day': 20, 'yearday': 20, 'month': 1, 'second': 24, 'hour': 22, 'year': 2023, 'dst': 'no'})
-    
-    print("Test timezones")
+    __test("time.now()", {'timezone': '00:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 22, 'year': 2023})
+
+    print("\nCheck time dict at a specified epoch")
+    __test("time.now(1674253104)", {'timezone': '00:00', 'weekday': 'friday', 'minute': 18, 'day': 20, 'yearday': 20, 'month': 1, 'second': 24, 'hour': 22, 'year': 2023})
+
+    print("\nTest timezones")
     __test("time.zone('5:30')", None)
     __test("time.zone()", '05:30')
-    __test("time.now()", {'timezone': '05:30', 'weekday': 'saturday', 'minute': 32, 'day': 21, 'yearday': 21, 'month': 1, 'second': 51, 'hour': 3, 'year': 2023, 'dst': 'no'})
+    __test("time.now()", {'timezone': '05:30', 'weekday': 'saturday', 'minute': 32, 'day': 21, 'yearday': 21, 'month': 1, 'second': 51, 'hour': 3, 'year': 2023})
     __test("time.zone('-12:00')", None)
-    __test("time.now()", {'timezone': '-12:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 10, 'year': 2023, 'dst': 'no'})
-    
-    print("Test getting epochs from time dict")
+    __test("time.now()", {'timezone': '-12:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 10, 'year': 2023})
 
-    print("Test sleep")
+    print("\nTest getting epochs from time dict")
+
+    print("\nTest sleep")
     __test("time.time(1674252171)", None)
     __test("time.time()", 1674252171)
     __test("time.sleep(2)", None)
     __test("time.time()", 1674252173)
     __test("time.sleep(0.25)", None)
     __test("time.time()", 1674252173)
-    
+
     print("Test invalid values")
     __test("time.time(-1)", ValueError)
     __test("time.zone('-14:00')", ValueError)
     __test("time.zone('15:00')", ValueError)
-    __test("time.zone('1:20')", ValueError)
+    __test("time.zone('-12:30')", ValueError)
     __test("time.sleep(-1)", ValueError)
 
-def t2():
-    # line scanning the screen bound to the left
+def mod_display():
+    print("\nModule display")
+
+    print("\nLine scanning the screen bound to the left")
     display.line(0,0,   640,200, 0xFFFFFF); display.show()
     display.line(0,50,  640,200, 0xFFFFFF); display.show()
     display.line(0,100, 640,200, 0xFFFFFF); display.show()
@@ -83,7 +88,7 @@ def t2():
     display.line(0,350, 640,200, 0xFFFFFF); display.show()
     display.line(0,400, 640,200, 0xFFFFFF); display.show()
 
-    # line scanning the screen bound to the right
+    print("\nLine scanning the screen bound to the right")
     display.line(640,0,   0,200, 0xFFFFFF); display.show()
     display.line(640,50,  0,200, 0xFFFFFF); display.show()
     display.line(640,100, 0,200, 0xFFFFFF); display.show()
@@ -94,7 +99,7 @@ def t2():
     display.line(640,350, 0,200, 0xFFFFFF); display.show()
     display.line(640,400, 0,200, 0xFFFFFF); display.show()
 
-    # line scanning the screen bound to the top
+    print("\nLine scanning the screen bound to the top")
     display.line(300,0,   0,400, 0xFFFFFF); display.show()
     display.line(300,0, 100,400, 0xFFFFFF); display.show()
     display.line(300,0, 200,400, 0xFFFFFF); display.show()
@@ -104,7 +109,7 @@ def t2():
     display.line(300,0, 600,400, 0xFFFFFF); display.show()
     display.line(300,0, 640,400, 0xFFFFFF); display.show()
 
-    # line scanning the screen bound to the bottom
+    print("\nLine scanning the screen bound to the bottom")
     display.line(  0,0, 300,400, 0xFFFFFF); display.show()
     display.line(100,0, 300,400, 0xFFFFFF); display.show()
     display.line(200,0, 300,400, 0xFFFFFF); display.show()
@@ -114,6 +119,21 @@ def t2():
     display.line(600,0, 300,400, 0xFFFFFF); display.show()
     display.line(640,0, 300,400, 0xFFFFFF); display.show()
 
+    print("\nTest constants")
+    __test("display.WIDTH", 640)
+    __test("display.HEIGHT", 400)
+
+def mod_fpga():
+    __test("fpga.read(0x0000, 3)", b'\x00\x00\x00') # TODO make a who am I test
+    __test("fpga.read(0x0000, 256), ", ValueError)
+    __test("fpga.read(0x0000, 0), ", ValueError)
+    __test("fpga.read(0x0000, -1), ", ValueError)
+    __test("fpga.write(0x0000, '')", None)
+    __test("fpga.write(0x0000, 'hi')", None)
+    __test("fpga.write(0x0000, 'a'*256)", ValueError)
+    # TODO add power and status tests
+    
 def all():
-    t1()
-    t2()
+    mod_display()
+    mod_fpga()
+    mod_time()

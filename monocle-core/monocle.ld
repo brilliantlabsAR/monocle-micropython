@@ -30,7 +30,7 @@ bl_flash_settings_page_size = 0;
 sd_flash_end = bl_flash_end + 0x26000;
 
 /* This must be updated whenever softdevice settings are changed */
-sd_ram_end = 0x39c0;
+sd_ram_end = 0x2640;
 
 ENTRY(Reset_Handler)
 
