@@ -116,12 +116,26 @@ STATIC mp_obj_t device_reset_cause(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_reset_cause_obj, device_reset_cause);
 
-STATIC mp_obj_t device_insomnia(mp_obj_t enabled)
+STATIC mp_obj_t prevent_sleep(size_t n_args, const mp_obj_t *args)
 {
-    monocle_insomnia = mp_obj_is_true(enabled);
+    if (n_args == 0)
+    {
+        return mp_obj_new_bool(prevent_sleep_flag);
+    }
+
+    prevent_sleep_flag = mp_obj_is_true(args[0]);
+
+    if (prevent_sleep_flag)
+    {
+        mp_printf(&mp_plat_print,
+                  "WARNING: Running monocle for prolonged periods may result in"
+                  " display burn in, as well as reduced lifetime of components."
+                  "\n");
+    }
+
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(device_insomnia_obj, device_insomnia);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(prevent_sleep_obj, 0, 1, prevent_sleep);
 
 STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
 
@@ -130,9 +144,9 @@ STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_VERSION), MP_ROM_PTR(&device_version_obj)},
     {MP_ROM_QSTR(MP_QSTR_GIT_TAG), MP_ROM_PTR(&device_git_tag_obj)},
     {MP_ROM_QSTR(MP_QSTR_battery_level), MP_ROM_PTR(&device_battery_level_obj)},
-    {MP_ROM_QSTR(MP_QSTR_insomnia), MP_ROM_PTR(&device_insomnia_obj)},
     {MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&device_reset_obj)},
     {MP_ROM_QSTR(MP_QSTR_reset_cause), MP_ROM_PTR(&device_reset_cause_obj)},
+    {MP_ROM_QSTR(MP_QSTR_prevent_sleep), MP_ROM_PTR(&prevent_sleep_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(device_module_globals, device_module_globals_table);
 

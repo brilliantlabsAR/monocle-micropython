@@ -79,13 +79,13 @@ void monocle_enter_bootloader(void);
  * @brief Dev board mode flag. i.e. no PMIC, FPGA, display detected etc.
  */
 
-extern bool not_real_hardware;
+extern bool not_real_hardware_flag;
 
 /**
- * @brief Prevents to go to sleep when the charge starts.
+ * @brief Prevents sleeping when a 5V charging voltage is applied to Monocle.
  */
 
-extern bool monocle_insomnia;
+extern bool prevent_sleep_flag;
 
 /**
  * @brief I2C addresses.
