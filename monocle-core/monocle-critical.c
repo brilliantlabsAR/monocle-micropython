@@ -115,13 +115,13 @@ void monocle_critical_startup(void)
             PMIC_TOUCH_I2C_SCL_PIN,
             PMIC_TOUCH_I2C_SDA_PIN);
 
-        bus_0_config.frequency = NRF_TWIM_FREQ_100K; // TODO speed this up
+        bus_0_config.frequency = NRF_TWIM_FREQ_100K;
 
         nrfx_twim_config_t bus_1_config = NRFX_TWIM_DEFAULT_CONFIG(
             CAMERA_I2C_SCL_PIN,
             CAMERA_I2C_SDA_PIN);
 
-        bus_1_config.frequency = NRF_TWIM_FREQ_100K; // 400KHz breaks camera
+        bus_1_config.frequency = NRF_TWIM_FREQ_100K;
 
         app_err(nrfx_twim_init(&i2c_bus_0, &bus_0_config, NULL, NULL));
         app_err(nrfx_twim_init(&i2c_bus_1, &bus_1_config, NULL, NULL));
