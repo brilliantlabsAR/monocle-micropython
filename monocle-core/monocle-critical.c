@@ -44,6 +44,8 @@ static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
  *          Read the PMIC datasheet carefully before changing any PMIC settings.
  */
 
+bool prevent_sleep_flag = false;
+
 static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
                                                 void *p_context)
 {
@@ -54,14 +56,22 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
     i2c_response_t charging_response = i2c_read(PMIC_I2C_ADDRESS, 0x03, 0x0C);
     app_err(charging_response.fail);
 
-    if (charging_response.value)
+    bool charging = charging_response.value;
+
+    if (charging)
     {
+        if (prevent_sleep_flag)
+        {
+            return;
+        }
+
         // Turn off Bluetooth
         app_err(sd_softdevice_disable());
 
         // Turn off all the rails
         // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x04).fail); // Turn off 10V on PMIC GPIO2
+        nrfx_systick_delay_ms(200);                                  // Let the 10V decay
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0C).fail); // Turn off LDO to LEDs
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x0F, 0x0C).fail); // Turn off 2.7V
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch
@@ -137,7 +147,7 @@ void monocle_critical_startup(void)
 
         if (resp.fail || resp.value != 0x02)
         {
-            not_real_hardware = true;
+            not_real_hardware_flag = true;
         }
 
         // Vhot & Vwarm = 45 degrees. Vcool = 15 degrees. Vcold = 0 degrees

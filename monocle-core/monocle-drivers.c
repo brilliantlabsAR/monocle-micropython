@@ -65,13 +65,13 @@ static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
 static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
 static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
 
-bool not_real_hardware = false;
+bool not_real_hardware_flag = false;
 
 i2c_response_t i2c_read(uint8_t device_address_7bit,
                         uint16_t register_address,
                         uint8_t register_mask)
 {
-    if (not_real_hardware)
+    if (not_real_hardware_flag)
     {
         return (i2c_response_t){.fail = false, .value = 0x00};
     }
@@ -148,7 +148,7 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
 {
     i2c_response_t resp = {.fail = false, .value = 0x00};
 
-    if (not_real_hardware)
+    if (not_real_hardware_flag)
     {
         return resp;
     }
