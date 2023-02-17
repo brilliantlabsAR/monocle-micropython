@@ -70,9 +70,9 @@ static struct ble_handles_t
 {
     uint16_t connection;
     uint8_t advertising;
-    ble_gatts_char_handles_t repl_rx_unused;
+    ble_gatts_char_handles_t repl_rx_write;
     ble_gatts_char_handles_t repl_tx_notification;
-    ble_gatts_char_handles_t data_rx_unused;
+    ble_gatts_char_handles_t data_rx_write;
     ble_gatts_char_handles_t data_tx_notification;
 } ble_handles = {
     .connection = BLE_CONN_HANDLE_INVALID,
@@ -300,10 +300,9 @@ void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len)
 
 int mp_hal_stdin_rx_chr(void)
 {
-    if (repl_rx.head == repl_rx.tail)
+    while (repl_rx.head == repl_rx.tail)
     {
         MICROPY_EVENT_POLL_HOOK;
-        return 0;
     }
 
     uint16_t next = repl_rx.tail + 1;
@@ -444,7 +443,7 @@ void SD_EVT_IRQHandler(void)
         {
             // If REPL service
             if (ble_evt->evt.gatts_evt.params.write.handle ==
-                ble_handles.repl_rx_unused.value_handle)
+                ble_handles.repl_rx_write.value_handle)
             {
                 for (uint16_t i = 0;
                      i < ble_evt->evt.gatts_evt.params.write.len;
@@ -482,7 +481,7 @@ void SD_EVT_IRQHandler(void)
 
             // If data service
             if (ble_evt->evt.gatts_evt.params.write.handle ==
-                ble_handles.data_rx_unused.value_handle)
+                ble_handles.data_rx_write.value_handle)
             {
                 for (uint16_t i = 0;
                      i < ble_evt->evt.gatts_evt.params.write.len;
@@ -846,7 +845,7 @@ int main(void)
         app_err(sd_ble_gatts_characteristic_add(repl_service_handle,
                                                 &rx_char_md,
                                                 &rx_attr,
-                                                &ble_handles.repl_rx_unused));
+                                                &ble_handles.repl_rx_write));
 
         app_err(sd_ble_gatts_characteristic_add(repl_service_handle,
                                                 &tx_char_md,
@@ -864,7 +863,7 @@ int main(void)
         app_err(sd_ble_gatts_characteristic_add(data_service_handle,
                                                 &rx_char_md,
                                                 &rx_attr,
-                                                &ble_handles.data_rx_unused));
+                                                &ble_handles.data_rx_write));
 
         app_err(sd_ble_gatts_characteristic_add(data_service_handle,
                                                 &tx_char_md,
