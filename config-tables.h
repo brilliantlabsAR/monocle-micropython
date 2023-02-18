@@ -223,22 +223,22 @@ const camera_config_t camera_config[] = {
     {0x3811, 0x10},       // Timing Hoffset[7:0] HOFFSET = 16 = 0x10
     {0x3812, 0x00},       // Timing Voffset[10:8]
     {0x3813, 0x2e},       // Timing Voffset[7:0] VOFFSET = 46 = 0x2E
-    {0x4740, 0X21},       // VSync
+    {0x4740, 0x21},       // VSync
     {0x3820, 0x47},       // Flip image vertically
     {0x3814, 0x31},       // Timing Y increment
     {0x3815, 0x31},       // Timing X increment
-    {0x3800, 0x00},       // Timing control
-    {0x3801, 0x10},       // Timing control
-    {0x3802, 0x00},       // Timing control
-    {0x3803, 0x0E},       // Timing control
-    {0x3804, 0x0a},       // Timing control
-    {0x3805, 0x2f},       // Timing control
-    {0x3806, 0x06},       // Timing control
-    {0x3807, 0xa9},       // Timing control
-    {0x3808, 640 >> 8},   // Timing control X output size MSB
-    {0x3809, 640 & 0xFF}, // Timing control X output size LSB. 640px
-    {0x380a, 400 >> 8},   // Timing control Y output size MSB
-    {0x380b, 400 & 0xFF}, // Timing control Y output size LSB. 400px
+    {0x3800, 0x00},       // Timing X start address MSB
+    {0x3801, 0x10},       // Timing X start address LSB
+    {0x3802, 0x00},       // Timing Y start address MSB
+    {0x3803, 0x0E},       // Timing Y start address LSB
+    {0x3804, 0x0a},       // Timing X end address MSB
+    {0x3805, 0x2f},       // Timing X end address LSB
+    {0x3806, 0x06},       // Timing Y end address MSB
+    {0x3807, 0xa9},       // Timing Y end address LSB
+    {0x3808, 640 >> 8},   // Timing X output size MSB
+    {0x3809, 640 & 0xFF}, // Timing X output size LSB. 640px
+    {0x380a, 400 >> 8},   // Timing Y output size MSB
+    {0x380b, 400 & 0xFF}, // Timing Y output size LSB. 400px
     {0x380c, 0x05},       // Timing control
     {0x380d, 0xF8},       // Timing control
     {0x380e, 0x03},       // Timing control
