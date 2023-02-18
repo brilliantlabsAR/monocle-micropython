@@ -239,10 +239,10 @@ const camera_config_t camera_config[] = {
     {0x3809, 640 & 0xFF}, // Timing X output size LSB. 640px
     {0x380a, 400 >> 8},   // Timing Y output size MSB
     {0x380b, 400 & 0xFF}, // Timing Y output size LSB. 400px
-    {0x380c, 0x05},       // Timing control
-    {0x380d, 0xF8},       // Timing control
-    {0x380e, 0x03},       // Timing control
-    {0x380f, 0x84},       // Timing control
+    {0x380c, 0x05},       // Timing X total size MSB
+    {0x380d, 0xF8},       // Timing X total size MSB
+    {0x380e, 0x03},       // Timing Y total size MSB
+    {0x380f, 0x84},       // Timing Y total size LSB
     {0x3618, 0x00},       // Undocumented
     {0x3612, 0x29},       // Undocumented
     {0x3708, 0x64},       // Undocumented
@@ -274,6 +274,8 @@ const camera_config_t camera_config[] = {
     {0x3824, 0x04},       // PCLK divider not used if in auto mode as above
     {0x5000, 0xa7},       // ISP enable everything in CONTORL 00
     {0x5001, 0xa3},       // ISP enable everything in CONTROL 01 except UV average
+    {0x5002, 0x80},       // ISP enable scaling in CONTROL 02 (undocumented: guessed)
+    {0x5041, 0b10101100}, // Scale control
     {0x3503, 0x00},       // Auto exposure and auto gain on
     {0x5180, 0xff},       // Auto white balance B block
     {0x5181, 0xf2},       // Auto white balance max step local, max step fast, one zone
@@ -349,6 +351,7 @@ const camera_config_t camera_config[] = {
     {0x5589, 0x10},       // Special digital effects UV adjust threshold 1
     {0x558a, 0x00},       // Special digital effects UV adjust threshold 2 MSB
     {0x558b, 0xf8},       // Special digital effects UV adjust threshold 2 LSB
+    {0x5601, 0b00101000},       // Scale X
     {0x5800, 0x23},       // Lens correction green matrix
     {0x5801, 0x14},       // Lens correction green matrix
     {0x5802, 0x0f},       // Lens correction green matrix

@@ -554,7 +554,7 @@ int main(void)
     // Setup the camera
     {
         // TODO why is this delay needed?
-        nrfx_systick_delay_ms(500);
+        nrfx_systick_delay_ms(5000);
 
         // Start the camera clock
         uint8_t command[2] = {0x10, 0x09};

@@ -49,6 +49,7 @@ bool prevent_sleep_flag = false;
 static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
                                                 void *p_context)
 {
+    return;
     (void)event_type;
     (void)p_context;
 
