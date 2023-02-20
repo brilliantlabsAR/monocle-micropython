@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include "mphalport.h"
 #include "nrfx_rtc.h"
+#include "touch.h"
 
 typedef int mp_int_t;
 typedef unsigned int mp_uint_t;
@@ -39,6 +40,8 @@ mp_uint_t mp_hal_ticks_ms(void);
 void mp_hal_set_interrupt_char(int c);
 
 int mp_hal_generate_random_seed(void);
+
+touch_action_t touch_get_state(void);
 
 typedef enum ble_tx_channel_t
 {

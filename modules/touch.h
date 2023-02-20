@@ -26,13 +26,10 @@
 
 typedef enum touch_action_t
 {
-    A_TOUCH,
-    B_TOUCH,
-    A_DEEP_TOUCH,
-    B_DEEP_TOUCH,
-    A_PROXIMITY,
-    B_PROXIMITY,
-    _LEN_TOUCH_ACTION_T,
+    TOUCH_NONE,
+    TOUCH_A,
+    TOUCH_B,
+    TOUCH_BOTH
 } touch_action_t;
 
 void touch_event_handler(touch_action_t action);

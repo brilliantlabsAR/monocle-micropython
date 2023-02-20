@@ -278,14 +278,41 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
     (void)pin;
     (void)polarity;
 
-    /*
-    // Read the interrupt registers
-    i2c_response_t global_reg_0x11 = i2c_read(TOUCH_I2C_ADDRESS, 0x11, 0xFF);
-    i2c_response_t sar_ui_reg_0x12 = i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
-    i2c_response_t sar_ui_reg_0x13 = i2c_read(TOUCH_I2C_ADDRESS, 0x13, 0xFF);
-    */
-    touch_action_t touch_action = A_TOUCH; // TODO this should be decoded from the I2C responses
-    touch_event_handler(touch_action);
+    i2c_response_t interrupt = i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
+    app_err(interrupt.fail);
+
+    if (interrupt.value & 0x10)
+    {
+        touch_event_handler(TOUCH_A);
+    }
+
+    if (interrupt.value & 0x20)
+    {
+        touch_event_handler(TOUCH_B);
+    }
+}
+
+touch_action_t touch_get_state(void)
+{
+    i2c_response_t interrupt = i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
+    app_err(interrupt.fail);
+
+    if ((interrupt.value & 0x30) == 0x30)
+    {
+        return TOUCH_BOTH;
+    }
+
+    if (interrupt.value & 0x10)
+    {
+        return TOUCH_A;
+    }
+
+    if (interrupt.value & 0x20)
+    {
+        return TOUCH_B;
+    }
+
+    return TOUCH_NONE;
 }
 
 void unused_rtc_event_handler(nrfx_rtc_int_type_t int_type) {}
