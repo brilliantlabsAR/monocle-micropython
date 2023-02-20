@@ -25,103 +25,163 @@
 #include "monocle.h"
 #include "touch.h"
 #include "py/runtime.h"
+#include "py/qstr.h"
 
-static struct
-{
-    bool enabled[_LEN_TOUCH_ACTION_T];
-    mp_obj_t callback[_LEN_TOUCH_ACTION_T];
-} touch_callback;
+static mp_obj_t callback[_LEN_TOUCH_ACTION_T] =
+    {[0 ... _LEN_TOUCH_ACTION_T - 1] = mp_const_none};
 
 void touch_event_handler(touch_action_t action)
 {
-    if (touch_callback.enabled[action])
+    if (callback[action] != mp_const_none)
     {
-        mp_sched_schedule(touch_callback.callback[action], mp_const_none);
+        mp_obj_dict_t *dict = mp_obj_new_dict(0);
+
+        switch (action)
+        {
+        case A_TOUCH:
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_button),
+                              MP_ROM_QSTR(MP_QSTR_A));
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_action),
+                              MP_ROM_QSTR(MP_QSTR_TOUCH));
+            break;
+
+        case B_TOUCH:
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_button),
+                              MP_ROM_QSTR(MP_QSTR_B));
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_action),
+                              MP_ROM_QSTR(MP_QSTR_TOUCH));
+            break;
+
+        case A_DEEP_TOUCH:
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_button),
+                              MP_ROM_QSTR(MP_QSTR_A));
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_action),
+                              MP_ROM_QSTR(MP_QSTR_DEEP_TOUCH));
+            break;
+
+        case B_DEEP_TOUCH:
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_button),
+                              MP_ROM_QSTR(MP_QSTR_B));
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_action),
+                              MP_ROM_QSTR(MP_QSTR_DEEP_TOUCH));
+            break;
+
+        case A_PROXIMITY:
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_button),
+                              MP_ROM_QSTR(MP_QSTR_A));
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_action),
+                              MP_ROM_QSTR(MP_QSTR_PROXIMITY));
+            break;
+
+        case B_PROXIMITY:
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_button),
+                              MP_ROM_QSTR(MP_QSTR_B));
+            mp_obj_dict_store(dict,
+                              MP_ROM_QSTR(MP_QSTR_action),
+                              MP_ROM_QSTR(MP_QSTR_PROXIMITY));
+            break;
+
+        default:
+            break;
+        }
+
+        mp_sched_schedule(callback[action], MP_OBJ_FROM_PTR(dict));
     }
 }
 
-static touch_action_t decode_touch_action(uint8_t button, uint8_t action)
+static touch_action_t decode_touch_action(qstr button, qstr action)
 {
-    switch (action)
+    if (button == MP_QSTR_A && action == MP_QSTR_TOUCH)
     {
-    case 0:
-        if (button == 0)
-        {
-            return A_TOUCH;
-        }
+        return A_TOUCH;
+    }
+
+    if (button == MP_QSTR_B && action == MP_QSTR_TOUCH)
+    {
         return B_TOUCH;
+    }
 
-    case 1:
-        if (button == 0)
-        {
-            return A_DEEP_TOUCH;
-        }
+    if (button == MP_QSTR_A && action == MP_QSTR_DEEP_TOUCH)
+    {
+        return A_DEEP_TOUCH;
+    }
+
+    if (button == MP_QSTR_B && action == MP_QSTR_DEEP_TOUCH)
+    {
         return B_DEEP_TOUCH;
+    }
 
-    default:
-        if (button == 0)
-        {
-            return A_PROXIMITY;
-        }
+    if (button == MP_QSTR_A && action == MP_QSTR_PROXIMITY)
+    {
+        return A_PROXIMITY;
+    }
+
+    if (button == MP_QSTR_B && action == MP_QSTR_PROXIMITY)
+    {
         return B_PROXIMITY;
     }
+
+    return _LEN_TOUCH_ACTION_T;
 }
 
-STATIC mp_obj_t touch_bind(mp_obj_t button, mp_obj_t action, mp_obj_t callback)
+STATIC mp_obj_t touch_callback(size_t n_args, const mp_obj_t *args)
 {
-    if (mp_obj_get_int(button) >= 2)
+    qstr button = mp_obj_str_get_qstr(args[0]);
+    qstr action = mp_obj_str_get_qstr(args[1]);
+
+    if ((button != MP_QSTR_A) &&
+        (button != MP_QSTR_B))
     {
         mp_raise_ValueError(MP_ERROR_TEXT("must be touch.A or touch.B"));
     }
 
-    if (mp_obj_get_int(action) >= 3)
+    if ((action != MP_QSTR_TOUCH) &&
+        (action != MP_QSTR_DEEP_TOUCH) &&
+        (action != MP_QSTR_PROXIMITY))
     {
-        mp_raise_ValueError(
-            MP_ERROR_TEXT("must be touch.TOUCH, touch.DEEP_TOUCH, or touch.PROXIMITY"));
+        mp_raise_ValueError(MP_ERROR_TEXT(
+            "must be touch.TOUCH, touch.DEEP_TOUCH, or touch.PROXIMITY"));
     }
 
-    touch_action_t touch_action = decode_touch_action(mp_obj_get_int(button),
-                                                      mp_obj_get_int(action));
+    touch_action_t touch_action = decode_touch_action(button, action);
 
-    touch_callback.enabled[(uint8_t)touch_action] = true;
-    touch_callback.callback[(uint8_t)touch_action] = callback;
+    if (n_args == 2)
+    {
+        return callback[touch_action];
+    }
+
+    if (!mp_obj_is_callable(args[2]) && (args[2] != mp_const_none))
+    {
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("callback must be None or a callable object"));
+    }
+
+    callback[touch_action] = args[2];
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(touch_bind_obj, touch_bind);
-
-STATIC mp_obj_t touch_unbind(mp_obj_t button, mp_obj_t action)
-{
-    if (mp_obj_get_int(button) >= 2)
-    {
-        mp_raise_ValueError(MP_ERROR_TEXT("must be touch.A or touch.B"));
-    }
-
-    if (mp_obj_get_int(action) >= 3)
-    {
-        mp_raise_ValueError(
-            MP_ERROR_TEXT("must be touch.TOUCH, touch.DEEP_TOUCH, or touch.PROXIMITY"));
-    }
-
-    touch_action_t touch_action = decode_touch_action(mp_obj_get_int(button),
-                                                      mp_obj_get_int(action));
-
-    touch_callback.enabled[(uint8_t)touch_action] = false;
-
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(touch_unbind_obj, touch_unbind);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(touch_callback_obj, 2, 3, touch_callback);
 
 STATIC const mp_rom_map_elem_t touch_module_globals_table[] = {
 
-    {MP_ROM_QSTR(MP_QSTR_bind), MP_ROM_PTR(&touch_bind_obj)},
-    {MP_ROM_QSTR(MP_QSTR_unbind), MP_ROM_PTR(&touch_unbind_obj)},
+    {MP_ROM_QSTR(MP_QSTR_callback), MP_ROM_PTR(&touch_callback_obj)},
 
-    {MP_ROM_QSTR(MP_QSTR_A), MP_OBJ_NEW_SMALL_INT(0)},
-    {MP_ROM_QSTR(MP_QSTR_B), MP_OBJ_NEW_SMALL_INT(1)},
-    {MP_ROM_QSTR(MP_QSTR_TOUCH), MP_OBJ_NEW_SMALL_INT(0)},
-    {MP_ROM_QSTR(MP_QSTR_DEEP_TOUCH), MP_OBJ_NEW_SMALL_INT(1)},
-    {MP_ROM_QSTR(MP_QSTR_PROXIMITY), MP_OBJ_NEW_SMALL_INT(2)},
+    {MP_ROM_QSTR(MP_QSTR_A), MP_ROM_QSTR(MP_QSTR_A)},
+    {MP_ROM_QSTR(MP_QSTR_B), MP_ROM_QSTR(MP_QSTR_B)},
+    {MP_ROM_QSTR(MP_QSTR_TOUCH), MP_ROM_QSTR(MP_QSTR_TOUCH)},
+    {MP_ROM_QSTR(MP_QSTR_DEEP_TOUCH), MP_ROM_QSTR(MP_QSTR_DEEP_TOUCH)},
+    {MP_ROM_QSTR(MP_QSTR_PROXIMITY), MP_ROM_QSTR(MP_QSTR_PROXIMITY)},
 };
 STATIC MP_DEFINE_CONST_DICT(touch_module_globals, touch_module_globals_table);
 

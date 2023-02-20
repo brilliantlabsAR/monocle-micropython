@@ -72,6 +72,12 @@ static mp_obj_t bluetooth_receive_callback(size_t n_args, const mp_obj_t *args)
         return receive_callback;
     }
 
+    if (!mp_obj_is_callable(args[0]) && (args[0] != mp_const_none))
+    {
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("callback must be None or a callable object"));
+    }
+
     receive_callback = args[0];
 
     return mp_const_none;

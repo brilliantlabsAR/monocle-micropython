@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "monocle.h"
+#include "bluetooth.h"
 #include "touch.h"
 #include "config-tables.h"
 
@@ -435,9 +436,9 @@ void SD_EVT_IRQHandler(void)
             if (ble_evt->evt.gatts_evt.params.write.handle ==
                 ble_handles.data_rx_write.value_handle)
             {
-                // TODO callback
-                // ble_evt->evt.gatts_evt.params.write.len;
-                // ble_evt->evt.gatts_evt.params.write.data;
+                bluetooth_receive_callback_handler(
+                    ble_evt->evt.gatts_evt.params.write.data,
+                    ble_evt->evt.gatts_evt.params.write.len);
             }
 
             break;
