@@ -105,16 +105,6 @@ static struct ble_ring_buffer_t
       .buffer = "",
       .head = 0,
       .tail = 0,
-},
-  data_rx = {
-      .buffer = "",
-      .head = 0,
-      .tail = 0,
-},
-  data_tx = {
-      .buffer = "",
-      .head = 0,
-      .tail = 0,
 };
 
 bool ble_are_tx_notifications_enabled(ble_tx_channel_t channel)
@@ -152,6 +142,11 @@ bool ble_are_tx_notifications_enabled(ble_tx_channel_t channel)
     }
 
     return false;
+}
+
+size_t ble_get_max_payload_size(void)
+{
+    return ble_negotiated_mtu;
 }
 
 static bool ble_send_repl_data(void)
@@ -208,7 +203,7 @@ static bool ble_send_repl_data(void)
     return false;
 }
 
-static bool ble_send_raw_data(void)
+bool ble_send_raw_data(const uint8_t *bytes, size_t len)
 {
     if (ble_handles.connection == BLE_CONN_HANDLE_INVALID)
     {
@@ -220,64 +215,21 @@ static bool ble_send_raw_data(void)
         return true;
     }
 
-    if (data_tx.head == data_tx.tail)
-    {
-        return true;
-    }
-
-    uint8_t tx_buffer[BLE_PREFERRED_MAX_MTU] = "";
-    uint16_t tx_length = 0;
-
-    uint16_t buffered_tail = data_tx.tail;
-
-    while (buffered_tail != data_tx.head)
-    {
-        tx_buffer[tx_length++] = data_tx.buffer[buffered_tail++];
-
-        if (buffered_tail == sizeof(data_tx.buffer))
-        {
-            buffered_tail = 0;
-        }
-
-        if (tx_length == ble_negotiated_mtu)
-        {
-            break;
-        }
-    }
-
     // Initialise the handle value parameters
     ble_gatts_hvx_params_t hvx_params = {0};
     hvx_params.handle = ble_handles.data_tx_notification.value_handle;
-    hvx_params.p_data = tx_buffer;
-    hvx_params.p_len = (uint16_t *)&tx_length;
+    hvx_params.p_data = bytes;
+    hvx_params.p_len = (uint16_t *)&len;
     hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
 
     uint32_t status = sd_ble_gatts_hvx(ble_handles.connection, &hvx_params);
 
     if (status == NRF_SUCCESS)
     {
-        data_tx.tail = buffered_tail;
+        return false;
     }
 
-    return false;
-}
-
-void ble_buffer_raw_tx_data(const uint8_t *bytes, size_t len)
-{
-    for (uint16_t position = 0; position < len; position++)
-    {
-        while (data_tx.head == data_tx.tail - 1)
-        {
-            MICROPY_EVENT_POLL_HOOK;
-        }
-
-        data_tx.buffer[data_tx.head++] = bytes[position];
-
-        if (data_tx.head == sizeof(data_tx.buffer))
-        {
-            data_tx.head = 0;
-        }
-    }
+    return true;
 }
 
 void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len)
@@ -483,30 +435,10 @@ void SD_EVT_IRQHandler(void)
             if (ble_evt->evt.gatts_evt.params.write.handle ==
                 ble_handles.data_rx_write.value_handle)
             {
-                for (uint16_t i = 0;
-                     i < ble_evt->evt.gatts_evt.params.write.len;
-                     i++)
-                {
-                    uint16_t next = data_rx.head + 1;
-
-                    if (next == sizeof(data_rx.buffer))
-                    {
-                        next = 0;
-                    }
-
-                    if (next == data_rx.tail)
-                    {
-                        break;
-                    }
-
-                    data_rx.buffer[data_rx.head] =
-                        ble_evt->evt.gatts_evt.params.write.data[i];
-
-                    data_rx.head = next;
-                }
+                // TODO callback
+                // ble_evt->evt.gatts_evt.params.write.len;
+                // ble_evt->evt.gatts_evt.params.write.data;
             }
-
-            // TODO if data service
 
             break;
         }
@@ -955,7 +887,8 @@ int main(void)
 
 void mp_event_poll_hook(void)
 {
-    if (ble_send_repl_data() && ble_send_raw_data())
+    // Keep sending REPL data. Then if no more data is pending
+    if (ble_send_repl_data())
     {
         extern void mp_handle_pending(bool);
         mp_handle_pending(true);
