@@ -96,9 +96,11 @@ STATIC mp_obj_t touch_callback(size_t n_args, const mp_obj_t *args)
     qstr button = mp_obj_str_get_qstr(args[0]);
 
     if ((button != MP_QSTR_A) &&
-        (button != MP_QSTR_B))
+        (button != MP_QSTR_B) &&
+        (button != MP_QSTR_BOTH))
     {
-        mp_raise_ValueError(MP_ERROR_TEXT("must be touch.A or touch.B"));
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("must be touch.A, touch.B or touch.BOTH"));
     }
 
     if (n_args == 1)
@@ -110,6 +112,11 @@ STATIC mp_obj_t touch_callback(size_t n_args, const mp_obj_t *args)
         if (button == MP_QSTR_B)
         {
             return touch_b_callback;
+        }
+        if (button == MP_QSTR_BOTH)
+        {
+            mp_obj_t tuple[] = {touch_a_callback, touch_b_callback};
+            return mp_obj_new_tuple(2, tuple);
         }
     }
 
@@ -131,6 +138,12 @@ STATIC mp_obj_t touch_callback(size_t n_args, const mp_obj_t *args)
         touch_b_callback = callback;
     }
 
+    if (button == MP_QSTR_BOTH)
+    {
+        touch_a_callback = callback;
+        touch_b_callback = callback;
+    }
+
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(touch_callback_obj, 1, 2, touch_callback);
@@ -142,6 +155,7 @@ STATIC const mp_rom_map_elem_t touch_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_A), MP_ROM_QSTR(MP_QSTR_A)},
     {MP_ROM_QSTR(MP_QSTR_B), MP_ROM_QSTR(MP_QSTR_B)},
+    {MP_ROM_QSTR(MP_QSTR_BOTH), MP_ROM_QSTR(MP_QSTR_BOTH)},
 };
 STATIC MP_DEFINE_CONST_DICT(touch_module_globals, touch_module_globals_table);
 
