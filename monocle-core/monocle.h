@@ -88,6 +88,12 @@ extern bool not_real_hardware_flag;
 extern bool prevent_sleep_flag;
 
 /**
+ * @brief Forces sleep, as if Monocle was placed into the charging case.
+ */
+
+extern bool force_sleep_flag;
+
+/**
  * @brief I2C addresses.
  */
 

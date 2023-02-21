@@ -140,6 +140,16 @@ STATIC mp_obj_t prevent_sleep(size_t n_args, const mp_obj_t *args)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(prevent_sleep_obj, 0, 1, prevent_sleep);
 
+STATIC mp_obj_t force_sleep(void)
+{
+    prevent_sleep_flag = false;
+
+    force_sleep_flag = true;
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(force_sleep_obj, force_sleep);
+
 STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_NAME), MP_ROM_PTR(&device_name_obj)},
@@ -151,6 +161,7 @@ STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&device_reset_obj)},
     {MP_ROM_QSTR(MP_QSTR_reset_cause), MP_ROM_PTR(&device_reset_cause_obj)},
     {MP_ROM_QSTR(MP_QSTR_prevent_sleep), MP_ROM_PTR(&prevent_sleep_obj)},
+    {MP_ROM_QSTR(MP_QSTR_force_sleep), MP_ROM_PTR(&force_sleep_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(device_module_globals, device_module_globals_table);
 
