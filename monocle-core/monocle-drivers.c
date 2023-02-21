@@ -27,10 +27,6 @@
 #include "nrfx_spim.h"
 #include "nrfx_twim.h"
 
-/**
- * @brief LED driver.
- */
-
 void monocle_set_led(led_t led, bool enable)
 {
     if (led == RED_LED)
@@ -56,10 +52,6 @@ void monocle_set_led(led_t led, bool enable)
         }
     }
 }
-
-/**
- * @brief Generic I2C driver.
- */
 
 static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
 static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
