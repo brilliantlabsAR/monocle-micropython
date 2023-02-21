@@ -40,17 +40,42 @@ STATIC mp_obj_t camera_wake(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(camera_wake_obj, camera_wake);
 
-// To set the zoom level to 1.5:
-/*
-fpga.write(0x3004, b'') # live off
-__camera.zoom(1.5)
-fpga.write(0x1005, b'') # record on
-fpga.write(0x3005, b'') # live on
-*/
-// Only values between 0 (no effect) and 1.8 (no more output) seems to work.
-// There might be another configuration value to adjust aroung some threshold.
 STATIC mp_obj_t camera_zoom(mp_obj_t zoom)
 {
+    switch (mp_obj_get_int(zoom)) {
+    case 1:
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5600, 0xFF, 0x10).fail); // turns zoom 0ff
+        break;
+    case 2:
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5600, 0xFF, 0x00).fail); // turns zoom on
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5601, 0xFF, 0x11).fail); // Set zoom factor
+        break;
+    case 4:
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5600, 0xFF, 0x00).fail); // turns zoom on
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5601, 0xFF, 0x22).fail); // Set zoom factor
+        break;
+    case 8:
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5600, 0xFF, 0x00).fail); // turns zoom on
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5601, 0xFF, 0x44).fail); // Set zoom factor
+        break;
+    case 16:
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5600, 0xFF, 0x00).fail); // turns zoom on
+        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5601, 0xFF, 0x88).fail); // Set zoom factor
+        break;
+    default:
+        mp_raise_ValueError(MP_ERROR_TEXT("zoom must be 1, 2, 4, 8, or 16"));
+    }
+
+#if 0
+// This controls fine-tuned zoom that cannot go much beyong 1.7x.
+// To set the zoom level to 1.5:
+// fpga.write(0x3004, b'') # live off
+// __camera.zoom(1)
+// fpga.write(0x1005, b'') # record on
+// fpga.write(0x3005, b'') # live on
+// Only values between 0 (no effect) and 1.8 (no more output) seems to work.
+// There might be another configuration value to adjust aroung some threshold.
+
     if (mp_obj_get_float(zoom) < 1)
     {
         mp_raise_ValueError(MP_ERROR_TEXT("min zoom is 1"));
@@ -79,6 +104,7 @@ STATIC mp_obj_t camera_zoom(mp_obj_t zoom)
 
     app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x10).fail); // End group 0
     app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA0).fail); // Launch group 0
+#endif
 
     return mp_const_none;
 }
