@@ -536,7 +536,12 @@ int main(void)
 
     // Check if external flash has an FPGA image and boot it
     {
-        // TODO
+        uint8_t wakeup_device_id[] = {bit_reverse(0xAB), 0, 0, 0};
+        spi_write(FLASH, wakeup_device_id, 4, true);
+        spi_read(FLASH, wakeup_device_id, 1);
+        app_err(bit_reverse(wakeup_device_id[0]) != 0x13);
+
+        // TODO check flash for FPGA image
 
         // Otherwise boot from the internal image of the FPGA
         nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, false);

@@ -132,6 +132,8 @@ void spi_read(spi_device_t spi_device, uint8_t *data, size_t length);
 void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
                bool hold_down_cs);
 
+uint8_t bit_reverse(uint8_t byte);
+
 /**
  * @brief Error handling macro.
  */

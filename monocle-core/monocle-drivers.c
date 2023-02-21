@@ -264,3 +264,11 @@ void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
         nrf_gpio_pin_set(cs_pin);
     }
 }
+
+uint8_t bit_reverse(uint8_t byte)
+{
+    byte = (byte & 0xF0) >> 4 | (byte & 0x0F) << 4;
+    byte = (byte & 0xCC) >> 2 | (byte & 0x33) << 2;
+    byte = (byte & 0xAA) >> 1 | (byte & 0x55) << 1;
+    return byte;
+}
