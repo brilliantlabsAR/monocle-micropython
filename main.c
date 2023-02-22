@@ -539,7 +539,9 @@ int main(void)
         uint8_t wakeup_device_id[] = {bit_reverse(0xAB), 0, 0, 0};
         spi_write(FLASH, wakeup_device_id, 4, true);
         spi_read(FLASH, wakeup_device_id, 1);
-        app_err(bit_reverse(wakeup_device_id[0]) != 0x13);
+
+        bool flash_found = bit_reverse(wakeup_device_id[0]) == 0x13;
+        app_err(flash_found == false && not_real_hardware_flag == false);
 
         // TODO check flash for FPGA image
 
