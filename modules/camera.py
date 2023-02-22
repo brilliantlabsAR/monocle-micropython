@@ -61,7 +61,12 @@ def capture(url):
     buffer[0] = flag
     buffer[offset:] = fpga.read(0x5010, length)
 
-    bluetooth.send(buffer)
+    while True:
+      try:
+        bluetooth.send(buffer)
+      except OSError:
+        continue
+      break
 
     offset = 1
     flag = 2 # MIDDLE
