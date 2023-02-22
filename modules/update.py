@@ -25,6 +25,9 @@
 import __update
 
 def micropython():
+    print("Monocle will now enter update mode.")
+    print("If the update is not started within 5 minutes, it will return to normal mode.")
+    print("If the update fails, it will stay in the update mode and you can try again.")
     __update.nrf52()
 
 def fpga():
