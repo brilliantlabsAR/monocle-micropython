@@ -88,16 +88,18 @@ extern bool not_real_hardware_flag;
 extern bool prevent_sleep_flag;
 
 /**
- * @brief I2C addresses.
+ * @brief Forces sleep, as if Monocle was placed into the charging case.
+ */
+
+extern bool force_sleep_flag;
+
+/**
+ * @brief I2C driver for accessing PMIC, camera and touch ICs.
  */
 
 #define PMIC_I2C_ADDRESS 0x48
 #define TOUCH_I2C_ADDRESS 0x44
 #define CAMERA_I2C_ADDRESS 0x3C
-
-/**
- * @brief Generic I2C driver.
- */
 
 typedef struct i2c_response_t
 {
@@ -115,7 +117,7 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
                          uint8_t set_value);
 
 /**
- * @brief Generic SPI driver.
+ * @brief SPI driver for accessing FPGA, display and flash.
  */
 
 typedef enum spi_device_t
@@ -129,6 +131,8 @@ void spi_read(spi_device_t spi_device, uint8_t *data, size_t length);
 
 void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
                bool hold_down_cs);
+
+uint8_t bit_reverse(uint8_t byte);
 
 /**
  * @brief Error handling macro.

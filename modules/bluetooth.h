@@ -24,12 +24,7 @@
 
 #pragma once
 
-typedef enum touch_action_t
-{
-    TOUCH_NONE,
-    TOUCH_A,
-    TOUCH_B,
-    TOUCH_BOTH
-} touch_action_t;
+#include <stddef.h>
+#include <stdint.h>
 
-void touch_event_handler(touch_action_t action);
+void bluetooth_receive_callback_handler(const uint8_t *bytes, size_t len);

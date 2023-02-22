@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include "monocle.h"
+#include "bluetooth.h"
 #include "touch.h"
 #include "config-tables.h"
 
@@ -70,9 +71,9 @@ static struct ble_handles_t
 {
     uint16_t connection;
     uint8_t advertising;
-    ble_gatts_char_handles_t repl_rx_unused;
+    ble_gatts_char_handles_t repl_rx_write;
     ble_gatts_char_handles_t repl_tx_notification;
-    ble_gatts_char_handles_t data_rx_unused;
+    ble_gatts_char_handles_t data_rx_write;
     ble_gatts_char_handles_t data_tx_notification;
 } ble_handles = {
     .connection = BLE_CONN_HANDLE_INVALID,
@@ -102,16 +103,6 @@ static struct ble_ring_buffer_t
     .tail = 0,
 },
   repl_tx = {
-      .buffer = "",
-      .head = 0,
-      .tail = 0,
-},
-  data_rx = {
-      .buffer = "",
-      .head = 0,
-      .tail = 0,
-},
-  data_tx = {
       .buffer = "",
       .head = 0,
       .tail = 0,
@@ -152,6 +143,11 @@ bool ble_are_tx_notifications_enabled(ble_tx_channel_t channel)
     }
 
     return false;
+}
+
+size_t ble_get_max_payload_size(void)
+{
+    return ble_negotiated_mtu;
 }
 
 static bool ble_send_repl_data(void)
@@ -208,7 +204,7 @@ static bool ble_send_repl_data(void)
     return false;
 }
 
-static bool ble_send_raw_data(void)
+bool ble_send_raw_data(const uint8_t *bytes, size_t len)
 {
     if (ble_handles.connection == BLE_CONN_HANDLE_INVALID)
     {
@@ -220,64 +216,21 @@ static bool ble_send_raw_data(void)
         return true;
     }
 
-    if (data_tx.head == data_tx.tail)
-    {
-        return true;
-    }
-
-    uint8_t tx_buffer[BLE_PREFERRED_MAX_MTU] = "";
-    uint16_t tx_length = 0;
-
-    uint16_t buffered_tail = data_tx.tail;
-
-    while (buffered_tail != data_tx.head)
-    {
-        tx_buffer[tx_length++] = data_tx.buffer[buffered_tail++];
-
-        if (buffered_tail == sizeof(data_tx.buffer))
-        {
-            buffered_tail = 0;
-        }
-
-        if (tx_length == ble_negotiated_mtu)
-        {
-            break;
-        }
-    }
-
     // Initialise the handle value parameters
     ble_gatts_hvx_params_t hvx_params = {0};
     hvx_params.handle = ble_handles.data_tx_notification.value_handle;
-    hvx_params.p_data = tx_buffer;
-    hvx_params.p_len = (uint16_t *)&tx_length;
+    hvx_params.p_data = bytes;
+    hvx_params.p_len = (uint16_t *)&len;
     hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
 
     uint32_t status = sd_ble_gatts_hvx(ble_handles.connection, &hvx_params);
 
     if (status == NRF_SUCCESS)
     {
-        data_tx.tail = buffered_tail;
+        return false;
     }
 
-    return false;
-}
-
-void ble_buffer_raw_tx_data(const uint8_t *bytes, size_t len)
-{
-    for (uint16_t position = 0; position < len; position++)
-    {
-        while (data_tx.head == data_tx.tail - 1)
-        {
-            MICROPY_EVENT_POLL_HOOK;
-        }
-
-        data_tx.buffer[data_tx.head++] = bytes[position];
-
-        if (data_tx.head == sizeof(data_tx.buffer))
-        {
-            data_tx.head = 0;
-        }
-    }
+    return true;
 }
 
 void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len)
@@ -300,10 +253,9 @@ void mp_hal_stdout_tx_strn(const char *str, mp_uint_t len)
 
 int mp_hal_stdin_rx_chr(void)
 {
-    if (repl_rx.head == repl_rx.tail)
+    while (repl_rx.head == repl_rx.tail)
     {
         MICROPY_EVENT_POLL_HOOK;
-        return 0;
     }
 
     uint16_t next = repl_rx.tail + 1;
@@ -326,14 +278,41 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
     (void)pin;
     (void)polarity;
 
-    /*
-    // Read the interrupt registers
-    i2c_response_t global_reg_0x11 = i2c_read(TOUCH_I2C_ADDRESS, 0x11, 0xFF);
-    i2c_response_t sar_ui_reg_0x12 = i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
-    i2c_response_t sar_ui_reg_0x13 = i2c_read(TOUCH_I2C_ADDRESS, 0x13, 0xFF);
-    */
-    touch_action_t touch_action = A_TOUCH; // TODO this should be decoded from the I2C responses
-    touch_event_handler(touch_action);
+    i2c_response_t interrupt = i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
+    app_err(interrupt.fail);
+
+    if (interrupt.value & 0x10)
+    {
+        touch_event_handler(TOUCH_A);
+    }
+
+    if (interrupt.value & 0x20)
+    {
+        touch_event_handler(TOUCH_B);
+    }
+}
+
+touch_action_t touch_get_state(void)
+{
+    i2c_response_t interrupt = i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
+    app_err(interrupt.fail);
+
+    if ((interrupt.value & 0x30) == 0x30)
+    {
+        return TOUCH_BOTH;
+    }
+
+    if (interrupt.value & 0x10)
+    {
+        return TOUCH_A;
+    }
+
+    if (interrupt.value & 0x20)
+    {
+        return TOUCH_B;
+    }
+
+    return TOUCH_NONE;
 }
 
 void unused_rtc_event_handler(nrfx_rtc_int_type_t int_type) {}
@@ -444,7 +423,7 @@ void SD_EVT_IRQHandler(void)
         {
             // If REPL service
             if (ble_evt->evt.gatts_evt.params.write.handle ==
-                ble_handles.repl_rx_unused.value_handle)
+                ble_handles.repl_rx_write.value_handle)
             {
                 for (uint16_t i = 0;
                      i < ble_evt->evt.gatts_evt.params.write.len;
@@ -482,32 +461,12 @@ void SD_EVT_IRQHandler(void)
 
             // If data service
             if (ble_evt->evt.gatts_evt.params.write.handle ==
-                ble_handles.data_rx_unused.value_handle)
+                ble_handles.data_rx_write.value_handle)
             {
-                for (uint16_t i = 0;
-                     i < ble_evt->evt.gatts_evt.params.write.len;
-                     i++)
-                {
-                    uint16_t next = data_rx.head + 1;
-
-                    if (next == sizeof(data_rx.buffer))
-                    {
-                        next = 0;
-                    }
-
-                    if (next == data_rx.tail)
-                    {
-                        break;
-                    }
-
-                    data_rx.buffer[data_rx.head] =
-                        ble_evt->evt.gatts_evt.params.write.data[i];
-
-                    data_rx.head = next;
-                }
+                bluetooth_receive_callback_handler(
+                    ble_evt->evt.gatts_evt.params.write.data,
+                    ble_evt->evt.gatts_evt.params.write.len);
             }
-
-            // TODO if data service
 
             break;
         }
@@ -577,7 +536,12 @@ int main(void)
 
     // Check if external flash has an FPGA image and boot it
     {
-        // TODO
+        uint8_t wakeup_device_id[] = {bit_reverse(0xAB), 0, 0, 0};
+        spi_write(FLASH, wakeup_device_id, 4, true);
+        spi_read(FLASH, wakeup_device_id, 1);
+        app_err(bit_reverse(wakeup_device_id[0]) != 0x13);
+
+        // TODO check flash for FPGA image
 
         // Otherwise boot from the internal image of the FPGA
         nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, false);
@@ -846,7 +810,7 @@ int main(void)
         app_err(sd_ble_gatts_characteristic_add(repl_service_handle,
                                                 &rx_char_md,
                                                 &rx_attr,
-                                                &ble_handles.repl_rx_unused));
+                                                &ble_handles.repl_rx_write));
 
         app_err(sd_ble_gatts_characteristic_add(repl_service_handle,
                                                 &tx_char_md,
@@ -864,7 +828,7 @@ int main(void)
         app_err(sd_ble_gatts_characteristic_add(data_service_handle,
                                                 &rx_char_md,
                                                 &rx_attr,
-                                                &ble_handles.data_rx_unused));
+                                                &ble_handles.data_rx_write));
 
         app_err(sd_ble_gatts_characteristic_add(data_service_handle,
                                                 &tx_char_md,
@@ -956,7 +920,8 @@ int main(void)
 
 void mp_event_poll_hook(void)
 {
-    if (ble_send_repl_data() && ble_send_raw_data())
+    // Keep sending REPL data. Then if no more data is pending
+    if (ble_send_repl_data())
     {
         extern void mp_handle_pending(bool);
         mp_handle_pending(true);

@@ -46,6 +46,8 @@ static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
 
 bool prevent_sleep_flag = false;
 
+bool force_sleep_flag = false;
+
 static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
                                                 void *p_context)
 {
@@ -58,7 +60,7 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
 
     bool charging = charging_response.value;
 
-    if (charging)
+    if (charging || force_sleep_flag)
     {
         if (prevent_sleep_flag)
         {
@@ -99,6 +101,9 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
                                  NRF_GPIO_PIN_SENSE_LOW);
 
         NRFX_LOG_ERROR("Going to sleep");
+
+        // Clear the reset reasons
+        NRF_POWER->RESETREAS = 0xF000F;
 
         // Power down
         NRF_POWER->SYSTEMOFF = 1;

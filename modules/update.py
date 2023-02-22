@@ -24,8 +24,8 @@
 
 import __update
 
-def fpga():
-    raise NotImplementedError
-
 def micropython():
     __update.nrf52()
+
+def fpga():
+    raise NotImplementedError

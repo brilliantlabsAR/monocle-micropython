@@ -22,14 +22,23 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-#pragma once
+#include "monocle.h"
+#include "py/runtime.h"
 
-typedef enum touch_action_t
+STATIC mp_obj_t storage_read(void)
 {
-    TOUCH_NONE,
-    TOUCH_A,
-    TOUCH_B,
-    TOUCH_BOTH
-} touch_action_t;
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(storage_read_obj, storage_read);
 
-void touch_event_handler(touch_action_t action);
+STATIC const mp_rom_map_elem_t storage_module_globals_table[] = {
+
+    {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&storage_read_obj)},
+};
+STATIC MP_DEFINE_CONST_DICT(storage_module_globals, storage_module_globals_table);
+
+const mp_obj_module_t storage_module = {
+    .base = {&mp_type_module},
+    .globals = (mp_obj_dict_t *)&storage_module_globals,
+};
+MP_REGISTER_MODULE(MP_QSTR_storage, storage_module);
