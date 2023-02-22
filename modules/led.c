@@ -33,42 +33,46 @@ enum
 
 static mp_obj_t led_on(mp_obj_t led_in)
 {
-    switch (MP_OBJ_SMALL_INT_VALUE(led_in))
+    qstr led = mp_obj_str_get_qstr(led_in);
+
+    if ((led != MP_QSTR_RED) &&
+        (led != MP_QSTR_GREEN))
     {
-    case LED_RED:
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("must be led.RED or led.GREEN"));
+    }
+
+    if (led == MP_QSTR_RED)
     {
         monocle_set_led(RED_LED, true);
-        break;
+        return mp_const_none;
     }
 
-    case LED_GREEN:
-    {
-        monocle_set_led(GREEN_LED, true);
+    monocle_set_led(GREEN_LED, true);
 
-        break;
-    }
-    }
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(led_on_obj, led_on);
 
 static mp_obj_t led_off(mp_obj_t led_in)
 {
-    switch (MP_OBJ_SMALL_INT_VALUE(led_in))
-    {
+    qstr led = mp_obj_str_get_qstr(led_in);
 
-    case LED_RED:
+    if ((led != MP_QSTR_RED) &&
+        (led != MP_QSTR_GREEN))
+    {
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("must be led.RED or led.GREEN"));
+    }
+
+    if (led == MP_QSTR_RED)
     {
         monocle_set_led(RED_LED, false);
-        break;
+        return mp_const_none;
     }
 
-    case LED_GREEN:
-    {
-        monocle_set_led(GREEN_LED, false);
-        break;
-    }
-    }
+    monocle_set_led(GREEN_LED, false);
+
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(led_off_obj, led_off);
@@ -77,8 +81,8 @@ STATIC const mp_rom_map_elem_t led_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_on), MP_ROM_PTR(&led_on_obj)},
     {MP_ROM_QSTR(MP_QSTR_off), MP_ROM_PTR(&led_off_obj)},
-    {MP_ROM_QSTR(MP_QSTR_RED), MP_OBJ_NEW_SMALL_INT(LED_RED)},
-    {MP_ROM_QSTR(MP_QSTR_GREEN), MP_OBJ_NEW_SMALL_INT(LED_GREEN)},
+    {MP_ROM_QSTR(MP_QSTR_RED), MP_ROM_QSTR(MP_QSTR_RED)},
+    {MP_ROM_QSTR(MP_QSTR_GREEN), MP_ROM_QSTR(MP_QSTR_GREEN)},
 };
 STATIC MP_DEFINE_CONST_DICT(led_module_globals, led_module_globals_table);
 
