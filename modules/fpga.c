@@ -23,6 +23,7 @@
  */
 
 #include "monocle.h"
+#include "nrf_gpio.h"
 #include "py/runtime.h"
 
 STATIC mp_obj_t fpga_read(mp_obj_t addr_16bit, mp_obj_t n)
@@ -32,12 +33,6 @@ STATIC mp_obj_t fpga_read(mp_obj_t addr_16bit, mp_obj_t n)
         mp_raise_ValueError(
             MP_ERROR_TEXT("n must be between 1 and 255"));
     }
-
-    // TODO
-    // if (app_fpga_get_power_state() == false)
-    // {
-    //     mp_raise_msg(&mp_type_OSError, "FPGA is not powered");
-    // }
 
     uint16_t addr = mp_obj_get_int(addr_16bit);
     uint8_t addr_bytes[2] = {(uint8_t)(addr >> 8), (uint8_t)addr};
@@ -66,12 +61,6 @@ STATIC mp_obj_t fpga_write(mp_obj_t addr_16bit, mp_obj_t bytes)
             MP_ERROR_TEXT("input buffer size must be less than 255 bytes"));
     }
 
-    // TODO
-    // if (app_fpga_get_power_state() == false)
-    // {
-    //     mp_raise_msg(&mp_type_OSError, "FPGA is not powered");
-    // }
-
     uint16_t addr = mp_obj_get_int(addr_16bit);
     uint8_t addr_bytes[2] = {(uint8_t)(addr >> 8), (uint8_t)addr};
 
@@ -89,69 +78,10 @@ STATIC mp_obj_t fpga_write(mp_obj_t addr_16bit, mp_obj_t bytes)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(fpga_write_obj, fpga_write);
 
-STATIC mp_obj_t fpga_power(size_t n_args, const mp_obj_t *args)
-{
-    // TODO
-    bool current_power_state = true; // app_fpga_get_power_state();
-
-    if (n_args == 0)
-    {
-        if (current_power_state)
-        {
-            return MP_OBJ_NEW_QSTR(MP_QSTR_ON);
-        }
-
-        return MP_OBJ_NEW_QSTR(MP_QSTR_OFF);
-    }
-
-    if (mp_obj_get_type(args[0]) != &mp_type_bool)
-    {
-        mp_raise_ValueError(
-            MP_ERROR_TEXT("input argument must be either True or False"));
-    }
-
-    bool new_power_state = (bool)mp_obj_get_int(args[0]);
-
-    if (new_power_state == current_power_state)
-    {
-        return mp_const_none;
-    }
-
-    // TODO
-    // app_fpga_set_power_state(new_power_state);
-
-    if (new_power_state == true)
-    {
-        // TODO
-        // app_fpga_boot_stored_bitstream();
-    }
-
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(fpga_power_obj, 0, 1, fpga_power);
-
-STATIC mp_obj_t fpga_status(void)
-{
-    // TODO
-    // if (app_fpga_get_power_state() == false)
-    // {
-    // return MP_OBJ_NEW_QSTR(MP_QSTR_NOT_POWERED);
-    // }
-
-    // if (gpio_get_level(fpga_configuration_done_pin))
-    // {
-    return MP_OBJ_NEW_QSTR(MP_QSTR_RUNNING);
-    // }
-    // return MP_OBJ_NEW_QSTR(MP_QSTR_BAD_BITSTREAM);
-}
-MP_DEFINE_CONST_FUN_OBJ_0(fpga_status_obj, &fpga_status);
-
 STATIC const mp_rom_map_elem_t fpga_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&fpga_read_obj)},
     {MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&fpga_write_obj)},
-    {MP_ROM_QSTR(MP_QSTR_power), MP_ROM_PTR(&fpga_power_obj)},
-    {MP_ROM_QSTR(MP_QSTR_status), MP_ROM_PTR(&fpga_status_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(fpga_module_globals, fpga_module_globals_table);
 
