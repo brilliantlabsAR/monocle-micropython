@@ -23,23 +23,48 @@
 #
 
 import __camera
-import bluetooth
-import fpga
-import time
+import bluetooth as __bluetooth
+import fpga as __fpga
+import time as __time
+
+RGB = 'RGB'
+YUV = 'YUV'
+JPEG = 'JPEG'
+
+__overlay_state = False
 
 def capture(url):
   raise NotImplementedError
 
-def zoom(multiplier):
+def overlay(enable=None):
+  if enable == None:
+    global __overlay_state
+    return __overlay_state
+  if enable == True:
+    __fpga.write(0x4404, "")
+    __time.sleep_ms(100)
+    __camera.wake()
+    __fpga.write(0x1005, "")
+    __fpga.write(0x3005, "")
+    __overlay_state = True
+  else:
+    __fpga.write(0x3004, "")
+    __fpga.write(0x1004, "")
+    __time.sleep_ms(100)
+    __camera.sleep()
+    __overlay_state = False
+
+def output(x, y, format):
   raise NotImplementedError
 
-def overlay(enable):
-  if enable == True:
-    __camera.wake()
-    fpga.write(0x1005, "")
-    fpga.write(0x3005, "")
-  else:
-    fpga.write(0x3004, "")
-    fpga.write(0x1004, "")
-    time.sleep_ms(100);
-    __camera.sleep()
+def zoom(multiplier):
+  return_to_mode = None
+  if overlay() == True:
+    overlay(0)
+    return_to_mode = "overlay"
+  __camera.wake()
+  __time.sleep_ms(100)
+  __camera.zoom(multiplier)
+  __camera.sleep()
+  if return_to_mode == "overlay":
+    overlay(1)
