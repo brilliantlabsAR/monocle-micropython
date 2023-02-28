@@ -33,7 +33,6 @@ def capture(url):
   Send the captured image over Bluetooth.
   """
   __camera.wake()
-  fpga.write(0x1009, b'') # camera on
   fpga.write(0x1006, b'') # camera capture
   time.sleep_ms(60) # let the FPGA work a bit
 
