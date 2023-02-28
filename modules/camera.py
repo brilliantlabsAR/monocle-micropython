@@ -70,6 +70,7 @@ def capture(url):
 
     offset = 1
     flag = 2 # MIDDLE
+    gc.collect()
 
   __camera.sleep()
   gc.collect()
