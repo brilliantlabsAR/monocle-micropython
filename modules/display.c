@@ -86,7 +86,7 @@ typedef struct
     arg_t arg;
 } obj_t;
 
-obj_t obj_list[50];
+obj_t obj_list[512];
 size_t obj_num;
 
 static uint8_t const *font = font_50;
