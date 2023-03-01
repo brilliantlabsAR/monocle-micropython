@@ -31,7 +31,16 @@ def capture(url):
   raise NotImplementedError
 
 def zoom(multiplier):
-  raise NotImplementedError
+  return_to_mode = None
+  if overlay() == True:
+    overlay(0)
+    return_to_mode = "overlay"
+  __camera.wake()
+  __time.sleep_ms(100)
+  __camera.zoom(multiplier)
+  __camera.sleep()
+  if return_to_mode == "overlay":
+    overlay(1)
 
 def overlay(enable):
   if enable == True:
