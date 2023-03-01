@@ -53,47 +53,6 @@ STATIC mp_obj_t camera_zoom(mp_obj_t zoom)
     default:
         mp_raise_ValueError(MP_ERROR_TEXT("zoom must be 1 or 16"));
     }
-
-#if 0
-// This controls fine-tuned zoom that cannot go much beyong 1.7x.
-// To set the zoom level to 1.5:
-// fpga.write(0x3004, b'') # live off
-// __camera.zoom(1)
-// fpga.write(0x1005, b'') # record on
-// fpga.write(0x3005, b'') # live on
-// Only values between 0 (no effect) and 1.8 (no more output) seems to work.
-// There might be another configuration value to adjust aroung some threshold.
-
-    if (mp_obj_get_float(zoom) < 1)
-    {
-        mp_raise_ValueError(MP_ERROR_TEXT("min zoom is 1"));
-    }
-
-    float width = 2607 / mp_obj_get_float(zoom);
-    float height = 1705 / mp_obj_get_float(zoom);
-
-    app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x00).fail); // Start group 0
-
-#define CAM_CROP_LEFT     0
-#define CAM_CROP_TOP      0
-#define CAM_CROP_WIDTH    (uint16_t)(width)
-#define CAM_CROP_HEIGHT   (uint16_t)(height)
-#define CAM_CROP_RIGHT    (CAM_CROP_LEFT + CAM_CROP_WIDTH - 1)
-#define CAM_CROP_BOTTOM   (CAM_CROP_TOP + CAM_CROP_HEIGHT - 1)
-
-    app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3800, 0xFF, CAM_CROP_LEFT >> 8).fail);       // Timing X start address MSB
-    app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3801, 0xFF, CAM_CROP_LEFT & 0xFF).fail);     // Timing X start address LSB
-    app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3802, 0xFF, CAM_CROP_TOP >> 8).fail);        // Timing Y start address MSB
-    app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3803, 0xFF, CAM_CROP_TOP & 0xFF).fail);      // Timing Y start address LSB
-    app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3804, 0xFF, CAM_CROP_RIGHT >> 8).fail);      // Timing X end address MSB
-    app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3805, 0xFF, CAM_CROP_RIGHT & 0xFF).fail);    // Timing X end address LSB
-    app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3806, 0xFF, CAM_CROP_BOTTOM >> 8).fail);     // Timing Y end address MSB
-    app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3807, 0xFF, CAM_CROP_BOTTOM & 0xFF).fail);   // Timing Y end address LSB
-
-    app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0x10).fail); // End group 0
-    app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x3212, 0xFF, 0xA0).fail); // Launch group 0
-#endif
-
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(camera_zoom_obj, camera_zoom);
