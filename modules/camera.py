@@ -39,22 +39,26 @@ def overlay(enable):
     fpga.write(0x1005, "")
     fpga.write(0x3005, "")
   else:
-    fpga.write(0x3004, "") # this discards the record buffer
+    # This discards the recorded buffer
+    fpga.write(0x3004, "")
     fpga.write(0x1004, "")
     time.sleep_ms(100);
     __camera.sleep()
 
 def record(enable):
   if enable:
-    __camera.wake()
+    # Overlay seems to be required for recording.
+    camera.overlay(True)
     fpga.write(0x1005, b'') # record on
   else:
+    # This pauses the image, ready for replaying
     fpga.write(0x1004, b'') # record off
     __camera.sleep()
 
 def replay():
+  # Stop recording to avoid output mixing live and recorded feeds
   record(False)
-  overlay(True)
+
+  # This will trigger one replay of the recorded feed
   fpga.write(0x3007, b'') # replay once
   time.sleep(4)
-  overlay(False)
