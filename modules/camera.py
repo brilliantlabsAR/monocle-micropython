@@ -67,11 +67,11 @@ def zoom(multiplier):
 def record(enable):
   if enable:
     # Overlay seems to be required for recording.
-    camera.overlay(True)
-    fpga.write(0x1005, b'') # record on
+    overlay(True)
+    __fpga.write(0x1005, b'') # record on
   else:
     # This pauses the image, ready for replaying
-    fpga.write(0x1004, b'') # record off
+    __fpga.write(0x1004, b'') # record off
     __camera.sleep()
 
 def replay():
@@ -79,5 +79,5 @@ def replay():
   record(False)
 
   # This will trigger one replay of the recorded feed
-  fpga.write(0x3007, b'') # replay once
-  time.sleep(4)
+  __fpga.write(0x3007, b'') # replay once
+  __time.sleep(4)
