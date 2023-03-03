@@ -160,11 +160,27 @@ STATIC mp_obj_t storage_delete(mp_obj_t file)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(storage_delete_obj, storage_delete);
 
+STATIC mp_obj_t storage_list(void)
+{
+    return mp_const_notimplemented;
+}
+MP_DEFINE_CONST_FUN_OBJ_0(storage_list_obj, storage_list);
+
+STATIC mp_obj_t storage_mem_free(void)
+{
+    return mp_const_notimplemented;
+}
+MP_DEFINE_CONST_FUN_OBJ_0(storage_mem_free_obj, storage_mem_free);
+
 STATIC const mp_rom_map_elem_t storage_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&storage_read_obj)},
     {MP_ROM_QSTR(MP_QSTR_append), MP_ROM_PTR(&storage_append_obj)},
     {MP_ROM_QSTR(MP_QSTR_delete), MP_ROM_PTR(&storage_delete_obj)},
+    {MP_ROM_QSTR(MP_QSTR_list), MP_ROM_PTR(&storage_list_obj)},
+    {MP_ROM_QSTR(MP_QSTR_mem_free), MP_ROM_PTR(&storage_mem_free_obj)},
+    {MP_ROM_QSTR(MP_QSTR_MEM_TOTAL),
+     MP_ROM_INT(1048576 - (reserved_64k_blocks_for_fpga_bitstream * 8192))},
     {MP_ROM_QSTR(MP_QSTR_FPGA_BITSTREAM), MP_ROM_QSTR(MP_QSTR_FPGA_BITSTREAM)},
 };
 STATIC MP_DEFINE_CONST_DICT(storage_module_globals, storage_module_globals_table);
