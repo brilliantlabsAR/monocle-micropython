@@ -70,6 +70,10 @@ void mp_hal_delay_ms(mp_uint_t ms)
     }
 }
 
+uint64_t mp_hal_time_ns(void) {
+    return 0;
+}
+
 int mp_hal_generate_random_seed(void)
 {
     return 0;
