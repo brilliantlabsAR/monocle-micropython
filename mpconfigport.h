@@ -114,6 +114,10 @@
 
 #define MICROPY_EPOCH_IS_1970 (1)
 
+#define MICROPY_VFS (1)
+#define MICROPY_VFS_LFS2 (1)
+#define MICROPY_READER_VFS (1)
+
 #define MP_SSIZE_MAX (0x7fffffff)
 
 #define MP_STATE_PORT MP_STATE_VM

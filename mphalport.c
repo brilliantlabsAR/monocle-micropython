@@ -70,25 +70,6 @@ void mp_hal_delay_ms(mp_uint_t ms)
     }
 }
 
-mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs)
-{
-    // File opening is currently not supported
-    mp_raise_OSError(MP_EPERM);
-}
-MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
-
-mp_lexer_t *mp_lexer_new_from_file(const char *filename)
-{
-    // File opening is currently not supported
-    mp_raise_OSError(MP_ENOENT);
-}
-
-mp_import_stat_t mp_import_stat(const char *path)
-{
-    // File opening is currently not supported
-    return MP_IMPORT_STAT_NO_EXIST;
-}
-
 int mp_hal_generate_random_seed(void)
 {
     return 0;
