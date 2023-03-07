@@ -28,6 +28,7 @@ module("display.py")
 module("microphone.py")
 module("update.py")
 module("camera.py")
+module("blockdev.py")
 
 include("$(MPY_DIR)/extmod/uasyncio/manifest.py")
 
