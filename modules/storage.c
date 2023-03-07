@@ -32,9 +32,28 @@ static const size_t reserved_64k_blocks_for_fpga_bitstream = 7;
 
 static size_t fpga_bitstream_programmed_bytes = 0;
 
+static bool flash_is_busy(void)
+{
+    uint8_t status_cmd[] = {bit_reverse(0x05)};
+    spi_write(FLASH, status_cmd, sizeof(status_cmd), true);
+    spi_read(FLASH, status_cmd, sizeof(status_cmd));
+
+    if ((status_cmd[0] & bit_reverse(0x01)) == 0)
+    {
+        return false;
+    }
+
+    return true;
+}
+
 static void flash_read(uint8_t *buffer, size_t address, size_t length)
 {
     app_err(length > 255);
+
+    while (flash_is_busy())
+    {
+        mp_hal_delay_ms(1);
+    }
 
     uint8_t read_cmd[] = {bit_reverse(0x03),
                           bit_reverse(address >> 16),
@@ -44,26 +63,47 @@ static void flash_read(uint8_t *buffer, size_t address, size_t length)
     spi_read(FLASH, buffer, length);
 }
 
-STATIC mp_obj_t storage_read(mp_obj_t file, mp_obj_t length, mp_obj_t offset)
+static void flash_write(uint8_t *buffer, size_t address, size_t length)
 {
-    const char *filename = mp_obj_str_get_str(file);
+    app_err(length > 255);
 
-    if (mp_obj_get_int(length) > (1 << SPIM2_EASYDMA_MAXCNT_SIZE))
+    while (flash_is_busy())
     {
-        mp_raise_msg_varg(&mp_type_ValueError,
-                          MP_ERROR_TEXT("length must be less than %u bytes"),
-                          1 << SPIM2_EASYDMA_MAXCNT_SIZE);
+        mp_hal_delay_ms(1);
     }
 
-    // TODO allow optional length value?
+    uint8_t write_enable_cmd[] = {bit_reverse(0x06)};
+    spi_write(FLASH, write_enable_cmd, sizeof(write_enable_cmd), false);
 
-    // TODO allow optional offset value?
+    uint8_t page_program_cmd[] = {bit_reverse(0x02),
+                                  bit_reverse(address >> 16),
+                                  bit_reverse(address >> 8),
+                                  bit_reverse(address)};
+    spi_write(FLASH, page_program_cmd, sizeof(page_program_cmd), true);
+    spi_write(FLASH, buffer, length, false);
+}
 
-    if (strcmp(filename, "FPGA_BITSTREAM") == 0)
+STATIC mp_obj_t storage_read(mp_obj_t file, mp_obj_t file_length, mp_obj_t offset)
+{
+    const char *file_name = mp_obj_str_get_str(file);
+
+    if (strcmp(file_name, "FPGA_BITSTREAM") == 0)
     {
-        uint8_t buffer[mp_obj_get_int(length)];
-        flash_read(buffer, mp_obj_get_int(offset), mp_obj_get_int(length));
-        return mp_obj_new_bytes(buffer, mp_obj_get_int(length));
+        uint8_t buffer[mp_obj_get_int(file_length)];
+
+        size_t bytes_read = 0;
+        while (bytes_read < mp_obj_get_int(file_length))
+        {
+            size_t max_readable_length = MIN(mp_obj_get_int(file_length) - bytes_read, 255);
+
+            flash_read(buffer + bytes_read,
+                       mp_obj_get_int(offset) + bytes_read,
+                       max_readable_length);
+
+            bytes_read += max_readable_length;
+        }
+
+        return mp_obj_new_bytes(buffer, mp_obj_get_int(file_length));
     }
 
     return mp_const_notimplemented;
@@ -72,83 +112,43 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(storage_read_obj, storage_read);
 
 STATIC mp_obj_t storage_append(mp_obj_t file, mp_obj_t bytes)
 {
-    const char *filename = mp_obj_str_get_str(file);
+    const char *file_name = mp_obj_str_get_str(file);
 
-    size_t length;
-    const char *data = mp_obj_str_get_data(bytes, &length);
+    size_t file_length;
+    const char *file_data = mp_obj_str_get_data(bytes, &file_length);
 
-    if (length > (1 << SPIM2_EASYDMA_MAXCNT_SIZE))
+    if (strcmp(file_name, "FPGA_BITSTREAM") == 0)
     {
-        mp_raise_msg_varg(&mp_type_ValueError,
-                          MP_ERROR_TEXT("length must be less than %u bytes"),
-                          1 << SPIM2_EASYDMA_MAXCNT_SIZE);
-    }
-
-    if (strcmp(filename, "FPGA_BITSTREAM") == 0)
-    {
-        if (fpga_bitstream_programmed_bytes + length >
+        if (fpga_bitstream_programmed_bytes + file_length >
             0x10000 * reserved_64k_blocks_for_fpga_bitstream)
         {
             mp_raise_ValueError(MP_ERROR_TEXT(
-                "data will overflow reserved FPGA bitstream space"));
+                "file length overflows the reserved space for the bitstream"));
         }
 
-        // Which page are we on, and how far in are we
-        size_t this_page = (size_t)floor(fpga_bitstream_programmed_bytes / 256.0);
-        size_t into_page = fpga_bitstream_programmed_bytes % 256;
-
-        NRFX_LOG_ERROR("this_page: %u, into_page: %u", this_page, into_page);
-
-        // Read a page. Two reads as the SPI can't do 256 in one go
-        uint8_t page1_data[256];
-        size_t this_page_address = this_page * 256;
-        flash_read(page1_data, this_page_address, 128);
-        flash_read(page1_data + 128, this_page_address + 128, 128);
-
-        NRFX_LOG_ERROR("this_page_address: %u", this_page_address);
-
-        // Incase a second page is needed, we prepare the buffer
-        bool double_page_write = false;
-        uint8_t page2_data[256];
-        size_t next_page_address = this_page_address + 256;
-
-        // Read either two or one page depending on if the data will overflow
-        if (length + into_page > 256)
+        size_t bytes_written = 0;
+        while (bytes_written < file_length)
         {
-            flash_read(page2_data, next_page_address, 128);
-            flash_read(page2_data + 128, next_page_address + 128, 128);
-            // memcpy(page1_data + into_page, data, length - into_page);
-            // memcpy(page2_data, data + (length - into_page), ...);
-            double_page_write = true;
-            NRFX_LOG_ERROR("double page write from %u on page 1, to %u on page 2", into_page, length - (256 - into_page));
+            size_t page_number = (size_t)floor(fpga_bitstream_programmed_bytes / 256.0);
+            size_t page_address = page_number * 256;
+
+            size_t offset_in_page = fpga_bitstream_programmed_bytes % 256;
+            size_t bytes_left_in_page = 256 - offset_in_page;
+
+            // Read the page in two chunks as the SPI can't do 256 in one go
+            uint8_t page_data[256];
+            flash_read(page_data, page_address, 128);
+            flash_read(page_data + 128, page_address + 128, 128);
+
+            size_t bytes_appended = MIN(file_length - bytes_written, bytes_left_in_page);
+            memcpy(page_data + offset_in_page, file_data + bytes_written, bytes_appended);
+
+            flash_write(page_data, page_address, 128);
+            flash_write(page_data + 128, page_address + 128, 128);
+
+            fpga_bitstream_programmed_bytes += bytes_appended;
+            bytes_written += bytes_appended;
         }
-        else
-        {
-            // memcpy(page1_data + into_page, data, length);
-            NRFX_LOG_ERROR("single page write at byte %u in page, length: %u", into_page, length);
-        }
-
-        // TODO write the first page
-
-        // TODO write the second page if it changed
-        if (double_page_write)
-        {
-        }
-
-        ////// TODO
-        uint8_t write_enable[] = {bit_reverse(0x06)};
-        spi_write(FLASH, write_enable, sizeof(write_enable), false);
-
-        uint8_t page_program[] =
-            {bit_reverse(0x02),
-             bit_reverse(fpga_bitstream_programmed_bytes >> 16),
-             bit_reverse(fpga_bitstream_programmed_bytes >> 8),
-             bit_reverse(fpga_bitstream_programmed_bytes)};
-        spi_write(FLASH, page_program, sizeof(page_program), true);
-        spi_write(FLASH, (uint8_t *)data, length, false);
-
-        fpga_bitstream_programmed_bytes += length;
-
         return mp_const_none;
     }
 
@@ -158,9 +158,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(storage_append_obj, storage_append);
 
 STATIC mp_obj_t storage_delete(mp_obj_t file)
 {
-    const char *filename = mp_obj_str_get_str(file);
+    const char *file_name = mp_obj_str_get_str(file);
 
-    if (strcmp(filename, "FPGA_BITSTREAM") == 0)
+    if (strcmp(file_name, "FPGA_BITSTREAM") == 0)
     {
         for (size_t i = 0; i < reserved_64k_blocks_for_fpga_bitstream; i++)
         {
@@ -174,18 +174,8 @@ STATIC mp_obj_t storage_delete(mp_obj_t file)
                                      0};
             spi_write(FLASH, block_erase, sizeof(block_erase), false);
 
-            while (true)
+            while (flash_is_busy())
             {
-                uint8_t status[] = {bit_reverse(0x05)};
-                spi_write(FLASH, status, sizeof(status), true);
-                spi_read(FLASH, status, sizeof(status));
-
-                // If no longer busy
-                if ((status[0] & bit_reverse(0x01)) == 0)
-                {
-                    break;
-                }
-
                 mp_hal_delay_ms(10);
             }
         }
