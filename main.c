@@ -25,9 +25,11 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "monocle.h"
 #include "bluetooth.h"
+#include "storage.h"
 #include "touch.h"
 #include "config-tables.h"
 
@@ -543,10 +545,19 @@ int main(void)
         bool flash_found = bit_reverse(wakeup_device_id[0]) == 0x13;
         app_err(flash_found == false && not_real_hardware_flag == false);
 
-        // TODO check flash for FPGA image
-
-        // Otherwise boot from the internal image of the FPGA
-        nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, false);
+        // Check flash for a valid FPGA image
+        uint8_t magic_word[17] = "";
+        flash_read(magic_word, 0x6C80E, sizeof(magic_word));
+        if (memcmp(magic_word, "BITSTREAM_WRITTEN", sizeof(magic_word)) == 0)
+        {
+            NRFX_LOG_ERROR("Booting FPGA from SPI flash");
+            nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, true);
+        }
+        else
+        {
+            NRFX_LOG_ERROR("Booting FPGA from internal flash");
+            nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, false);
+        }
 
         // FPGA should be ready by now. It needs 23ms after the rails go up
         // Start configuration by bringing high the RECONFIG_N pin

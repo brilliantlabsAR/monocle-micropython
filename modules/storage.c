@@ -46,7 +46,7 @@ static bool flash_is_busy(void)
     return true;
 }
 
-static void flash_read(uint8_t *buffer, size_t address, size_t length)
+void flash_read(uint8_t *buffer, size_t address, size_t length)
 {
     app_err(length > 255);
 
@@ -211,6 +211,7 @@ STATIC const mp_rom_map_elem_t storage_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_MEM_TOTAL),
      MP_ROM_INT(1048576 - (reserved_64k_blocks_for_fpga_bitstream * 8192))},
     {MP_ROM_QSTR(MP_QSTR_FPGA_BITSTREAM), MP_ROM_QSTR(MP_QSTR_FPGA_BITSTREAM)},
+    {MP_ROM_QSTR(MP_QSTR_BITSTREAM_WRITTEN), MP_ROM_QSTR(MP_QSTR_BITSTREAM_WRITTEN)},
 };
 STATIC MP_DEFINE_CONST_DICT(storage_module_globals, storage_module_globals_table);
 
