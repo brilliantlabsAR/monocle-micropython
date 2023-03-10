@@ -265,6 +265,40 @@ void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
     }
 }
 
+void spi_release(void)
+{
+    nrf_gpio_cfg(FPGA_FLASH_SPI_SCK_PIN,
+                 NRF_GPIO_PIN_DIR_INPUT,
+                 NRF_GPIO_PIN_INPUT_CONNECT,
+                 NRF_GPIO_PIN_NOPULL,
+                 NRF_GPIO_PIN_S0S1,
+                 NRF_GPIO_PIN_NOSENSE);
+
+    nrf_gpio_cfg(FPGA_FLASH_SPI_SDO_PIN,
+                 NRF_GPIO_PIN_DIR_INPUT,
+                 NRF_GPIO_PIN_INPUT_DISCONNECT,
+                 NRF_GPIO_PIN_NOPULL,
+                 NRF_GPIO_PIN_S0S1,
+                 NRF_GPIO_PIN_NOSENSE);
+}
+
+void spi_acquire(void)
+{
+    nrf_gpio_cfg(FPGA_FLASH_SPI_SCK_PIN,
+                 NRF_GPIO_PIN_DIR_OUTPUT,
+                 NRF_GPIO_PIN_INPUT_CONNECT,
+                 NRF_GPIO_PIN_NOPULL,
+                 NRF_GPIO_PIN_S0S1,
+                 NRF_GPIO_PIN_NOSENSE);
+
+    nrf_gpio_cfg(FPGA_FLASH_SPI_SDO_PIN,
+                 NRF_GPIO_PIN_DIR_OUTPUT,
+                 NRF_GPIO_PIN_INPUT_DISCONNECT,
+                 NRF_GPIO_PIN_NOPULL,
+                 NRF_GPIO_PIN_S0S1,
+                 NRF_GPIO_PIN_NOSENSE);
+}
+
 uint8_t bit_reverse(uint8_t byte)
 {
     byte = (byte & 0xF0) >> 4 | (byte & 0x0F) << 4;

@@ -538,6 +538,9 @@ int main(void)
 
     // Check if external flash has an FPGA image and boot it
     {
+        // Wait for READY flag in the FPGA. Max 23ms
+        nrfx_systick_delay_ms(23);
+
         uint8_t wakeup_device_id[] = {bit_reverse(0xAB), 0, 0, 0};
         spi_write(FLASH, wakeup_device_id, 4, true);
         spi_read(FLASH, wakeup_device_id, 1);
@@ -551,7 +554,6 @@ int main(void)
         if (memcmp(magic_word, "BITSTREAM_WRITTEN", sizeof(magic_word)) == 0)
         {
             NRFX_LOG_ERROR("Booting FPGA from SPI flash");
-            nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, true);
         }
         else
         {
@@ -559,11 +561,13 @@ int main(void)
             nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, false);
         }
 
-        // FPGA should be ready by now. It needs 23ms after the rails go up
-        // Start configuration by bringing high the RECONFIG_N pin
-        nrfx_systick_delay_ms(23); // Wait for READY flag in the FPGA. Max 23ms
+        // Release the SPI and FPGA reset to boot
+        spi_release();
         nrf_gpio_pin_write(FPGA_RESET_PIN, true);
-        nrfx_systick_delay_ms(1); // 1ms to read MODE1 pin
+
+        // Wait for boot and reacquire the SPI
+        nrfx_systick_delay_ms(3000);
+        spi_acquire();
 
         // Set the mode pin high once sampled so it can be used as chip select
         nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, true);
@@ -571,9 +575,6 @@ int main(void)
 
     // Setup the camera
     {
-        // TODO why is this delay needed?
-        nrfx_systick_delay_ms(500);
-
         // Start the camera clock
         uint8_t command[2] = {0x10, 0x09};
         spi_write(FPGA, command, 2, false);

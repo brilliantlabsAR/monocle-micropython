@@ -248,13 +248,20 @@ void monocle_critical_startup(void)
         nrf_gpio_cfg_output(DISPLAY_RESET_PIN);
         nrf_gpio_cfg_output(FPGA_RESET_PIN);
         nrf_gpio_cfg_output(DISPLAY_CS_PIN);
-        nrf_gpio_cfg_output(FLASH_CS_PIN);
 
         // Set the FPGA CS pin as both open drain & input (for interrupt)
         nrf_gpio_cfg(FPGA_CS_INT_MODE_PIN,
                      NRF_GPIO_PIN_DIR_OUTPUT,
                      NRF_GPIO_PIN_INPUT_CONNECT,
                      NRF_GPIO_PIN_NOPULL,
+                     NRF_GPIO_PIN_S0D1,
+                     NRF_GPIO_PIN_NOSENSE);
+
+        // Flash CS should also be open drain so the FPGA can take control of it
+        nrf_gpio_cfg(FLASH_CS_PIN,
+                     NRF_GPIO_PIN_DIR_OUTPUT,
+                     NRF_GPIO_PIN_INPUT_DISCONNECT,
+                     NRF_GPIO_PIN_PULLUP,
                      NRF_GPIO_PIN_S0D1,
                      NRF_GPIO_PIN_NOSENSE);
 
@@ -265,8 +272,8 @@ void monocle_critical_startup(void)
 
         // Set the chip selects to high
         nrf_gpio_pin_write(DISPLAY_CS_PIN, true);
-        nrf_gpio_pin_write(FLASH_CS_PIN, true);
         nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, true);
+        nrf_gpio_pin_write(FLASH_CS_PIN, true);
     }
 
     // Power up everything for normal operation.
