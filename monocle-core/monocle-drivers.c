@@ -23,6 +23,7 @@
  */
 
 #include "monocle.h"
+#include "py/mphal.h"
 #include "nrf_gpio.h"
 #include "nrfx_spim.h"
 #include "nrfx_twim.h"
@@ -209,8 +210,21 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
     return resp;
 }
 
+static bool spi_in_use_by_fpga(void)
+{
+    bool fpga_not_selected = nrf_gpio_pin_out_read(FPGA_CS_INT_MODE_PIN);
+    bool fpga_using_bus = !nrf_gpio_pin_read(FPGA_CS_INT_MODE_PIN);
+
+    return fpga_not_selected && fpga_using_bus;
+}
+
 void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
 {
+    while (spi_in_use_by_fpga())
+    {
+        mp_hal_delay_ms(1);
+    }
+
     uint8_t cs_pin;
 
     switch (spi_device)
@@ -238,6 +252,11 @@ void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
 void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
                bool hold_down_cs)
 {
+    while (spi_in_use_by_fpga())
+    {
+        mp_hal_delay_ms(1);
+    }
+
     uint8_t cs_pin;
 
     switch (spi_device)
