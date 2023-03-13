@@ -41,11 +41,11 @@
 #define DISPLAY_CS_PIN 6                       // Active low
 #define DISPLAY_RESET_PIN 15                   // Active low
 #define FLASH_CS_PIN 4                         // Active low
-#define FPGA_CS_INT_MODE_PIN 8                 // Active low
+#define FPGA_CS_MODE_PIN 8                     // Active low
 #define FPGA_FLASH_SPI_SCK_PIN 7               //
 #define FPGA_FLASH_SPI_SDI_PIN 10              //
 #define FPGA_FLASH_SPI_SDO_PIN 9               //
-#define FPGA_RESET_PIN 5                       //
+#define FPGA_RESET_INT_PIN 5                   //
 #define PMIC_INTERRUPT_PIN 14                  //
 #define PMIC_TOUCH_I2C_SCL_PIN 17              //
 #define PMIC_TOUCH_I2C_SDA_PIN 13              //

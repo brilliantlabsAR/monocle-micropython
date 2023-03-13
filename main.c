@@ -554,23 +554,26 @@ int main(void)
         if (memcmp(magic_word, "BITSTREAM_WRITTEN", sizeof(magic_word)) == 0)
         {
             NRFX_LOG_ERROR("Booting FPGA from SPI flash");
+            nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
         }
         else
         {
             NRFX_LOG_ERROR("Booting FPGA from internal flash");
-            nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, false);
+            nrf_gpio_pin_write(FPGA_CS_MODE_PIN, false);
         }
 
-        // Release the SPI and FPGA reset to boot
+        // Release the SPI and toggle the FPGA reset pin to boot
         spi_release();
-        nrf_gpio_pin_write(FPGA_RESET_PIN, true);
+        nrf_gpio_pin_write(FPGA_RESET_INT_PIN, false);
+        nrfx_systick_delay_us(1);
+        nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
 
         // Wait for boot and reacquire the SPI
         nrfx_systick_delay_ms(3000);
         spi_acquire();
 
         // Set the mode pin high once sampled so it can be used as chip select
-        nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, true);
+        nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
     }
 
     // Setup the camera

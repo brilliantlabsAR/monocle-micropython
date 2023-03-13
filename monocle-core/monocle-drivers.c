@@ -210,21 +210,8 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
     return resp;
 }
 
-static bool spi_in_use_by_fpga(void)
-{
-    bool fpga_not_selected = nrf_gpio_pin_out_read(FPGA_CS_INT_MODE_PIN);
-    bool fpga_using_bus = !nrf_gpio_pin_read(FPGA_CS_INT_MODE_PIN);
-
-    return fpga_not_selected && fpga_using_bus;
-}
-
 void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
 {
-    while (spi_in_use_by_fpga())
-    {
-        mp_hal_delay_ms(1);
-    }
-
     uint8_t cs_pin;
 
     switch (spi_device)
@@ -233,7 +220,7 @@ void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
         cs_pin = DISPLAY_CS_PIN;
         break;
     case FPGA:
-        cs_pin = FPGA_CS_INT_MODE_PIN;
+        cs_pin = FPGA_CS_MODE_PIN;
         break;
     case FLASH:
         cs_pin = FLASH_CS_PIN;
@@ -252,11 +239,6 @@ void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
 void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
                bool hold_down_cs)
 {
-    while (spi_in_use_by_fpga())
-    {
-        mp_hal_delay_ms(1);
-    }
-
     uint8_t cs_pin;
 
     switch (spi_device)
@@ -265,7 +247,7 @@ void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
         cs_pin = DISPLAY_CS_PIN;
         break;
     case FPGA:
-        cs_pin = FPGA_CS_INT_MODE_PIN;
+        cs_pin = FPGA_CS_MODE_PIN;
         break;
     case FLASH:
         cs_pin = FLASH_CS_PIN;
@@ -286,6 +268,8 @@ void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
 
 void spi_release(void)
 {
+    nrf_gpio_cfg_input(FLASH_CS_PIN, NRF_GPIO_PIN_NOPULL);
+
     nrf_gpio_cfg(FPGA_FLASH_SPI_SCK_PIN,
                  NRF_GPIO_PIN_DIR_INPUT,
                  NRF_GPIO_PIN_INPUT_CONNECT,
@@ -303,6 +287,8 @@ void spi_release(void)
 
 void spi_acquire(void)
 {
+    nrf_gpio_cfg_output(FLASH_CS_PIN);
+
     nrf_gpio_cfg(FPGA_FLASH_SPI_SCK_PIN,
                  NRF_GPIO_PIN_DIR_OUTPUT,
                  NRF_GPIO_PIN_INPUT_CONNECT,
