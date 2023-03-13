@@ -263,14 +263,12 @@ void monocle_critical_startup(void)
         // Keep camera, display and FPGA in reset
         nrf_gpio_pin_write(CAMERA_RESET_PIN, false);
         nrf_gpio_pin_write(DISPLAY_RESET_PIN, false);
+        nrf_gpio_pin_write(FPGA_RESET_INT_PIN, false);
 
         // Set the chip selects to high
         nrf_gpio_pin_write(DISPLAY_CS_PIN, true);
         nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
         nrf_gpio_pin_write(FLASH_CS_PIN, true);
-
-        // FPGA reset needs a pulse so we start high
-        nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
     }
 
     // Power up everything for normal operation.

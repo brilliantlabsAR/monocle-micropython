@@ -562,18 +562,22 @@ int main(void)
             nrf_gpio_pin_write(FPGA_CS_MODE_PIN, false);
         }
 
-        // Release the SPI and toggle the FPGA reset pin to boot
         spi_release();
+
+        // Pulse the FPGA reset to re-sample MODE1, and then boot
+        nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
+        nrfx_systick_delay_us(1);
         nrf_gpio_pin_write(FPGA_RESET_INT_PIN, false);
         nrfx_systick_delay_us(1);
         nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
 
-        // Wait for boot and reacquire the SPI
-        nrfx_systick_delay_ms(3000);
-        spi_acquire();
-
-        // Set the mode pin high once sampled so it can be used as chip select
+        // Release the mode pin so it can be used as chip select later
         nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
+
+        // Wait for boot
+        nrfx_systick_delay_ms(3000); // TODO speed this up
+
+        spi_acquire();
     }
 
     // Setup the camera
