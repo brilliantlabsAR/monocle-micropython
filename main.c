@@ -561,7 +561,7 @@ int main(void)
         // Boot
         monocle_spi_enable(false);
         nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
-        nrfx_systick_delay_ms(3000); // TODO speed this up
+        nrfx_systick_delay_ms(200); // Should boot within 142ms @ 25MHz
         monocle_spi_enable(true);
 
         // Release the mode pin so it can be used as chip select
