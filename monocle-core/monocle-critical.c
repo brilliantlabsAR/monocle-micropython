@@ -70,14 +70,11 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
         // Turn off Bluetooth
         app_err(sd_softdevice_disable());
 
-        // Turn off all the rails
-        // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x04).fail); // Turn off 10V on PMIC GPIO2
-        nrfx_systick_delay_ms(200);                                  // Let the 10V decay
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0C).fail); // Turn off LDO to LEDs
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x0F, 0x0C).fail); // Turn off 2.7V
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x0F, 0x0C).fail); // Turn off 1.2V
+        // Turn off LDO to LEDs
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0C).fail);
+
+        // Turn off all the FPGA, display and camera rails
+        monocle_fpga_power(false);
 
         // Disconnect AMUX
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x28, 0x0F, 0x00).fail);
@@ -145,7 +142,8 @@ void monocle_critical_startup(void)
         nrfx_twim_enable(&i2c_bus_1);
     }
 
-    // Check the PMIC and initialize battery charger settings
+    // Check the PMIC and initialize all the settings
+    // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
     {
         // Read the PMIC CID
         i2c_response_t resp = i2c_read(PMIC_I2C_ADDRESS, 0x14, 0x0F);
@@ -154,6 +152,29 @@ void monocle_critical_startup(void)
         {
             not_real_hardware_flag = true;
         }
+
+        // Turn off the FPGA, flash, display and camera rails
+        monocle_fpga_power(false);
+
+        // Set the SBB drive strength
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2F, 0x03, 0x01).fail);
+
+        // Adjust SBB2 to 1.2V
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2D, 0xFF, 0x08).fail);
+
+        // Adjust SBB1 (1.8V main rail) current limit to 500mA
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2C, 0x30, 0x20).fail);
+
+        // Adjust SBB0 to 2.8V
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x29, 0xFF, 0x28).fail);
+
+        // Configure LEDs on GPIO0 and GPIO1 as open drain outputs. Set to hi-z
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x11, 0x2D, 0x08).fail);
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x12, 0x2D, 0x08).fail);
+
+        // Set LDO1 to 3.3V and turn on (for LEDs)
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3A, 0xFF, 0x64).fail);
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0F).fail);
 
         // Vhot & Vwarm = 45 degrees. Vcool = 15 degrees. Vcold = 0 degrees
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x20, 0xFF, 0x2E).fail);
@@ -176,6 +197,9 @@ void monocle_critical_startup(void)
         // Set constant voltage to 4.3V for both fast charge and JEITA
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x26, 0xFC, 0x70).fail);
         app_err(i2c_write(PMIC_I2C_ADDRESS, 0x27, 0xFC, 0x70).fail);
+
+        // Connect AMUX to battery voltage
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x28, 0x0F, 0x03).fail);
     }
 
     // Configure the touch IC
@@ -271,40 +295,11 @@ void monocle_critical_startup(void)
         nrf_gpio_pin_write(FLASH_CS_PIN, true);
     }
 
-    // Power up everything for normal operation.
-    // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
-    {
-        // Set the SBB drive strength
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2F, 0x03, 0x01).fail);
+    // Power up the FPGA, flash, display and camera rails
+    monocle_fpga_power(true);
 
-        // Set SBB2 to 1.2V with 500mA current limit and turn on
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2D, 0xFF, 0x08).fail);
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x7F, 0x6F).fail);
-
-        // Set SBB1 (1.8V) current limit to 500mA
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2C, 0x30, 0x20).fail);
-
-        // Set LDO0 to load switch mode and turn on
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1F).fail);
-
-        // Set SBB0 to 2.8V with 333mA current limit and turn on
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x29, 0xFF, 0x28).fail);
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x7F, 0x7F).fail);
-
-        // Configure LEDs on GPIO0 and GPIO1 as open drain outputs. Set to hi-z
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x11, 0x2D, 0x08).fail);
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x12, 0x2D, 0x08).fail);
-
-        // Set LDO1 to 3.3V and turn on
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3A, 0xFF, 0x64).fail);
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0F).fail);
-
-        // Enable the 10V boost
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x0C).fail);
-
-        // Connect AMUX to battery voltage
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x28, 0x0F, 0x03).fail);
-    }
+    // Wait for rails to stabilize
+    nrfx_systick_delay_ms(10);
 }
 
 /**
@@ -318,4 +313,29 @@ void monocle_enter_bootloader(void)
 
     // Reset the CPU, giving control to the bootloader
     NVIC_SystemReset();
+}
+
+/**
+ * @brief Power/reset control for the FPGA.
+ */
+
+void monocle_fpga_power(bool enable)
+{
+    // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
+
+    if (enable)
+    {
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x7F, 0x6F).fail); // Turn on 1.2V with 500mA limit
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1F).fail); // Turn on LDO0
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x7F, 0x7F).fail); // Turn on 2.8V with 333mA limit
+        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x0C).fail); // Enable the 10V boost
+        return;
+    }
+
+    app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x04).fail); // Turn off 10V on PMIC GPIO2
+    nrfx_systick_delay_ms(200);                                  // Let the 10V decay
+    app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x0F, 0x0C).fail); // Turn off 2.8V
+    app_err(i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch
+    app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x0F, 0x0C).fail); // Turn off 1.2V
+    return;
 }

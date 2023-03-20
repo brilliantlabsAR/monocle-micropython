@@ -76,6 +76,12 @@ void monocle_critical_startup(void);
 void monocle_enter_bootloader(void);
 
 /**
+ * @brief Power/reset control for the FPGA.
+ */
+
+void monocle_fpga_power(bool enable);
+
+/**
  * @brief Dev board mode flag. i.e. no PMIC, FPGA, display detected etc.
  */
 

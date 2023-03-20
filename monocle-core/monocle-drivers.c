@@ -202,7 +202,6 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
         if (i == 2)
         {
             resp.fail = true;
-            NRFX_LOG_ERROR("failed to write 0x%02X = 0x%02X", register_address, set_value);
             return resp;
         }
     }

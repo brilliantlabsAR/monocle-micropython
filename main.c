@@ -536,11 +536,9 @@ int main(void)
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();
 
-    // Check if external flash has an FPGA image and boot it
+    // Start the FPGA
     {
-        // Wait for READY flag in the FPGA. Max 23ms
-        nrfx_systick_delay_ms(23);
-
+        // Wakeup the flash
         uint8_t wakeup_device_id[] = {bit_reverse(0xAB), 0, 0, 0};
         spi_write(FLASH, wakeup_device_id, 4, true);
         spi_read(FLASH, wakeup_device_id, 1);
@@ -548,7 +546,7 @@ int main(void)
         bool flash_found = bit_reverse(wakeup_device_id[0]) == 0x13;
         app_err(flash_found == false && not_real_hardware_flag == false);
 
-        // Check flash for a valid FPGA image
+        // Check flash for a valid FPGA image and set the FPGA MODE1 pin
         uint8_t magic_word[17] = "";
         flash_read(magic_word, 0x6C80E, sizeof(magic_word));
         if (memcmp(magic_word, "BITSTREAM_WRITTEN", sizeof(magic_word)) == 0)
@@ -562,22 +560,40 @@ int main(void)
             nrf_gpio_pin_write(FPGA_CS_MODE_PIN, false);
         }
 
+        // Boot
         spi_release();
-
-        // Pulse the FPGA reset to re-sample MODE1, and then boot
         nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
-        nrfx_systick_delay_us(1);
-        nrf_gpio_pin_write(FPGA_RESET_INT_PIN, false);
-        nrfx_systick_delay_us(1);
-        nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
+        nrfx_systick_delay_ms(3000); // TODO speed this up
+        spi_acquire();
 
-        // Release the mode pin so it can be used as chip select later
+        // Release the mode pin so it can be used as chip select
         nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
 
-        // Wait for boot
-        nrfx_systick_delay_ms(3000); // TODO speed this up
+        // Check the FPGA booted correctly by reading the device ID
+        uint8_t device_id_command[2] = {0x00, 0x01};
+        uint8_t device_id_response[1];
+        spi_write(FPGA, device_id_command, 2, true);
+        spi_read(FPGA, device_id_response, sizeof(device_id_response));
 
-        spi_acquire();
+        if (device_id_response[0] != 0x4B)
+        {
+            NRFX_LOG_ERROR("FPGA didn't boot");
+
+            // If failure, turn off and hold the FPGA in reset
+            monocle_fpga_power(false);
+            nrf_gpio_pin_write(FPGA_RESET_INT_PIN, false);
+            nrfx_systick_delay_ms(25);
+
+            // Turn rails back on so we can use the flash again
+            monocle_fpga_power(true);
+            nrfx_systick_delay_ms(25);
+
+            // Wake up the flash
+            uint8_t wakeup_device_id[] = {bit_reverse(0xAB), 0, 0, 0};
+            spi_write(FLASH, wakeup_device_id, 4, false);
+
+            // TODO append health register
+        }
     }
 
     // Setup the camera
