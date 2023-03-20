@@ -23,9 +23,11 @@
  */
 
 #include "monocle.h"
+#include "py/mphal.h"
 #include "nrf_gpio.h"
 #include "nrfx_spim.h"
 #include "nrfx_twim.h"
+#include "nrfx_systick.h"
 
 void monocle_set_led(led_t led, bool enable)
 {
@@ -33,22 +35,22 @@ void monocle_set_led(led_t led, bool enable)
     {
         if (enable)
         {
-            app_err(i2c_write(PMIC_I2C_ADDRESS, 0x11, 0x2D, 0x00).fail);
+            app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x11, 0x2D, 0x00).fail);
         }
         else
         {
-            app_err(i2c_write(PMIC_I2C_ADDRESS, 0x11, 0x2D, 0x08).fail);
+            app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x11, 0x2D, 0x08).fail);
         }
     }
     if (led == GREEN_LED)
     {
         if (enable)
         {
-            app_err(i2c_write(PMIC_I2C_ADDRESS, 0x12, 0x2D, 0x00).fail);
+            app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x12, 0x2D, 0x00).fail);
         }
         else
         {
-            app_err(i2c_write(PMIC_I2C_ADDRESS, 0x12, 0x2D, 0x08).fail);
+            app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x12, 0x2D, 0x08).fail);
         }
     }
 }
@@ -59,9 +61,9 @@ static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
 
 bool not_real_hardware_flag = false;
 
-i2c_response_t i2c_read(uint8_t device_address_7bit,
-                        uint16_t register_address,
-                        uint8_t register_mask)
+i2c_response_t monocle_i2c_read(uint8_t device_address_7bit,
+                                uint16_t register_address,
+                                uint8_t register_mask)
 {
     if (not_real_hardware_flag)
     {
@@ -133,10 +135,10 @@ i2c_response_t i2c_read(uint8_t device_address_7bit,
     return i2c_response;
 }
 
-i2c_response_t i2c_write(uint8_t device_address_7bit,
-                         uint16_t register_address,
-                         uint8_t register_mask,
-                         uint8_t set_value)
+i2c_response_t monocle_i2c_write(uint8_t device_address_7bit,
+                                 uint16_t register_address,
+                                 uint8_t register_mask,
+                                 uint8_t set_value)
 {
     i2c_response_t resp = {.fail = false, .value = 0x00};
 
@@ -147,7 +149,7 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
 
     if (register_mask != 0xFF)
     {
-        resp = i2c_read(device_address_7bit, register_address, 0xFF);
+        resp = monocle_i2c_read(device_address_7bit, register_address, 0xFF);
 
         if (resp.fail)
         {
@@ -201,7 +203,6 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
         if (i == 2)
         {
             resp.fail = true;
-            NRFX_LOG_ERROR("failed to write 0x%02X = 0x%02X", register_address, set_value);
             return resp;
         }
     }
@@ -209,7 +210,36 @@ i2c_response_t i2c_write(uint8_t device_address_7bit,
     return resp;
 }
 
-void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
+void monocle_spi_enable(bool enable)
+{
+    if (enable == false)
+    {
+        nrfx_spim_uninit(&spi_bus_2);
+        return;
+    }
+
+    nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
+        FPGA_FLASH_SPI_SCK_PIN,
+        FPGA_FLASH_SPI_SDO_PIN,
+        FPGA_FLASH_SPI_SDI_PIN,
+        NRFX_SPIM_PIN_NOT_USED);
+
+    config.frequency = NRF_SPIM_FREQ_4M;
+    config.mode = NRF_SPIM_MODE_3;
+    config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
+
+    app_err(nrfx_spim_init(&spi_bus_2, &config, NULL, NULL));
+}
+
+static uint8_t bit_reverse(uint8_t byte)
+{
+    byte = (byte & 0xF0) >> 4 | (byte & 0x0F) << 4;
+    byte = (byte & 0xCC) >> 2 | (byte & 0x33) << 2;
+    byte = (byte & 0xAA) >> 1 | (byte & 0x55) << 1;
+    return byte;
+}
+
+void monocle_spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
 {
     uint8_t cs_pin;
 
@@ -219,7 +249,7 @@ void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
         cs_pin = DISPLAY_CS_PIN;
         break;
     case FPGA:
-        cs_pin = FPGA_CS_INT_MODE_PIN;
+        cs_pin = FPGA_CS_MODE_PIN;
         break;
     case FLASH:
         cs_pin = FLASH_CS_PIN;
@@ -233,10 +263,19 @@ void spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
     app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
 
     nrf_gpio_pin_set(cs_pin);
+
+    // Flash is LSB first, so we need to flip all the bytes before returning
+    if (spi_device == FLASH)
+    {
+        for (size_t i = 0; i < length; i++)
+        {
+            data[i] = bit_reverse(data[i]);
+        }
+    }
 }
 
-void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
-               bool hold_down_cs)
+void monocle_spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
+                       bool hold_down_cs)
 {
     uint8_t cs_pin;
 
@@ -246,7 +285,7 @@ void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
         cs_pin = DISPLAY_CS_PIN;
         break;
     case FPGA:
-        cs_pin = FPGA_CS_INT_MODE_PIN;
+        cs_pin = FPGA_CS_MODE_PIN;
         break;
     case FLASH:
         cs_pin = FLASH_CS_PIN;
@@ -254,6 +293,15 @@ void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
     }
 
     nrf_gpio_pin_clear(cs_pin);
+
+    // Flash is LSB first, so we need to flip all the bytes before sending
+    if (spi_device == FLASH)
+    {
+        for (size_t i = 0; i < length; i++)
+        {
+            data[i] = bit_reverse(data[i]);
+        }
+    }
 
     // TODO prevent blocking here, and add a mutex
     nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(data, length);
@@ -263,12 +311,4 @@ void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
     {
         nrf_gpio_pin_set(cs_pin);
     }
-}
-
-uint8_t bit_reverse(uint8_t byte)
-{
-    byte = (byte & 0xF0) >> 4 | (byte & 0x0F) << 4;
-    byte = (byte & 0xCC) >> 2 | (byte & 0x33) << 2;
-    byte = (byte & 0xAA) >> 1 | (byte & 0x55) << 1;
-    return byte;
 }

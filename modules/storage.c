@@ -32,31 +32,78 @@ static const size_t reserved_64k_blocks_for_fpga_bitstream = 7;
 
 static size_t fpga_bitstream_programmed_bytes = 0;
 
-STATIC mp_obj_t storage_read(mp_obj_t file, mp_obj_t length, mp_obj_t offset)
+static bool flash_is_busy(void)
 {
-    const char *filename = mp_obj_str_get_str(file);
+    uint8_t status_cmd[] = {0x05};
+    monocle_spi_write(FLASH, status_cmd, sizeof(status_cmd), true);
+    monocle_spi_read(FLASH, status_cmd, sizeof(status_cmd));
 
-    // TODO handle offsets or lengths which are too large
-
-    // TODO allow optional length value?
-
-    // TODO allow optional offset value?
-
-    if (strcmp(filename, "FPGA_BITSTREAM") == 0)
+    if ((status_cmd[0] & 0x01) == 0)
     {
-        uint32_t address = mp_obj_get_int(offset);
+        return false;
+    }
 
-        uint8_t read[] = {bit_reverse(0x03),
-                          bit_reverse(address >> 16),
-                          bit_reverse(address >> 8),
-                          bit_reverse(address)};
-        spi_write(FLASH, read, sizeof(read), true);
+    return true;
+}
 
-        uint8_t buffer[mp_obj_get_int(length)];
+void flash_read(uint8_t *buffer, size_t address, size_t length)
+{
+    app_err(length > 255);
 
-        spi_read(FLASH, buffer, mp_obj_get_int(length));
+    while (flash_is_busy())
+    {
+        mp_hal_delay_ms(1);
+    }
 
-        return mp_obj_new_bytes(buffer, mp_obj_get_int(length));
+    uint8_t read_cmd[] = {0x03,
+                          address >> 16,
+                          address >> 8,
+                          address};
+    monocle_spi_write(FLASH, read_cmd, sizeof(read_cmd), true);
+    monocle_spi_read(FLASH, buffer, length);
+}
+
+static void flash_write(uint8_t *buffer, size_t address, size_t length)
+{
+    app_err(length > 255);
+
+    while (flash_is_busy())
+    {
+        mp_hal_delay_ms(1);
+    }
+
+    uint8_t write_enable_cmd[] = {0x06};
+    monocle_spi_write(FLASH, write_enable_cmd, sizeof(write_enable_cmd), false);
+
+    uint8_t page_program_cmd[] = {0x02,
+                                  address >> 16,
+                                  address >> 8,
+                                  address};
+    monocle_spi_write(FLASH, page_program_cmd, sizeof(page_program_cmd), true);
+    monocle_spi_write(FLASH, buffer, length, false);
+}
+
+STATIC mp_obj_t storage_read(mp_obj_t file, mp_obj_t file_length, mp_obj_t offset)
+{
+    const char *file_name = mp_obj_str_get_str(file);
+
+    if (strcmp(file_name, "FPGA_BITSTREAM") == 0)
+    {
+        uint8_t buffer[mp_obj_get_int(file_length)];
+
+        size_t bytes_read = 0;
+        while (bytes_read < mp_obj_get_int(file_length))
+        {
+            size_t max_readable_length = MIN(mp_obj_get_int(file_length) - bytes_read, 255);
+
+            flash_read(buffer + bytes_read,
+                       mp_obj_get_int(offset) + bytes_read,
+                       max_readable_length);
+
+            bytes_read += max_readable_length;
+        }
+
+        return mp_obj_new_bytes(buffer, mp_obj_get_int(file_length));
     }
 
     return mp_const_notimplemented;
@@ -65,51 +112,43 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(storage_read_obj, storage_read);
 
 STATIC mp_obj_t storage_append(mp_obj_t file, mp_obj_t bytes)
 {
-    const char *filename = mp_obj_str_get_str(file);
+    const char *file_name = mp_obj_str_get_str(file);
 
-    if (strcmp(filename, "FPGA_BITSTREAM") == 0)
+    size_t file_length;
+    const char *file_data = mp_obj_str_get_data(bytes, &file_length);
+
+    if (strcmp(file_name, "FPGA_BITSTREAM") == 0)
     {
-        size_t length;
-        const char *data = mp_obj_str_get_data(bytes, &length);
-
-        if (fpga_bitstream_programmed_bytes + length >
+        if (fpga_bitstream_programmed_bytes + file_length >
             0x10000 * reserved_64k_blocks_for_fpga_bitstream)
         {
             mp_raise_ValueError(MP_ERROR_TEXT(
-                "data will overflow reserved FPGA bitstream space"));
+                "file length overflows the reserved space for the bitstream"));
         }
 
-        uint8_t write_enable[] = {bit_reverse(0x06)};
-        spi_write(FLASH, write_enable, sizeof(write_enable), false);
+        size_t bytes_written = 0;
+        while (bytes_written < file_length)
+        {
+            size_t page_number = (size_t)floor(fpga_bitstream_programmed_bytes / 256.0);
+            size_t page_address = page_number * 256;
 
-        uint8_t page_program[] =
-            {bit_reverse(0x02),
-             bit_reverse(fpga_bitstream_programmed_bytes >> 16),
-             bit_reverse(fpga_bitstream_programmed_bytes >> 8),
-             bit_reverse(fpga_bitstream_programmed_bytes)};
-        spi_write(FLASH, page_program, sizeof(page_program), true);
-        spi_write(FLASH, (uint8_t *)data, length, true);
+            size_t offset_in_page = fpga_bitstream_programmed_bytes % 256;
+            size_t bytes_left_in_page = 256 - offset_in_page;
 
-        fpga_bitstream_programmed_bytes += length;
+            // Read the page in two chunks as the SPI can't do 256 in one go
+            uint8_t page_data[256];
+            flash_read(page_data, page_address, 128);
+            flash_read(page_data + 128, page_address + 128, 128);
 
-        // If the currently written data isn't aligned to a page boundary
-        // if (fpga_bitstream_programmed_bytes % 256)
-        // {
-        //     size_t remaining_bytes_in_page =
-        //         256 - (fpga_bitstream_programmed_bytes % 256);
+            size_t bytes_appended = MIN(file_length - bytes_written, bytes_left_in_page);
+            memcpy(page_data + offset_in_page, file_data + bytes_written, bytes_appended);
 
-        //     if (length <= remaining_bytes_in_page)
-        //     {
+            flash_write(page_data, page_address, 128);
+            flash_write(page_data + 128, page_address + 128, 128);
 
-        //     }
-
-        //     bytes_written += remaining_bytes_in_page;
-        // }
-
-        // Write the remaining data from the page boundary in 256byte chunks
-
-        // Write a partial page
-
+            fpga_bitstream_programmed_bytes += bytes_appended;
+            bytes_written += bytes_appended;
+        }
         return mp_const_none;
     }
 
@@ -119,34 +158,24 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(storage_append_obj, storage_append);
 
 STATIC mp_obj_t storage_delete(mp_obj_t file)
 {
-    const char *filename = mp_obj_str_get_str(file);
+    const char *file_name = mp_obj_str_get_str(file);
 
-    if (strcmp(filename, "FPGA_BITSTREAM") == 0)
+    if (strcmp(file_name, "FPGA_BITSTREAM") == 0)
     {
         for (size_t i = 0; i < reserved_64k_blocks_for_fpga_bitstream; i++)
         {
-            uint8_t write_enable[] = {bit_reverse(0x06)};
-            spi_write(FLASH, write_enable, sizeof(write_enable), false);
+            uint8_t write_enable[] = {0x06};
+            monocle_spi_write(FLASH, write_enable, sizeof(write_enable), false);
 
             uint32_t address_24bit = 0x10000 * i;
-            uint8_t block_erase[] = {bit_reverse(0xD8),
-                                     bit_reverse(address_24bit >> 16),
+            uint8_t block_erase[] = {0xD8,
+                                     address_24bit >> 16,
                                      0, // Bottom bytes of address are always 0
                                      0};
-            spi_write(FLASH, block_erase, sizeof(block_erase), false);
+            monocle_spi_write(FLASH, block_erase, sizeof(block_erase), false);
 
-            while (true)
+            while (flash_is_busy())
             {
-                uint8_t status[] = {bit_reverse(0x05)};
-                spi_write(FLASH, status, sizeof(status), true);
-                spi_read(FLASH, status, sizeof(status));
-
-                // If no longer busy
-                if ((status[0] & bit_reverse(0x01)) == 0)
-                {
-                    break;
-                }
-
                 mp_hal_delay_ms(10);
             }
         }
@@ -182,6 +211,7 @@ STATIC const mp_rom_map_elem_t storage_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_MEM_TOTAL),
      MP_ROM_INT(1048576 - (reserved_64k_blocks_for_fpga_bitstream * 8192))},
     {MP_ROM_QSTR(MP_QSTR_FPGA_BITSTREAM), MP_ROM_QSTR(MP_QSTR_FPGA_BITSTREAM)},
+    {MP_ROM_QSTR(MP_QSTR_BITSTREAM_WRITTEN), MP_ROM_QSTR(MP_QSTR_BITSTREAM_WRITTEN)},
 };
 STATIC MP_DEFINE_CONST_DICT(storage_module_globals, storage_module_globals_table);
 

@@ -41,11 +41,11 @@
 #define DISPLAY_CS_PIN 6                       // Active low
 #define DISPLAY_RESET_PIN 15                   // Active low
 #define FLASH_CS_PIN 4                         // Active low
-#define FPGA_CS_INT_MODE_PIN 8                 // Active low
+#define FPGA_CS_MODE_PIN 8                     // Active low
 #define FPGA_FLASH_SPI_SCK_PIN 7               //
 #define FPGA_FLASH_SPI_SDI_PIN 10              //
 #define FPGA_FLASH_SPI_SDO_PIN 9               //
-#define FPGA_RESET_PIN 5                       //
+#define FPGA_RESET_INT_PIN 5                   //
 #define PMIC_INTERRUPT_PIN 14                  //
 #define PMIC_TOUCH_I2C_SCL_PIN 17              //
 #define PMIC_TOUCH_I2C_SDA_PIN 13              //
@@ -74,6 +74,12 @@ void monocle_critical_startup(void);
  */
 
 void monocle_enter_bootloader(void);
+
+/**
+ * @brief Power/reset control for the FPGA.
+ */
+
+void monocle_fpga_power(bool enable);
 
 /**
  * @brief Dev board mode flag. i.e. no PMIC, FPGA, display detected etc.
@@ -107,14 +113,14 @@ typedef struct i2c_response_t
     uint8_t value;
 } i2c_response_t;
 
-i2c_response_t i2c_read(uint8_t device_address_7bit,
-                        uint16_t register_address,
-                        uint8_t register_mask);
+i2c_response_t monocle_i2c_read(uint8_t device_address_7bit,
+                                uint16_t register_address,
+                                uint8_t register_mask);
 
-i2c_response_t i2c_write(uint8_t device_address_7bit,
-                         uint16_t register_address,
-                         uint8_t register_mask,
-                         uint8_t set_value);
+i2c_response_t monocle_i2c_write(uint8_t device_address_7bit,
+                                 uint16_t register_address,
+                                 uint8_t register_mask,
+                                 uint8_t set_value);
 
 /**
  * @brief SPI driver for accessing FPGA, display and flash.
@@ -127,28 +133,28 @@ typedef enum spi_device_t
     FLASH
 } spi_device_t;
 
-void spi_read(spi_device_t spi_device, uint8_t *data, size_t length);
+void monocle_spi_enable(bool enable);
 
-void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
-               bool hold_down_cs);
+void monocle_spi_read(spi_device_t spi_device, uint8_t *data, size_t length);
 
-uint8_t bit_reverse(uint8_t byte);
+void monocle_spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
+                       bool hold_down_cs);
 
 /**
  * @brief Error handling macro.
  */
 
-#define app_err(eval)                                                        \
-    do                                                                       \
-    {                                                                        \
-        nrfx_err_t err = (eval);                                             \
-        if (0x0000FFFF & err)                                                \
-        {                                                                    \
-            NRFX_LOG_ERROR("Error: 0x%x at %s:%u", err, __FILE__, __LINE__); \
-            if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk)            \
-            {                                                                \
-                __BKPT();                                                    \
-            }                                                                \
-            NVIC_SystemReset();                                              \
-        }                                                                    \
+#define app_err(eval)                                                      \
+    do                                                                     \
+    {                                                                      \
+        nrfx_err_t err = (eval);                                           \
+        if (0x0000FFFF & err)                                              \
+        {                                                                  \
+            NRFX_LOG("App error: 0x%x at %s:%u", err, __FILE__, __LINE__); \
+            if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk)          \
+            {                                                              \
+                __BKPT();                                                  \
+            }                                                              \
+            NVIC_SystemReset();                                            \
+        }                                                                  \
     } while (0)

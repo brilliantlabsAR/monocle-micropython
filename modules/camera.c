@@ -42,13 +42,14 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(camera_wake_obj, camera_wake);
 
 STATIC mp_obj_t camera_zoom(mp_obj_t zoom)
 {
-    switch (mp_obj_get_int(zoom)) {
+    switch (mp_obj_get_int(zoom))
+    {
     case 1:
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5600, 0xFF, 0x10).fail); // turns zoom 0ff
+        app_err(monocle_i2c_write(CAMERA_I2C_ADDRESS, 0x5600, 0xFF, 0x10).fail); // turns zoom 0ff
         break;
     case 16:
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5600, 0xFF, 0x00).fail); // turns zoom on
-        app_err(i2c_write(CAMERA_I2C_ADDRESS, 0x5601, 0xFF, 0x88).fail); // Set zoom factor
+        app_err(monocle_i2c_write(CAMERA_I2C_ADDRESS, 0x5600, 0xFF, 0x00).fail); // turns zoom on
+        app_err(monocle_i2c_write(CAMERA_I2C_ADDRESS, 0x5601, 0xFF, 0x88).fail); // Set zoom factor
         break;
     default:
         mp_raise_ValueError(MP_ERROR_TEXT("zoom must be 1 or 16"));
