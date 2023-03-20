@@ -113,14 +113,14 @@ typedef struct i2c_response_t
     uint8_t value;
 } i2c_response_t;
 
-i2c_response_t i2c_read(uint8_t device_address_7bit,
-                        uint16_t register_address,
-                        uint8_t register_mask);
+i2c_response_t monocle_i2c_read(uint8_t device_address_7bit,
+                                uint16_t register_address,
+                                uint8_t register_mask);
 
-i2c_response_t i2c_write(uint8_t device_address_7bit,
-                         uint16_t register_address,
-                         uint8_t register_mask,
-                         uint8_t set_value);
+i2c_response_t monocle_i2c_write(uint8_t device_address_7bit,
+                                 uint16_t register_address,
+                                 uint8_t register_mask,
+                                 uint8_t set_value);
 
 /**
  * @brief SPI driver for accessing FPGA, display and flash.
@@ -133,16 +133,12 @@ typedef enum spi_device_t
     FLASH
 } spi_device_t;
 
-void spi_read(spi_device_t spi_device, uint8_t *data, size_t length);
+void monocle_spi_enable(bool enable);
 
-void spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
-               bool hold_down_cs);
+void monocle_spi_read(spi_device_t spi_device, uint8_t *data, size_t length);
 
-void spi_release(void);
-
-void spi_acquire(void);
-
-uint8_t bit_reverse(uint8_t byte);
+void monocle_spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
+                       bool hold_down_cs);
 
 /**
  * @brief Error handling macro.

@@ -280,7 +280,7 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
     (void)pin;
     (void)polarity;
 
-    i2c_response_t interrupt = i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
+    i2c_response_t interrupt = monocle_i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
     app_err(interrupt.fail);
 
     if (interrupt.value & 0x10)
@@ -296,7 +296,7 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
 
 touch_action_t touch_get_state(void)
 {
-    i2c_response_t interrupt = i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
+    i2c_response_t interrupt = monocle_i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
     app_err(interrupt.fail);
 
     if ((interrupt.value & 0x30) == 0x30)
@@ -539,12 +539,10 @@ int main(void)
     // Start the FPGA
     {
         // Wakeup the flash
-        uint8_t wakeup_device_id[] = {bit_reverse(0xAB), 0, 0, 0};
-        spi_write(FLASH, wakeup_device_id, 4, true);
-        spi_read(FLASH, wakeup_device_id, 1);
-
-        bool flash_found = bit_reverse(wakeup_device_id[0]) == 0x13;
-        app_err(flash_found == false && not_real_hardware_flag == false);
+        uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
+        monocle_spi_write(FLASH, wakeup_device_id, 4, true);
+        monocle_spi_read(FLASH, wakeup_device_id, 1);
+        app_err(wakeup_device_id[0] != 0x13 && not_real_hardware_flag == false);
 
         // Check flash for a valid FPGA image and set the FPGA MODE1 pin
         uint8_t magic_word[17] = "";
@@ -560,11 +558,16 @@ int main(void)
             nrf_gpio_pin_write(FPGA_CS_MODE_PIN, false);
         }
 
+        // Re-power
+        // monocle_fpga_power(false);
+        // nrfx_systick_delay_ms(100);
+        // monocle_fpga_power(true);
+
         // Boot
-        spi_release();
+        monocle_spi_enable(false);
         nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
         nrfx_systick_delay_ms(3000); // TODO speed this up
-        spi_acquire();
+        monocle_spi_enable(true);
 
         // Release the mode pin so it can be used as chip select
         nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
@@ -572,8 +575,8 @@ int main(void)
         // Check the FPGA booted correctly by reading the device ID
         uint8_t device_id_command[2] = {0x00, 0x01};
         uint8_t device_id_response[1];
-        spi_write(FPGA, device_id_command, 2, true);
-        spi_read(FPGA, device_id_response, sizeof(device_id_response));
+        monocle_spi_write(FPGA, device_id_command, 2, true);
+        monocle_spi_read(FPGA, device_id_response, sizeof(device_id_response));
 
         if (device_id_response[0] != 0x4B)
         {
@@ -589,8 +592,8 @@ int main(void)
             nrfx_systick_delay_ms(25);
 
             // Wake up the flash
-            uint8_t wakeup_device_id[] = {bit_reverse(0xAB), 0, 0, 0};
-            spi_write(FLASH, wakeup_device_id, 4, false);
+            uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
+            monocle_spi_write(FLASH, wakeup_device_id, 4, false);
 
             // TODO append health register
         }
@@ -600,7 +603,7 @@ int main(void)
     {
         // Start the camera clock
         uint8_t command[2] = {0x10, 0x09};
-        spi_write(FPGA, command, 2, false);
+        monocle_spi_write(FPGA, command, 2, false);
 
         // Reset sequence taken from Datasheet figure 2-3
         nrf_gpio_pin_write(CAMERA_RESET_PIN, false);
@@ -612,7 +615,7 @@ int main(void)
         nrfx_systick_delay_ms(20); // t4
 
         // Read the camera CID (one of them)
-        i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
+        i2c_response_t resp = monocle_i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
         if (resp.fail || resp.value != 0x56)
         {
             // TODO add entry in health monitor if camera didn't initialise
@@ -621,7 +624,7 @@ int main(void)
         }
 
         // Software reset
-        i2c_write(CAMERA_I2C_ADDRESS, 0x3008, 0xFF, 0x82);
+        monocle_i2c_write(CAMERA_I2C_ADDRESS, 0x3008, 0xFF, 0x82);
         nrfx_systick_delay_ms(5);
 
         // Send the default configuration
@@ -629,10 +632,10 @@ int main(void)
              i < sizeof(camera_config) / sizeof(camera_config_t);
              i++)
         {
-            i2c_write(CAMERA_I2C_ADDRESS,
-                      camera_config[i].address,
-                      0xFF,
-                      camera_config[i].value);
+            monocle_i2c_write(CAMERA_I2C_ADDRESS,
+                              camera_config[i].address,
+                              0xFF,
+                              camera_config[i].value);
         }
 
         // Put the camera to sleep
@@ -650,7 +653,7 @@ int main(void)
         {
             uint8_t command[2] = {display_config[i].address,
                                   display_config[i].value};
-            spi_write(DISPLAY, command, 2, false);
+            monocle_spi_write(DISPLAY, command, 2, false);
         }
     }
 

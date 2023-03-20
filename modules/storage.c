@@ -34,11 +34,11 @@ static size_t fpga_bitstream_programmed_bytes = 0;
 
 static bool flash_is_busy(void)
 {
-    uint8_t status_cmd[] = {bit_reverse(0x05)};
-    spi_write(FLASH, status_cmd, sizeof(status_cmd), true);
-    spi_read(FLASH, status_cmd, sizeof(status_cmd));
+    uint8_t status_cmd[] = {0x05};
+    monocle_spi_write(FLASH, status_cmd, sizeof(status_cmd), true);
+    monocle_spi_read(FLASH, status_cmd, sizeof(status_cmd));
 
-    if ((status_cmd[0] & bit_reverse(0x01)) == 0)
+    if ((status_cmd[0] & 0x01) == 0)
     {
         return false;
     }
@@ -55,12 +55,12 @@ void flash_read(uint8_t *buffer, size_t address, size_t length)
         mp_hal_delay_ms(1);
     }
 
-    uint8_t read_cmd[] = {bit_reverse(0x03),
-                          bit_reverse(address >> 16),
-                          bit_reverse(address >> 8),
-                          bit_reverse(address)};
-    spi_write(FLASH, read_cmd, sizeof(read_cmd), true);
-    spi_read(FLASH, buffer, length);
+    uint8_t read_cmd[] = {0x03,
+                          address >> 16,
+                          address >> 8,
+                          address};
+    monocle_spi_write(FLASH, read_cmd, sizeof(read_cmd), true);
+    monocle_spi_read(FLASH, buffer, length);
 }
 
 static void flash_write(uint8_t *buffer, size_t address, size_t length)
@@ -72,15 +72,15 @@ static void flash_write(uint8_t *buffer, size_t address, size_t length)
         mp_hal_delay_ms(1);
     }
 
-    uint8_t write_enable_cmd[] = {bit_reverse(0x06)};
-    spi_write(FLASH, write_enable_cmd, sizeof(write_enable_cmd), false);
+    uint8_t write_enable_cmd[] = {0x06};
+    monocle_spi_write(FLASH, write_enable_cmd, sizeof(write_enable_cmd), false);
 
-    uint8_t page_program_cmd[] = {bit_reverse(0x02),
-                                  bit_reverse(address >> 16),
-                                  bit_reverse(address >> 8),
-                                  bit_reverse(address)};
-    spi_write(FLASH, page_program_cmd, sizeof(page_program_cmd), true);
-    spi_write(FLASH, buffer, length, false);
+    uint8_t page_program_cmd[] = {0x02,
+                                  address >> 16,
+                                  address >> 8,
+                                  address};
+    monocle_spi_write(FLASH, page_program_cmd, sizeof(page_program_cmd), true);
+    monocle_spi_write(FLASH, buffer, length, false);
 }
 
 STATIC mp_obj_t storage_read(mp_obj_t file, mp_obj_t file_length, mp_obj_t offset)
@@ -164,15 +164,15 @@ STATIC mp_obj_t storage_delete(mp_obj_t file)
     {
         for (size_t i = 0; i < reserved_64k_blocks_for_fpga_bitstream; i++)
         {
-            uint8_t write_enable[] = {bit_reverse(0x06)};
-            spi_write(FLASH, write_enable, sizeof(write_enable), false);
+            uint8_t write_enable[] = {0x06};
+            monocle_spi_write(FLASH, write_enable, sizeof(write_enable), false);
 
             uint32_t address_24bit = 0x10000 * i;
-            uint8_t block_erase[] = {bit_reverse(0xD8),
-                                     bit_reverse(address_24bit >> 16),
+            uint8_t block_erase[] = {0xD8,
+                                     address_24bit >> 16,
                                      0, // Bottom bytes of address are always 0
                                      0};
-            spi_write(FLASH, block_erase, sizeof(block_erase), false);
+            monocle_spi_write(FLASH, block_erase, sizeof(block_erase), false);
 
             while (flash_is_busy())
             {

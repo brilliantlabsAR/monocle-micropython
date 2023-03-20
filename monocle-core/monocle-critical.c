@@ -55,7 +55,7 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
     (void)p_context;
 
     // Get the CHG value from STAT_CHG_B
-    i2c_response_t charging_response = i2c_read(PMIC_I2C_ADDRESS, 0x03, 0x0C);
+    i2c_response_t charging_response = monocle_i2c_read(PMIC_I2C_ADDRESS, 0x03, 0x0C);
     app_err(charging_response.fail);
 
     bool charging = charging_response.value;
@@ -71,16 +71,16 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
         app_err(sd_softdevice_disable());
 
         // Turn off LDO to LEDs
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0C).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0C).fail);
 
         // Turn off all the FPGA, display and camera rails
         monocle_fpga_power(false);
 
         // Disconnect AMUX
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x28, 0x0F, 0x00).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x28, 0x0F, 0x00).fail);
 
         // Put PMIC main bias into low power mode
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x10, 0x20, 0x20).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x10, 0x20, 0x20).fail);
 
         // Disable all busses and GPIO pins
         nrfx_twim_uninit(&i2c_bus_0);
@@ -146,7 +146,7 @@ void monocle_critical_startup(void)
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
     {
         // Read the PMIC CID
-        i2c_response_t resp = i2c_read(PMIC_I2C_ADDRESS, 0x14, 0x0F);
+        i2c_response_t resp = monocle_i2c_read(PMIC_I2C_ADDRESS, 0x14, 0x0F);
 
         if (resp.fail || resp.value != 0x02)
         {
@@ -157,93 +157,81 @@ void monocle_critical_startup(void)
         monocle_fpga_power(false);
 
         // Set the SBB drive strength
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2F, 0x03, 0x01).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2F, 0x03, 0x01).fail);
 
         // Adjust SBB2 to 1.2V
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2D, 0xFF, 0x08).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2D, 0xFF, 0x08).fail);
 
         // Adjust SBB1 (1.8V main rail) current limit to 500mA
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2C, 0x30, 0x20).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2C, 0x30, 0x20).fail);
 
         // Adjust SBB0 to 2.8V
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x29, 0xFF, 0x28).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x29, 0xFF, 0x28).fail);
 
         // Configure LEDs on GPIO0 and GPIO1 as open drain outputs. Set to hi-z
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x11, 0x2D, 0x08).fail);
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x12, 0x2D, 0x08).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x11, 0x2D, 0x08).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x12, 0x2D, 0x08).fail);
 
         // Set LDO1 to 3.3V and turn on (for LEDs)
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3A, 0xFF, 0x64).fail);
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0F).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x3A, 0xFF, 0x64).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0F).fail);
 
         // Vhot & Vwarm = 45 degrees. Vcool = 15 degrees. Vcold = 0 degrees
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x20, 0xFF, 0x2E).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x20, 0xFF, 0x2E).fail);
 
         // Set CHGIN limit to 475mA
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x21, 0x1C, 0x10).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x21, 0x1C, 0x10).fail);
 
         // Charge termination current = 5%
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x22, 0x18, 0x00).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x22, 0x18, 0x00).fail);
 
         // Set junction regulation temperature to 70 degrees TODO increase this?
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x23, 0xE0, 0x20).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x23, 0xE0, 0x20).fail);
 
         // Set the fast charge current value to 120mA
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x24, 0xFC, 0x3C).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x24, 0xFC, 0x3C).fail);
 
         // Set the Vcool & Vwarm current to 75mA, and enable the thermistor
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x25, 0xFE, 0x26).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x25, 0xFE, 0x26).fail);
 
         // Set constant voltage to 4.3V for both fast charge and JEITA
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x26, 0xFC, 0x70).fail);
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x27, 0xFC, 0x70).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x26, 0xFC, 0x70).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x27, 0xFC, 0x70).fail);
 
         // Connect AMUX to battery voltage
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x28, 0x0F, 0x03).fail);
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x28, 0x0F, 0x03).fail);
     }
 
     // Configure the touch IC
     {
         // Read the touch CID
-        i2c_response_t resp = i2c_read(TOUCH_I2C_ADDRESS, 0x00, 0xFF);
+        i2c_response_t resp = monocle_i2c_read(TOUCH_I2C_ADDRESS, 0x00, 0xFF);
         if (resp.fail || resp.value != 0x41)
         {
             app_err(resp.value);
         }
 
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x60, 0x60).fail); // Ack resets and enable event mode
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD1, 0xFF, 0x03).fail); // Enable ch0 and ch1
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD2, 0x20, 0x20).fail); // Disable auto power mode switching
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x40, 0xFF, 0x01).fail); // Enable rx0 to cap sensing
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x41, 0xFF, 0x02).fail); // Enable rx1 to cap sensing
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x43, 0x60, 0x20).fail); // 15pf, 1/8 divider on ch0
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x44, 0x60, 0x20).fail); // 15pf, 1/8 divider on ch1
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x46, 0xFF, 0x1E).fail); // ATI base 75 and target = 30 on ch0
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x47, 0xFF, 0x1E).fail); // ATI base 75 and target = 30 on ch1
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x60, 0xFF, 0x0A).fail); // Proximity thresholds
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x62, 0xFF, 0x0A).fail); // Proximity thresholds
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x61, 0xFF, 0x0A).fail); // Proximity thresholds
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0x63, 0xFF, 0x0A).fail); // Proximity thresholds
-        app_err(i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x22, 0x22).fail); // Redo ATI and enable event mode
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x60, 0x60).fail); // Ack resets and enable event mode
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0xD1, 0xFF, 0x03).fail); // Enable ch0 and ch1
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0xD2, 0x20, 0x20).fail); // Disable auto power mode switching
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0x40, 0xFF, 0x01).fail); // Enable rx0 to cap sensing
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0x41, 0xFF, 0x02).fail); // Enable rx1 to cap sensing
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0x43, 0x60, 0x20).fail); // 15pf, 1/8 divider on ch0
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0x44, 0x60, 0x20).fail); // 15pf, 1/8 divider on ch1
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0x46, 0xFF, 0x1E).fail); // ATI base 75 and target = 30 on ch0
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0x47, 0xFF, 0x1E).fail); // ATI base 75 and target = 30 on ch1
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0x60, 0xFF, 0x0A).fail); // Proximity thresholds
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0x62, 0xFF, 0x0A).fail); // Proximity thresholds
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0x61, 0xFF, 0x0A).fail); // Proximity thresholds
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0x63, 0xFF, 0x0A).fail); // Proximity thresholds
+        app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x22, 0x22).fail); // Redo ATI and enable event mode
 
         // TODO optimize this delay
         nrfx_systick_delay_ms(1000);
     }
 
     // Start SPI before sleeping otherwise we'll crash
-    {
-        nrfx_spim_config_t config = NRFX_SPIM_DEFAULT_CONFIG(
-            FPGA_FLASH_SPI_SCK_PIN,
-            FPGA_FLASH_SPI_SDO_PIN,
-            FPGA_FLASH_SPI_SDI_PIN,
-            NRFX_SPIM_PIN_NOT_USED);
-
-        config.frequency = NRF_SPIM_FREQ_4M;
-        config.mode = NRF_SPIM_MODE_3;
-        config.bit_order = NRF_SPIM_BIT_ORDER_LSB_FIRST;
-
-        app_err(nrfx_spim_init(&spi_bus_2, &config, NULL, NULL));
-    }
+    monocle_spi_enable(true);
 
     // This wont return if Monocle is charging
     check_if_battery_charging_and_sleep(0, NULL);
@@ -272,7 +260,14 @@ void monocle_critical_startup(void)
         nrf_gpio_cfg_output(DISPLAY_RESET_PIN);
         nrf_gpio_cfg_output(DISPLAY_CS_PIN);
         nrf_gpio_cfg_output(FPGA_CS_MODE_PIN);
-        nrf_gpio_cfg_output(FLASH_CS_PIN);
+
+        // Flash CS is open drain with pull up so that the FPGA can use it too
+        nrf_gpio_cfg(FLASH_CS_PIN,
+                     NRF_GPIO_PIN_DIR_OUTPUT,
+                     NRF_GPIO_PIN_INPUT_DISCONNECT,
+                     NRF_GPIO_PIN_PULLUP,
+                     NRF_GPIO_PIN_S0D1,
+                     NRF_GPIO_PIN_NOSENSE);
 
         // The FPGA RESET pin is both an output, as well as interrupt input
         nrf_gpio_cfg(FPGA_RESET_INT_PIN,
@@ -325,17 +320,17 @@ void monocle_fpga_power(bool enable)
 
     if (enable)
     {
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x7F, 0x6F).fail); // Turn on 1.2V with 500mA limit
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1F).fail); // Turn on LDO0
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x7F, 0x7F).fail); // Turn on 2.8V with 333mA limit
-        app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x0C).fail); // Enable the 10V boost
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x7F, 0x6F).fail); // Turn on 1.2V with 500mA limit
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1F).fail); // Turn on LDO0
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x7F, 0x7F).fail); // Turn on 2.8V with 333mA limit
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x0C).fail); // Enable the 10V boost
         return;
     }
 
-    app_err(i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x04).fail); // Turn off 10V on PMIC GPIO2
-    nrfx_systick_delay_ms(200);                                  // Let the 10V decay
-    app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x0F, 0x0C).fail); // Turn off 2.8V
-    app_err(i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch
-    app_err(i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x0F, 0x0C).fail); // Turn off 1.2V
+    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x04).fail); // Turn off 10V on PMIC GPIO2
+    nrfx_systick_delay_ms(200);                                          // Let the 10V decay
+    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x0F, 0x0C).fail); // Turn off 2.8V
+    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch
+    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x0F, 0x0C).fail); // Turn off 1.2V
     return;
 }
