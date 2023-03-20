@@ -321,7 +321,7 @@ void monocle_fpga_power(bool enable)
     if (enable)
     {
         app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x7F, 0x6F).fail); // Turn on 1.2V with 500mA limit
-        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1F).fail); // Turn on LDO0
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1F).fail); // Turn on 1.8V on load switch LSW0
         app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x7F, 0x7F).fail); // Turn on 2.8V with 333mA limit
         app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x0C).fail); // Enable the 10V boost
         return;
@@ -330,7 +330,7 @@ void monocle_fpga_power(bool enable)
     app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x04).fail); // Turn off 10V on PMIC GPIO2
     nrfx_systick_delay_ms(200);                                          // Let the 10V decay
     app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x0F, 0x0C).fail); // Turn off 2.8V
-    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch
+    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch LSW0
     app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x0F, 0x0C).fail); // Turn off 1.2V
     return;
 }
