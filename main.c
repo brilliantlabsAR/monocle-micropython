@@ -531,7 +531,7 @@ int main(void)
 {
     NRFX_LOG_ERROR(RTT_CTRL_CLEAR
                    "\rMicroPython on Monocle - " BUILD_VERSION
-                   " (" MICROPY_GIT_HASH ").");
+                   " (" MICROPY_GIT_HASH ")");
 
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();
@@ -616,7 +616,7 @@ int main(void)
         if (resp.fail || resp.value != 0x56)
         {
             // TODO add entry in health monitor if camera didn't initialise
-            NRFX_LOG_ERROR("Error: Camera not found.");
+            NRFX_LOG_ERROR("Camera not detected");
             monocle_set_led(RED_LED, true);
         }
 
