@@ -26,9 +26,10 @@
 
 #include "SEGGER_RTT.h"
 
-#define NRFX_LOG_ERROR(format, ...) \
+#define NRFX_LOG(format, ...) \
     SEGGER_RTT_printf(0, format "\r\n", ##__VA_ARGS__)
 
+#define NRFX_LOG_ERROR(format, ...)
 #define NRFX_LOG_WARNING(format, ...)
 #define NRFX_LOG_INFO(format, ...)
 #define NRFX_LOG_DEBUG(format, ...)

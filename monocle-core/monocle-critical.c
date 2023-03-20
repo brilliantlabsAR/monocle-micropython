@@ -97,7 +97,7 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
                                  NRF_GPIO_PIN_NOPULL,
                                  NRF_GPIO_PIN_SENSE_LOW);
 
-        NRFX_LOG_ERROR("Going to sleep");
+        NRFX_LOG("Going to sleep");
 
         // Clear the reset reasons
         NRF_POWER->RESETREAS = 0xF000F;

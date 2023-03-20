@@ -520,7 +520,7 @@ void SD_EVT_IRQHandler(void)
 
         default:
         {
-            NRFX_LOG_ERROR("Unhandled BLE event: %u", ble_evt->header.evt_id);
+            NRFX_LOG("Unhandled BLE event: %u", ble_evt->header.evt_id);
             break;
         }
         }
@@ -529,9 +529,9 @@ void SD_EVT_IRQHandler(void)
 
 int main(void)
 {
-    NRFX_LOG_ERROR(RTT_CTRL_CLEAR
-                   "\rMicroPython on Monocle - " BUILD_VERSION
-                   " (" MICROPY_GIT_HASH ")");
+    NRFX_LOG(RTT_CTRL_CLEAR
+             "\rMicroPython on Monocle - " BUILD_VERSION
+             " (" MICROPY_GIT_HASH ")");
 
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();
@@ -551,12 +551,12 @@ int main(void)
         flash_read(magic_word, 0x6C80E, sizeof(magic_word));
         if (memcmp(magic_word, "BITSTREAM_WRITTEN", sizeof(magic_word)) == 0)
         {
-            NRFX_LOG_ERROR("Booting FPGA from SPI flash");
+            NRFX_LOG("Booting FPGA from SPI flash");
             nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
         }
         else
         {
-            NRFX_LOG_ERROR("Booting FPGA from internal flash");
+            NRFX_LOG("Booting FPGA from internal flash");
             nrf_gpio_pin_write(FPGA_CS_MODE_PIN, false);
         }
 
@@ -577,7 +577,7 @@ int main(void)
 
         if (device_id_response[0] != 0x4B)
         {
-            NRFX_LOG_ERROR("FPGA didn't boot");
+            NRFX_LOG("FPGA didn't boot");
 
             // If failure, turn off and hold the FPGA in reset
             monocle_fpga_power(false);
@@ -616,7 +616,7 @@ int main(void)
         if (resp.fail || resp.value != 0x56)
         {
             // TODO add entry in health monitor if camera didn't initialise
-            NRFX_LOG_ERROR("Camera not detected");
+            NRFX_LOG("Camera not detected");
             monocle_set_led(RED_LED, true);
         }
 
@@ -755,8 +755,8 @@ int main(void)
         // Start the Softdevice
         app_err(sd_ble_enable(&ram_start));
 
-        NRFX_LOG_ERROR("Softdevice using 0x%x bytes of RAM",
-                       ram_start - 0x20000000);
+        NRFX_LOG("Softdevice using 0x%x bytes of RAM",
+                 ram_start - 0x20000000);
 
         // Set security to open // TODO make this paired
         ble_gap_conn_sec_mode_t sec_mode;
