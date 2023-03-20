@@ -558,11 +558,6 @@ int main(void)
             nrf_gpio_pin_write(FPGA_CS_MODE_PIN, false);
         }
 
-        // Re-power
-        // monocle_fpga_power(false);
-        // nrfx_systick_delay_ms(100);
-        // monocle_fpga_power(true);
-
         // Boot
         monocle_spi_enable(false);
         nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
