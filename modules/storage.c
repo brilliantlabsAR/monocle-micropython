@@ -28,9 +28,7 @@
 #include "py/mphal.h"
 #include "py/runtime.h"
 
-static const size_t reserved_64k_blocks_for_fpga_bitstream = 7;
-
-static size_t fpga_bitstream_programmed_bytes = 0;
+/// @brief Low level helpers
 
 static bool flash_is_busy(void)
 {
@@ -82,6 +80,69 @@ static void flash_write(uint8_t *buffer, size_t address, size_t length)
     monocle_spi_write(FLASH, page_program_cmd, sizeof(page_program_cmd), true);
     monocle_spi_write(FLASH, buffer, length, false);
 }
+
+/// @brief New partition object
+
+const struct _mp_obj_type_t storage_flash_device_type;
+
+typedef struct _storage_obj_t
+{
+    mp_obj_base_t base;
+    uint32_t start;
+    uint32_t len;
+} storage_obj_t;
+
+mp_obj_t storage_readblocks(size_t n_args, const mp_obj_t *args)
+{
+    return mp_const_notimplemented;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(storage_readblocks_obj, 3, 4, storage_readblocks);
+
+mp_obj_t storage_writeblocks(size_t n_args, const mp_obj_t *args)
+{
+    return mp_const_notimplemented;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(storage_writeblocks_obj, 3, 4, storage_writeblocks);
+
+mp_obj_t storage_ioctl(mp_obj_t self_in, mp_obj_t op_in, mp_obj_t arg_in)
+{
+    return mp_const_notimplemented;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(storage_ioctl_obj, storage_ioctl);
+
+STATIC const mp_rom_map_elem_t storage_locals_dict_table[] = {
+
+    {MP_ROM_QSTR(MP_QSTR_readblocks), MP_ROM_PTR(&storage_readblocks_obj)},
+    {MP_ROM_QSTR(MP_QSTR_writeblocks), MP_ROM_PTR(&storage_writeblocks_obj)},
+    {MP_ROM_QSTR(MP_QSTR_ioctl), MP_ROM_PTR(&storage_ioctl_obj)},
+};
+STATIC MP_DEFINE_CONST_DICT(storage_locals_dict, storage_locals_dict_table);
+
+STATIC void storage_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind)
+{
+    storage_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    mp_printf(print, "Storage(start=0x%08x, len=%u)", self->start, self->len);
+}
+
+STATIC mp_obj_t storage_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args)
+{
+    storage_obj_t *self = mp_obj_malloc(storage_obj_t, &storage_flash_device_type);
+    return MP_OBJ_FROM_PTR(self);
+}
+
+MP_DEFINE_CONST_OBJ_TYPE(
+    storage_flash_device_type,
+    MP_QSTR_Partition,
+    MP_TYPE_FLAG_NONE,
+    make_new, storage_make_new,
+    print, storage_print,
+    locals_dict, &storage_locals_dict);
+
+/// @brief Globals and module definition
+
+static const size_t reserved_64k_blocks_for_fpga_bitstream = 7;
+
+static size_t fpga_bitstream_programmed_bytes = 0;
 
 STATIC mp_obj_t storage_read(mp_obj_t file, mp_obj_t file_length, mp_obj_t offset)
 {
@@ -189,27 +250,12 @@ STATIC mp_obj_t storage_delete(mp_obj_t file)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(storage_delete_obj, storage_delete);
 
-STATIC mp_obj_t storage_list(void)
-{
-    return mp_const_notimplemented;
-}
-MP_DEFINE_CONST_FUN_OBJ_0(storage_list_obj, storage_list);
-
-STATIC mp_obj_t storage_mem_free(void)
-{
-    return mp_const_notimplemented;
-}
-MP_DEFINE_CONST_FUN_OBJ_0(storage_mem_free_obj, storage_mem_free);
-
 STATIC const mp_rom_map_elem_t storage_module_globals_table[] = {
 
+    {MP_ROM_QSTR(MP_QSTR_Partition), MP_ROM_PTR(&storage_flash_device_type)},
     {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&storage_read_obj)},
     {MP_ROM_QSTR(MP_QSTR_append), MP_ROM_PTR(&storage_append_obj)},
     {MP_ROM_QSTR(MP_QSTR_delete), MP_ROM_PTR(&storage_delete_obj)},
-    {MP_ROM_QSTR(MP_QSTR_list), MP_ROM_PTR(&storage_list_obj)},
-    {MP_ROM_QSTR(MP_QSTR_mem_free), MP_ROM_PTR(&storage_mem_free_obj)},
-    {MP_ROM_QSTR(MP_QSTR_MEM_TOTAL),
-     MP_ROM_INT(1048576 - (reserved_64k_blocks_for_fpga_bitstream * 8192))},
     {MP_ROM_QSTR(MP_QSTR_FPGA_BITSTREAM), MP_ROM_QSTR(MP_QSTR_FPGA_BITSTREAM)},
     {MP_ROM_QSTR(MP_QSTR_BITSTREAM_WRITTEN), MP_ROM_QSTR(MP_QSTR_BITSTREAM_WRITTEN)},
 };
