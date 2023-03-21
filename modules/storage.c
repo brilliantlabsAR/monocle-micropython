@@ -25,6 +25,8 @@
 #include <string.h>
 #include <math.h>
 #include "monocle.h"
+#include "extmod/vfs.h"
+#include "py/mperrno.h"
 #include "py/mphal.h"
 #include "py/runtime.h"
 
@@ -81,6 +83,30 @@ static void flash_write(uint8_t *buffer, size_t address, size_t length)
     monocle_spi_write(FLASH, buffer, length, false);
 }
 
+static void flash_page_erase(size_t address)
+{
+    app_err(address % 0x1000);
+
+    while (flash_is_busy())
+    {
+        mp_hal_delay_ms(1);
+    }
+
+    uint8_t write_enable_cmd[] = {0x06};
+    monocle_spi_write(FLASH, write_enable_cmd, sizeof(write_enable_cmd), false);
+
+    uint8_t block_erase[] = {0xD8,
+                             address >> 16,
+                             0, // Bottom bytes of address are always 0
+                             0};
+    monocle_spi_write(FLASH, block_erase, sizeof(block_erase), false);
+
+    while (flash_is_busy())
+    {
+        mp_hal_delay_ms(10);
+    }
+}
+
 /// @brief New partition object
 
 const struct _mp_obj_type_t storage_flash_device_type;
@@ -94,19 +120,103 @@ typedef struct _storage_obj_t
 
 mp_obj_t storage_readblocks(size_t n_args, const mp_obj_t *args)
 {
-    return mp_const_notimplemented;
+    storage_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+    uint32_t block_num = mp_obj_get_int(args[1]);
+    mp_obj_t buffer = args[2];
+
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(buffer, &bufinfo, MP_BUFFER_WRITE);
+
+    mp_int_t address = self->start + (block_num * 4096);
+
+    if (n_args == 4)
+    {
+        uint32_t offset = mp_obj_get_int(args[3]);
+        address += offset;
+    }
+
+    flash_read(bufinfo.buf, address, bufinfo.len);
+
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(storage_readblocks_obj, 3, 4, storage_readblocks);
 
 mp_obj_t storage_writeblocks(size_t n_args, const mp_obj_t *args)
 {
-    return mp_const_notimplemented;
+    storage_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+    uint32_t block_num = mp_obj_get_int(args[1]);
+    mp_obj_t buffer = args[2];
+
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(buffer, &bufinfo, MP_BUFFER_WRITE);
+
+    mp_int_t address = self->start + (block_num * 4096);
+
+    if (n_args == 4)
+    {
+        uint32_t offset = mp_obj_get_int(args[3]);
+        address += offset;
+    }
+    else
+    {
+        flash_page_erase(address);
+    }
+
+    flash_write(bufinfo.buf, address, bufinfo.len);
+
+    return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(storage_writeblocks_obj, 3, 4, storage_writeblocks);
 
 mp_obj_t storage_ioctl(mp_obj_t self_in, mp_obj_t op_in, mp_obj_t arg_in)
 {
-    return mp_const_notimplemented;
+    storage_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+    mp_int_t op = mp_obj_get_int(op_in);
+    switch (op)
+    {
+    case MP_BLOCKDEV_IOCTL_INIT:
+    {
+        return MP_OBJ_NEW_SMALL_INT(0);
+    }
+
+    case MP_BLOCKDEV_IOCTL_DEINIT:
+    {
+        return MP_OBJ_NEW_SMALL_INT(0);
+    }
+
+    case MP_BLOCKDEV_IOCTL_SYNC:
+    {
+        return MP_OBJ_NEW_SMALL_INT(0);
+    }
+
+    case MP_BLOCKDEV_IOCTL_BLOCK_COUNT:
+    {
+        return MP_OBJ_NEW_SMALL_INT(self->len / 4096);
+    }
+
+    case MP_BLOCKDEV_IOCTL_BLOCK_SIZE:
+    {
+        return MP_OBJ_NEW_SMALL_INT(4096);
+    }
+
+    case MP_BLOCKDEV_IOCTL_BLOCK_ERASE:
+    {
+        mp_int_t block_num = mp_obj_get_int(arg_in);
+        mp_int_t address = self->start + (block_num * 4096);
+
+        if ((address & 0x3) || (address % 4096 != 0))
+        {
+            return MP_OBJ_NEW_SMALL_INT(-MP_EIO);
+        }
+
+        flash_page_erase(address);
+        return MP_OBJ_NEW_SMALL_INT(0);
+    }
+
+    default:
+        return mp_const_none;
+    }
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(storage_ioctl_obj, storage_ioctl);
 
