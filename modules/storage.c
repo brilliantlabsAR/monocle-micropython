@@ -126,7 +126,35 @@ STATIC void storage_print(const mp_print_t *print, mp_obj_t self_in, mp_print_ki
 
 STATIC mp_obj_t storage_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args)
 {
+    static const mp_arg_t allowed_args[] = {
+        {MP_QSTR_start, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0x6D000}},
+        {MP_QSTR_length, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0x93000}},
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    mp_int_t start = args[0].u_int;
+    mp_int_t length = args[1].u_int;
+
+    if (start < 0x6D000)
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT(
+            "start must be equal or higher than the FPGA bitstream end address of 0x6D000"));
+    }
+
+    if (length < 0)
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT("length cannot be less than zero"));
+    }
+
+    if (length + start >= 0x100000)
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT("start + length must be less than 0x100000"));
+    }
+
     storage_obj_t *self = mp_obj_malloc(storage_obj_t, &storage_flash_device_type);
+    self->start = start;
+    self->len = length;
     return MP_OBJ_FROM_PTR(self);
 }
 

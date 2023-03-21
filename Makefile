@@ -69,7 +69,6 @@ DEFS += -DBUILD_VERSION='"$(BUILD_VERSION)"'
 DEFS += -DLFS2_NO_ASSERT
 
 # Set linker options
-LDFLAGS += -nostdlib
 LDFLAGS += -Lnrfx/mdk -T monocle-core/monocle.ld
 LDFLAGS += -Wl,--gc-sections
 LDFLAGS += -Xlinker -Map=$(@:.elf=.map)
