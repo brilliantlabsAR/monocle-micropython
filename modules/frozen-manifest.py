@@ -24,6 +24,7 @@
 
 import os
 
+module("_mountfs.py")
 module("camera.py")
 module("display.py")
 module("microphone.py")

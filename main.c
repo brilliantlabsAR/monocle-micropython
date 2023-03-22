@@ -919,6 +919,12 @@ int main(void)
     mp_init();
     readline_init0();
 
+    // Mount the filesystem, or format if needed
+    pyexec_frozen_module("_mountfs.py");
+
+    // Run the user's main file if it exists
+    pyexec_file_if_exists("main.py");
+
     // Stay in the friendly or raw REPL until a reset is called
     for (;;)
     {
