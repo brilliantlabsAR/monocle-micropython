@@ -29,6 +29,7 @@
 
 #include "monocle.h"
 #include "bluetooth.h"
+#include "fpga.h"
 #include "touch.h"
 #include "config-tables.h"
 
@@ -538,7 +539,7 @@ int main(void)
     // Start the FPGA
     {
         // Check flash for a valid FPGA image and set the FPGA MODE1 pin
-        if (monocle_check_for_valid_bitstream())
+        if (fpga_app_exists())
         {
             NRFX_LOG("Booting FPGA from SPI flash");
             nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);

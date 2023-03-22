@@ -136,7 +136,7 @@ STATIC mp_obj_t fpga_app_delete(void)
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(fpga_app_delete_fun_obj, fpga_app_delete);
 STATIC MP_DEFINE_CONST_STATICMETHOD_OBJ(fpga_app_delete_obj, MP_ROM_PTR(&fpga_app_delete_fun_obj));
 
-bool monocle_check_for_valid_bitstream(void)
+bool fpga_app_exists(void)
 {
     // Wakeup the flash
     uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
@@ -147,7 +147,7 @@ bool monocle_check_for_valid_bitstream(void)
     uint8_t magic_word[4] = "";
     flash_read(magic_word, 0x6C80E, sizeof(magic_word));
 
-    if (memcmp(magic_word, "\xFE\xED\xC0\xDE", sizeof(magic_word)) == 0)
+    if (memcmp(magic_word, "done", sizeof(magic_word)) == 0)
     {
         return true;
     }
