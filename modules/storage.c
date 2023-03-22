@@ -36,7 +36,7 @@ static bool flash_is_busy(void)
 {
     uint8_t status_cmd[] = {0x05};
     monocle_spi_write(FLASH, status_cmd, sizeof(status_cmd), true);
-    monocle_spi_read(FLASH, status_cmd, sizeof(status_cmd));
+    monocle_spi_read(FLASH, status_cmd, sizeof(status_cmd), false);
 
     if ((status_cmd[0] & 0x01) == 0)
     {
@@ -48,7 +48,11 @@ static bool flash_is_busy(void)
 
 void flash_read(uint8_t *buffer, size_t address, size_t length)
 {
-    app_err(length > 255);
+    if (address + length > 0x100000)
+    {
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("address + length cannot exceed 1048576 bytes"));
+    }
 
     while (flash_is_busy())
     {
@@ -60,12 +64,34 @@ void flash_read(uint8_t *buffer, size_t address, size_t length)
                           address >> 8,
                           address};
     monocle_spi_write(FLASH, read_cmd, sizeof(read_cmd), true);
-    monocle_spi_read(FLASH, buffer, length);
+
+    size_t bytes_read = 0;
+    while (bytes_read < length)
+    {
+        // nRF DMA can only handle 255 bytes at a time
+        size_t max_readable_length = MIN(length - bytes_read, 255);
+
+        // If we're going to need another transfer, keep cs held
+        bool hold = length - bytes_read > 255;
+
+        monocle_spi_read(FLASH, buffer + bytes_read, max_readable_length, hold);
+
+        bytes_read += max_readable_length;
+    }
 }
 
 static void flash_write(uint8_t *buffer, size_t address, size_t length)
 {
-    app_err(length > 255);
+    if (length > (256 - (address % 256)))
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT("length crosses a page boundary"));
+    }
+
+    if (address + length > 0x100000)
+    {
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("address + length cannot exceed 1048576 bytes"));
+    }
 
     while (flash_is_busy())
     {
@@ -80,12 +106,26 @@ static void flash_write(uint8_t *buffer, size_t address, size_t length)
                                   address >> 8,
                                   address};
     monocle_spi_write(FLASH, page_program_cmd, sizeof(page_program_cmd), true);
-    monocle_spi_write(FLASH, buffer, length, false);
+
+    // The nRF DMA has a max length of 255 bytes, so we handle 256 as two writes
+    if (length == 256)
+    {
+        monocle_spi_write(FLASH, buffer, 128, true);
+        monocle_spi_write(FLASH, buffer + 128, 128, false);
+    }
+    else
+    {
+        monocle_spi_write(FLASH, buffer, length, false);
+    }
 }
 
 static void flash_page_erase(size_t address)
 {
-    app_err(address % 0x1000);
+    if (address % 0x1000)
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT(
+            "address must be aligned to a page size of 4096 bytes"));
+    }
 
     while (flash_is_busy())
     {
@@ -100,11 +140,6 @@ static void flash_page_erase(size_t address)
                              0, // Bottom bytes of address are always 0
                              0};
     monocle_spi_write(FLASH, block_erase, sizeof(block_erase), false);
-
-    while (flash_is_busy())
-    {
-        mp_hal_delay_ms(10);
-    }
 }
 
 /// @brief New partition object
@@ -282,27 +317,17 @@ static const size_t reserved_64k_blocks_for_fpga_bitstream = 7;
 
 static size_t fpga_bitstream_programmed_bytes = 0;
 
-STATIC mp_obj_t storage_read(mp_obj_t file, mp_obj_t file_length, mp_obj_t offset)
+STATIC mp_obj_t storage_read(mp_obj_t file, mp_obj_t length, mp_obj_t offset)
 {
     const char *file_name = mp_obj_str_get_str(file);
 
     if (strcmp(file_name, "FPGA_BITSTREAM") == 0)
     {
-        uint8_t buffer[mp_obj_get_int(file_length)];
+        uint8_t buffer[mp_obj_get_int(length)];
 
-        size_t bytes_read = 0;
-        while (bytes_read < mp_obj_get_int(file_length))
-        {
-            size_t max_readable_length = MIN(mp_obj_get_int(file_length) - bytes_read, 255);
+        flash_read(buffer, mp_obj_get_int(offset), mp_obj_get_int(length));
 
-            flash_read(buffer + bytes_read,
-                       mp_obj_get_int(offset) + bytes_read,
-                       max_readable_length);
-
-            bytes_read += max_readable_length;
-        }
-
-        return mp_obj_new_bytes(buffer, mp_obj_get_int(file_length));
+        return mp_obj_new_bytes(buffer, mp_obj_get_int(length));
     }
 
     return mp_const_notimplemented;
@@ -313,12 +338,12 @@ STATIC mp_obj_t storage_append(mp_obj_t file, mp_obj_t bytes)
 {
     const char *file_name = mp_obj_str_get_str(file);
 
-    size_t file_length;
-    const char *file_data = mp_obj_str_get_data(bytes, &file_length);
+    size_t length;
+    const char *file_data = mp_obj_str_get_data(bytes, &length);
 
     if (strcmp(file_name, "FPGA_BITSTREAM") == 0)
     {
-        if (fpga_bitstream_programmed_bytes + file_length >
+        if (fpga_bitstream_programmed_bytes + length >
             0x10000 * reserved_64k_blocks_for_fpga_bitstream)
         {
             mp_raise_ValueError(MP_ERROR_TEXT(
@@ -326,7 +351,7 @@ STATIC mp_obj_t storage_append(mp_obj_t file, mp_obj_t bytes)
         }
 
         size_t bytes_written = 0;
-        while (bytes_written < file_length)
+        while (bytes_written < length)
         {
             size_t page_number = (size_t)floor(fpga_bitstream_programmed_bytes / 256.0);
             size_t page_address = page_number * 256;
@@ -339,7 +364,7 @@ STATIC mp_obj_t storage_append(mp_obj_t file, mp_obj_t bytes)
             flash_read(page_data, page_address, 128);
             flash_read(page_data + 128, page_address + 128, 128);
 
-            size_t bytes_appended = MIN(file_length - bytes_written, bytes_left_in_page);
+            size_t bytes_appended = MIN(length - bytes_written, bytes_left_in_page);
             memcpy(page_data + offset_in_page, file_data + bytes_written, bytes_appended);
 
             flash_write(page_data, page_address, 128);

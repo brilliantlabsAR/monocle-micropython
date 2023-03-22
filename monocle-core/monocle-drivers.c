@@ -239,7 +239,8 @@ static uint8_t bit_reverse(uint8_t byte)
     return byte;
 }
 
-void monocle_spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
+void monocle_spi_read(spi_device_t spi_device, uint8_t *data, size_t length,
+                      bool hold_down_cs)
 {
     uint8_t cs_pin;
 
@@ -262,7 +263,10 @@ void monocle_spi_read(spi_device_t spi_device, uint8_t *data, size_t length)
     nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(data, length);
     app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
 
-    nrf_gpio_pin_set(cs_pin);
+    if (!hold_down_cs)
+    {
+        nrf_gpio_pin_set(cs_pin);
+    }
 
     // Flash is LSB first, so we need to flip all the bytes before returning
     if (spi_device == FLASH)

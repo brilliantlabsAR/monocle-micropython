@@ -40,7 +40,7 @@ STATIC mp_obj_t fpga_read(mp_obj_t addr_16bit, mp_obj_t n)
     uint8_t *buffer = m_malloc(mp_obj_get_int(n));
 
     monocle_spi_write(FPGA, addr_bytes, 2, true);
-    monocle_spi_read(FPGA, buffer, mp_obj_get_int(n));
+    monocle_spi_read(FPGA, buffer, mp_obj_get_int(n), false);
 
     mp_obj_t bytes = mp_obj_new_bytes(buffer, mp_obj_get_int(n));
 

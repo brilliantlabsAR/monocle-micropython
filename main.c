@@ -541,7 +541,7 @@ int main(void)
         // Wakeup the flash
         uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
         monocle_spi_write(FLASH, wakeup_device_id, 4, true);
-        monocle_spi_read(FLASH, wakeup_device_id, 1);
+        monocle_spi_read(FLASH, wakeup_device_id, 1, false);
         app_err(wakeup_device_id[0] != 0x13 && not_real_hardware_flag == false);
 
         // Check flash for a valid FPGA image and set the FPGA MODE1 pin
@@ -571,7 +571,8 @@ int main(void)
         uint8_t device_id_command[2] = {0x00, 0x01};
         uint8_t device_id_response[1];
         monocle_spi_write(FPGA, device_id_command, 2, true);
-        monocle_spi_read(FPGA, device_id_response, sizeof(device_id_response));
+        monocle_spi_read(FPGA, device_id_response, sizeof(device_id_response),
+                         false);
 
         if (device_id_response[0] != 0x4B)
         {
