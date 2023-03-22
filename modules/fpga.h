@@ -24,12 +24,4 @@
 
 #pragma once
 
-#include "py/obj.h"
-
-extern const struct _mp_obj_type_t device_storage_type;
-
-void flash_read(uint8_t *buffer, size_t address, size_t length);
-
-void flash_write(uint8_t *buffer, size_t address, size_t length);
-
-void flash_page_erase(size_t address);
+bool fpga_app_exists(void);

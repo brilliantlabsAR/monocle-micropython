@@ -100,6 +100,11 @@
 
 #define MICROPY_PY_UJSON (1)
 
+#define MICROPY_PY_UOS (1)
+#define MICROPY_VFS (1)
+#define MICROPY_VFS_LFS2 (1)
+#define MICROPY_READER_VFS (1)
+
 #define MICROPY_PY_URANDOM (1)
 #define MICROPY_PY_URANDOM_EXTRA_FUNCS (1)
 #define MICROPY_PY_URANDOM_SEED_INIT_FUNC (mp_hal_generate_random_seed())

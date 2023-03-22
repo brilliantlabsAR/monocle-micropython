@@ -29,7 +29,7 @@
 
 #include "monocle.h"
 #include "bluetooth.h"
-#include "storage.h"
+#include "fpga.h"
 #include "touch.h"
 #include "config-tables.h"
 
@@ -538,16 +538,8 @@ int main(void)
 
     // Start the FPGA
     {
-        // Wakeup the flash
-        uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
-        monocle_spi_write(FLASH, wakeup_device_id, 4, true);
-        monocle_spi_read(FLASH, wakeup_device_id, 1);
-        app_err(wakeup_device_id[0] != 0x13 && not_real_hardware_flag == false);
-
         // Check flash for a valid FPGA image and set the FPGA MODE1 pin
-        uint8_t magic_word[17] = "";
-        flash_read(magic_word, 0x6C80E, sizeof(magic_word));
-        if (memcmp(magic_word, "BITSTREAM_WRITTEN", sizeof(magic_word)) == 0)
+        if (fpga_app_exists())
         {
             NRFX_LOG("Booting FPGA from SPI flash");
             nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
@@ -571,7 +563,8 @@ int main(void)
         uint8_t device_id_command[2] = {0x00, 0x01};
         uint8_t device_id_response[1];
         monocle_spi_write(FPGA, device_id_command, 2, true);
-        monocle_spi_read(FPGA, device_id_response, sizeof(device_id_response));
+        monocle_spi_read(FPGA, device_id_response, sizeof(device_id_response),
+                         false);
 
         if (device_id_response[0] != 0x4B)
         {
@@ -926,6 +919,12 @@ int main(void)
     gc_init(&_heap_start, &_heap_end);
     mp_init();
     readline_init0();
+
+    // Mount the filesystem, or format if needed
+    pyexec_frozen_module("_mountfs.py");
+
+    // Run the user's main file if it exists
+    pyexec_file_if_exists("main.py");
 
     // Stay in the friendly or raw REPL until a reset is called
     for (;;)
