@@ -141,6 +141,8 @@ void monocle_spi_read(spi_device_t spi_device, uint8_t *data, size_t length,
 void monocle_spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
                        bool hold_down_cs);
 
+bool monocle_check_for_valid_bitstream(void);
+
 /**
  * @brief Error handling macro.
  */

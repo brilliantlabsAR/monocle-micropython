@@ -29,7 +29,6 @@
 
 #include "monocle.h"
 #include "bluetooth.h"
-#include "storage.h"
 #include "touch.h"
 #include "config-tables.h"
 
@@ -538,16 +537,8 @@ int main(void)
 
     // Start the FPGA
     {
-        // Wakeup the flash
-        uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
-        monocle_spi_write(FLASH, wakeup_device_id, 4, true);
-        monocle_spi_read(FLASH, wakeup_device_id, 1, false);
-        app_err(wakeup_device_id[0] != 0x13 && not_real_hardware_flag == false);
-
         // Check flash for a valid FPGA image and set the FPGA MODE1 pin
-        uint8_t magic_word[17] = "";
-        flash_read(magic_word, 0x6C80E, sizeof(magic_word));
-        if (memcmp(magic_word, "BITSTREAM_WRITTEN", sizeof(magic_word)) == 0)
+        if (monocle_check_for_valid_bitstream())
         {
             NRFX_LOG("Booting FPGA from SPI flash");
             nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
