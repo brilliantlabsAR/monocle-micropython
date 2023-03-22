@@ -88,15 +88,15 @@ static void flash_write(uint8_t *buffer, size_t address, size_t length)
             MP_ERROR_TEXT("address + length cannot exceed 1048576 bytes"));
     }
 
-    NRFX_LOG("Writing %u bytes to flash", length);
-
     size_t bytes_written = 0;
     while (bytes_written < length)
     {
-        size_t bytes_left_in_page_from_address_offset = 256 - (address % 256);
+        size_t address_offset = address + bytes_written;
+
+        size_t bytes_left_in_page = 256 - (address_offset % 256);
         size_t bytes_left_to_write = length - bytes_written;
 
-        size_t max_writable_length = MIN(bytes_left_in_page_from_address_offset,
+        size_t max_writable_length = MIN(bytes_left_in_page,
                                          bytes_left_to_write);
 
         // nRF DMA can only handle 255 bytes at a time
@@ -110,19 +110,12 @@ static void flash_write(uint8_t *buffer, size_t address, size_t length)
         uint8_t write_enable_cmd[] = {0x06};
         monocle_spi_write(FLASH, write_enable_cmd, sizeof(write_enable_cmd), false);
 
-        size_t address_offset = address + bytes_written;
-        NRFX_LOG(" - %u bytes from 0x%08x", max_writable_length, address_offset);
-
         uint8_t page_program_cmd[] = {0x02,
                                       address_offset >> 16,
                                       address_offset >> 8,
                                       address_offset};
         monocle_spi_write(FLASH, page_program_cmd, sizeof(page_program_cmd), true);
-
-        // If we're going to need another transfer, keep cs held
-        bool hold = bytes_left_to_write > 255;
-
-        monocle_spi_write(FLASH, buffer + bytes_written, max_writable_length, hold);
+        monocle_spi_write(FLASH, buffer + bytes_written, max_writable_length, false);
 
         bytes_written += max_writable_length;
     }
