@@ -25,6 +25,7 @@
 #include <string.h>
 #include <math.h>
 #include "monocle.h"
+#include "storage.h"
 #include "extmod/vfs.h"
 #include "py/mperrno.h"
 #include "py/mphal.h"
@@ -46,7 +47,7 @@ static bool flash_is_busy(void)
     return true;
 }
 
-static void flash_read(uint8_t *buffer, size_t address, size_t length)
+void flash_read(uint8_t *buffer, size_t address, size_t length)
 {
     if (address + length > 0x100000)
     {
@@ -80,7 +81,7 @@ static void flash_read(uint8_t *buffer, size_t address, size_t length)
     }
 }
 
-static void flash_write(uint8_t *buffer, size_t address, size_t length)
+void flash_write(uint8_t *buffer, size_t address, size_t length)
 {
     if (address + length > 0x100000)
     {
@@ -121,7 +122,7 @@ static void flash_write(uint8_t *buffer, size_t address, size_t length)
     }
 }
 
-static void flash_page_erase(size_t address)
+void flash_page_erase(size_t address)
 {
     if (address % 0x1000)
     {
@@ -144,9 +145,9 @@ static void flash_page_erase(size_t address)
     monocle_spi_write(FLASH, sector_erase, sizeof(sector_erase), false);
 }
 
-/// @brief SPI flash partition object
+/// @brief Storage class and functions
 
-const struct _mp_obj_type_t storage_flash_device_type;
+const struct _mp_obj_type_t device_storage_type;
 
 typedef struct _storage_obj_t
 {
@@ -299,121 +300,16 @@ STATIC mp_obj_t storage_make_new(const mp_obj_type_t *type, size_t n_args, size_
         mp_raise_ValueError(MP_ERROR_TEXT("start + length must be less than 0x100000"));
     }
 
-    storage_obj_t *self = mp_obj_malloc(storage_obj_t, &storage_flash_device_type);
+    storage_obj_t *self = mp_obj_malloc(storage_obj_t, &device_storage_type);
     self->start = start;
     self->len = length;
     return MP_OBJ_FROM_PTR(self);
 }
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    storage_flash_device_type,
-    MP_QSTR_Partition,
+    device_storage_type,
+    MP_QSTR_Storage,
     MP_TYPE_FLAG_NONE,
     make_new, storage_make_new,
     print, storage_print,
     locals_dict, &storage_locals_dict);
-
-/// @brief FPGA application object
-
-const struct _mp_obj_type_t fpga_app_type;
-
-static size_t fpga_app_programmed_bytes = 0;
-
-STATIC mp_obj_t fpga_app_read(mp_obj_t address, mp_obj_t length)
-{
-    if (mp_obj_get_int(address) + mp_obj_get_int(length) > 0x6C80E + 4)
-    {
-        mp_raise_ValueError(
-            MP_ERROR_TEXT("address + length cannot exceed 444434 bytes"));
-    }
-
-    uint8_t buffer[mp_obj_get_int(length)];
-
-    flash_read(buffer, mp_obj_get_int(address), mp_obj_get_int(length));
-
-    return mp_obj_new_bytes(buffer, mp_obj_get_int(length));
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(fpga_app_read_fun_obj, fpga_app_read);
-STATIC MP_DEFINE_CONST_STATICMETHOD_OBJ(fpga_app_read_obj, MP_ROM_PTR(&fpga_app_read_fun_obj));
-
-STATIC mp_obj_t fpga_app_write(mp_obj_t bytes)
-{
-    size_t length;
-    const char *data = mp_obj_str_get_data(bytes, &length);
-
-    if (fpga_app_programmed_bytes + length > 0x6C80E + 4)
-    {
-        mp_raise_ValueError(
-            MP_ERROR_TEXT("data will overflow the space reserved for the app"));
-    }
-
-    flash_write((uint8_t *)data, fpga_app_programmed_bytes, length);
-
-    fpga_app_programmed_bytes += length;
-
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(fpga_app_write_fun_obj, fpga_app_write);
-STATIC MP_DEFINE_CONST_STATICMETHOD_OBJ(fpga_app_write_obj, MP_ROM_PTR(&fpga_app_write_fun_obj));
-
-STATIC mp_obj_t fpga_app_delete(void)
-{
-    for (size_t i = 0; i < 0x6D; i++)
-    {
-        flash_page_erase(i * 0x1000);
-    }
-
-    fpga_app_programmed_bytes = 0;
-
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(fpga_app_delete_fun_obj, fpga_app_delete);
-STATIC MP_DEFINE_CONST_STATICMETHOD_OBJ(fpga_app_delete_obj, MP_ROM_PTR(&fpga_app_delete_fun_obj));
-
-bool monocle_check_for_valid_bitstream(void)
-{
-    // Wakeup the flash
-    uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
-    monocle_spi_write(FLASH, wakeup_device_id, 4, true);
-    monocle_spi_read(FLASH, wakeup_device_id, 1, false);
-    app_err(wakeup_device_id[0] != 0x13 && not_real_hardware_flag == false);
-
-    uint8_t magic_word[4] = "";
-    flash_read(magic_word, 0x6C80E, sizeof(magic_word));
-
-    if (memcmp(magic_word, "\xFE\xED\xC0\xDE", sizeof(magic_word)) == 0)
-    {
-        return true;
-    }
-
-    return false;
-}
-
-STATIC const mp_rom_map_elem_t fpga_app_locals_dict_table[] = {
-
-    {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&fpga_app_read_obj)},
-    {MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&fpga_app_write_obj)},
-    {MP_ROM_QSTR(MP_QSTR_delete), MP_ROM_PTR(&fpga_app_delete_obj)},
-};
-STATIC MP_DEFINE_CONST_DICT(fpga_app_locals_dict, fpga_app_locals_dict_table);
-
-MP_DEFINE_CONST_OBJ_TYPE(
-    fpga_app_type,
-    MP_QSTR_App,
-    MP_TYPE_FLAG_NONE,
-    locals_dict, &fpga_app_locals_dict);
-
-/// @brief Globals and module definition
-
-STATIC const mp_rom_map_elem_t storage_module_globals_table[] = {
-
-    {MP_ROM_QSTR(MP_QSTR_Partition), MP_ROM_PTR(&storage_flash_device_type)},
-    {MP_ROM_QSTR(MP_QSTR_App), MP_ROM_PTR(&fpga_app_type)},
-};
-STATIC MP_DEFINE_CONST_DICT(storage_module_globals, storage_module_globals_table);
-
-const mp_obj_module_t storage_module = {
-    .base = {&mp_type_module},
-    .globals = (mp_obj_dict_t *)&storage_module_globals,
-};
-MP_REGISTER_MODULE(MP_QSTR_storage, storage_module);
