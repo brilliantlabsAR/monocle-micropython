@@ -30,5 +30,12 @@ def micropython():
     print("If the update fails, it will stay in the update mode and you can try again.")
     __update.nrf52()
 
-def fpga():
-    raise NotImplementedError
+class Fpga:
+    def read(address, length):
+        __update.read_fpga_app(address, length)
+    
+    def write(data):
+        __update.write_fpga_app(data)
+    
+    def erase():
+        __update.erase_fpga_app()

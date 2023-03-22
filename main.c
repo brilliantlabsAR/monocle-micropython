@@ -29,7 +29,7 @@
 
 #include "monocle.h"
 #include "bluetooth.h"
-#include "fpga.h"
+#include "update.h"
 #include "touch.h"
 #include "config-tables.h"
 

@@ -23,7 +23,6 @@
  */
 
 #include "monocle.h"
-#include "storage.h"
 #include "nrf_gpio.h"
 #include "py/runtime.h"
 
@@ -79,103 +78,10 @@ STATIC mp_obj_t fpga_write(mp_obj_t addr_16bit, mp_obj_t bytes)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(fpga_write_obj, fpga_write);
 
-/// @brief FPGA application object
-
-const struct _mp_obj_type_t fpga_app_type;
-
-static size_t fpga_app_programmed_bytes = 0;
-
-STATIC mp_obj_t fpga_app_read(mp_obj_t address, mp_obj_t length)
-{
-    if (mp_obj_get_int(address) + mp_obj_get_int(length) > 0x6C80E + 4)
-    {
-        mp_raise_ValueError(
-            MP_ERROR_TEXT("address + length cannot exceed 444434 bytes"));
-    }
-
-    uint8_t buffer[mp_obj_get_int(length)];
-
-    flash_read(buffer, mp_obj_get_int(address), mp_obj_get_int(length));
-
-    return mp_obj_new_bytes(buffer, mp_obj_get_int(length));
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(fpga_app_read_fun_obj, fpga_app_read);
-STATIC MP_DEFINE_CONST_STATICMETHOD_OBJ(fpga_app_read_obj, MP_ROM_PTR(&fpga_app_read_fun_obj));
-
-STATIC mp_obj_t fpga_app_write(mp_obj_t bytes)
-{
-    size_t length;
-    const char *data = mp_obj_str_get_data(bytes, &length);
-
-    if (fpga_app_programmed_bytes + length > 0x6C80E + 4)
-    {
-        mp_raise_ValueError(
-            MP_ERROR_TEXT("data will overflow the space reserved for the app"));
-    }
-
-    flash_write((uint8_t *)data, fpga_app_programmed_bytes, length);
-
-    fpga_app_programmed_bytes += length;
-
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(fpga_app_write_fun_obj, fpga_app_write);
-STATIC MP_DEFINE_CONST_STATICMETHOD_OBJ(fpga_app_write_obj, MP_ROM_PTR(&fpga_app_write_fun_obj));
-
-STATIC mp_obj_t fpga_app_delete(void)
-{
-    for (size_t i = 0; i < 0x6D; i++)
-    {
-        flash_page_erase(i * 0x1000);
-    }
-
-    fpga_app_programmed_bytes = 0;
-
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(fpga_app_delete_fun_obj, fpga_app_delete);
-STATIC MP_DEFINE_CONST_STATICMETHOD_OBJ(fpga_app_delete_obj, MP_ROM_PTR(&fpga_app_delete_fun_obj));
-
-bool fpga_app_exists(void)
-{
-    // Wakeup the flash
-    uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
-    monocle_spi_write(FLASH, wakeup_device_id, 4, true);
-    monocle_spi_read(FLASH, wakeup_device_id, 1, false);
-    app_err(wakeup_device_id[0] != 0x13 && not_real_hardware_flag == false);
-
-    uint8_t magic_word[4] = "";
-    flash_read(magic_word, 0x6C80E, sizeof(magic_word));
-
-    if (memcmp(magic_word, "done", sizeof(magic_word)) == 0)
-    {
-        return true;
-    }
-
-    return false;
-}
-
-STATIC const mp_rom_map_elem_t fpga_app_locals_dict_table[] = {
-
-    {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&fpga_app_read_obj)},
-    {MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&fpga_app_write_obj)},
-    {MP_ROM_QSTR(MP_QSTR_delete), MP_ROM_PTR(&fpga_app_delete_obj)},
-};
-STATIC MP_DEFINE_CONST_DICT(fpga_app_locals_dict, fpga_app_locals_dict_table);
-
-MP_DEFINE_CONST_OBJ_TYPE(
-    fpga_app_type,
-    MP_QSTR_App,
-    MP_TYPE_FLAG_NONE,
-    locals_dict, &fpga_app_locals_dict);
-
-/// @brief Global module definition
-
 STATIC const mp_rom_map_elem_t fpga_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&fpga_read_obj)},
     {MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&fpga_write_obj)},
-    {MP_ROM_QSTR(MP_QSTR_App), MP_ROM_PTR(&fpga_app_type)},
 };
 STATIC MP_DEFINE_CONST_DICT(fpga_module_globals, fpga_module_globals_table);
 
