@@ -32,10 +32,10 @@ def micropython():
 
 class Fpga:
     def read(address, length):
-        __update.read_fpga_app(address, length)
+        return __update.read_fpga_app(address, length)
     
     def write(data):
-        __update.write_fpga_app(data)
+        return __update.write_fpga_app(data)
     
     def erase():
-        __update.erase_fpga_app()
+        return __update.erase_fpga_app()

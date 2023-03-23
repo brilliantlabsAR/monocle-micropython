@@ -24,6 +24,7 @@
 
 #include "monocle.h"
 #include "py/mphal.h"
+#include "py/runtime.h"
 #include "nrf_gpio.h"
 #include "nrfx_spim.h"
 #include "nrfx_twim.h"
@@ -242,6 +243,11 @@ static uint8_t bit_reverse(uint8_t byte)
 void monocle_spi_read(spi_device_t spi_device, uint8_t *data, size_t length,
                       bool hold_down_cs)
 {
+    if (!nrfx_is_in_ram(data))
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT("buffer must be a bytes object"));
+    }
+
     uint8_t cs_pin;
 
     switch (spi_device)
@@ -281,6 +287,11 @@ void monocle_spi_read(spi_device_t spi_device, uint8_t *data, size_t length,
 void monocle_spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
                        bool hold_down_cs)
 {
+    if (!nrfx_is_in_ram(data))
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT("buffer must be a bytes object"));
+    }
+
     uint8_t cs_pin;
 
     switch (spi_device)
