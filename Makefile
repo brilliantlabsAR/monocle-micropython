@@ -3,11 +3,11 @@
 #      https://github.com/brilliantlabsAR/monocle-micropython
 #
 # Authored by: Josuah Demangeon (me@josuah.net)
-#              Raj Nakarja / Brilliant Labs Inc (raj@itsbrilliant.co)
+#              Raj Nakarja / Brilliant Labs Ltd. (raj@itsbrilliant.co)
 #
 # ISC Licence
 #
-# Copyright © 2023 Brilliant Labs Inc.
+# Copyright © 2023 Brilliant Labs Ltd.
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -66,9 +66,9 @@ DEFS += -DNRF52832_XXAA
 DEFS += -DNDEBUG
 DEFS += -DCONFIG_NFCT_PINS_AS_GPIOS
 DEFS += -DBUILD_VERSION='"$(BUILD_VERSION)"'
+DEFS += -DLFS2_NO_ASSERT
 
 # Set linker options
-LDFLAGS += -nostdlib
 LDFLAGS += -Lnrfx/mdk -T monocle-core/monocle.ld
 LDFLAGS += -Wl,--gc-sections
 LDFLAGS += -Xlinker -Map=$(@:.elf=.map)
@@ -106,10 +106,17 @@ SRC_C += micropython/extmod/moduasyncio.c
 SRC_C += micropython/extmod/modubinascii.c
 SRC_C += micropython/extmod/moduhashlib.c
 SRC_C += micropython/extmod/modujson.c
+SRC_C += micropython/extmod/moduos.c
 SRC_C += micropython/extmod/modurandom.c
 SRC_C += micropython/extmod/modure.c
 SRC_C += micropython/extmod/moduselect.c
 SRC_C += micropython/extmod/utime_mphal.c
+SRC_C += micropython/extmod/vfs_blockdev.c
+SRC_C += micropython/extmod/vfs_lfs.c
+SRC_C += micropython/extmod/vfs_lfsx_file.c
+SRC_C += micropython/extmod/vfs_lfsx.c
+SRC_C += micropython/extmod/vfs_reader.c
+SRC_C += micropython/extmod/vfs.c
 SRC_C += modules/bluetooth.c
 SRC_C += modules/camera.c
 SRC_C += modules/device.c
@@ -160,6 +167,8 @@ SRC_C += micropython/lib/libm/sf_sin.c
 SRC_C += micropython/lib/libm/sf_tan.c
 SRC_C += micropython/lib/libm/wf_lgamma.c
 SRC_C += micropython/lib/libm/wf_tgamma.c
+SRC_C += micropython/lib/littlefs/lfs2_util.c
+SRC_C += micropython/lib/littlefs/lfs2.c
 SRC_C += micropython/lib/uzlib/crc32.c
 
 SRC_C += nrfx/drivers/src/nrfx_clock.c
@@ -203,6 +212,5 @@ release: clean build/application.hex
 	nrfutil settings generate --family NRF52 --application build/application.hex --application-version 0 --bootloader-version 0 --bl-settings-version 2 build/settings.hex
 	mergehex -m build/settings.hex build/application.hex softdevice/s132_nrf52_7.3.0_softdevice.hex bootloader/build/nrf52832_xxaa_s132.hex -o build/monocle-micropython-$(BUILD_VERSION).hex
 	nrfutil pkg generate --hw-version 52 --application-version 0 --application build/application.hex --sd-req 0x0124 --key-file bootloader/published_privkey.pem build/monocle-micropython-$(BUILD_VERSION).zip
-	nrfutil pkg generate --hw-version 52 --application-version 0 --application build/application.hex --sd-req 0x0124 --key-file bootloader/published_privkey.pem build/monocle-micropython-$(BUILD_VERSION)-next.zip
 
 include micropython/py/mkrules.mk

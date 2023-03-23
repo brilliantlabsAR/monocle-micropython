@@ -3,11 +3,11 @@
 #      https://github.com/brilliantlabsAR/monocle-micropython
 #
 # Authored by: Josuah Demangeon (me@josuah.net)
-#              Raj Nakarja / Brilliant Labs Inc (raj@itsbrilliant.co)
+#              Raj Nakarja / Brilliant Labs Ltd. (raj@itsbrilliant.co)
 #
 # ISC Licence
 #
-# Copyright © 2023 Brilliant Labs Inc.
+# Copyright © 2023 Brilliant Labs Ltd.
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -58,13 +58,26 @@ def output(x, y, format):
   raise NotImplementedError
 
 def zoom(multiplier):
-  return_to_mode = None
-  if overlay() == True:
-    overlay(0)
-    return_to_mode = "overlay"
   __camera.wake()
   __time.sleep_ms(100)
   __camera.zoom(multiplier)
-  __camera.sleep()
-  if return_to_mode == "overlay":
-    overlay(1)
+  if not overlay():
+    __camera.sleep()
+
+def record(enable):
+  if enable:
+    # Overlay seems to be required for recording.
+    overlay(True)
+    __fpga.write(0x1005, b'') # record on
+  else:
+    # This pauses the image, ready for replaying
+    __fpga.write(0x1004, b'') # record off
+    __camera.sleep()
+
+def replay():
+  # Stop recording to avoid output mixing live and recorded feeds
+  record(False)
+
+  # This will trigger one replay of the recorded feed
+  __fpga.write(0x3007, b'') # replay once
+  __time.sleep(4)

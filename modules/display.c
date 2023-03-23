@@ -6,7 +6,7 @@
  *
  * ISC Licence
  *
- * Copyright © 2022 Brilliant Labs Inc.
+ * Copyright © 2022 Brilliant Labs Ltd.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -86,7 +86,7 @@ typedef struct
     arg_t arg;
 } obj_t;
 
-obj_t obj_list[50];
+obj_t obj_list[512];
 size_t obj_num;
 
 static uint8_t const *font = font_50;
@@ -109,7 +109,7 @@ STATIC mp_obj_t display_brightness(mp_obj_t brightness)
 
     uint8_t level = tab[mp_obj_get_int(brightness)];
     uint8_t command[2] = {0x05, 0xC8 | level};
-    spi_write(DISPLAY, command, 2, false);
+    monocle_spi_write(DISPLAY, command, 2, false);
 
     return mp_const_none;
 }
@@ -398,12 +398,12 @@ STATIC void flush_blocks(row_t yuv422, size_t pos, size_t len)
     uint8_t base[sizeof u32] = {u32 >> 24, u32 >> 16, u32 >> 8, u32 >> 0};
 
     uint8_t base_addr_command[2] = {0x44, 0x10};
-    spi_write(FPGA, base_addr_command, 2, true);
-    spi_write(FPGA, base, sizeof(base), false);
+    monocle_spi_write(FPGA, base_addr_command, 2, true);
+    monocle_spi_write(FPGA, base, sizeof(base), false);
 
     // Flush the content of the screen skipping empty bytes.
     uint8_t data_command[2] = {0x44, 0x11};
-    spi_write(FPGA, data_command, 2, true);
+    monocle_spi_write(FPGA, data_command, 2, true);
 
     uint8_t chunks = (uint8_t)ceil((double)len / (double)255);
     for (uint8_t chunk = 0; chunk < chunks; chunk++)
@@ -418,7 +418,7 @@ STATIC void flush_blocks(row_t yuv422, size_t pos, size_t len)
             cs_hold = false;
         }
 
-        spi_write(FPGA, yuv422.buf + pos + (chunk * 255), chunk_size, cs_hold);
+        monocle_spi_write(FPGA, yuv422.buf + pos + (chunk * 255), chunk_size, cs_hold);
     }
 }
 
@@ -484,10 +484,10 @@ STATIC mp_obj_t display_show(void)
 
     // fill the display with YUV422 black pixels
     uint8_t enable_command[2] = {0x44, 0x05};
-    spi_write(FPGA, enable_command, 2, false);
+    monocle_spi_write(FPGA, enable_command, 2, false);
 
     uint8_t clear_command[2] = {0x44, 0x06};
-    spi_write(FPGA, clear_command, 2, false);
+    monocle_spi_write(FPGA, clear_command, 2, false);
     nrfx_systick_delay_ms(30);
 
     // Walk through every line of the display, render it, send it to the FPGA.
@@ -505,7 +505,7 @@ STATIC mp_obj_t display_show(void)
 
     // The framebuffer we wrote to is ready, now we can display it.
     uint8_t buffer_swap_command[2] = {0x44, 0x07};
-    spi_write(FPGA, buffer_swap_command, 2, false);
+    monocle_spi_write(FPGA, buffer_swap_command, 2, false);
 
     // Empty the list of elements to draw.
     memset(obj_list, 0, sizeof obj_list);

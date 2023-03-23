@@ -24,18 +24,12 @@
 
 #pragma once
 
-#include "SEGGER_RTT.h"
+#include "py/obj.h"
 
-#define NRFX_LOG(format, ...) \
-    SEGGER_RTT_printf(0, format "\r\n", ##__VA_ARGS__)
+extern const struct _mp_obj_type_t device_storage_type;
 
-#define NRFX_LOG_ERROR(format, ...)
-#define NRFX_LOG_WARNING(format, ...)
-#define NRFX_LOG_INFO(format, ...)
-#define NRFX_LOG_DEBUG(format, ...)
+void flash_read(uint8_t *buffer, size_t address, size_t length);
 
-#define NRFX_LOG_HEXDUMP_ERROR(p_memory, length)
-#define NRFX_LOG_HEXDUMP_WARNING(p_memory, length)
-#define NRFX_LOG_HEXDUMP_INFO(p_memory, length)
-#define NRFX_LOG_HEXDUMP_DEBUG(p_memory, length)
-#define NRFX_LOG_ERROR_STRING_GET(error_code)
+void flash_write(uint8_t *buffer, size_t address, size_t length);
+
+void flash_page_erase(size_t address);

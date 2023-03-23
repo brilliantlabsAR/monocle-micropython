@@ -3,11 +3,11 @@
  *      https://github.com/brilliantlabsAR/monocle-micropython
  *
  * Authored by: Josuah Demangeon (me@josuah.net)
- *              Raj Nakarja / Brilliant Labs Inc (raj@itsbrilliant.co)
+ *              Raj Nakarja / Brilliant Labs Ltd. (raj@itsbrilliant.co)
  *
  * ISC Licence
  *
- * Copyright © 2023 Brilliant Labs Inc.
+ * Copyright © 2023 Brilliant Labs Ltd.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -25,9 +25,11 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "monocle.h"
 #include "bluetooth.h"
+#include "update.h"
 #include "touch.h"
 #include "config-tables.h"
 
@@ -278,7 +280,7 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
     (void)pin;
     (void)polarity;
 
-    i2c_response_t interrupt = i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
+    i2c_response_t interrupt = monocle_i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
     app_err(interrupt.fail);
 
     if (interrupt.value & 0x10)
@@ -294,7 +296,7 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
 
 touch_action_t touch_get_state(void)
 {
-    i2c_response_t interrupt = i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
+    i2c_response_t interrupt = monocle_i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
     app_err(interrupt.fail);
 
     if ((interrupt.value & 0x30) == 0x30)
@@ -518,7 +520,7 @@ void SD_EVT_IRQHandler(void)
 
         default:
         {
-            NRFX_LOG_ERROR("Unhandled BLE event: %u", ble_evt->header.evt_id);
+            NRFX_LOG("Unhandled BLE event: %u", ble_evt->header.evt_id);
             break;
         }
         }
@@ -527,43 +529,69 @@ void SD_EVT_IRQHandler(void)
 
 int main(void)
 {
-    NRFX_LOG_ERROR(RTT_CTRL_CLEAR
-                   "\rMicroPython on Monocle - " BUILD_VERSION
-                   " (" MICROPY_GIT_HASH ").");
+    NRFX_LOG(RTT_CTRL_CLEAR
+             "\rMicroPython on Monocle - " BUILD_VERSION
+             " (" MICROPY_GIT_HASH ")");
 
     // Set up the PMIC and go to sleep if on charge
     monocle_critical_startup();
 
-    // Check if external flash has an FPGA image and boot it
+    // Start the FPGA
     {
-        uint8_t wakeup_device_id[] = {bit_reverse(0xAB), 0, 0, 0};
-        spi_write(FLASH, wakeup_device_id, 4, true);
-        spi_read(FLASH, wakeup_device_id, 1);
-        app_err(bit_reverse(wakeup_device_id[0]) != 0x13);
+        // Check flash for a valid FPGA image and set the FPGA MODE1 pin
+        if (fpga_app_exists())
+        {
+            NRFX_LOG("Booting FPGA from SPI flash");
+            nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
+        }
+        else
+        {
+            NRFX_LOG("Booting FPGA from internal flash");
+            nrf_gpio_pin_write(FPGA_CS_MODE_PIN, false);
+        }
 
-        // TODO check flash for FPGA image
+        // Boot
+        monocle_spi_enable(false);
+        nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
+        nrfx_systick_delay_ms(200); // Should boot within 142ms @ 25MHz
+        monocle_spi_enable(true);
 
-        // Otherwise boot from the internal image of the FPGA
-        nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, false);
+        // Release the mode pin so it can be used as chip select
+        nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
 
-        // FPGA should be ready by now. It needs 23ms after the rails go up
-        // Start configuration by bringing high the RECONFIG_N pin
-        nrfx_systick_delay_ms(23); // Wait for READY flag in the FPGA. Max 23ms
-        nrf_gpio_pin_write(FPGA_RESET_PIN, true);
-        nrfx_systick_delay_ms(1); // 1ms to read MODE1 pin
+        // Check the FPGA booted correctly by reading the device ID
+        uint8_t device_id_command[2] = {0x00, 0x01};
+        uint8_t device_id_response[1];
+        monocle_spi_write(FPGA, device_id_command, 2, true);
+        monocle_spi_read(FPGA, device_id_response, sizeof(device_id_response),
+                         false);
 
-        // Set the mode pin high once sampled so it can be used as chip select
-        nrf_gpio_pin_write(FPGA_CS_INT_MODE_PIN, true);
+        if (device_id_response[0] != 0x4B)
+        {
+            NRFX_LOG("FPGA didn't boot");
+
+            // If failure, turn off and hold the FPGA in reset
+            monocle_fpga_power(false);
+            nrf_gpio_pin_write(FPGA_RESET_INT_PIN, false);
+            nrfx_systick_delay_ms(25);
+
+            // Turn rails back on so we can use the flash again
+            monocle_fpga_power(true);
+            nrfx_systick_delay_ms(25);
+
+            // Wake up the flash
+            uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
+            monocle_spi_write(FLASH, wakeup_device_id, 4, false);
+
+            // TODO append health register
+        }
     }
 
     // Setup the camera
     {
-        // TODO why is this delay needed?
-        nrfx_systick_delay_ms(500);
-
         // Start the camera clock
         uint8_t command[2] = {0x10, 0x09};
-        spi_write(FPGA, command, 2, false);
+        monocle_spi_write(FPGA, command, 2, false);
 
         // Reset sequence taken from Datasheet figure 2-3
         nrf_gpio_pin_write(CAMERA_RESET_PIN, false);
@@ -575,16 +603,16 @@ int main(void)
         nrfx_systick_delay_ms(20); // t4
 
         // Read the camera CID (one of them)
-        i2c_response_t resp = i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
+        i2c_response_t resp = monocle_i2c_read(CAMERA_I2C_ADDRESS, 0x300A, 0xFF);
         if (resp.fail || resp.value != 0x56)
         {
             // TODO add entry in health monitor if camera didn't initialise
-            NRFX_LOG_ERROR("Error: Camera not found.");
+            NRFX_LOG("Camera not detected");
             monocle_set_led(RED_LED, true);
         }
 
         // Software reset
-        i2c_write(CAMERA_I2C_ADDRESS, 0x3008, 0xFF, 0x82);
+        monocle_i2c_write(CAMERA_I2C_ADDRESS, 0x3008, 0xFF, 0x82);
         nrfx_systick_delay_ms(5);
 
         // Send the default configuration
@@ -592,10 +620,10 @@ int main(void)
              i < sizeof(camera_config) / sizeof(camera_config_t);
              i++)
         {
-            i2c_write(CAMERA_I2C_ADDRESS,
-                      camera_config[i].address,
-                      0xFF,
-                      camera_config[i].value);
+            monocle_i2c_write(CAMERA_I2C_ADDRESS,
+                              camera_config[i].address,
+                              0xFF,
+                              camera_config[i].value);
         }
 
         // Put the camera to sleep
@@ -613,7 +641,7 @@ int main(void)
         {
             uint8_t command[2] = {display_config[i].address,
                                   display_config[i].value};
-            spi_write(DISPLAY, command, 2, false);
+            monocle_spi_write(DISPLAY, command, 2, false);
         }
     }
 
@@ -718,8 +746,8 @@ int main(void)
         // Start the Softdevice
         app_err(sd_ble_enable(&ram_start));
 
-        NRFX_LOG_ERROR("Softdevice using 0x%x bytes of RAM",
-                       ram_start - 0x20000000);
+        NRFX_LOG("Softdevice using 0x%x bytes of RAM",
+                 ram_start - 0x20000000);
 
         // Set security to open // TODO make this paired
         ble_gap_conn_sec_mode_t sec_mode;
@@ -891,6 +919,12 @@ int main(void)
     gc_init(&_heap_start, &_heap_end);
     mp_init();
     readline_init0();
+
+    // Mount the filesystem, or format if needed
+    pyexec_frozen_module("_mountfs.py");
+
+    // Run the user's main file if it exists
+    pyexec_file_if_exists("main.py");
 
     // Stay in the friendly or raw REPL until a reset is called
     for (;;)

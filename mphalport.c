@@ -3,11 +3,11 @@
  *      https://github.com/brilliantlabsAR/monocle-micropython
  *
  * Authored by: Josuah Demangeon (me@josuah.net)
- *              Raj Nakarja / Brilliant Labs Inc (raj@itsbrilliant.co)
+ *              Raj Nakarja / Brilliant Labs Ltd. (raj@itsbrilliant.co)
  *
  * ISC Licence
  *
- * Copyright © 2023 Brilliant Labs Inc.
+ * Copyright © 2023 Brilliant Labs Ltd.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -44,6 +44,11 @@ const char help_text[] = {
 
 static nrfx_rtc_t rtc = NRFX_RTC_INSTANCE(1);
 
+uint64_t mp_hal_time_ns(void)
+{
+    return 0;
+}
+
 mp_uint_t mp_hal_ticks_ms(void)
 {
     uint32_t value = nrfx_rtc_counter_get(&rtc);
@@ -68,25 +73,6 @@ void mp_hal_delay_ms(mp_uint_t ms)
     {
         MICROPY_EVENT_POLL_HOOK;
     }
-}
-
-mp_obj_t mp_builtin_open(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs)
-{
-    // File opening is currently not supported
-    mp_raise_OSError(MP_EPERM);
-}
-MP_DEFINE_CONST_FUN_OBJ_KW(mp_builtin_open_obj, 1, mp_builtin_open);
-
-mp_lexer_t *mp_lexer_new_from_file(const char *filename)
-{
-    // File opening is currently not supported
-    mp_raise_OSError(MP_ENOENT);
-}
-
-mp_import_stat_t mp_import_stat(const char *path)
-{
-    // File opening is currently not supported
-    return MP_IMPORT_STAT_NO_EXIST;
 }
 
 int mp_hal_generate_random_seed(void)

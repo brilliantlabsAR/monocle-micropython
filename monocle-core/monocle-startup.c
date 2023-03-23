@@ -3,11 +3,11 @@
  *      https://github.com/brilliantlabsAR/monocle-micropython
  *
  * Authored by: Josuah Demangeon (me@josuah.net)
- *              Raj Nakarja / Brilliant Labs Inc (raj@itsbrilliant.co)
+ *              Raj Nakarja / Brilliant Labs Ltd. (raj@itsbrilliant.co)
  *
  * ISC Licence
  *
- * Copyright © 2023 Brilliant Labs Inc.
+ * Copyright © 2023 Brilliant Labs Ltd.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -180,3 +180,27 @@ const func __Vectors[] __attribute__((section(".isr_vector"), used)) = {
     I2S_IRQHandler,
     FPU_IRQHandler,
 };
+
+/**
+ * @brief These stub functions are unimplemented as this is an embedded device.
+ */
+
+__attribute__((weak)) int _close(int fd)
+{
+    return -1;
+}
+
+__attribute__((weak)) int _lseek(int fd, long long offset, int whence)
+{
+    return -1;
+}
+
+__attribute__((weak)) int _read(int file, char *ptr, int len)
+{
+    return 0;
+}
+
+__attribute__((weak)) int _write(int file, char *ptr, int len)
+{
+    return -1;
+}
