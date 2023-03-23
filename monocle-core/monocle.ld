@@ -21,13 +21,18 @@
  * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
- 
-/* This must be updated whenever the bootloader size changes */
-bl_flash_end = 0;
-bl_flash_settings_page_size = 0;
+
+/* The nRF52 memory layout is described here
+ * https://infocenter.nordicsemi.com/topic/sdk_nrf5_v17.1.0/lib_bootloader.html#lib_bootloader_memory
+ */
 
 /* These must be updated whenever the softdevice is upgraded */
-sd_flash_end = bl_flash_end + 0x26000;
+sd_flash_end = 0x26000;
+sd_flash_size = sd_flash_end; /* Softdevice sits at the start of the flash */
+
+/* This must be updated whenever the bootloader size changes */
+bl_flash_start = 0x78000;
+bl_flash_size = 512K - bl_flash_start; /* Bootloader is at the end of the flash */
 
 /* This must be updated whenever softdevice settings are changed */
 sd_ram_end = 0x2640;
@@ -36,7 +41,7 @@ ENTRY(Reset_Handler)
 
 MEMORY
 {
-    FLASH (rx) : ORIGIN = sd_flash_end, LENGTH = 512K - sd_flash_end - bl_flash_settings_page_size
+    FLASH (rx) : ORIGIN = sd_flash_end, LENGTH = 512K - sd_flash_size - bl_flash_size
     RAM (rwx) :  ORIGIN = 0x20000000 + sd_ram_end, LENGTH = 64K - sd_ram_end
 }
 
