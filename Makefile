@@ -37,8 +37,8 @@ include micropython/py/py.mk
 # Define the toolchain prefix for ARM GCC
 CROSS_COMPILE = arm-none-eabi-
 
-# Use date and time as build version "vYY.DDD.HHMM"
-BUILD_VERSION = $(shell TZ= date +v%y.%j.%H%M)
+# Use date and time as build version "vYY.DDD.HHMM". := forces evaluation once
+BUILD_VERSION := $(shell TZ= date +v%y.%j.%H%M)
 
 # Warning options
 WARN = -Wall -Werror -Wdouble-promotion -Wfloat-conversion
