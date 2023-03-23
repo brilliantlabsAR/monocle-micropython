@@ -236,7 +236,7 @@ STATIC mp_obj_t time_mktime(mp_obj_t dict)
     mon = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_month)));
     mday = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_day)));
     hour = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_hour)));
-    min = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_minute) + 1));
+    min = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_minute)));
     sec = mp_obj_get_int(mp_obj_dict_get(dict, MP_ROM_QSTR(MP_QSTR_second)));
 
     return mp_obj_new_int(timeutils_mktime(year, mon, mday, hour, min, sec));
