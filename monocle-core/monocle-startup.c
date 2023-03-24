@@ -37,12 +37,6 @@ extern void SystemInit(void);
 
 void Default_Handler(void)
 {
-    // Trigger a breakpoint when debugging
-    if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk)
-    {
-        __BKPT();
-    }
-
     app_err(0xDEADBEEF);
 }
 
