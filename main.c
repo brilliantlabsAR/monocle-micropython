@@ -91,7 +91,7 @@ static struct advertising_data_t
     .payload = {0},
 };
 
-#define BLE_PREFERRED_MAX_MTU 128
+#define BLE_PREFERRED_MAX_MTU 256
 uint16_t ble_negotiated_mtu;
 
 static struct ble_ring_buffer_t
@@ -722,10 +722,10 @@ int main(void)
         cfg.conn_cfg.params.gatt_conn_cfg.att_mtu = BLE_PREFERRED_MAX_MTU;
         app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATT, &cfg, ram_start));
 
-        // Configure a single queued transfer
+        // Configure two queued transfers
         memset(&cfg, 0, sizeof(cfg));
         cfg.conn_cfg.conn_cfg_tag = 1;
-        cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 1;
+        cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 2;
         app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &cfg, ram_start));
 
         // Configure number of custom UUIDs
@@ -735,7 +735,7 @@ int main(void)
 
         // Configure GATTS attribute table
         memset(&cfg, 0, sizeof(cfg));
-        cfg.gatts_cfg.attr_tab_size.attr_tab_size = 1408;
+        cfg.gatts_cfg.attr_tab_size.attr_tab_size = 365 * 4; // multiples of 4
         app_err(sd_ble_cfg_set(BLE_GATTS_CFG_ATTR_TAB_SIZE, &cfg, ram_start));
 
         // No service changed attribute needed
@@ -746,8 +746,7 @@ int main(void)
         // Start the Softdevice
         app_err(sd_ble_enable(&ram_start));
 
-        NRFX_LOG("Softdevice using 0x%x bytes of RAM",
-                 ram_start - 0x20000000);
+        NRFX_LOG("Softdevice using 0x%x bytes of RAM", ram_start - 0x20000000);
 
         // Set security to open // TODO make this paired
         ble_gap_conn_sec_mode_t sec_mode;
