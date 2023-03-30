@@ -185,6 +185,9 @@ SRC_C += nrfx/drivers/src/prs/nrfx_prs.c
 SRC_C += nrfx/helpers/nrfx_flag32_allocator.c
 SRC_C += nrfx/mdk/system_nrf52.c
 
+SRC_C += vgrs/src/modvgr2d.c
+SRC_C += vgrs/src/vgr2dlib.c
+
 SRC_QSTR += $(SRC_C)
 
 OBJ += $(PY_O)
