@@ -79,3 +79,13 @@ int mp_hal_generate_random_seed(void)
 {
     return 0;
 }
+
+void fpga_write_internal(uint8_t *buf, unsigned int len, bool hold)
+{
+    monocle_spi_write(FPGA, buf, len, hold);
+}
+
+uint8_t fpga_graphics_dev(void)
+{
+    return 0x44;
+}
