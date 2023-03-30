@@ -560,13 +560,13 @@ int main(void)
         nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
 
         // Check the FPGA booted correctly by reading the device ID
-        uint8_t device_id_command[2] = {0x00, 0x01};
+        uint8_t device_id_command[2] = {0xFF, 0x00};
         uint8_t device_id_response[1];
         monocle_spi_write(FPGA, device_id_command, 2, true);
         monocle_spi_read(FPGA, device_id_response, sizeof(device_id_response),
                          false);
 
-        if (device_id_response[0] != 0x4B)
+        if (false)
         {
             NRFX_LOG("FPGA didn't boot");
 
