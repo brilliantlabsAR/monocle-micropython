@@ -5,3 +5,6 @@
 
 # Ignore build output
 build
+
+# Ignore direnv cache
+/.direnv
