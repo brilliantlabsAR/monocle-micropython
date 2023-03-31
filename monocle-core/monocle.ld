@@ -26,6 +26,10 @@
  * https://infocenter.nordicsemi.com/topic/sdk_nrf5_v17.1.0/lib_bootloader.html#lib_bootloader_memory
  */
 
+/* 
+ * NOTE: Whenever changing things here. Remember to clean and rebuild
+ */
+
 /* These must be updated whenever the softdevice is upgraded */
 sd_flash_end = 0x26000;
 sd_flash_size = sd_flash_end; /* Softdevice sits at the start of the flash */
@@ -35,7 +39,7 @@ bl_flash_start = 0x78000;
 bl_flash_size = 512K - bl_flash_start; /* Bootloader is at the end of the flash */
 
 /* This must be updated whenever softdevice settings are changed */
-sd_ram_end = 0x2640;
+sd_ram_end = 0x2A60;
 
 ENTRY(Reset_Handler)
 
