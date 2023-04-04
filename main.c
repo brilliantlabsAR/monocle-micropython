@@ -25,11 +25,9 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <string.h>
 
 #include "monocle.h"
 #include "bluetooth.h"
-#include "update.h"
 #include "touch.h"
 #include "config-tables.h"
 
@@ -537,55 +535,7 @@ int main(void)
     monocle_critical_startup();
 
     // Start the FPGA
-    {
-        // Check flash for a valid FPGA image and set the FPGA MODE1 pin
-        if (fpga_app_exists())
-        {
-            NRFX_LOG("Booting FPGA from SPI flash");
-            nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
-        }
-        else
-        {
-            NRFX_LOG("Booting FPGA from internal flash");
-            nrf_gpio_pin_write(FPGA_CS_MODE_PIN, false);
-        }
-
-        // Boot
-        monocle_spi_enable(false);
-        nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
-        nrfx_systick_delay_ms(200); // Should boot within 142ms @ 25MHz
-        monocle_spi_enable(true);
-
-        // Release the mode pin so it can be used as chip select
-        nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
-
-        // Check the FPGA booted correctly by reading the device ID
-        uint8_t device_id_command[2] = {0x00, 0x01};
-        uint8_t device_id_response[1];
-        monocle_spi_write(FPGA, device_id_command, 2, true);
-        monocle_spi_read(FPGA, device_id_response, sizeof(device_id_response),
-                         false);
-
-        if (device_id_response[0] != 0x4B)
-        {
-            NRFX_LOG("FPGA didn't boot");
-
-            // If failure, turn off and hold the FPGA in reset
-            monocle_fpga_power(false);
-            nrf_gpio_pin_write(FPGA_RESET_INT_PIN, false);
-            nrfx_systick_delay_ms(25);
-
-            // Turn rails back on so we can use the flash again
-            monocle_fpga_power(true);
-            nrfx_systick_delay_ms(25);
-
-            // Wake up the flash
-            uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
-            monocle_spi_write(FLASH, wakeup_device_id, 4, false);
-
-            // TODO append health register
-        }
-    }
+    monocle_fpga_reset(true);
 
     // Setup the camera
     {

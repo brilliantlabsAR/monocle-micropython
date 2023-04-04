@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <math.h>
 #include "monocle.h"
-#include "storage.h"
 #include "genhdr/mpversion.h"
 #include "py/objstr.h"
 #include "py/runtime.h"
@@ -147,6 +146,8 @@ STATIC mp_obj_t device_force_sleep(void)
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_force_sleep_obj, device_force_sleep);
+
+extern const struct _mp_obj_type_t device_storage_type;
 
 STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
 

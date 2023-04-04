@@ -23,7 +23,6 @@
  */
 
 #include "monocle.h"
-#include "storage.h"
 #include "py/runtime.h"
 
 STATIC mp_obj_t update_nrf52(void)
@@ -48,7 +47,7 @@ STATIC mp_obj_t update_fpga_app_read(mp_obj_t address, mp_obj_t length)
 
     uint8_t buffer[mp_obj_get_int(length)];
 
-    flash_read(buffer, mp_obj_get_int(address), mp_obj_get_int(length));
+    monocle_flash_read(buffer, mp_obj_get_int(address), mp_obj_get_int(length));
 
     return mp_obj_new_bytes(buffer, mp_obj_get_int(length));
 }
@@ -65,7 +64,7 @@ STATIC mp_obj_t update_fpga_app_write(mp_obj_t bytes)
             MP_ERROR_TEXT("data will overflow the space reserved for the app"));
     }
 
-    flash_write((uint8_t *)data, fpga_app_programmed_bytes, length);
+    monocle_flash_write((uint8_t *)data, fpga_app_programmed_bytes, length);
 
     fpga_app_programmed_bytes += length;
 
@@ -77,7 +76,7 @@ STATIC mp_obj_t update_fpga_app_delete(void)
 {
     for (size_t i = 0; i < 0x6D; i++)
     {
-        flash_page_erase(i * 0x1000);
+        monocle_flash_page_erase(i * 0x1000);
     }
 
     fpga_app_programmed_bytes = 0;
@@ -85,25 +84,6 @@ STATIC mp_obj_t update_fpga_app_delete(void)
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(update_erase_fpga_app_obj, update_fpga_app_delete);
-
-bool fpga_app_exists(void)
-{
-    // Wakeup the flash
-    uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
-    monocle_spi_write(FLASH, wakeup_device_id, 4, true);
-    monocle_spi_read(FLASH, wakeup_device_id, 1, false);
-    app_err(wakeup_device_id[0] != 0x13 && not_real_hardware_flag == false);
-
-    uint8_t magic_word[4] = "";
-    flash_read(magic_word, 0x6C80E, sizeof(magic_word));
-
-    if (memcmp(magic_word, "done", sizeof(magic_word)) == 0)
-    {
-        return true;
-    }
-
-    return false;
-}
 
 STATIC const mp_rom_map_elem_t update_module_globals_table[] = {
 

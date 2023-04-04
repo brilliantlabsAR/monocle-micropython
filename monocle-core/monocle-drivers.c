@@ -329,3 +329,115 @@ void monocle_spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
         nrf_gpio_pin_set(cs_pin);
     }
 }
+
+static bool flash_is_busy(void)
+{
+    uint8_t status_cmd[] = {0x05};
+    monocle_spi_write(FLASH, status_cmd, sizeof(status_cmd), true);
+    monocle_spi_read(FLASH, status_cmd, sizeof(status_cmd), false);
+
+    if ((status_cmd[0] & 0x01) == 0)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void monocle_flash_read(uint8_t *buffer, size_t address, size_t length)
+{
+    if (address + length > 0x100000)
+    {
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("address + length cannot exceed 1048576 bytes"));
+    }
+
+    while (flash_is_busy())
+    {
+        mp_hal_delay_ms(1);
+    }
+
+    uint8_t read_cmd[] = {0x03,
+                          address >> 16,
+                          address >> 8,
+                          address};
+    monocle_spi_write(FLASH, read_cmd, sizeof(read_cmd), true);
+
+    size_t bytes_read = 0;
+    while (bytes_read < length)
+    {
+        // nRF DMA can only handle 255 bytes at a time
+        size_t max_readable_length = MIN(length - bytes_read, 255);
+
+        // If we're going to need another transfer, keep cs held
+        bool hold = length - bytes_read > 255;
+
+        monocle_spi_read(FLASH, buffer + bytes_read, max_readable_length, hold);
+
+        bytes_read += max_readable_length;
+    }
+}
+
+void monocle_flash_write(uint8_t *buffer, size_t address, size_t length)
+{
+    if (address + length > 0x100000)
+    {
+        mp_raise_ValueError(
+            MP_ERROR_TEXT("address + length cannot exceed 1048576 bytes"));
+    }
+
+    size_t bytes_written = 0;
+    while (bytes_written < length)
+    {
+        size_t address_offset = address + bytes_written;
+
+        size_t bytes_left_in_page = 256 - (address_offset % 256);
+        size_t bytes_left_to_write = length - bytes_written;
+
+        size_t max_writable_length = MIN(bytes_left_in_page,
+                                         bytes_left_to_write);
+
+        // nRF DMA can only handle 255 bytes at a time
+        max_writable_length = MIN(max_writable_length, 255);
+
+        while (flash_is_busy())
+        {
+            mp_hal_delay_ms(1);
+        }
+
+        uint8_t write_enable_cmd[] = {0x06};
+        monocle_spi_write(FLASH, write_enable_cmd, sizeof(write_enable_cmd), false);
+
+        uint8_t page_program_cmd[] = {0x02,
+                                      address_offset >> 16,
+                                      address_offset >> 8,
+                                      address_offset};
+        monocle_spi_write(FLASH, page_program_cmd, sizeof(page_program_cmd), true);
+        monocle_spi_write(FLASH, buffer + bytes_written, max_writable_length, false);
+
+        bytes_written += max_writable_length;
+    }
+}
+
+void monocle_flash_page_erase(size_t address)
+{
+    if (address % 0x1000)
+    {
+        mp_raise_ValueError(MP_ERROR_TEXT(
+            "address must be aligned to a page size of 4096 bytes"));
+    }
+
+    while (flash_is_busy())
+    {
+        mp_hal_delay_ms(1);
+    }
+
+    uint8_t write_enable_cmd[] = {0x06};
+    monocle_spi_write(FLASH, write_enable_cmd, sizeof(write_enable_cmd), false);
+
+    uint8_t sector_erase[] = {0x20,
+                              address >> 16,
+                              address >> 8,
+                              address};
+    monocle_spi_write(FLASH, sector_erase, sizeof(sector_erase), false);
+}
