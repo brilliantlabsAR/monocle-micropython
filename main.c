@@ -41,6 +41,7 @@
 #include "py/repl.h"
 #include "py/runtime.h"
 #include "py/stackctrl.h"
+#include "py/stream.h"
 #include "shared/readline/readline.h"
 #include "shared/runtime/interrupt_char.h"
 #include "shared/runtime/pyexec.h"
@@ -270,6 +271,11 @@ int mp_hal_stdin_rx_chr(void)
     repl_rx.tail = next;
 
     return character;
+}
+
+uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags)
+{
+    return (repl_rx.head == repl_rx.tail) ? poll_flags & MP_STREAM_POLL_RD : 0;
 }
 
 static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
