@@ -76,10 +76,10 @@ void monocle_critical_startup(void);
 void monocle_enter_bootloader(void);
 
 /**
- * @brief Power/reset control for the FPGA.
+ * @brief Resets the FPGA, and either holds it in reset, or reboots.
  */
 
-void monocle_fpga_power(bool enable);
+void monocle_fpga_reset(bool reboot);
 
 /**
  * @brief Dev board mode flag. i.e. no PMIC, FPGA, display detected etc.
@@ -100,7 +100,7 @@ extern bool prevent_sleep_flag;
 extern bool force_sleep_flag;
 
 /**
- * @brief I2C driver for accessing PMIC, camera and touch ICs.
+ * @brief Low level I2C driver for accessing PMIC, camera and touch ICs.
  */
 
 #define PMIC_I2C_ADDRESS 0x48
@@ -123,7 +123,7 @@ i2c_response_t monocle_i2c_write(uint8_t device_address_7bit,
                                  uint8_t set_value);
 
 /**
- * @brief SPI driver for accessing FPGA, display and flash.
+ * @brief Low level SPI driver for accessing FPGA, display and flash.
  */
 
 typedef enum spi_device_t
@@ -140,6 +140,16 @@ void monocle_spi_read(spi_device_t spi_device, uint8_t *data, size_t length,
 
 void monocle_spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
                        bool hold_down_cs);
+
+/**
+ * @brief High level SPI driver for accessing flash.
+ */
+
+void monocle_flash_read(uint8_t *buffer, size_t address, size_t length);
+
+void monocle_flash_write(uint8_t *buffer, size_t address, size_t length);
+
+void monocle_flash_page_erase(size_t address);
 
 /**
  * @brief Error handling macro.

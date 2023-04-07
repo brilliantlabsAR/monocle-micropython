@@ -22,6 +22,14 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-#pragma once
+#include "monocle.h"
 
-bool fpga_app_exists(void);
+uint8_t fpga_graphics_dev()
+{
+    return 0x44;
+}
+
+void fpga_write_internal(uint8_t *buf, unsigned int len, bool hold)
+{
+    monocle_spi_write(FPGA, buf, len, hold);
+}

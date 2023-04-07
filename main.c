@@ -25,11 +25,9 @@
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <string.h>
 
 #include "monocle.h"
 #include "bluetooth.h"
-#include "update.h"
 #include "touch.h"
 #include "config-tables.h"
 
@@ -43,6 +41,7 @@
 #include "py/repl.h"
 #include "py/runtime.h"
 #include "py/stackctrl.h"
+#include "py/stream.h"
 #include "shared/readline/readline.h"
 #include "shared/runtime/interrupt_char.h"
 #include "shared/runtime/pyexec.h"
@@ -91,7 +90,7 @@ static struct advertising_data_t
     .payload = {0},
 };
 
-#define BLE_PREFERRED_MAX_MTU 128
+#define BLE_PREFERRED_MAX_MTU 256
 uint16_t ble_negotiated_mtu;
 
 static struct ble_ring_buffer_t
@@ -272,6 +271,11 @@ int mp_hal_stdin_rx_chr(void)
     repl_rx.tail = next;
 
     return character;
+}
+
+uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags)
+{
+    return (repl_rx.head == repl_rx.tail) ? poll_flags & MP_STREAM_POLL_RD : 0;
 }
 
 static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
@@ -537,55 +541,7 @@ int main(void)
     monocle_critical_startup();
 
     // Start the FPGA
-    {
-        // Check flash for a valid FPGA image and set the FPGA MODE1 pin
-        if (fpga_app_exists())
-        {
-            NRFX_LOG("Booting FPGA from SPI flash");
-            nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
-        }
-        else
-        {
-            NRFX_LOG("Booting FPGA from internal flash");
-            nrf_gpio_pin_write(FPGA_CS_MODE_PIN, false);
-        }
-
-        // Boot
-        monocle_spi_enable(false);
-        nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
-        nrfx_systick_delay_ms(200); // Should boot within 142ms @ 25MHz
-        monocle_spi_enable(true);
-
-        // Release the mode pin so it can be used as chip select
-        nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
-
-        // Check the FPGA booted correctly by reading the device ID
-        uint8_t device_id_command[2] = {0x00, 0x01};
-        uint8_t device_id_response[1];
-        monocle_spi_write(FPGA, device_id_command, 2, true);
-        monocle_spi_read(FPGA, device_id_response, sizeof(device_id_response),
-                         false);
-
-        if (device_id_response[0] != 0x4B)
-        {
-            NRFX_LOG("FPGA didn't boot");
-
-            // If failure, turn off and hold the FPGA in reset
-            monocle_fpga_power(false);
-            nrf_gpio_pin_write(FPGA_RESET_INT_PIN, false);
-            nrfx_systick_delay_ms(25);
-
-            // Turn rails back on so we can use the flash again
-            monocle_fpga_power(true);
-            nrfx_systick_delay_ms(25);
-
-            // Wake up the flash
-            uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
-            monocle_spi_write(FLASH, wakeup_device_id, 4, false);
-
-            // TODO append health register
-        }
-    }
+    monocle_fpga_reset(true);
 
     // Setup the camera
     {
@@ -722,10 +678,10 @@ int main(void)
         cfg.conn_cfg.params.gatt_conn_cfg.att_mtu = BLE_PREFERRED_MAX_MTU;
         app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATT, &cfg, ram_start));
 
-        // Configure a single queued transfer
+        // Configure two queued transfers
         memset(&cfg, 0, sizeof(cfg));
         cfg.conn_cfg.conn_cfg_tag = 1;
-        cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 1;
+        cfg.conn_cfg.params.gatts_conn_cfg.hvn_tx_queue_size = 2;
         app_err(sd_ble_cfg_set(BLE_CONN_CFG_GATTS, &cfg, ram_start));
 
         // Configure number of custom UUIDs
@@ -735,7 +691,7 @@ int main(void)
 
         // Configure GATTS attribute table
         memset(&cfg, 0, sizeof(cfg));
-        cfg.gatts_cfg.attr_tab_size.attr_tab_size = 1408;
+        cfg.gatts_cfg.attr_tab_size.attr_tab_size = 365 * 4; // multiples of 4
         app_err(sd_ble_cfg_set(BLE_GATTS_CFG_ATTR_TAB_SIZE, &cfg, ram_start));
 
         // No service changed attribute needed
@@ -746,8 +702,7 @@ int main(void)
         // Start the Softdevice
         app_err(sd_ble_enable(&ram_start));
 
-        NRFX_LOG("Softdevice using 0x%x bytes of RAM",
-                 ram_start - 0x20000000);
+        NRFX_LOG("Softdevice using 0x%x bytes of RAM", ram_start - 0x20000000);
 
         // Set security to open // TODO make this paired
         ble_gap_conn_sec_mode_t sec_mode;

@@ -22,7 +22,13 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+/**
+ * @warning CHANGING THIS CODE CAN DAMAGE YOUR HARDWARE.
+ *          Read the PMIC datasheet carefully before changing any PMIC settings.
+ */
+
 #include <math.h>
+#include <string.h>
 #include "monocle.h"
 #include "nrf_gpio.h"
 #include "nrf_sdm.h"
@@ -37,16 +43,33 @@ static const nrfx_twim_t i2c_bus_0 = NRFX_TWIM_INSTANCE(0);
 static const nrfx_twim_t i2c_bus_1 = NRFX_TWIM_INSTANCE(1);
 static const nrfx_spim_t spi_bus_2 = NRFX_SPIM_INSTANCE(2);
 
-/**
- * @brief Startup and PMIC initialization.
- *
- * @warning CHANGING THIS CODE CAN DAMAGE YOUR HARDWARE.
- *          Read the PMIC datasheet carefully before changing any PMIC settings.
- */
-
 bool prevent_sleep_flag = false;
 
 bool force_sleep_flag = false;
+
+static void power_all_rails(bool enable)
+{
+    if (enable)
+    {
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x7F, 0x6F).fail); // Turn on 1.2V with 500mA limit
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1F).fail); // Turn on 1.8V on load switch LSW0
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x7F, 0x7F).fail); // Turn on 2.8V with 333mA limit
+        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x0C).fail); // Enable the 10V boost
+        nrfx_systick_delay_ms(10);
+
+        // Wake up the flash
+        uint8_t wakeup_device_id[] = {0xAB, 0, 0, 0};
+        monocle_spi_write(FLASH, wakeup_device_id, 4, false);
+
+        return;
+    }
+
+    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x04).fail); // Turn off 10V on PMIC GPIO2
+    nrfx_systick_delay_ms(200);                                          // Let the 10V decay
+    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x0F, 0x0C).fail); // Turn off 2.8V
+    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch LSW0
+    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x0F, 0x0C).fail); // Turn off 1.2V
+}
 
 static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
                                                 void *p_context)
@@ -74,7 +97,7 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
         app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x3B, 0x1F, 0x0C).fail);
 
         // Turn off all the FPGA, display and camera rails
-        monocle_fpga_power(false);
+        power_all_rails(false);
 
         // Disconnect AMUX
         app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x28, 0x0F, 0x00).fail);
@@ -154,7 +177,7 @@ void monocle_critical_startup(void)
         }
 
         // Turn off the FPGA, flash, display and camera rails
-        monocle_fpga_power(false);
+        power_all_rails(false);
 
         // Set the SBB drive strength
         app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2F, 0x03, 0x01).fail);
@@ -289,17 +312,7 @@ void monocle_critical_startup(void)
         nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
         nrf_gpio_pin_write(FLASH_CS_PIN, true);
     }
-
-    // Power up the FPGA, flash, display and camera rails
-    monocle_fpga_power(true);
-
-    // Wait for rails to stabilize
-    nrfx_systick_delay_ms(10);
 }
-
-/**
- * @brief Bootloader entry function.
- */
 
 void monocle_enter_bootloader(void)
 {
@@ -310,27 +323,47 @@ void monocle_enter_bootloader(void)
     NVIC_SystemReset();
 }
 
-/**
- * @brief Power/reset control for the FPGA.
- */
-
-void monocle_fpga_power(bool enable)
+void monocle_fpga_reset(bool reboot)
 {
     // CAUTION: READ DATASHEET CAREFULLY BEFORE CHANGING THESE
 
-    if (enable)
+    if (!reboot)
     {
-        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x7F, 0x6F).fail); // Turn on 1.2V with 500mA limit
-        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1F).fail); // Turn on 1.8V on load switch LSW0
-        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x7F, 0x7F).fail); // Turn on 2.8V with 333mA limit
-        app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x0C).fail); // Enable the 10V boost
+        power_all_rails(false);
+
+        // Hold reset
+        nrf_gpio_pin_write(FPGA_RESET_INT_PIN, false);
+        nrfx_systick_delay_ms(25);
+
+        power_all_rails(true);
+
         return;
     }
 
-    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x13, 0x2D, 0x04).fail); // Turn off 10V on PMIC GPIO2
-    nrfx_systick_delay_ms(200);                                          // Let the 10V decay
-    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2A, 0x0F, 0x0C).fail); // Turn off 2.8V
-    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x39, 0x1F, 0x1C).fail); // Turn off 1.8V on load switch LSW0
-    app_err(monocle_i2c_write(PMIC_I2C_ADDRESS, 0x2E, 0x0F, 0x0C).fail); // Turn off 1.2V
-    return;
+    power_all_rails(true);
+
+    // Check flash for a valid FPGA image
+    uint8_t magic_word[4] = "";
+    monocle_flash_read(magic_word, 0x6C80E, sizeof(magic_word));
+
+    // Set the FPGA MODE1 pin accordingly
+    if (memcmp(magic_word, "done", sizeof(magic_word)) == 0)
+    {
+        NRFX_LOG("Booting FPGA from SPI flash");
+        nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
+    }
+    else
+    {
+        NRFX_LOG("Booting FPGA from internal flash");
+        nrf_gpio_pin_write(FPGA_CS_MODE_PIN, false);
+    }
+
+    // Boot
+    monocle_spi_enable(false);
+    nrf_gpio_pin_write(FPGA_RESET_INT_PIN, true);
+    nrfx_systick_delay_ms(200); // Should boot within 142ms @ 25MHz
+    monocle_spi_enable(true);
+
+    // Release the mode pin so it can be used as chip select
+    nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
 }

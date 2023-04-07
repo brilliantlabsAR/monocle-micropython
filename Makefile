@@ -80,6 +80,7 @@ INC += -Imicropython
 INC += -Imicropython/lib/cmsis/inc
 INC += -Imicropython/shared/readline
 INC += -Imodules
+INC += -Imodules/libvgrs/src
 INC += -Imonocle-core
 INC += -Inrfx
 INC += -Inrfx/drivers
@@ -127,6 +128,9 @@ SRC_C += modules/storage.c
 SRC_C += modules/time.c
 SRC_C += modules/touch.c
 SRC_C += modules/update.c
+SRC_C += modules/libvgrs/src/modvgr2d.c
+SRC_C += modules/libvgrs/src/vgr2dlib.c
+SRC_C += modules/modvgr2d-glue.c
 
 SRC_C += segger/SEGGER_RTT_printf.c
 SRC_C += segger/SEGGER_RTT_Syscalls_GCC.c
