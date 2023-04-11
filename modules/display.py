@@ -69,6 +69,7 @@ class Text:
     def move(self, x, y):
         self.x = x
         self.y = y
+        return self
 
 def show_text(list):
     for text in list:
@@ -79,7 +80,7 @@ def show_text(list):
         header[2] = text.y & 0xFF
         header[3] = text.color
         header[4] = len(text)
-        fpga.write(0x__03, header + text)
+        fpga.write(0x4503, header + text)
 
 def show(list):
     # 0 is the address of the frame in the framebuffer in use.
