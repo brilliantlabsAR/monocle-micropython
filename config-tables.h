@@ -32,7 +32,7 @@ typedef struct display_config_t
 } display_config_t;
 
 const display_config_t display_config[] = {
-    {0x00, 0x9E},
+    {0x00, 0x92},
     {0x01, 0x20},
     {0x02, 0x00},
     {0x03, 0x20},
@@ -160,7 +160,7 @@ const display_config_t display_config[] = {
     {0x7D, 0x00},
     {0x7E, 0x00},
     {0x7F, 0x00},
-    {0x00, 0x9F},
+    {0x00, 0x93},
 };
 
 typedef struct camera_config_t
