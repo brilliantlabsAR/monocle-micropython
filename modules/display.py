@@ -42,52 +42,52 @@ GRAY7   = 14
 GRAY8   = 15
 
 class Line(vgr2d.Line):
-    type = "vgr2d"
-    move = vgr2d.Line.position
+  type = "vgr2d"
+  move = vgr2d.Line.position
 
 class Rect(vgr2d.Rect):
-    type = "vgr2d"
-    move = vgr2d.Rect.position
+  type = "vgr2d"
+  move = vgr2d.Rect.position
 
 class Polyline(vgr2d.Polyline):
-    type = "vgr2d"
-    move = vgr2d.Polyline.position
+  type = "vgr2d"
+  move = vgr2d.Polyline.position
 
 class Polygon(vgr2d.Polygon):
-    type = "vgr2d"
-    move = vgr2d.Polygon.position
+  type = "vgr2d"
+  move = vgr2d.Polygon.position
 
 class Text:
-    type = "text"
+  type = "text"
 
-    def __init__(self, str, color):
-        self.x = 0
-        self.y = 0
-        self.str = str
-        self.color = color
+  def __init__(self, str, color):
+    self.x = 0
+    self.y = 0
+    self.str = str
+    self.color = color
 
-    def move(self, x, y):
-        self.x = x
-        self.y = y
-        return self
+  def move(self, x, y):
+    self.x = x
+    self.y = y
+    return self
 
 def show_text(list):
-    for text in list:
-        assert len(text) <= 0xFF
-        header = bytearray(5 + len(text))
-        header[0] = (text.x >> 4) & 0xFF
-        header[1] = ((text.x << 4) & 0xF0) | ((text.y >> 8) & 0x0F)
-        header[2] = text.y & 0xFF
-        header[3] = text.color
-        header[4] = len(text)
-        fpga.write(0x4503, header + text)
+  for text in list:
+    assert len(text) <= 0xFF
+    header = bytearray(5 + len(text))
+    header[0] = (text.x >> 4) & 0xFF
+    header[1] = ((text.x << 4) & 0xF0) | ((text.y >> 8) & 0x0F)
+    header[2] = text.y & 0xFF
+    header[3] = text.color
+    header[4] = len(text)
+    fpga.write(0x4503, header + text)
 
 def show(list):
-    # 0 is the address of the frame in the framebuffer in use.
-    # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
-    # Offset: active display offset in buffer used if double buffering
-    vgr2d.display2d(0, [x for x in list if x.type == "vgr2d"])
+  # 0 is the address of the frame in the framebuffer in use.
+  # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
+  # Offset: active display offset in buffer used if double buffering
+  vgr2d.display2d(0, [x for x in list if x.type == "vgr2d"])
 
-    # Text has no wrapper, we implement it locally.
-    # See https://streamlogic.io/docs/reify/nodes/#fbtext
-    show_text([x for x in list if x.type == "text"])
+  # Text has no wrapper, we implement it locally.
+  # See https://streamlogic.io/docs/reify/nodes/#fbtext
+  show_text([x for x in list if x.type == "text"])
