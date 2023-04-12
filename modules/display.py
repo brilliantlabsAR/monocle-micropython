@@ -23,6 +23,10 @@
 #
 
 import vgr2d
+import fpga
+
+WIDTH   = 640
+HEIGHT  = 400
 
 BLACK   = 0
 RED     = 1
@@ -41,53 +45,129 @@ GRAY6   = 13
 GRAY7   = 14
 GRAY8   = 15
 
-class Line(vgr2d.Line):
-  type = "vgr2d"
-  move = vgr2d.Line.position
+class DisplayElem:
+  def __init__(self):
+    self.position = (0, 0)
 
-class Rect(vgr2d.Rect):
-  type = "vgr2d"
-  move = vgr2d.Rect.position
+  def __repr__(self):
+    return f"{self.__class__.__name__}@({self.position})"
 
-class Polyline(vgr2d.Polyline):
-  type = "vgr2d"
-  move = vgr2d.Polyline.position
+  def move(self, x, y):
+    self.position = (int(x), int(y))
+    return self
 
-class Polygon(vgr2d.Polygon):
+class Line(DisplayElem):
   type = "vgr2d"
-  move = vgr2d.Polygon.position
 
-class Text:
+  def __init__(self, x1, y1, x2, y2, width=1, color=WHITE):
+    super().__init__()
+    self.x1 = x1
+    self.y1 = y1
+    self.x2 = x2
+    self.y2 = y2
+    self.width = width
+    self.color = color
+
+  def vgr2d(self):
+    v = vgr2d.Line(self.x1, self.y1, self.x2, self.y2, self.color, self.width)
+    return v.position(*self.position)
+
+class Rect(DisplayElem):
+  type = "vgr2d"
+
+  def __init__(self, width, height, color=WHITE):
+    super().__init__()
+    self.width = width
+    self.height = height
+    self.position = (0, 0)
+    self.color = color
+
+  def vgr2d(self):
+    v = vgr2d.Rect(self.width, self.height, self.color)
+    return v.position(*self.position)
+
+class Polyline(DisplayElem):
+  type = "vgr2d"
+
+  def __init__(self, points, width=1, color=WHITE):
+    super().__init__()
+    self.points = points
+    self.width = width
+    self.color = color
+
+  def vgr2d(self):
+    v = vgr2d.Polyline(self.points, self.color, self.width)
+    return v.position(*self.position)
+
+class Polygon(DisplayElem):
+  type = "vgr2d"
+
+  def __init__(self, points, stroke=WHITE, fill=None, width=1):
+    super().__init__()
+    if (stroke is None) != (fill is None):
+      raise TypeError("exactly one of fill= or stroke= must be set")
+    self.points = points
+    self.stroke = stroke
+    self.fill = fill
+    self.width = width
+
+  def vgr2d(self):
+    v = vgr2d.Polygon(self.points, stroke=self.stroke, fill=self.fill, width=self.width)
+    return v.position(*self.position)
+
+class Text(DisplayElem):
   type = "text"
 
-  def __init__(self, str, color):
-    self.x = 0
-    self.y = 0
-    self.str = str
+  def __init__(self, string, color=WHITE):
+    super().__init__()
+    self.position = 0
+    self.string = string
     self.color = color
 
   def move(self, x, y):
-    self.x = x
-    self.y = y
+    self.x = int(x)
+    self.y = int(y)
     return self
 
-def show_text(list):
+def __show_text(list):
   for text in list:
-    assert len(text) <= 0xFF
-    header = bytearray(5 + len(text))
-    header[0] = (text.x >> 4) & 0xFF
-    header[1] = ((text.x << 4) & 0xF0) | ((text.y >> 8) & 0x0F)
-    header[2] = text.y & 0xFF
-    header[3] = text.color
-    header[4] = len(text)
-    fpga.write(0x4503, header + text)
+    print(text)
+    x = text.position[0]
+    y = text.position[1]
+    buffer = bytearray(7)
+    buffer[0] = 0
+    buffer[1] = 0
+    buffer[2] = (x >> 4) & 0xFF
+    buffer[3] = ((x << 4) & 0xF0) | ((y >> 8) & 0x0F)
+    buffer[4] = y & 0xFF
+    buffer[5] = text.color
+    buffer[6] = 0
+    for c in text.string.encode("ASCII"):
+      buffer.append(c - 32)
+      buffer[6] += 1
+    buffer += b"\xFF\xFF\xFF"
+    assert len(buffer) <= 0xFF
+    fpga.write(0x4503, buffer)
+
+def move(list, x, y):
+  min = (WIDTH, HEIGHT)
+  for obj in list:
+    pos = obj.position
+    if pos[0] < min[0]:
+      min[0] = pos[0]
+    if pos[1] < min[1]:
+      min[1] = pos[1]
+  for obj in list:
+    obj.move(obj.position[0] - min[0] + x, obj.position[1] - min[1] + y)
 
 def show(list):
   # 0 is the address of the frame in the framebuffer in use.
   # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
   # Offset: active display offset in buffer used if double buffering
-  vgr2d.display2d(0, [x for x in list if x.type == "vgr2d"])
+  print([x.vgr2d() for x in list if x.type == "vgr2d"])
+  vgr2d.display2d(0, [x.vgr2d() for x in list if x.type == "vgr2d"])
 
   # Text has no wrapper, we implement it locally.
   # See https://streamlogic.io/docs/reify/nodes/#fbtext
-  show_text([x for x in list if x.type == "text"])
+  print([x for x in list if x.type == "text"])
+  __show_text([x for x in list if x.type == "text"])
