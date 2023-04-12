@@ -50,7 +50,12 @@ class DisplayElem:
     self.position = (0, 0)
 
   def __repr__(self):
-    return f"{self.__class__.__name__}@({self.position})"
+    x = self.position[0]
+    y = self.position[1]
+    exclude = ("position")
+    args = [f"{k}={v}" for k, v in self.__dict__.items() if k not in exclude]
+    args = ",".join(sorted(args))
+    return f"{self.__class__.__name__}({args})@({x},{y})"
 
   def move(self, x, y):
     self.position = (int(x), int(y))
@@ -61,15 +66,13 @@ class Line(DisplayElem):
 
   def __init__(self, x1, y1, x2, y2, width=1, color=WHITE):
     super().__init__()
-    self.x1 = x1
-    self.y1 = y1
-    self.x2 = x2
-    self.y2 = y2
+    self.point1 = (x1, y1)
+    self.point2 = (x2, y2)
     self.width = width
     self.color = color
 
   def vgr2d(self):
-    v = vgr2d.Line(self.x1, self.y1, self.x2, self.y2, self.color, self.width)
+    v = vgr2d.Line(*self.point1, *self.point2, self.color, self.width)
     return v.position(*self.position)
 
 class Rect(DisplayElem):
@@ -104,7 +107,7 @@ class Polygon(DisplayElem):
 
   def __init__(self, points, stroke=WHITE, fill=None, width=1):
     super().__init__()
-    if (stroke is None) != (fill is None):
+    if (stroke is None) == (fill is None):
       raise TypeError("exactly one of fill= or stroke= must be set")
     self.points = points
     self.stroke = stroke
@@ -120,18 +123,15 @@ class Text(DisplayElem):
 
   def __init__(self, string, color=WHITE):
     super().__init__()
-    self.position = 0
     self.string = string
     self.color = color
 
   def move(self, x, y):
-    self.x = int(x)
-    self.y = int(y)
+    self.position = (int(x), int(y))
     return self
 
 def __show_text(list):
   for text in list:
-    print(text)
     x = text.position[0]
     y = text.position[1]
     buffer = bytearray(7)
@@ -164,10 +164,8 @@ def show(list):
   # 0 is the address of the frame in the framebuffer in use.
   # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
   # Offset: active display offset in buffer used if double buffering
-  print([x.vgr2d() for x in list if x.type == "vgr2d"])
   vgr2d.display2d(0, [x.vgr2d() for x in list if x.type == "vgr2d"])
 
   # Text has no wrapper, we implement it locally.
   # See https://streamlogic.io/docs/reify/nodes/#fbtext
-  print([x for x in list if x.type == "text"])
   __show_text([x for x in list if x.type == "text"])
