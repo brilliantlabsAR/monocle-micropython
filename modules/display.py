@@ -59,7 +59,11 @@ MIDDLE_CENTER   = 7
 MIDDLE_RIGHT    = 8
 BOTTOM_RIGHT    = 9
 
-class Line:
+class Colored:
+  def color(self, color):
+    self.col = color
+
+class Line(Colored):
   type = "vgr2d"
 
   def __init__(self, x1, y1, x2, y2, color, thickness=1):
@@ -67,11 +71,11 @@ class Line:
     self.y1 = int(y1)
     self.x2 = int(x2)
     self.y2 = int(y2)
-    self.color = color
+    self.col = color
     self.width = thickness
 
   def __repr__(self):
-    return f"Line({self.x1}, {self.y1}, {self.x2}, {self.y2}, {self.color}, thickness={self.width})"
+    return f"Line({self.x1}, {self.y1}, {self.x2}, {self.y2}, {self.col}, thickness={self.width})"
 
   def move(self, x, y):
     self.x1 += int(x)
@@ -81,9 +85,9 @@ class Line:
     return self
 
   def vgr2d(self):
-    return vgr2d.Line(self.x1, self.y1, self.x2, self.y2, self.color, self.width)
+    return vgr2d.Line(self.x1, self.y1, self.x2, self.y2, self.col, self.width)
 
-class Rectangle:
+class Rectangle(Colored):
   type = "vgr2d"
 
   def __init__(self, x1, y1, x2, y2, color):
@@ -91,12 +95,12 @@ class Rectangle:
     self.y = min(y1, y2)
     self.width = abs(x2 - x1)
     self.height = abs(y2 - y1)
-    self.color = color
+    self.col = color
 
   def __repr__(self):
     x2 = self.x + self.width
     y2 = self.y + self.height
-    return f"Rectangle({self.x}, {self.y}, {x2}, {y2}, {self.color})"
+    return f"Rectangle({self.x}, {self.y}, {x2}, {y2}, {self.col})"
 
   def move(self, x, y):
     self.x += int(x)
@@ -104,21 +108,22 @@ class Rectangle:
     return self
 
   def vgr2d(self):
-    v = vgr2d.Rect(self.width, self.height, self.color)
+    v = vgr2d.Rect(self.width, self.height, self.col)
     return v.position(x, y)
 
-class Polyline:
+class Polyline(Colored):
   type = "vgr2d"
 
-  def __init__(self, *args, thickness=1):
-    it = iter(args)
-    self.points = [(x, y) for x, y in zip(it, it)]
-    self.color = next(it)
+  def __init__(self, list, color, thickness=1):
+    self.points = []
+    for i in range(0, len(list), 2):
+      self.points.append((list[i], list[i + 1]))
+    self.col = color
     self.width = thickness
 
   def __repr__(self):
     points = ", ".join([f"{p[0]},{p[1]}" for p in self.points])
-    return f"Polyline({points}, {self.color}, thickness={self.width})"
+    return f"Polyline([{points}], {self.col}, thickness={self.width})"
 
   def move(self, x, y):
     for point in iter(self.points):
@@ -126,20 +131,21 @@ class Polyline:
       point[1] += int(y)
 
   def vgr2d(self):
-    return vgr2d.Polyline(self.points, self.color, self.width)
+    return vgr2d.Polyline(self.points, self.col, self.width)
 
-class Polygon:
+class Polygon(Colored):
   type = "vgr2d"
 
-  def __init__(self, *args, thickness=1):
-    it = iter(args)
-    self.points = [(x, y) for x, y in zip(it, it)]
-    self.fill = next(it)
+  def __init__(self, list, color, thickness=1):
+    self.points = []
+    for i in range(0, len(list), 2):
+      self.points.append((list[i], list[i + 1]))
+    self.col = color
     self.width = thickness
 
   def __repr__(self):
     points = ", ".join([f"{p[0]},{p[1]}" for p in self.points])
-    return f"Polyline({points}, {self.fill}, thickness={self.width})"
+    return f"Polygon([{points}], {self.col}, thickness={self.width})"
 
   def move(self, x, y):
     for point in iter(self.points):
@@ -147,22 +153,25 @@ class Polygon:
       point[1] += int(y)
 
   def vgr2d(self):
-    return vgr2d.Polygon(self.points, stroke=None, fill=self.fill, width=self.width)
+    return vgr2d.Polygon(self.points, stroke=None, fill=self.col, width=self.width)
 
-class Text:
+class Text(Colored):
   type = "text"
 
   def __init__(self, string, x, y, color, justify=TOP_LEFT):
     self.x = int(x)
     self.y = int(y)
     self.string = string
-    self.color = color
+    self.col = color
     self.justify = justify
 
   def __repr__(self):
-    return f"Text('{self.string}', {self.x}, {self.y}, {self.color}, justify={self.justify})"
+    return f"Text('{self.string}', {self.x}, {self.y}, {self.col}, justify={self.justify})"
 
   def show(self):
+
+    # Adjust the coordinates to the alignment setting
+
     left = (TOP_LEFT, MIDDLE_LEFT, BOTTOM_LEFT)
     center = (TOP_CENTER, MIDDLE_CENTER, BOTTOM_CENTER)
     right = (TOP_RIGHT, MIDDLE_RIGHT, BOTTOM_RIGHT)
@@ -189,15 +198,30 @@ class Text:
     else:
       raise TypeError("unknown justify value")
 
+    # Clip the text to only the characters in the viewport
+
+    underflow = abs(x) if x < 0 else 0
+    overflow = WIDTH - x + len(self.string) * FONT_WIDTH
+    i1 = i2 = 0
+    if underflow > 0:
+      # get the right granularity for edge cases
+      i1 = (abs(x) + FONT_WIDTH - 1) // FONT_WIDTH
+      x += i1 * FONT_WIDTH
+    if overflow > 0:
+      i2 = overflow // FONT_WIDTH
+    string = self.string[i1:i2]
+
+    # Fill the buffer with the raw data and send it
+
     buffer = bytearray(7)
     buffer[0] = 0
     buffer[1] = 0
     buffer[2] = (x >> 4) & 0xFF
     buffer[3] = ((x << 4) & 0xF0) | ((y >> 8) & 0x0F)
     buffer[4] = y & 0xFF
-    buffer[5] = self.color
+    buffer[5] = self.col
     buffer[6] = 0
-    for c in self.string.encode("ASCII"):
+    for c in string.encode("ASCII"):
       buffer.append(c - 32)
       buffer[6] += 1
     buffer += b"\xFF\xFF\xFF"
@@ -209,23 +233,27 @@ class Text:
     self.y = y
     return self
 
-def __flatten(list):
-  return [flatten(item) if hasattr(item, '__iter__') else item for item in list]
+def flatten(o):
+  if isinstance(o, tuple) or isinstance(o, list):
+    return [i2 for i1 in o for i2 in flatten(i1)]
+  else:
+    return [o]
 
 def move(*args):
-  for arg in __flatten(args[:-2]):
+  for arg in flatten(args[:-2]):
     arg.move(arg, args[-2], args[-1])
 
 def color(*args):
-  for arg in __flatten(args[:-1]):
-    arg.color(arg, args[-2], args[-1])
+  for arg in flatten(args[:-1]):
+    arg.color(args[-1])
 
 def show(*args):
-  args = __flatten(args)
+  args = flatten(args)
 
   # 0 is the address of the frame in the framebuffer in use.
   # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
   # Offset: active display offset in buffer used if double buffering
+  print([obj for obj in args if obj.type == "vgr2d"])
   vgr2d.display2d(0, [obj.vgr2d() for obj in args if obj.type == "vgr2d"])
 
   # Text has no wrapper, we implement it locally.
