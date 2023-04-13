@@ -115,6 +115,8 @@ class Polyline(Colored):
   type = "vgr2d"
 
   def __init__(self, list, color, thickness=1):
+    if len(list) % 2 != 0:
+      raise TypeError("list must have odd number of coordinates")
     self.points = []
     for i in range(0, len(list), 2):
       self.points.append((list[i], list[i + 1]))
@@ -137,6 +139,8 @@ class Polygon(Colored):
   type = "vgr2d"
 
   def __init__(self, list, color, thickness=1):
+    if len(list) % 2 != 0:
+      raise TypeError("list must have odd number of coordinates")
     self.points = []
     for i in range(0, len(list), 2):
       self.points.append((list[i], list[i + 1]))
