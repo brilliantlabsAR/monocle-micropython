@@ -24,9 +24,13 @@
 
 import vgr2d
 import fpga
+from __display import *
 
 WIDTH   = 640
 HEIGHT  = 400
+
+FONT_HEIGHT = 64
+FONT_WIDTH = 32
 
 BLACK   = 0
 RED     = 1
@@ -45,127 +49,187 @@ GRAY6   = 13
 GRAY7   = 14
 GRAY8   = 15
 
-class DisplayElem:
-  def __init__(self):
-    self.position = (0, 0)
+TOP_LEFT        = 1
+MIDDLE_LEFT     = 2
+BOTTOM_LEFT     = 3
+TOP_CENTER      = 4
+BOTTOM_CENTER   = 5
+TOP_RIGHT       = 6
+MIDDLE_CENTER   = 7
+MIDDLE_RIGHT    = 8
+BOTTOM_RIGHT    = 9
+
+class Line:
+  type = "vgr2d"
+
+  def __init__(self, x1, y1, x2, y2, color, thickness=1):
+    self.x1 = int(x1)
+    self.y1 = int(y1)
+    self.x2 = int(x2)
+    self.y2 = int(y2)
+    self.color = color
+    self.width = thickness
 
   def __repr__(self):
-    x = self.position[0]
-    y = self.position[1]
-    exclude = ("position")
-    args = [f"{k}={v}" for k, v in self.__dict__.items() if k not in exclude]
-    args = ",".join(sorted(args))
-    return f"{self.__class__.__name__}({args})@({x},{y})"
+    return f"Line({self.x1}, {self.y1}, {self.x2}, {self.y2}, {self.color}, thickness={self.width})"
 
   def move(self, x, y):
-    self.position = (int(x), int(y))
+    self.x1 += int(x)
+    self.y1 += int(y)
+    self.x2 += int(x)
+    self.y2 += int(y)
     return self
 
-class Line(DisplayElem):
-  type = "vgr2d"
-
-  def __init__(self, x1, y1, x2, y2, width=1, color=WHITE):
-    super().__init__()
-    self.point1 = (x1, y1)
-    self.point2 = (x2, y2)
-    self.width = width
-    self.color = color
-
   def vgr2d(self):
-    v = vgr2d.Line(*self.point1, *self.point2, self.color, self.width)
-    return v.position(*self.position)
+    return vgr2d.Line(self.x1, self.y1, self.x2, self.y2, self.color, self.width)
 
-class Rect(DisplayElem):
+class Rectangle:
   type = "vgr2d"
 
-  def __init__(self, width, height, color=WHITE):
-    super().__init__()
-    self.width = width
-    self.height = height
-    self.position = (0, 0)
+  def __init__(self, x1, y1, x2, y2, color):
+    self.x = min(x1, x2)
+    self.y = min(y1, y2)
+    self.width = abs(x2 - x1)
+    self.height = abs(y2 - y1)
     self.color = color
+
+  def __repr__(self):
+    x2 = self.x + self.width
+    y2 = self.y + self.height
+    return f"Rectangle({self.x}, {self.y}, {x2}, {y2}, {self.color})"
+
+  def move(self, x, y):
+    self.x += int(x)
+    self.y += int(y)
+    return self
 
   def vgr2d(self):
     v = vgr2d.Rect(self.width, self.height, self.color)
-    return v.position(*self.position)
+    return v.position(x, y)
 
-class Polyline(DisplayElem):
+class Polyline:
   type = "vgr2d"
 
-  def __init__(self, points, width=1, color=WHITE):
-    super().__init__()
-    self.points = points
-    self.width = width
-    self.color = color
+  def __init__(self, *args, thickness=1):
+    it = iter(args)
+    self.points = [(x, y) for x, y in zip(it, it)]
+    self.color = next(it)
+    self.width = thickness
 
-  def vgr2d(self):
-    v = vgr2d.Polyline(self.points, self.color, self.width)
-    return v.position(*self.position)
-
-class Polygon(DisplayElem):
-  type = "vgr2d"
-
-  def __init__(self, points, stroke=WHITE, fill=None, width=1):
-    super().__init__()
-    if (stroke is None) == (fill is None):
-      raise TypeError("exactly one of fill= or stroke= must be set")
-    self.points = points
-    self.stroke = stroke
-    self.fill = fill
-    self.width = width
-
-  def vgr2d(self):
-    v = vgr2d.Polygon(self.points, stroke=self.stroke, fill=self.fill, width=self.width)
-    return v.position(*self.position)
-
-class Text(DisplayElem):
-  type = "text"
-
-  def __init__(self, string, color=WHITE):
-    super().__init__()
-    self.string = string
-    self.color = color
+  def __repr__(self):
+    points = ", ".join([f"{p[0]},{p[1]}" for p in self.points])
+    return f"Polyline({points}, {self.color}, thickness={self.width})"
 
   def move(self, x, y):
-    self.position = (int(x), int(y))
-    return self
+    for point in iter(self.points):
+      point[0] += int(x)
+      point[1] += int(y)
 
-def __show_text(list):
-  for text in list:
-    x = text.position[0]
-    y = text.position[1]
+  def vgr2d(self):
+    return vgr2d.Polyline(self.points, self.color, self.width)
+
+class Polygon:
+  type = "vgr2d"
+
+  def __init__(self, *args, thickness=1):
+    it = iter(args)
+    self.points = [(x, y) for x, y in zip(it, it)]
+    self.fill = next(it)
+    self.width = thickness
+
+  def __repr__(self):
+    points = ", ".join([f"{p[0]},{p[1]}" for p in self.points])
+    return f"Polyline({points}, {self.fill}, thickness={self.width})"
+
+  def move(self, x, y):
+    for point in iter(self.points):
+      point[0] += int(x)
+      point[1] += int(y)
+
+  def vgr2d(self):
+    return vgr2d.Polygon(self.points, stroke=None, fill=self.fill, width=self.width)
+
+class Text:
+  type = "text"
+
+  def __init__(self, string, x, y, color, justify=TOP_LEFT):
+    self.x = int(x)
+    self.y = int(y)
+    self.string = string
+    self.color = color
+    self.justify = justify
+
+  def __repr__(self):
+    return f"Text('{self.string}', {self.x}, {self.y}, {self.color}, justify={self.justify})"
+
+  def show(self):
+    left = (TOP_LEFT, MIDDLE_LEFT, BOTTOM_LEFT)
+    center = (TOP_CENTER, MIDDLE_CENTER, BOTTOM_CENTER)
+    right = (TOP_RIGHT, MIDDLE_RIGHT, BOTTOM_RIGHT)
+
+    if self.justify in left:
+      x = int(self.x)
+    elif self.justify in center:
+      x = int(self.x) - FONT_WIDTH * len(self.string) // 2
+    elif self.justify in right:
+      x = int(self.x) - FONT_WIDTH * len(self.string)
+    else:
+      raise TypeError("unknown justify value")
+
+    top = (TOP_LEFT, TOP_CENTER, TOP_RIGHT)
+    middle = (MIDDLE_LEFT, MIDDLE_CENTER, MIDDLE_RIGHT)
+    bottom = (BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT)
+
+    if self.justify in top:
+      y = int(self.y) - FONT_HEIGHT
+    elif self.justify in middle:
+      y = int(self.y) - FONT_HEIGHT // 2
+    elif self.justify in bottom:
+      y = int(self.y)
+    else:
+      raise TypeError("unknown justify value")
+
     buffer = bytearray(7)
     buffer[0] = 0
     buffer[1] = 0
     buffer[2] = (x >> 4) & 0xFF
     buffer[3] = ((x << 4) & 0xF0) | ((y >> 8) & 0x0F)
     buffer[4] = y & 0xFF
-    buffer[5] = text.color
+    buffer[5] = self.color
     buffer[6] = 0
-    for c in text.string.encode("ASCII"):
+    for c in self.string.encode("ASCII"):
       buffer.append(c - 32)
       buffer[6] += 1
     buffer += b"\xFF\xFF\xFF"
     assert len(buffer) <= 0xFF
     fpga.write(0x4503, buffer)
 
-def move(list, x, y):
-  min = (WIDTH, HEIGHT)
-  for obj in list:
-    pos = obj.position
-    if pos[0] < min[0]:
-      min[0] = pos[0]
-    if pos[1] < min[1]:
-      min[1] = pos[1]
-  for obj in list:
-    obj.move(obj.position[0] - min[0] + x, obj.position[1] - min[1] + y)
+  def move(self, x, y):
+    self.x = x
+    self.y = y
+    return self
 
-def show(list):
+def __flatten(list):
+  return [flatten(item) if hasattr(item, '__iter__') else item for item in list]
+
+def move(*args):
+  for arg in __flatten(args[:-2]):
+    arg.move(arg, args[-2], args[-1])
+
+def color(*args):
+  for arg in __flatten(args[:-1]):
+    arg.color(arg, args[-2], args[-1])
+
+def show(*args):
+  args = __flatten(args)
+
   # 0 is the address of the frame in the framebuffer in use.
   # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
   # Offset: active display offset in buffer used if double buffering
-  vgr2d.display2d(0, [x.vgr2d() for x in list if x.type == "vgr2d"])
+  vgr2d.display2d(0, [obj.vgr2d() for obj in args if obj.type == "vgr2d"])
 
   # Text has no wrapper, we implement it locally.
   # See https://streamlogic.io/docs/reify/nodes/#fbtext
-  __show_text([x for x in list if x.type == "text"])
+  for obj in args:
+    if obj.type == "text":
+      obj.show()

@@ -121,6 +121,7 @@ SRC_C += micropython/extmod/vfs.c
 SRC_C += modules/bluetooth.c
 SRC_C += modules/camera.c
 SRC_C += modules/device.c
+SRC_C += modules/display.c
 SRC_C += modules/fpga.c
 SRC_C += modules/led.c
 SRC_C += modules/storage.c
