@@ -116,7 +116,7 @@ class Polyline(Colored):
 
   def __init__(self, list, color, thickness=1):
     if len(list) % 2 != 0:
-      raise TypeError("list must have odd number of coordinates")
+      raise ValueError("list must have odd number of coordinates")
     self.points = []
     for i in range(0, len(list), 2):
       self.points.append((list[i], list[i + 1]))
@@ -140,7 +140,7 @@ class Polygon(Colored):
 
   def __init__(self, list, color, thickness=1):
     if len(list) % 2 != 0:
-      raise TypeError("list must have odd number of coordinates")
+      raise ValueError("list must have odd number of coordinates")
     self.points = []
     for i in range(0, len(list), 2):
       self.points.append((list[i], list[i + 1]))
@@ -187,7 +187,7 @@ class Text(Colored):
     elif self.justify in right:
       x = int(self.x) - FONT_WIDTH * len(self.string)
     else:
-      raise TypeError("unknown justify value")
+      raise ValueError("unknown justify value")
 
     top = (TOP_LEFT, TOP_CENTER, TOP_RIGHT)
     middle = (MIDDLE_LEFT, MIDDLE_CENTER, MIDDLE_RIGHT)
@@ -200,20 +200,20 @@ class Text(Colored):
     elif self.justify in bottom:
       y = int(self.y)
     else:
-      raise TypeError("unknown justify value")
+      raise ValueError("unknown justify value")
 
     # Clip the text to only the characters in the viewport
 
-    underflow = abs(x) if x < 0 else 0
-    overflow = WIDTH - x + len(self.string) * FONT_WIDTH
-    i1 = i2 = 0
-    if underflow > 0:
-      # get the right granularity for edge cases
-      i1 = (abs(x) + FONT_WIDTH - 1) // FONT_WIDTH
-      x += i1 * FONT_WIDTH
-    if overflow > 0:
-      i2 = overflow // FONT_WIDTH
-    string = self.string[i1:i2]
+    string = self.string
+
+    if x < 0:
+      i = abs(x) // FONT_WIDTH + 1
+      string = string[i:]
+      x += i * FONT_WIDTH
+
+    if x + len(string) * FONT_WIDTH > WIDTH:
+      i = (x + len(string) * FONT_WIDTH - WIDTH) // FONT_WIDTH + 1
+      string = string[:-i]
 
     # Fill the buffer with the raw data and send it
 
@@ -257,8 +257,8 @@ def show(*args):
   # 0 is the address of the frame in the framebuffer in use.
   # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
   # Offset: active display offset in buffer used if double buffering
-  print([obj for obj in args if obj.type == "vgr2d"])
-  vgr2d.display2d(0, [obj.vgr2d() for obj in args if obj.type == "vgr2d"])
+  list = [obj.vgr2d() for obj in args if obj.type == "vgr2d"]
+  vgr2d.display2d(0, list, WIDTH, HEIGHT)
 
   # Text has no wrapper, we implement it locally.
   # See https://streamlogic.io/docs/reify/nodes/#fbtext
