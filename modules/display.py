@@ -245,7 +245,7 @@ def flatten(o):
 
 def move(*args):
   for arg in flatten(args[:-2]):
-    arg.move(arg, args[-2], args[-1])
+    arg.move(args[-2], args[-1])
 
 def color(*args):
   for arg in flatten(args[:-1]):
