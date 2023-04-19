@@ -864,47 +864,49 @@ int main(void)
         app_err(sd_ble_gap_adv_start(ble_handles.advertising, 1));
     }
 
-    // Initialise the stack pointer for the main thread
-    mp_stack_set_top(&_stack_top);
-
-    // Set the stack limit as smaller than the real stack so we can recover
-    mp_stack_set_limit((char *)&_stack_top - (char *)&_stack_bot - 400);
-
-    // Start garbage collection, micropython and the REPL
-    gc_init(&_heap_start, &_heap_end);
-    mp_init();
-    readline_init0();
-
-    // Mount the filesystem, or format if needed
-    pyexec_frozen_module("_mountfs.py");
-
-    // Run the user's main file if it exists
-    pyexec_file_if_exists("main.py");
-
-    // Stay in the friendly or raw REPL until a reset is called
-    for (;;)
+    // Soft resets will always restart micropython,
+    while (true)
     {
-        if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL)
-        {
-            if (pyexec_raw_repl() != 0)
-            {
-                break;
-            }
-        }
-        else
-        {
-            if (pyexec_friendly_repl() != 0)
-            {
-                break;
-            }
-        }
-    }
+        // Initialise the stack pointer for the main thread
+        mp_stack_set_top(&_stack_top);
 
-    // On exit, clean up and reset
-    gc_sweep_all();
-    mp_deinit();
-    sd_softdevice_disable();
-    NVIC_SystemReset();
+        // Set the stack limit as smaller than the real stack so we can recover
+        mp_stack_set_limit((char *)&_stack_top - (char *)&_stack_bot - 400);
+
+        // Start garbage collection, micropython and the REPL
+        gc_init(&_heap_start, &_heap_end);
+        mp_init();
+        readline_init0();
+
+        // Mount the filesystem, or format if needed
+        pyexec_frozen_module("_mountfs.py");
+
+        // Run the user's main file if it exists
+        pyexec_file_if_exists("main.py");
+
+        // Stay in the friendly or raw REPL until a reset is called
+        for (;;)
+        {
+            if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL)
+            {
+                if (pyexec_raw_repl() != 0)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                if (pyexec_friendly_repl() != 0)
+                {
+                    break;
+                }
+            }
+        }
+
+        // On exit, clean up before reset
+        gc_sweep_all();
+        mp_deinit();
+    }
 }
 
 void mp_event_poll_hook(void)
