@@ -879,7 +879,7 @@ int main(void)
         readline_init0();
 
         // Mount the filesystem, or format if needed
-        pyexec_frozen_module("_mountfs.py");
+        pyexec_frozen_module("_mountfs.py", false);
 
         // Run the user's main file if it exists
         pyexec_file_if_exists("main.py");
