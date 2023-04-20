@@ -72,10 +72,11 @@ def display_module():
         display.show(line)
         angle += math.pi / 20
 
-    # Line: rectangle around display edges
+    # Line: rectangle around the display edges
     t = 10
-        h = display.HEIGHT - t
-        w = display.WIDTH - t
+    h = display.HEIGHT - t
+    w = display.WIDTH - t
+
     display.show(
         display.Line(t, t, t, h, display.WHITE, thickness=t), # left
         display.Line(w, t, w, h, display.WHITE, thickness=t), # right
@@ -93,7 +94,7 @@ def display_module():
         y2 = y_offset + i
         display.show(display.Rectangle(x1, y1, x2, y2, display.YELLOW))
 
-    # Rectangle: __test with ((x1,y1), (x2,y2)) with x1 > x2 or y1 > y2
+    # Rectangle: test with ((x1,y1), (x2,y2)) with x1 > x2 or y1 > y2
 
     # Test constants
     __test("display.WIDTH", 640)
