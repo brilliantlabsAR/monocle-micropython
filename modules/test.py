@@ -58,52 +58,48 @@ def device_module():
     __test("str(__device.Storage())", 'Storage(start=0x0006d000, len=602112)')
 
 def display_module():
+    # Line: spinning animation
+    scale = 300
+    x_offset = display.WIDTH // 2
+    y_offset = display.HEIGHT // 2
+    angle = 0
+    while angle <= 2 * math.pi * 10:
+        x1 = int(x_offset + math.cos(angle) * scale)
+        y1 = int(y_offset + math.sin(angle) * scale)
+        x2 = int(x_offset + math.cos(angle + math.pi) * scale)
+        y2 = int(y_offset + math.sin(angle + math.pi) * scale)
+        line = display.Line(x1, y1, x2, y2, display.WHITE)
+        display.show(line)
+        angle += math.pi / 20
 
-    # Line scanning the screen bound to the left
-    __display.line(0,0,   640,200, 0xFFFFFF); __display.show()
-    __display.line(0,50,  640,200, 0xFFFFFF); __display.show()
-    __display.line(0,100, 640,200, 0xFFFFFF); __display.show()
-    __display.line(0,150, 640,200, 0xFFFFFF); __display.show()
-    __display.line(0,200, 640,200, 0xFFFFFF); __display.show()
-    __display.line(0,250, 640,200, 0xFFFFFF); __display.show()
-    __display.line(0,300, 640,200, 0xFFFFFF); __display.show()
-    __display.line(0,350, 640,200, 0xFFFFFF); __display.show()
-    __display.line(0,400, 640,200, 0xFFFFFF); __display.show()
+    # Line: rectangle around the display edges
+    t = 10
+    h = display.HEIGHT - t
+    w = display.WIDTH - t
+    display.show(
+        display.Line(t, t, t, h, display.WHITE, thickness=t), # left
+        display.Line(w, t, w, h, display.WHITE, thickness=t), # right
+        display.Line(t, t, w, t, display.WHITE, thickness=t), # top
+        display.Line(t, h - 200, w, h - 200, display.WHITE, thickness=t), # bottom
+    )
 
-    # Line scanning the screen bound to the right
-    __display.line(640,0,   0,200, 0xFFFFFF); __display.show()
-    __display.line(640,50,  0,200, 0xFFFFFF); __display.show()
-    __display.line(640,100, 0,200, 0xFFFFFF); __display.show()
-    __display.line(640,150, 0,200, 0xFFFFFF); __display.show()
-    __display.line(640,200, 0,200, 0xFFFFFF); __display.show()
-    __display.line(640,250, 0,200, 0xFFFFFF); __display.show()
-    __display.line(640,300, 0,200, 0xFFFFFF); __display.show()
-    __display.line(640,350, 0,200, 0xFFFFFF); __display.show()
-    __display.line(640,400, 0,200, 0xFFFFFF); __display.show()
+    # Rectangle: growing rectangle, getting larger than the display
+    x_offset = display.WIDTH // 2
+    y_offset = display.HEIGHT // 2
+    for i in range(0, display.WIDTH // 2 + 100, 10):
+        x1 = x_offset - i
+        y1 = y_offset - i
+        x2 = x_offset + i
+        y2 = y_offset + i
+        display.show(display.Rectangle(x1, y1, x2, y2, display.YELLOW))
 
-    # Line scanning the screen bound to the top
-    __display.line(300,0,   0,400, 0xFFFFFF); __display.show()
-    __display.line(300,0, 100,400, 0xFFFFFF); __display.show()
-    __display.line(300,0, 200,400, 0xFFFFFF); __display.show()
-    __display.line(300,0, 300,400, 0xFFFFFF); __display.show()
-    __display.line(300,0, 400,400, 0xFFFFFF); __display.show()
-    __display.line(300,0, 500,400, 0xFFFFFF); __display.show()
-    __display.line(300,0, 600,400, 0xFFFFFF); __display.show()
-    __display.line(300,0, 640,400, 0xFFFFFF); __display.show()
-
-    # Line scanning the screen bound to the bottom
-    __display.line(  0,0, 300,400, 0xFFFFFF); __display.show()
-    __display.line(100,0, 300,400, 0xFFFFFF); __display.show()
-    __display.line(200,0, 300,400, 0xFFFFFF); __display.show()
-    __display.line(300,0, 300,400, 0xFFFFFF); __display.show()
-    __display.line(400,0, 300,400, 0xFFFFFF); __display.show()
-    __display.line(500,0, 300,400, 0xFFFFFF); __display.show()
-    __display.line(600,0, 300,400, 0xFFFFFF); __display.show()
-    __display.line(640,0, 300,400, 0xFFFFFF); __display.show()
+    # Rectangle: test with ((x1,y1), (x2,y2)) with x1 > x2 or y1 > y2
 
     # Test constants
-    __test("__display.WIDTH", 640)
-    __test("__display.HEIGHT", 400)
+    __test("display.WIDTH", 640)
+    __test("display.HEIGHT", 400)
+    __test("display.FONT_WIDTH", 32)
+    __test("display.FONT_HEIGHT", 400)
 
 def camera_module():
 
