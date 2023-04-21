@@ -35,7 +35,7 @@ const char help_text[] = {
     "Control commands:\n"
     "  Ctrl-A - enter raw REPL mode\n"
     "  Ctrl-B - enter normal REPL mode\n"
-    "  CTRL-C - interrupt a running program\n"
+    "  Ctrl-C - interrupt a running program\n"
     "  Ctrl-D - reset the device\n"
     "  Ctrl-E - enter paste mode\n\n"
     "To list available modules, type help('modules')\n"

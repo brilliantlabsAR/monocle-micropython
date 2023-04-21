@@ -66,6 +66,13 @@ SECTIONS
         _etext = .;          /* define a global symbol at end of code */
     } > FLASH
 
+    .ARM.exidx :
+    {
+        __exidx_start = .;
+        *(.ARM.exidx* .gnu.linkonce.armexidx.*)
+        __exidx_end = .;
+    } > FLASH
+
     /* This is used by the startup to initialize data */
     
     _sidata = LOADADDR(.data);

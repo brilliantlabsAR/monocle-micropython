@@ -54,10 +54,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(fpga_read_obj, fpga_read);
 
 STATIC mp_obj_t fpga_write(mp_obj_t addr_16bit, mp_obj_t bytes)
 {
-    size_t n;
-    const char *buffer = mp_obj_str_get_data(bytes, &n);
+    mp_buffer_info_t buffer;
+    mp_get_buffer_raise(bytes, &buffer, MP_BUFFER_READ);
 
-    if (n > 255)
+    if (buffer.len > 255)
     {
         mp_raise_ValueError(
             MP_ERROR_TEXT("input buffer size must be less than 255 bytes"));
@@ -66,14 +66,14 @@ STATIC mp_obj_t fpga_write(mp_obj_t addr_16bit, mp_obj_t bytes)
     uint16_t addr = mp_obj_get_int(addr_16bit);
     uint8_t addr_bytes[2] = {(uint8_t)(addr >> 8), (uint8_t)addr};
 
-    if (n == 0)
+    if (buffer.len == 0)
     {
         monocle_spi_write(FPGA, addr_bytes, 2, false);
     }
     else
     {
         monocle_spi_write(FPGA, addr_bytes, 2, true);
-        monocle_spi_write(FPGA, (uint8_t *)buffer, n, false);
+        monocle_spi_write(FPGA, buffer.buf, buffer.len, false);
     }
 
     return mp_const_none;
