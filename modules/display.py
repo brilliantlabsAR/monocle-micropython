@@ -29,8 +29,8 @@ from __display import *
 WIDTH   = 640
 HEIGHT  = 400
 
-FONT_HEIGHT = 64
-FONT_WIDTH = 32
+FONT_HEIGHT = 48
+FONT_WIDTH = 16
 
 BLACK   = 0
 RED     = 1
@@ -85,6 +85,7 @@ class Line(Colored):
     return self
 
   def vgr2d(self):
+    print(f"vgr2d.Line({self.x1}, {self.y1}, {self.x2}, {self.y2}, {self.col}, {self.width})")
     return vgr2d.Line(self.x1, self.y1, self.x2, self.y2, self.col, self.width)
 
 class Rectangle(Colored):
@@ -109,7 +110,7 @@ class Rectangle(Colored):
 
   def vgr2d(self):
     v = vgr2d.Rect(self.width, self.height, self.col)
-    return v.position(x, y)
+    return v.position(self.x, self.y)
 
 class Polyline(Colored):
   type = "vgr2d"
@@ -160,7 +161,7 @@ class Polygon(Colored):
     return vgr2d.Polygon(self.points, stroke=None, fill=self.col, width=self.width)
 
 class Text(Colored):
-  type = "text"
+  type = "fbtext"
 
   def __init__(self, string, x, y, color, justify=TOP_LEFT):
     self.x = int(x)
@@ -172,7 +173,7 @@ class Text(Colored):
   def __repr__(self):
     return f"Text('{self.string}', {self.x}, {self.y}, {self.col}, justify={self.justify})"
 
-  def show(self):
+  def fbtext(self, buffer):
 
     # Adjust the coordinates to the alignment setting
 
@@ -215,22 +216,20 @@ class Text(Colored):
       i = (x + len(string) * FONT_WIDTH - WIDTH) // FONT_WIDTH + 1
       string = string[:-i]
 
+    string = string.encode("ASCII")
+
     # Fill the buffer with the raw data and send it
 
-    buffer = bytearray(7)
-    buffer[0] = 0
-    buffer[1] = 0
-    buffer[2] = (x >> 4) & 0xFF
-    buffer[3] = ((x << 4) & 0xF0) | ((y >> 8) & 0x0F)
-    buffer[4] = y & 0xFF
-    buffer[5] = self.col
-    buffer[6] = 0
-    for c in string.encode("ASCII"):
+    buffer.append((x >> 4) & 0xFF)
+    buffer.append(((x << 4) & 0xF0) | ((y >> 8) & 0x0F))
+    buffer.append(y & 0xFF)
+    buffer.append(self.col)
+    i = len(buffer)
+    buffer.append(0)
+    for c in string:
       buffer.append(c - 32)
-      buffer[6] += 1
-    buffer += b"\xFF\xFF\xFF"
-    assert len(buffer) <= 0xFF
-    fpga.write(0x4503, buffer)
+      buffer[i] += 1
+    assert(buffer[i] <= 0xFF)
 
   def move(self, x, y):
     self.x = x
@@ -262,6 +261,16 @@ def show(*args):
 
   # Text has no wrapper, we implement it locally.
   # See https://streamlogic.io/docs/reify/nodes/#fbtext
-  for obj in args:
-    if obj.type == "text":
-      obj.show()
+  buffer = bytearray(2) # address 0x0000
+  list = [obj for obj in args if obj.type == "fbtext"]
+  list = sorted(list, key=lambda obj: obj.x)
+  list = sorted(list, key=lambda obj: obj.y)
+  last_x = 0
+  last_y = 0
+  for obj in list:
+      if obj.y > last_y or obj.x > last_x:
+        obj.fbtext(buffer)
+      last_x = obj.x + FONT_WIDTH * len(obj.string)
+      last_y = obj.y + FONT_HEIGHT
+  if len(buffer) > 0:
+    fpga.write(0x4503, buffer + b"\xFF\xFF\xFF")
