@@ -96,6 +96,13 @@ def display_module():
 
     # Rectangle: test with ((x1,y1), (x2,y2)) with x1 > x2 or y1 > y2
 
+    # Text: test the edge cases for clipping on the right side of the display
+    for i in range(display.FONT_WIDTH * 2):
+        s = "0....:....0....:....0....:"
+        display.show(display.Text(s, 0 + i, 0, display.WHITE))
+        time.sleep_ms(333)
+
+
     # Test constants
     __test("display.WIDTH", 640)
     __test("display.HEIGHT", 400)
