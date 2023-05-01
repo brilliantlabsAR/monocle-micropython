@@ -31,7 +31,7 @@
 
 const char help_text[] = {
     "Welcome to MicroPython!\n\n"
-    "For full documentation, visit: https://docs.brilliantmonocle.com\n"
+    "For full documentation, visit: https://docs.brilliant.xyz\n"
     "Control commands:\n"
     "  Ctrl-A - enter raw REPL mode\n"
     "  Ctrl-B - enter normal REPL mode\n"

@@ -1,6 +1,6 @@
 # MicroPython for Monocle
 
-A custom deployment of MicroPython designed specifically for Monocle. Read the [docs](https://docs.brilliantmonocle.com).
+A custom deployment of MicroPython designed specifically for Monocle. Read the [docs](https://docs.brilliant.xyz).
 
 ## Flash you Monocle
 
@@ -9,7 +9,7 @@ A custom deployment of MicroPython designed specifically for Monocle. Read the [
 
 1. Ensure you have the [nRF Command Line Tools](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools) installed.
 
-1. Connect your debugger as described [here](https://docs.brilliantmonocle.com/monocle/monocle/#manually-programming).
+1. Connect your debugger as described [here](https://docs.brilliant.xyz/monocle/monocle/#manually-programming).
 
 1. Flash your device using the command:
 
