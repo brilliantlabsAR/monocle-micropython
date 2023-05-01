@@ -84,7 +84,6 @@ class Line(Colored):
     return self
 
   def vgr2d(self):
-    print(f'vgr2d.Line({self.x1}, {self.y1}, {self.x2}, {self.y2}, {self.col}, {self.width})')
     return vgr2d.Line(self.x1, self.y1, self.x2, self.y2, self.col, self.width)
 
 class Rectangle(Colored):
@@ -159,25 +158,22 @@ class Text(Colored):
     self.y = int(y)
     self.string = string
     self.col = color
-    self.justify = justify
+    self.justify(justify)
 
   def __repr__(self):
-    return f"Text('{self.string}', {self.x}, {self.y}, {self.col}, justify={self.justify})"
+    return f"Text('{self.string}', {self.x}, {self.y}, {self.col})"
 
-  def width(self, string):
-    return FONT_WIDTH * len(string) - SPACE_WIDTH
-
-  def align(self):
+  def justify(self, justify):
     left = (TOP_LEFT, MIDDLE_LEFT, BOTTOM_LEFT)
     center = (TOP_CENTER, MIDDLE_CENTER, BOTTOM_CENTER)
     right = (TOP_RIGHT, MIDDLE_RIGHT, BOTTOM_RIGHT)
 
-    if self.justify in left:
-      x = int(self.x)
-    elif self.justify in center:
-      x = int(self.x) - self.width(self.string) // 2
-    elif self.justify in right:
-      x = int(self.x) - self.width(self.string)
+    if justify in left:
+      self.x = self.x
+    elif justify in center:
+      self.x = self.x - self.width(self.string) // 2
+    elif justify in right:
+      self.x = self.x - self.width(self.string)
     else:
       raise ValueError('unknown justify value')
 
@@ -185,19 +181,21 @@ class Text(Colored):
     middle = (MIDDLE_LEFT, MIDDLE_CENTER, MIDDLE_RIGHT)
     bottom = (BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT)
 
-    if self.justify in top:
-      y = int(self.y)
-    elif self.justify in middle:
-      y = int(self.y) - FONT_HEIGHT // 2
-    elif self.justify in bottom:
-      y = int(self.y) - FONT_HEIGHT
+    if justify in top:
+      self.y = self.y
+    elif justify in middle:
+      self.y = self.y - FONT_HEIGHT // 2
+    elif justify in bottom:
+      self.y = self.y - FONT_HEIGHT
     else:
       raise ValueError('unknown justify value')
 
-    return (x, y)
+  def width(self, string):
+    return FONT_WIDTH * len(string) - SPACE_WIDTH
 
-  def clip(self, x, y):
+  def clip_x(self):
     string = self.string
+    x = self.x
 
     if x < 0:
       i = abs(x) // FONT_WIDTH + 1
@@ -208,14 +206,13 @@ class Text(Colored):
     elif x + self.width(string) > WIDTH:
       overflow_px = x + self.width(string) - WIDTH
       overflow_ch = overflow_px // FONT_WIDTH + 1
-      print(f'overflow_px={overflow_px} overflow_ch={overflow_ch}')
       string = string[:-overflow_ch]
 
-    return x, y, string
+    return x, string
 
   def fbtext(self, buffer):
-    x, y = self.align()
-    x, y, string = self.clip(x, y)
+    x, string = self.clip_x()
+    y = self.y
 
     # Build a buffer to send to the FPGA
     buffer.append((x >> 4) & 0xFF)
@@ -257,18 +254,45 @@ def show(*args):
   list = [obj.vgr2d() for obj in args if hasattr(obj, 'vgr2d')]
   vgr2d.display2d(0, list, WIDTH, HEIGHT)
 
+  def has_collision_x(list):
+    if len(list) == 0:
+      return False
+    list = sorted(list, key=lambda obj: obj.x)
+    prev = list[0]
+    print(list)
+    for obj in list[1:]:
+      print(f'x: prev={prev} obj={obj}')
+      if obj.x < prev.x + prev.width(prev.string):
+        # Overlapping on both x and y coordinates
+        print('   overlap')
+        return True
+      prev = obj
+    return False
+
+  def has_collision_xy(list):
+    if len(list) == 0:
+      return False
+    sublist = [list[0]]
+    prev = list[0]
+    for obj in list[1:]:
+      if obj.y < prev.y + FONT_HEIGHT:
+        # Some overlapping, accumulate the row
+        sublist.append(obj)
+        print(f'y: prev={prev} obj={obj}')
+      else:
+        # Since the list is sorted, stop here
+        break
+      prev = obj
+    return has_collision_x(sublist)
+
   # Text has no wrapper, we implement it locally.
   # See https://streamlogic.io/docs/reify/nodes/#fbtext
   buffer = bytearray(2) # address 0x0000
   list = [obj for obj in args if hasattr(obj, 'fbtext')]
-  list = sorted(list, key=lambda obj: obj.x)
   list = sorted(list, key=lambda obj: obj.y)
-  last_x = 0
-  last_y = 0
-  for obj in list:
-    if obj.y > last_y or obj.x > last_x:
-      obj.fbtext(buffer)
-    last_x = obj.x + FONT_WIDTH * len(obj.string)
-    last_y = obj.y + FONT_HEIGHT
+  for i in range(len(list)):
+    if has_collision_xy(list[i:]):
+      raise ValueError(f'{list[i]} collides with another Text()')
+    list[i].fbtext(buffer)
   if len(buffer) > 0:
     fpga.write(0x4503, buffer + b'\xFF\xFF\xFF')
