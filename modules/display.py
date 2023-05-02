@@ -191,7 +191,7 @@ class Text(Colored):
       raise ValueError('unknown justify value')
 
   def width(self, string):
-    return FONT_WIDTH * len(string) - SPACE_WIDTH
+    return FONT_WIDTH * len(string)
 
   def clip_x(self):
     string = self.string
@@ -226,8 +226,8 @@ class Text(Colored):
     assert(buffer[i] <= 0xFF)
 
   def move(self, x, y):
-    self.x = x
-    self.y = y
+    self.x += x
+    self.y += y
     return self
 
 def flatten(o):
@@ -253,20 +253,38 @@ def show(*args):
   list = [obj.vgr2d() for obj in args if hasattr(obj, 'vgr2d')]
   vgr2d.display2d(0, list, WIDTH, HEIGHT)
 
-  def check_collision(list):
-    if len(list) > 0:
-      prev = list[0]
-      for obj in list[1:]:
-        if obj.y < prev.y + FONT_HEIGHT:
-          raise ValueError(f'{obj} collides with another Text()')
-        prev = obj
+  def check_collision_y(list):
+    if len(list) == 0:
+      return
+    list = sorted(list, key=lambda obj: obj.y)
+    prev = list[0]
+    for obj in list[1:]:
+      if obj.y < prev.y + FONT_HEIGHT:
+        raise ValueError(f'{prev} overlaps with {obj}')
+      prev = obj
+
+  def check_collision_xy(list):
+    if len(list) == 0:
+      return
+    sublist = [list[0]]
+    prev = list[0]
+    for obj in list[1:]:
+      if obj.x < prev.x + prev.width(prev.string):
+        # Some overlapping, accumulate the row
+        sublist.append(obj)
+      else:
+        # Since the list is sorted, we can stop checking here
+        break
+      prev = obj
+    return check_collision_y(sublist)
 
   # Text has no wrapper, we implement it locally.
   # See https://streamlogic.io/docs/reify/nodes/#fbtext
   buffer = bytearray(2) # address 0x0000
   list = [obj for obj in args if hasattr(obj, 'fbtext')]
   list = sorted(list, key=lambda obj: obj.y)
-  check_collision(list)
+  list = sorted(list, key=lambda obj: obj.x)
+  check_collision_xy(list)
   for obj in list:
     obj.fbtext(buffer)
   if len(buffer) > 0:
