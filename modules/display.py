@@ -254,45 +254,21 @@ def show(*args):
   list = [obj.vgr2d() for obj in args if hasattr(obj, 'vgr2d')]
   vgr2d.display2d(0, list, WIDTH, HEIGHT)
 
-  def has_collision_x(list):
-    if len(list) == 0:
-      return False
-    list = sorted(list, key=lambda obj: obj.x)
-    prev = list[0]
-    print(list)
-    for obj in list[1:]:
-      print(f'x: prev={prev} obj={obj}')
-      if obj.x < prev.x + prev.width(prev.string):
-        # Overlapping on both x and y coordinates
-        print('   overlap')
-        return True
-      prev = obj
-    return False
-
-  def has_collision_xy(list):
-    if len(list) == 0:
-      return False
-    sublist = [list[0]]
-    prev = list[0]
-    for obj in list[1:]:
-      if obj.y < prev.y + FONT_HEIGHT:
-        # Some overlapping, accumulate the row
-        sublist.append(obj)
-        print(f'y: prev={prev} obj={obj}')
-      else:
-        # Since the list is sorted, stop here
-        break
-      prev = obj
-    return has_collision_x(sublist)
+  def check_collision(list):
+    if len(list) > 0:
+      prev = list[0]
+      for obj in list[1:]:
+        if obj.y < prev.y + FONT_HEIGHT:
+          raise ValueError(f'{obj} collides with another Text()')
+        prev = obj
 
   # Text has no wrapper, we implement it locally.
   # See https://streamlogic.io/docs/reify/nodes/#fbtext
   buffer = bytearray(2) # address 0x0000
   list = [obj for obj in args if hasattr(obj, 'fbtext')]
   list = sorted(list, key=lambda obj: obj.y)
-  for i in range(len(list)):
-    if has_collision_xy(list[i:]):
-      raise ValueError(f'{list[i]} collides with another Text()')
-    list[i].fbtext(buffer)
+  check_collision(list)
+  for obj in list:
+    obj.fbtext(buffer)
   if len(buffer) > 0:
     fpga.write(0x4503, buffer + b'\xFF\xFF\xFF')
