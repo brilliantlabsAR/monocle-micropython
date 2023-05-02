@@ -201,13 +201,12 @@ class Text(Colored):
       i = abs(x) // FONT_WIDTH + 1
       string = string[i:]
       x += i * FONT_WIDTH
-    elif x > WIDTH:
-      raise ValueError("trying to draw text off screen")
-    elif x + self.width(string) > WIDTH:
+    if x + self.width(string) > WIDTH:
       overflow_px = x + self.width(string) - WIDTH
       overflow_ch = overflow_px // FONT_WIDTH + 1
       string = string[:-overflow_ch]
-
+    if string == '':
+      raise ValueError("trying to draw text off screen")
     return x, string
 
   def fbtext(self, buffer):
