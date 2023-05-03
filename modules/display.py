@@ -66,6 +66,8 @@ class Colored:
 
 class Line(Colored):
   def __init__(self, x1, y1, x2, y2, color, thickness=1):
+    if thickness > 18:
+      raise ValueError("max thickness is 18")
     self.x1 = int(x1)
     self.y1 = int(y1)
     self.x2 = int(x2)
@@ -85,6 +87,14 @@ class Line(Colored):
 
   def vgr2d(self):
     return vgr2d.Line(self.x1, self.y1, self.x2, self.y2, self.col, self.width)
+
+class HLine(Line):
+  def __init__(self, x, y, width, color, thickness=1):
+    super().__init__(x, y, x + width, y, color, thickness=thickness)
+
+class VLine(Line):
+  def __init__(self, x, y, height, color, thickness=1):
+    super().__init__(x, y, x, y + height, color, thickness=thickness)
 
 class Rectangle(Colored):
   def __init__(self, x1, y1, x2, y2, color):
@@ -107,6 +117,10 @@ class Rectangle(Colored):
   def vgr2d(self):
     v = vgr2d.Rect(self.width, self.height, self.col)
     return v.position(self.x, self.y)
+
+class Fill(Rectangle):
+  def __init__(self, color):
+    super().__init__(0, 0, WIDTH - 1, HEIGHT - 1, color)
 
 class Polyline(Colored):
   def __init__(self, list, color, thickness=1):
@@ -289,3 +303,6 @@ def show(*args):
     obj.fbtext(buffer)
   if len(buffer) > 0:
     fpga.write(0x4503, buffer + b'\xFF\xFF\xFF')
+
+def clear():
+  show(Text('', 0, 0, WHITE))
