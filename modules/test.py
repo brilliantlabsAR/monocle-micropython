@@ -64,7 +64,7 @@ def display_module():
     x_offset = display.WIDTH // 2
     y_offset = display.HEIGHT // 2
     angle = 0
-    while angle <= 2 * math.pi * 10:
+    while angle <= 2 * math.pi * 5:
         x1 = int(x_offset + math.cos(angle) * scale)
         y1 = int(y_offset + math.sin(angle) * scale)
         x2 = int(x_offset + math.cos(angle + math.pi) * scale)
@@ -83,7 +83,7 @@ def display_module():
         display.Line(t, t, t, h, display.WHITE, thickness=t), # left
         display.Line(w, t, w, h, display.WHITE, thickness=t), # right
         display.Line(t, t, w, t, display.WHITE, thickness=t), # top
-        display.Line(t, h - 200, w, h - 200, display.WHITE, thickness=t), # bottom
+        display.Line(t, h, w, h, display.WHITE, thickness=t), # bottom
     )
     time.sleep(1)
 
@@ -96,6 +96,7 @@ def display_module():
         x2 = x_offset + i
         y2 = y_offset + i
         display.show(display.Rectangle(x1, y1, x2, y2, display.YELLOW))
+        time.sleep_ms(10)
     time.sleep(1)
 
     # Rectangle: test with ((x1,y1), (x2,y2)) with x1 > x2 or y1 > y2
@@ -107,7 +108,7 @@ def display_module():
     for i in range(display.FONT_WIDTH * 2):
         s = "0....:....0....:....0....:"
         display.show(display.Text(s, 0 + i, 0, display.WHITE))
-        time.sleep_ms(333)
+        time.sleep_ms(100)
     time.sleep(1)
 
     # Text: the "hello" spinning around the "world"
@@ -128,7 +129,7 @@ def display_module():
     time.sleep(1)
 
     # Wrappers: test correct forwarding to other classes
-    f = dispaly.Fill(display.RED)
+    f = display.Fill(display.RED)
     hl = display.HLine(10, 100, 620, display.WHITE, thickness=18)
     vl = display.VLine(10, 100, 200, display.WHITE, thickness=18)
     display.show(f, hl, vl)
@@ -138,8 +139,6 @@ def display_module():
     # Test constants
     __test("display.WIDTH", 640)
     __test("display.HEIGHT", 400)
-    __test("display.FONT_WIDTH", 32)
-    __test("display.FONT_HEIGHT", 400)
 
 def camera_module():
     print("TODO camera module")

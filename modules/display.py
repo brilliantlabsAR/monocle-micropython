@@ -305,4 +305,4 @@ def show(*args):
     fpga.write(0x4503, buffer + b'\xFF\xFF\xFF')
 
 def clear():
-  show(Text('', 0, 0, WHITE))
+  show(Text(' ', 0, 0, WHITE))
