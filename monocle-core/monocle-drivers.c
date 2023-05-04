@@ -402,7 +402,7 @@ void monocle_flash_write(uint8_t *buffer, size_t address, size_t length)
 
         while (flash_is_busy())
         {
-            mp_hal_delay_ms(1);
+            MICROPY_EVENT_POLL_HOOK;
         }
 
         uint8_t write_enable_cmd[] = {0x06};
@@ -412,8 +412,12 @@ void monocle_flash_write(uint8_t *buffer, size_t address, size_t length)
                                       address_offset >> 16,
                                       address_offset >> 8,
                                       address_offset};
+        uint8_t *m_buffer = m_malloc(length);
+        memcpy(m_buffer, buffer, length);
+        app_err(m_buffer == NULL);
         monocle_spi_write(FLASH, page_program_cmd, sizeof(page_program_cmd), true);
-        monocle_spi_write(FLASH, buffer + bytes_written, max_writable_length, false);
+        monocle_spi_write(FLASH, m_buffer + bytes_written, max_writable_length, false);
+        m_free(m_buffer);
 
         bytes_written += max_writable_length;
     }
