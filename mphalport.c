@@ -49,6 +49,11 @@ uint64_t mp_hal_time_ns(void)
     return 0;
 }
 
+mp_uint_t mp_hal_ticks_us(void)
+{
+    return 0;
+}
+
 mp_uint_t mp_hal_ticks_ms(void)
 {
     uint32_t value = nrfx_rtc_counter_get(&rtc);
@@ -63,6 +68,12 @@ mp_uint_t mp_hal_ticks_cpu(void)
 {
     // This doesn't seem to be used by anything so it's not implemented
     return 0;
+}
+
+void mp_hal_delay_us(mp_uint_t us)
+{
+    (void)us;
+    return;
 }
 
 void mp_hal_delay_ms(mp_uint_t ms)
