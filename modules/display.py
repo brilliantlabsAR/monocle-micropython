@@ -13,7 +13,7 @@
 # purpose with or without fee is hereby granted, provided that the above
 # copyright notice and this permission notice appear in all copies.
 #
-# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+# THE SOFTWARE IS PROVIDED 'AS IS' AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
 # REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
 # AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
 # INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
@@ -29,8 +29,9 @@ from __display import *
 WIDTH   = 640
 HEIGHT  = 400
 
-FONT_HEIGHT = 64
-FONT_WIDTH = 32
+SPACE_WIDTH = 1
+FONT_HEIGHT = 48
+FONT_WIDTH = 23 + SPACE_WIDTH
 
 BLACK   = 0
 RED     = 1
@@ -64,9 +65,9 @@ class Colored:
     self.col = color
 
 class Line(Colored):
-  type = "vgr2d"
-
   def __init__(self, x1, y1, x2, y2, color, thickness=1):
+    if thickness > 18:
+      raise ValueError("max thickness is 18")
     self.x1 = int(x1)
     self.y1 = int(y1)
     self.x2 = int(x2)
@@ -75,7 +76,7 @@ class Line(Colored):
     self.width = thickness
 
   def __repr__(self):
-    return f"Line({self.x1}, {self.y1}, {self.x2}, {self.y2}, {self.col}, thickness={self.width})"
+    return f'Line({self.x1}, {self.y1}, {self.x2}, {self.y2}, {self.col}, thickness={self.width})'
 
   def move(self, x, y):
     self.x1 += int(x)
@@ -87,9 +88,15 @@ class Line(Colored):
   def vgr2d(self):
     return vgr2d.Line(self.x1, self.y1, self.x2, self.y2, self.col, self.width)
 
-class Rectangle(Colored):
-  type = "vgr2d"
+class HLine(Line):
+  def __init__(self, x, y, width, color, thickness=1):
+    super().__init__(x, y, x + width, y, color, thickness=thickness)
 
+class VLine(Line):
+  def __init__(self, x, y, height, color, thickness=1):
+    super().__init__(x, y, x, y + height, color, thickness=thickness)
+
+class Rectangle(Colored):
   def __init__(self, x1, y1, x2, y2, color):
     self.x = min(x1, x2)
     self.y = min(y1, y2)
@@ -100,7 +107,7 @@ class Rectangle(Colored):
   def __repr__(self):
     x2 = self.x + self.width
     y2 = self.y + self.height
-    return f"Rectangle({self.x}, {self.y}, {x2}, {y2}, {self.col})"
+    return f'Rectangle({self.x}, {self.y}, {x2}, {y2}, {self.col})'
 
   def move(self, x, y):
     self.x += int(x)
@@ -109,14 +116,16 @@ class Rectangle(Colored):
 
   def vgr2d(self):
     v = vgr2d.Rect(self.width, self.height, self.col)
-    return v.position(x, y)
+    return v.position(self.x, self.y)
+
+class Fill(Rectangle):
+  def __init__(self, color):
+    super().__init__(0, 0, WIDTH - 1, HEIGHT - 1, color)
 
 class Polyline(Colored):
-  type = "vgr2d"
-
   def __init__(self, list, color, thickness=1):
     if len(list) % 2 != 0:
-      raise ValueError("list must have odd number of coordinates")
+      raise ValueError('list must have odd number of coordinates')
     self.points = []
     for i in range(0, len(list), 2):
       self.points.append((list[i], list[i + 1]))
@@ -124,8 +133,8 @@ class Polyline(Colored):
     self.width = thickness
 
   def __repr__(self):
-    points = ", ".join([f"{p[0]},{p[1]}" for p in self.points])
-    return f"Polyline([{points}], {self.col}, thickness={self.width})"
+    points = ', '.join([f'{p[0]},{p[1]}' for p in self.points])
+    return f'Polyline([{points}], {self.col}, thickness={self.width})'
 
   def move(self, x, y):
     for point in iter(self.points):
@@ -136,11 +145,9 @@ class Polyline(Colored):
     return vgr2d.Polyline(self.points, self.col, self.width)
 
 class Polygon(Colored):
-  type = "vgr2d"
-
   def __init__(self, list, color, thickness=1):
     if len(list) % 2 != 0:
-      raise ValueError("list must have odd number of coordinates")
+      raise ValueError('list must have odd number of coordinates')
     self.points = []
     for i in range(0, len(list), 2):
       self.points.append((list[i], list[i + 1]))
@@ -148,8 +155,8 @@ class Polygon(Colored):
     self.width = thickness
 
   def __repr__(self):
-    points = ", ".join([f"{p[0]},{p[1]}" for p in self.points])
-    return f"Polygon([{points}], {self.col}, thickness={self.width})"
+    points = ', '.join([f'{p[0]},{p[1]}' for p in self.points])
+    return f'Polygon([{points}], {self.col}, thickness={self.width})'
 
   def move(self, x, y):
     for point in iter(self.points):
@@ -160,81 +167,81 @@ class Polygon(Colored):
     return vgr2d.Polygon(self.points, stroke=None, fill=self.col, width=self.width)
 
 class Text(Colored):
-  type = "text"
-
   def __init__(self, string, x, y, color, justify=TOP_LEFT):
     self.x = int(x)
     self.y = int(y)
     self.string = string
     self.col = color
-    self.justify = justify
+    self.justify(justify)
 
   def __repr__(self):
-    return f"Text('{self.string}', {self.x}, {self.y}, {self.col}, justify={self.justify})"
+    return f"Text('{self.string}', {self.x}, {self.y}, {self.col})"
 
-  def show(self):
-
-    # Adjust the coordinates to the alignment setting
-
+  def justify(self, justify):
     left = (TOP_LEFT, MIDDLE_LEFT, BOTTOM_LEFT)
     center = (TOP_CENTER, MIDDLE_CENTER, BOTTOM_CENTER)
     right = (TOP_RIGHT, MIDDLE_RIGHT, BOTTOM_RIGHT)
 
-    if self.justify in left:
-      x = int(self.x)
-    elif self.justify in center:
-      x = int(self.x) - FONT_WIDTH * len(self.string) // 2
-    elif self.justify in right:
-      x = int(self.x) - FONT_WIDTH * len(self.string)
+    if justify in left:
+      self.x = self.x
+    elif justify in center:
+      self.x = self.x - self.width(self.string) // 2
+    elif justify in right:
+      self.x = self.x - self.width(self.string)
     else:
-      raise ValueError("unknown justify value")
+      raise ValueError('unknown justify value')
 
     top = (TOP_LEFT, TOP_CENTER, TOP_RIGHT)
     middle = (MIDDLE_LEFT, MIDDLE_CENTER, MIDDLE_RIGHT)
     bottom = (BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT)
 
-    if self.justify in top:
-      y = int(self.y) - FONT_HEIGHT
-    elif self.justify in middle:
-      y = int(self.y) - FONT_HEIGHT // 2
-    elif self.justify in bottom:
-      y = int(self.y)
+    if justify in top:
+      self.y = self.y
+    elif justify in middle:
+      self.y = self.y - FONT_HEIGHT // 2
+    elif justify in bottom:
+      self.y = self.y - FONT_HEIGHT
     else:
-      raise ValueError("unknown justify value")
+      raise ValueError('unknown justify value')
 
-    # Clip the text to only the characters in the viewport
+  def width(self, string):
+    return FONT_WIDTH * len(string)
 
+  def clip_x(self):
     string = self.string
+    x = self.x
 
     if x < 0:
       i = abs(x) // FONT_WIDTH + 1
       string = string[i:]
       x += i * FONT_WIDTH
+    if x + self.width(string) > WIDTH:
+      overflow_px = x + self.width(string) - WIDTH
+      overflow_ch = overflow_px // FONT_WIDTH + 1
+      string = string[:-overflow_ch]
+    if string == '':
+      raise ValueError("trying to draw text off screen")
+    return x, string
 
-    if x + len(string) * FONT_WIDTH > WIDTH:
-      i = (x + len(string) * FONT_WIDTH - WIDTH) // FONT_WIDTH + 1
-      string = string[:-i]
+  def fbtext(self, buffer):
+    x, string = self.clip_x()
+    y = self.y
 
-    # Fill the buffer with the raw data and send it
-
-    buffer = bytearray(7)
-    buffer[0] = 0
-    buffer[1] = 0
-    buffer[2] = (x >> 4) & 0xFF
-    buffer[3] = ((x << 4) & 0xF0) | ((y >> 8) & 0x0F)
-    buffer[4] = y & 0xFF
-    buffer[5] = self.col
-    buffer[6] = 0
-    for c in string.encode("ASCII"):
+    # Build a buffer to send to the FPGA
+    buffer.append((x >> 4) & 0xFF)
+    buffer.append(((x << 4) & 0xF0) | ((y >> 8) & 0x0F))
+    buffer.append(y & 0xFF)
+    buffer.append(self.col)
+    i = len(buffer)
+    buffer.append(0)
+    for c in string.encode('ASCII'):
       buffer.append(c - 32)
-      buffer[6] += 1
-    buffer += b"\xFF\xFF\xFF"
-    assert len(buffer) <= 0xFF
-    fpga.write(0x4503, buffer)
+      buffer[i] += 1  # increment the length field
+    assert(buffer[i] <= 0xFF)
 
   def move(self, x, y):
-    self.x = x
-    self.y = y
+    self.x += x
+    self.y += y
     return self
 
 def flatten(o):
@@ -257,11 +264,45 @@ def show(*args):
   # 0 is the address of the frame in the framebuffer in use.
   # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
   # Offset: active display offset in buffer used if double buffering
-  list = [obj.vgr2d() for obj in args if obj.type == "vgr2d"]
+  list = [obj.vgr2d() for obj in args if hasattr(obj, 'vgr2d')]
   vgr2d.display2d(0, list, WIDTH, HEIGHT)
+
+  def check_collision_y(list):
+    if len(list) == 0:
+      return
+    list = sorted(list, key=lambda obj: obj.y)
+    prev = list[0]
+    for obj in list[1:]:
+      if obj.y < prev.y + FONT_HEIGHT:
+        raise ValueError(f'{prev} overlaps with {obj}')
+      prev = obj
+
+  def check_collision_xy(list):
+    if len(list) == 0:
+      return
+    sublist = [list[0]]
+    prev = list[0]
+    for obj in list[1:]:
+      if obj.x < prev.x + prev.width(prev.string):
+        # Some overlapping, accumulate the row
+        sublist.append(obj)
+      else:
+        # Since the list is sorted, we can stop checking here
+        break
+      prev = obj
+    return check_collision_y(sublist)
 
   # Text has no wrapper, we implement it locally.
   # See https://streamlogic.io/docs/reify/nodes/#fbtext
-  for obj in args:
-    if obj.type == "text":
-      obj.show()
+  buffer = bytearray(2) # address 0x0000
+  list = [obj for obj in args if hasattr(obj, 'fbtext')]
+  list = sorted(list, key=lambda obj: obj.y)
+  list = sorted(list, key=lambda obj: obj.x)
+  check_collision_xy(list)
+  for obj in list:
+    obj.fbtext(buffer)
+  if len(buffer) > 0:
+    fpga.write(0x4503, buffer + b'\xFF\xFF\xFF')
+
+def clear():
+  show(Text(' ', 0, 0, WHITE))

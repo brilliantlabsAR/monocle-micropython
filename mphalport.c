@@ -31,7 +31,7 @@
 
 const char help_text[] = {
     "Welcome to MicroPython!\n\n"
-    "For full documentation, visit: https://docs.brilliantmonocle.com\n"
+    "For full documentation, visit: https://docs.brilliant.xyz\n"
     "Control commands:\n"
     "  Ctrl-A - enter raw REPL mode\n"
     "  Ctrl-B - enter normal REPL mode\n"
@@ -45,6 +45,11 @@ const char help_text[] = {
 static nrfx_rtc_t rtc = NRFX_RTC_INSTANCE(1);
 
 uint64_t mp_hal_time_ns(void)
+{
+    return 0;
+}
+
+mp_uint_t mp_hal_ticks_us(void)
 {
     return 0;
 }
@@ -63,6 +68,12 @@ mp_uint_t mp_hal_ticks_cpu(void)
 {
     // This doesn't seem to be used by anything so it's not implemented
     return 0;
+}
+
+void mp_hal_delay_us(mp_uint_t us)
+{
+    (void)us;
+    return;
 }
 
 void mp_hal_delay_ms(mp_uint_t ms)
