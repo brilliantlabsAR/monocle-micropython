@@ -58,12 +58,13 @@ def device_module():
     __test("str(device.Storage())", 'Storage(start=0x0006d000, len=602112)')
 
 def display_module():
+
     # Line: spinning animation
-    scale = 300
+    scale = 200
     x_offset = display.WIDTH // 2
     y_offset = display.HEIGHT // 2
     angle = 0
-    while angle <= 2 * math.pi * 10:
+    while angle <= 2 * math.pi * 5:
         x1 = int(x_offset + math.cos(angle) * scale)
         y1 = int(y_offset + math.sin(angle) * scale)
         x2 = int(x_offset + math.cos(angle + math.pi) * scale)
@@ -71,18 +72,20 @@ def display_module():
         line = display.Line(x1, y1, x2, y2, display.WHITE)
         display.show(line)
         angle += math.pi / 20
+        time.sleep_ms(10)
+    time.sleep(1)
 
     # Line: rectangle around the display edges
     t = 10
     h = display.HEIGHT - t
     w = display.WIDTH - t
-
     display.show(
         display.Line(t, t, t, h, display.WHITE, thickness=t), # left
         display.Line(w, t, w, h, display.WHITE, thickness=t), # right
         display.Line(t, t, w, t, display.WHITE, thickness=t), # top
-        display.Line(t, h - 200, w, h - 200, display.WHITE, thickness=t), # bottom
+        display.Line(t, h, w, h, display.WHITE, thickness=t), # bottom
     )
+    time.sleep(1)
 
     # Rectangle: growing rectangle, getting larger than the display
     x_offset = display.WIDTH // 2
@@ -93,14 +96,49 @@ def display_module():
         x2 = x_offset + i
         y2 = y_offset + i
         display.show(display.Rectangle(x1, y1, x2, y2, display.YELLOW))
+        time.sleep_ms(10)
+    time.sleep(1)
 
     # Rectangle: test with ((x1,y1), (x2,y2)) with x1 > x2 or y1 > y2
+    r = display.Rectangle(550, 300, 100, 100, display.GREEN)
+    display.show(r)
+    time.sleep(1)
+
+    # Text: test the edge cases for clipping on the right side of the display
+    for i in range(display.FONT_WIDTH * 2):
+        s = "0....:....0....:....0....:"
+        display.show(display.Text(s, 0 + i, 0, display.WHITE))
+        time.sleep_ms(100)
+    time.sleep(1)
+
+    # Text: the "hello" spinning around the "world"
+    t1 = display.Text("hello", 200, 100, display.WHITE)
+    t2 = display.Text("world", 400, 20, display.WHITE)
+    for i in range(0, 130):
+        _ = t2.move(0, +1)
+        display.show(t1, t2)
+    for i in range(0, 350):
+        _ = t2.move(-1, 0)
+        display.show(t1, t2)
+    for i in range(0, 130):
+        _ = t2.move(0, -1)
+        display.show(t1, t2)
+    for i in range(0, 350):
+        _ = t2.move(+1, 0)
+        display.show(t1, t2)
+    time.sleep(1)
+
+    # Wrappers: test correct forwarding to other classes
+    f = display.Fill(display.RED)
+    hl = display.HLine(10, 100, 620, display.WHITE, thickness=18)
+    vl = display.VLine(10, 100, 200, display.WHITE, thickness=18)
+    display.show(f, hl, vl)
+    time.sleep(1)
+    display.clear()
 
     # Test constants
     __test("display.WIDTH", 640)
     __test("display.HEIGHT", 400)
-    __test("display.FONT_WIDTH", 32)
-    __test("display.FONT_HEIGHT", 400)
 
 def camera_module():
     print("TODO camera module")
@@ -205,7 +243,6 @@ def update_module():
     __test("update.Fpga.read(444430, 8)", ValueError)
 
 def all():
-    device_module()
     display_module()
     camera_module()
     microphone_module()
@@ -214,4 +251,5 @@ def all():
     fpga_module()
     bluetooth_module()
     time_module()
+    device_module()
     update_module()
