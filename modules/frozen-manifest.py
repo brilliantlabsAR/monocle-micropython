@@ -23,6 +23,7 @@
 #
 
 module("_mountfs.py")
+module("_splashscreen.py")
 module("camera.py")
 module("display.py")
 module("microphone.py")

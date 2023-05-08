@@ -880,6 +880,7 @@ int main(void)
 
         // Mount the filesystem, or format if needed
         pyexec_frozen_module("_mountfs.py", false);
+        pyexec_frozen_module("_splashscreen.py", false);
 
         // Run the user's main file if it exists
         pyexec_file_if_exists("main.py");
