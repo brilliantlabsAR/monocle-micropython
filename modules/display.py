@@ -228,7 +228,7 @@ class Text(Colored):
     return self
 
 def flatten(o):
-  if isinstance(o, tuple) or isinstance(o, l):
+  if isinstance(o, tuple) or isinstance(o, list):
     return [i2 for i1 in o for i2 in flatten(i1)]
   else:
     return [o]
