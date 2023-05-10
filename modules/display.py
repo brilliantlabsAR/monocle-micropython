@@ -33,23 +33,6 @@ SPACE_WIDTH = 1
 FONT_HEIGHT = 48
 FONT_WIDTH = 23 + SPACE_WIDTH
 
-BLACK   = 0
-RED     = 1
-GREEN   = 2
-BLUE    = 3
-CYAN    = 4
-MAGENTA = 5
-YELLOW  = 6
-WHITE   = 7
-GRAY1   = 8
-GRAY2   = 9
-GRAY3   = 10
-GRAY4   = 11
-GRAY5   = 12
-GRAY6   = 13
-GRAY7   = 14
-GRAY8   = 15
-
 TOP_LEFT        = 1
 MIDDLE_LEFT     = 2
 BOTTOM_LEFT     = 3
@@ -60,9 +43,27 @@ MIDDLE_CENTER   = 7
 MIDDLE_RIGHT    = 8
 BOTTOM_RIGHT    = 9
 
+CLEAR   = 0x000000
+BLACK   = 0x000000
+RED     = 0xAD2323
+GREEN   = 0x1D6914
+BLUE    = 0x2A4BD7
+CYAN    = 0x29D0D0
+MAGENTA = 0x8126C0
+YELLOW  = 0xFFEE33
+WHITE   = 0xFFFFFF
+GRAY1   = 0x1C1C1C
+GRAY2   = 0x383838
+GRAY3   = 0x555555
+GRAY4   = 0x717171
+GRAY5   = 0x8D8D8D
+GRAY6   = 0xAAAAAA
+GRAY7   = 0xC6C6C6
+GRAY8   = 0xE2E2E2
+
 class Colored:
-  def color(self, color):
-    self.col = color
+  def color(self, color_rgb):
+    self.color_rgb = color_rgb
 
 class Line(Colored):
   def __init__(self, x1, y1, x2, y2, color, thickness=1):
@@ -72,11 +73,11 @@ class Line(Colored):
     self.y1 = int(y1)
     self.x2 = int(x2)
     self.y2 = int(y2)
-    self.col = color
     self.width = thickness
+    self.color(color)
 
   def __repr__(self):
-    return f'Line({self.x1}, {self.y1}, {self.x2}, {self.y2}, {self.col}, thickness={self.width})'
+    return f'Line({self.x1}, {self.y1}, {self.x2}, {self.y2}, 0x{self.color_rgb:06x}, thickness={self.width})'
 
   def move(self, x, y):
     self.x1 += int(x)
@@ -86,7 +87,7 @@ class Line(Colored):
     return self
 
   def vgr2d(self):
-    return vgr2d.Line(self.x1, self.y1, self.x2, self.y2, self.col, self.width)
+    return vgr2d.Line(self.x1, self.y1, self.x2, self.y2, self.color_index, self.width)
 
 class HLine(Line):
   def __init__(self, x, y, width, color, thickness=1):
@@ -102,12 +103,12 @@ class Rectangle(Colored):
     self.y = min(y1, y2)
     self.width = abs(x2 - x1)
     self.height = abs(y2 - y1)
-    self.col = color
+    self.color(color)
 
   def __repr__(self):
     x2 = self.x + self.width
     y2 = self.y + self.height
-    return f'Rectangle({self.x}, {self.y}, {x2}, {y2}, {self.col})'
+    return f'Rectangle({self.x}, {self.y}, {x2}, {y2}, 0x{self.color_rgb:06x})'
 
   def move(self, x, y):
     self.x += int(x)
@@ -115,7 +116,7 @@ class Rectangle(Colored):
     return self
 
   def vgr2d(self):
-    v = vgr2d.Rect(self.width, self.height, self.col)
+    v = vgr2d.Rect(self.width, self.height, self.color_index)
     return v.position(self.x, self.y)
 
 class Fill(Rectangle):
@@ -123,18 +124,18 @@ class Fill(Rectangle):
     super().__init__(0, 0, WIDTH - 1, HEIGHT - 1, color)
 
 class Polyline(Colored):
-  def __init__(self, list, color, thickness=1):
-    if len(list) % 2 != 0:
-      raise ValueError('list must have odd number of coordinates')
+  def __init__(self, l, color, thickness=1):
+    if len(l) % 2 != 0:
+      raise ValueError('l must have odd number of coordinates')
     self.points = []
-    for i in range(0, len(list), 2):
-      self.points.append((list[i], list[i + 1]))
-    self.col = color
+    for i in range(0, len(l), 2):
+      self.points.append((l[i], l[i + 1]))
     self.width = thickness
+    self.color(color)
 
   def __repr__(self):
     points = ', '.join([f'{p[0]},{p[1]}' for p in self.points])
-    return f'Polyline([{points}], {self.col}, thickness={self.width})'
+    return f'Polyline([{points}], 0x{self.color_rgb:06x}, thickness={self.width})'
 
   def move(self, x, y):
     for point in iter(self.points):
@@ -142,21 +143,21 @@ class Polyline(Colored):
       point[1] += int(y)
 
   def vgr2d(self):
-    return vgr2d.Polyline(self.points, self.col, self.width)
+    return vgr2d.Polyline(self.points, self.color_index, self.width)
 
 class Polygon(Colored):
-  def __init__(self, list, color, thickness=1):
-    if len(list) % 2 != 0:
-      raise ValueError('list must have odd number of coordinates')
+  def __init__(self, l, color, thickness=1):
+    if len(l) % 2 != 0:
+      raise ValueError('l must have odd number of coordinates')
     self.points = []
-    for i in range(0, len(list), 2):
-      self.points.append((list[i], list[i + 1]))
-    self.col = color
+    for i in range(0, len(l), 2):
+      self.points.append((l[i], l[i + 1]))
     self.width = thickness
+    self.color(color)
 
   def __repr__(self):
     points = ', '.join([f'{p[0]},{p[1]}' for p in self.points])
-    return f'Polygon([{points}], {self.col}, thickness={self.width})'
+    return f'Polygon([{points}], 0x{self.color_rgb:06x}, thickness={self.width})'
 
   def move(self, x, y):
     for point in iter(self.points):
@@ -164,18 +165,18 @@ class Polygon(Colored):
       point[1] += int(y)
 
   def vgr2d(self):
-    return vgr2d.Polygon(self.points, stroke=None, fill=self.col, width=self.width)
+    return vgr2d.Polygon(self.points, stroke=None, fill=self.color_index, width=self.width)
 
 class Text(Colored):
   def __init__(self, string, x, y, color, justify=TOP_LEFT):
     self.x = int(x)
     self.y = int(y)
     self.string = string
-    self.col = color
     self.justify(justify)
+    self.color(color)
 
   def __repr__(self):
-    return f"Text('{self.string}', {self.x}, {self.y}, {self.col})"
+    return f"Text('{self.string}', {self.x}, {self.y}, 0x{self.color_rgb:06x})"
 
   def justify(self, justify):
     left = (TOP_LEFT, MIDDLE_LEFT, BOTTOM_LEFT)
@@ -231,7 +232,7 @@ class Text(Colored):
     buffer.append((x >> 4) & 0xFF)
     buffer.append(((x << 4) & 0xF0) | ((y >> 8) & 0x0F))
     buffer.append(y & 0xFF)
-    buffer.append(self.col)
+    buffer.append(self.color_index)
     i = len(buffer)
     buffer.append(0)
     for c in string.encode('ASCII'):
@@ -258,51 +259,86 @@ def color(*args):
   for arg in flatten(args[:-1]):
     arg.color(args[-1])
 
-def show(*args):
-  args = flatten(args)
+def text_check_collision_y(l):
+  if len(l) == 0:
+    return
+  l = sorted(l, key=lambda obj: obj.y)
+  prev = l[0]
+  for obj in l[1:]:
+    if obj.y < prev.y + FONT_HEIGHT:
+      raise ValueError(f'{prev} overlaps with {obj}')
+    prev = obj
 
-  # 0 is the address of the frame in the framebuffer in use.
-  # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
-  # Offset: active display offset in buffer used if double buffering
-  list = [obj.vgr2d() for obj in args if hasattr(obj, 'vgr2d')]
-  vgr2d.display2d(0, list, WIDTH, HEIGHT)
+def text_check_collision_xy(l):
+  if len(l) == 0:
+    return
+  subl = [l[0]]
+  prev = l[0]
+  for obj in l[1:]:
+    if obj.x < prev.x + prev.width(prev.string):
+      # Some overlapping, accumulate the row
+      subl.append(obj)
+    else:
+      # Since the l is sorted, we can stop checking here
+      break
+    prev = obj
+  return text_check_collision_y(subl)
 
-  def check_collision_y(list):
-    if len(list) == 0:
-      return
-    list = sorted(list, key=lambda obj: obj.y)
-    prev = list[0]
-    for obj in list[1:]:
-      if obj.y < prev.y + FONT_HEIGHT:
-        raise ValueError(f'{prev} overlaps with {obj}')
-      prev = obj
+def update_colors(addr, l):
+  # new buffer for the FPGA API, starting with address 0x0000
+  buffer = bytearray(2)
 
-  def check_collision_xy(list):
-    if len(list) == 0:
-      return
-    sublist = [list[0]]
-    prev = list[0]
-    for obj in list[1:]:
-      if obj.x < prev.x + prev.width(prev.string):
-        # Some overlapping, accumulate the row
-        sublist.append(obj)
-      else:
-        # Since the list is sorted, we can stop checking here
-        break
-      prev = obj
-    return check_collision_y(sublist)
+  # collect the colors from the various objects
+  color_l = []
+  for obj in l:
 
+    if obj.color_rgb in color_l:
+      # deduplicate the color by using the existing index
+      obj.color_index = color_l.index(obj.color_rgb)
+
+    else:
+      # add a new color if enough room
+      if len(color_l) > 128:
+        raise ValueError("more than 128 different color unsupported")
+
+      # add to the l for future reference
+      obj.color_index = len(color_l)
+      color_l.append(obj.color_rgb)
+
+      # add to the buffer for the FPGA
+      buffer.append(obj.color_rgb >> 16)
+      buffer.append(obj.color_rgb >> 8)
+      buffer.append(obj.color_rgb >> 0)
+
+  # flush the buffer, we are done
+  fpga.write(addr, buffer)
+
+def show_text(l):
+  update_colors(0x4502, l)
   # Text has no wrapper, we implement it locally.
   # See https://streamlogic.io/docs/reify/nodes/#fbtext
   buffer = bytearray(2) # address 0x0000
-  list = [obj for obj in args if hasattr(obj, 'fbtext')]
-  list = sorted(list, key=lambda obj: obj.y)
-  list = sorted(list, key=lambda obj: obj.x)
-  check_collision_xy(list)
-  for obj in list:
+  l = [obj for obj in l if hasattr(obj, 'fbtext')]
+  l = sorted(l, key=lambda obj: obj.y)
+  l = sorted(l, key=lambda obj: obj.x)
+  text_check_collision_xy(l)
+  for obj in l:
     obj.fbtext(buffer)
   if len(buffer) > 0:
     fpga.write(0x4503, buffer + b'\xFF\xFF\xFF')
 
+def show_vgr2d(l):
+  update_colors(0x4402, l)
+  # 0 is the address of the frame in the framebuffer in use.
+  # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
+  # Offset: active display offset in buffer used if double buffering
+  l = [obj.vgr2d() for obj in l if hasattr(obj, 'vgr2d')]
+  vgr2d.display2d(0, l, WIDTH, HEIGHT)
+
+def show(*args):
+  l = flatten(args)
+  show_vgr2d(l)
+  show_text(l)
+
 def clear():
-  show(Text(' ', 0, 0, WHITE))
+  show(Text(' ', 0, 0, 0x000000))
