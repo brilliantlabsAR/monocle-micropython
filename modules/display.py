@@ -43,6 +43,24 @@ MIDDLE_CENTER   = 7
 MIDDLE_RIGHT    = 8
 BOTTOM_RIGHT    = 9
 
+CLEAR   = 0x000000
+BLACK   = 0x000000
+RED     = 0xAD2323
+GREEN   = 0x1D6914
+BLUE    = 0x2A4BD7
+CYAN    = 0x29D0D0
+MAGENTA = 0x8126C0
+YELLOW  = 0xFFEE33
+WHITE   = 0xFFFFFF
+GRAY1   = 0x1C1C1C
+GRAY2   = 0x383838
+GRAY3   = 0x555555
+GRAY4   = 0x717171
+GRAY5   = 0x8D8D8D
+GRAY6   = 0xAAAAAA
+GRAY7   = 0xC6C6C6
+GRAY8   = 0xE2E2E2
+
 class Colored:
   def color(self, color_rgb):
     self.color_rgb = color_rgb
@@ -240,7 +258,6 @@ def move(*args):
 def color(*args):
   for arg in flatten(args[:-1]):
     arg.color(args[-1])
-
 
 def text_check_collision_y(l):
   if len(l) == 0:
