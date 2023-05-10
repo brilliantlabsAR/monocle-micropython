@@ -310,8 +310,6 @@ def update_colors(addr, l):
       buffer.append(obj.color_rgb >> 8)
       buffer.append(obj.color_rgb >> 0)
 
-  print(f'fpga.write(0x{addr:02x}, {buffer})')
-
   # flush the buffer, we are done
   fpga.write(addr, buffer)
 
