@@ -39,6 +39,7 @@ class Microphone:
         self.sample_rate = sample_rate
 
     def read(self, samples=-1):
+        ## TODO fpga.read limited to 256
         available = int.from_bytes(fpga.read(0x1C01, 2), "big")
         if samples == -1:
             data = fpga.read(0x1C02, available)
