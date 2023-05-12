@@ -34,6 +34,7 @@ import time
 import update
 import math
 
+
 def __test(evaluate, expected):
     try:
         response = eval(evaluate)
@@ -45,20 +46,21 @@ def __test(evaluate, expected):
     else:
         print(f"Failed - {evaluate} == {response}. Expected: {expected}")
 
+
 # Tests for individual modules
 def device_module():
-    __test("device.NAME", 'monocle')
+    __test("device.NAME", "monocle")
     __test("len(device.mac_address())", 17)
     __test("len(device.VERSION)", 12)
     __test("len(device.GIT_TAG)", 9)
-    __test("device.GIT_REPO", 'https://github.com/brilliantlabsAR/monocle-micropython')
+    __test("device.GIT_REPO", "https://github.com/brilliantlabsAR/monocle-micropython")
     __test("isinstance(device.battery_level(), int)", True)
     __test("device.prevent_sleep(True)", None)
     __test("device.prevent_sleep(False)", None)
-    __test("str(device.Storage())", 'Storage(start=0x0006d000, len=602112)')
+    __test("str(device.Storage())", "Storage(start=0x0006d000, len=602112)")
+
 
 def display_module():
-
     # Line: spinning animation
     scale = 200
     x_offset = display.WIDTH // 2
@@ -80,10 +82,10 @@ def display_module():
     h = display.HEIGHT - t
     w = display.WIDTH - t
     display.show(
-        display.Line(t, t, t, h, display.WHITE, thickness=t), # left
-        display.Line(w, t, w, h, display.WHITE, thickness=t), # right
-        display.Line(t, t, w, t, display.WHITE, thickness=t), # top
-        display.Line(t, h, w, h, display.WHITE, thickness=t), # bottom
+        display.Line(t, t, t, h, display.WHITE, thickness=t),  # left
+        display.Line(w, t, w, h, display.WHITE, thickness=t),  # right
+        display.Line(t, t, w, t, display.WHITE, thickness=t),  # top
+        display.Line(t, h, w, h, display.WHITE, thickness=t),  # bottom
     )
     time.sleep(1)
 
@@ -140,11 +142,14 @@ def display_module():
     __test("display.WIDTH", 640)
     __test("display.HEIGHT", 400)
 
+
 def camera_module():
     print("TODO camera module")
 
+
 def microphone_module():
     print("TODO microphone module")
+
 
 def touch_module():
     __test("touch.state('A')", False)
@@ -156,6 +161,7 @@ def touch_module():
     __test("touch.state('B')", False)
     __test("callable(touch.callback)", True)
 
+
 def led_module():
     __test("led.on('RED')", None)
     __test("led.on(led.RED)", None)
@@ -166,9 +172,10 @@ def led_module():
     __test("led.off('GREEN')", None)
     __test("led.off(led.GREEN)", None)
 
+
 def fpga_module():
     # Test read and check the FPGA chip ID at the same time
-    __test("fpga.read(0x0001, 3)", b'K\x07\x00')
+    __test("fpga.read(0x0001, 3)", b"K\x07\x00")
 
     # Test writes
     __test("fpga.write(0x0000, b'')", None)
@@ -184,6 +191,7 @@ def fpga_module():
     __test("fpga.read(0x0000, -1), ", ValueError)
     __test("fpga.write(0x0000, b'a' * 256)", ValueError)
 
+
 def bluetooth_module():
     __test("bluetooth.connected()", True)
     __test("isinstance(bluetooth.max_length(), int)", True)
@@ -193,24 +201,80 @@ def bluetooth_module():
     __test(f"bluetooth.send(b'a' * ({max_length} + 1))", ValueError)
     __test("callable(bluetooth.receive_callback)", True)
 
+
 def time_module():
     # Test setting and checking the time
     __test("time.time(1674252171)", None)
     __test("time.time()", 1674252171)
-    __test("time.now()", {'timezone': '00:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 22, 'year': 2023})
+    __test(
+        "time.now()",
+        {
+            "timezone": "00:00",
+            "weekday": "friday",
+            "minute": 2,
+            "day": 20,
+            "yearday": 20,
+            "month": 1,
+            "second": 51,
+            "hour": 22,
+            "year": 2023,
+        },
+    )
 
     # Check time dict at a specified epoch
-    __test("time.now(1674253104)", {'timezone': '00:00', 'weekday': 'friday', 'minute': 18, 'day': 20, 'yearday': 20, 'month': 1, 'second': 24, 'hour': 22, 'year': 2023})
+    __test(
+        "time.now(1674253104)",
+        {
+            "timezone": "00:00",
+            "weekday": "friday",
+            "minute": 18,
+            "day": 20,
+            "yearday": 20,
+            "month": 1,
+            "second": 24,
+            "hour": 22,
+            "year": 2023,
+        },
+    )
 
     # Test timezones
     __test("time.zone('5:30')", None)
-    __test("time.zone()", '05:30')
-    __test("time.now()", {'timezone': '05:30', 'weekday': 'saturday', 'minute': 32, 'day': 21, 'yearday': 21, 'month': 1, 'second': 51, 'hour': 3, 'year': 2023})
+    __test("time.zone()", "05:30")
+    __test(
+        "time.now()",
+        {
+            "timezone": "05:30",
+            "weekday": "saturday",
+            "minute": 32,
+            "day": 21,
+            "yearday": 21,
+            "month": 1,
+            "second": 51,
+            "hour": 3,
+            "year": 2023,
+        },
+    )
     __test("time.zone('-12:00')", None)
-    __test("time.now()", {'timezone': '-12:00', 'weekday': 'friday', 'minute': 2, 'day': 20, 'yearday': 20, 'month': 1, 'second': 51, 'hour': 10, 'year': 2023})
+    __test(
+        "time.now()",
+        {
+            "timezone": "-12:00",
+            "weekday": "friday",
+            "minute": 2,
+            "day": 20,
+            "yearday": 20,
+            "month": 1,
+            "second": 51,
+            "hour": 10,
+            "year": 2023,
+        },
+    )
 
     # Test getting epochs from time dict
-    __test("time.mktime({'minute': 18, 'day': 20, 'month': 1, 'second': 24, 'hour': 22, 'year': 2023})", 1674253104)
+    __test(
+        "time.mktime({'minute': 18, 'day': 20, 'month': 1, 'second': 24, 'hour': 22, 'year': 2023})",
+        1674253104,
+    )
 
     # Test sleep
     __test("time.time(1674252171)", None)
@@ -226,6 +290,7 @@ def time_module():
     __test("time.zone('15:00')", ValueError)
     __test("time.zone('-12:30')", ValueError)
 
+
 def update_module():
     __test("callable(update.micropython)", True)
 
@@ -236,11 +301,12 @@ def update_module():
 
     # Write and read back value
     __test("update.Fpga.write(b'done')", None)
-    __test("update.Fpga.read(0x0000, 4)", b'done')
+    __test("update.Fpga.read(0x0000, 4)", b"done")
 
     # Check that limits of the FPGA app region are respected
-    __test("update.Fpga.read(444430, 4)", b'\xff\xff\xff\xff')
+    __test("update.Fpga.read(444430, 4)", b"\xff\xff\xff\xff")
     __test("update.Fpga.read(444430, 8)", ValueError)
+
 
 def all():
     display_module()
