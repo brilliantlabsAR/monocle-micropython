@@ -59,4 +59,4 @@ const mp_obj_module_t display_module = {
     .base = {&mp_type_module},
     .globals = (mp_obj_dict_t *)&display_module_globals,
 };
-MP_REGISTER_MODULE(MP_QSTR___display, display_module);
+MP_REGISTER_MODULE(MP_QSTR__display, display_module);

@@ -24,10 +24,10 @@
 
 module("_mountfs.py")
 module("_splashscreen.py")
+module("_test.py")
 module("camera.py")
 module("display.py")
 module("microphone.py")
-module("test.py")
 module("update.py")
 
 include("$(MPY_DIR)/extmod/uasyncio/manifest.py")

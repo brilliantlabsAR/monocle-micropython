@@ -70,4 +70,4 @@ const mp_obj_module_t camera_module = {
     .base = {&mp_type_module},
     .globals = (mp_obj_dict_t *)&camera_module_globals,
 };
-MP_REGISTER_MODULE(MP_QSTR___camera, camera_module);
+MP_REGISTER_MODULE(MP_QSTR__camera, camera_module);
