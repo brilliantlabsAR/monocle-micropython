@@ -61,8 +61,8 @@ def device_module():
     __test("str(device.Storage())", "Storage(start=0x0006d000, len=602112)")
 
 def display_module():
-    # Text: randomly placed text strings, it should not raise exception or show
-    # any overlapping text glitching the display
+
+    # Text: randomly placed text strings (or no change if overlaps occurs)
     for i in range(0, 100):
         l = []
         for i in range(0, 15):
@@ -76,12 +76,15 @@ def display_module():
         time.sleep_ms(200)
     time.sleep(1)
 
-    # Text: print a string in each corner to check alignment after that
+    # Text: print a string in each corner to check if alignment is still fine
     l = []
-    l.append(display.Text(0, 0, "TOP LEFT", justify=TOP_LEFT))
-    l.append(display.Text(display.WIDTH - 1, 0, "TOP RIGHt", justify=TOP_RIGHT))
-    l.append(display.Text(0, display.HEIGHT - 1, "TOP LEFT", justify=BOTTOM_LEFT))
-    l.append(display.Text(display.WIDTH - 1, display.HEIGHT - 1, "TOP RIGHt", justify=BOTTOM_RIGHT))
+    w = display.WIDTH - 1
+    h = display.HEIGHT - 1
+    l.append(display.Text("TOP LEFT", 0, 0, 0xFF7700, justify=display.TOP_LEFT))
+    l.append(display.Text("TOP RIGHT", w, 0, 0xFF77FF, justify=display.TOP_RIGHT))
+    l.append(display.Text("BOTTOM LEFT", 0, h, 0x007700, justify=display.BOTTOM_LEFT))
+    l.append(display.Text("BOTTOM RIGHT", w, h, 0x0077FF, justify=display.BOTTOM_RIGHT))
+    display.show(l)
     time.sleep(2)
 
     # Line: spinning animation
