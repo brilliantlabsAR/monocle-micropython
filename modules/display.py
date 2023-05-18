@@ -105,6 +105,7 @@ class VLine(Line):
 
 
 class Rectangle(Colored):
+
     def __init__(self, x1, y1, x2, y2, color):
         self.x = min(x1, x2)
         self.y = min(y1, y2)
@@ -115,7 +116,7 @@ class Rectangle(Colored):
     def __repr__(self):
         x2 = self.x + self.width
         y2 = self.y + self.height
-        return f"Rectangle({self.x}, {self.y}, {x2}, {y2}, 0x{self.color_rgb:06x})"
+        return f'Rectangle({self.x}, {self.y}, {x2}, {y2}, 0x{self.color_rgb:06x})'
 
     def move(self, x, y):
         self.x += int(x)
@@ -180,6 +181,9 @@ class Polygon(Colored):
         )
 
 
+class TextOverlapError(Exception):
+    pass
+
 class Text(Colored):
     def __init__(self, string, x, y, color, justify=TOP_LEFT):
         self.x = int(x)
@@ -203,7 +207,7 @@ class Text(Colored):
         elif justify in right:
             self.x = self.x - self.width(self.string)
         else:
-            raise ValueError("unknown justify value")
+            raise ValueError('unknown justify value')
 
         top = (TOP_LEFT, TOP_CENTER, TOP_RIGHT)
         middle = (MIDDLE_LEFT, MIDDLE_CENTER, MIDDLE_RIGHT)
@@ -216,7 +220,7 @@ class Text(Colored):
         elif justify in bottom:
             self.y = self.y - FONT_HEIGHT
         else:
-            raise ValueError("unknown justify value")
+            raise ValueError('unknown justify value')
 
     def width(self, string):
         return FONT_WIDTH * len(string)
@@ -233,13 +237,14 @@ class Text(Colored):
             overflow_px = x + self.width(string) - WIDTH
             overflow_ch = overflow_px // FONT_WIDTH + 1
             string = string[:-overflow_ch]
-        if string == "":
-            raise ValueError("trying to draw text off screen")
         return x, string
 
     def fbtext(self, buffer):
         x, string = self.clip_x()
         y = self.y
+
+        if len(string) == 0:
+            return
 
         # Build a buffer to send to the FPGA
         buffer.append((x >> 4) & 0xFF)
@@ -248,16 +253,15 @@ class Text(Colored):
         buffer.append(self.color_index)
         i = len(buffer)
         buffer.append(0)
-        for c in string.encode("ASCII"):
+        for c in string.encode('ASCII'):
             buffer.append(c - 32)
-            buffer[i] += 1  # increment the length field
-        assert buffer[i] <= 0xFF
+            buffer[i] += 1 # increment the length field
+        assert(buffer[i] <= 0xFF)
 
     def move(self, x, y):
         self.x += x
         self.y += y
         return self
-
 
 def flatten(o):
     if isinstance(o, tuple) or isinstance(o, list):
@@ -277,31 +281,34 @@ def color(*args):
 
 
 def text_check_collision_y(l):
-    if len(l) == 0:
+    if len(l) <= 1:
         return
     l = sorted(l, key=lambda obj: obj.y)
     prev = l[0]
     for obj in l[1:]:
         if obj.y < prev.y + FONT_HEIGHT:
-            raise ValueError(f"{prev} overlaps with {obj}")
+            raise TextOverlapError(f"{obj} overlaps with {prev}")
         prev = obj
 
-
 def text_check_collision_xy(l):
-    if len(l) == 0:
+    if len(l) <= 1:
         return
-    subl = [l[0]]
-    prev = l[0]
+    base = l[0]
+    sub = [l[0]]
     for obj in l[1:]:
-        if obj.x < prev.x + prev.width(prev.string):
-            # Some overlapping, accumulate the row
-            subl.append(obj)
+        if obj.x < base.x + base.width(base.string):
+            # Some overlapping on x coordinates, accumulate the row
+            sub.append(obj)
         else:
             # Since the l is sorted, we can stop checking here
             break
-        prev = obj
-    return text_check_collision_y(subl)
 
+    # now also check the y coordinate for all the potential clashes
+    text_check_collision_y(sub)
+
+def text_check_collision(l):
+    for i in range(len(l)):
+        text_check_collision_xy(l[i:])
 
 def update_colors(addr, l):
     # new buffer for the FPGA API, starting with address 0x0000
@@ -336,16 +343,15 @@ def show_text(l):
     update_colors(0x4502, l)
     # Text has no wrapper, we implement it locally.
     # See https://streamlogic.io/docs/reify/nodes/#fbtext
-    buffer = bytearray(2)  # address 0x0000
-    l = [obj for obj in l if hasattr(obj, "fbtext")]
+    buffer = bytearray(2) # address 0x0000
+    l = [obj for obj in l if hasattr(obj, 'fbtext')]
     l = sorted(l, key=lambda obj: obj.y)
     l = sorted(l, key=lambda obj: obj.x)
-    text_check_collision_xy(l)
+    text_check_collision(l)
     for obj in l:
         obj.fbtext(buffer)
     if len(buffer) > 0:
-        fpga.write(0x4503, buffer + b"\xFF\xFF\xFF")
-
+        fpga.write(0x4503, buffer + b'\xFF\xFF\xFF')
 
 def show_vgr2d(l):
     update_colors(0x4402, l)
