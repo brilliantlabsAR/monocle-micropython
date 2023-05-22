@@ -60,8 +60,8 @@ def device_module():
     __test("device.prevent_sleep(False)", None)
     __test("str(device.Storage())", "Storage(start=0x0006d000, len=602112)")
 
-def display_module():
 
+def display_module():
     # Text: randomly placed text strings (or no change if overlaps occurs)
     for i in range(0, 100):
         l = []
