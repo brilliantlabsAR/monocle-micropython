@@ -33,6 +33,7 @@ import bluetooth
 import time
 import update
 import math
+import random
 
 
 def __test(evaluate, expected):
@@ -61,6 +62,31 @@ def device_module():
 
 
 def display_module():
+    # Text: randomly placed text strings (or no change if overlaps occurs)
+    for i in range(0, 100):
+        l = []
+        for i in range(0, 15):
+            x = random.randint(-display.WIDTH, display.WIDTH * 2)
+            y = random.randint(-display.HEIGHT, display.HEIGHT * 2)
+            l.append(display.Text(str(random.random()), x, y, display.WHITE))
+        try:
+            display.show(l)
+        except display.TextOverlapError:
+            pass
+        time.sleep_ms(200)
+    time.sleep(1)
+
+    # Text: print a string in each corner to check if alignment is still fine
+    l = []
+    w = display.WIDTH - 1
+    h = display.HEIGHT - 1
+    l.append(display.Text("TOP LEFT", 0, 0, 0xFF7700, justify=display.TOP_LEFT))
+    l.append(display.Text("TOP RIGHT", w, 0, 0xFF77FF, justify=display.TOP_RIGHT))
+    l.append(display.Text("BOTTOM LEFT", 0, h, 0x007700, justify=display.BOTTOM_LEFT))
+    l.append(display.Text("BOTTOM RIGHT", w, h, 0x0077FF, justify=display.BOTTOM_RIGHT))
+    display.show(l)
+    time.sleep(2)
+
     # Line: spinning animation
     scale = 200
     x_offset = display.WIDTH // 2

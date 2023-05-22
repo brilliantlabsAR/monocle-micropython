@@ -180,6 +180,10 @@ class Polygon(Colored):
         )
 
 
+class TextOverlapError(Exception):
+    pass
+
+
 class Text(Colored):
     def __init__(self, string, x, y, color, justify=TOP_LEFT):
         self.x = int(x)
@@ -233,13 +237,14 @@ class Text(Colored):
             overflow_px = x + self.width(string) - WIDTH
             overflow_ch = overflow_px // FONT_WIDTH + 1
             string = string[:-overflow_ch]
-        if string == "":
-            raise ValueError("trying to draw text off screen")
         return x, string
 
     def fbtext(self, buffer):
         x, string = self.clip_x()
         y = self.y
+
+        if len(string) == 0:
+            return
 
         # Build a buffer to send to the FPGA
         buffer.append((x >> 4) & 0xFF)
@@ -277,30 +282,36 @@ def color(*args):
 
 
 def text_check_collision_y(l):
-    if len(l) == 0:
+    if len(l) <= 1:
         return
     l = sorted(l, key=lambda obj: obj.y)
     prev = l[0]
     for obj in l[1:]:
         if obj.y < prev.y + FONT_HEIGHT:
-            raise ValueError(f"{prev} overlaps with {obj}")
+            raise TextOverlapError(f"{obj} overlaps with {prev}")
         prev = obj
 
 
 def text_check_collision_xy(l):
-    if len(l) == 0:
+    if len(l) <= 1:
         return
-    subl = [l[0]]
-    prev = l[0]
+    base = l[0]
+    sub = [l[0]]
     for obj in l[1:]:
-        if obj.x < prev.x + prev.width(prev.string):
-            # Some overlapping, accumulate the row
-            subl.append(obj)
+        if obj.x < base.x + base.width(base.string):
+            # Some overlapping on x coordinates, accumulate the row
+            sub.append(obj)
         else:
             # Since the l is sorted, we can stop checking here
             break
-        prev = obj
-    return text_check_collision_y(subl)
+
+    # now also check the y coordinate for all the potential clashes
+    text_check_collision_y(sub)
+
+
+def text_check_collision(l):
+    for i in range(len(l)):
+        text_check_collision_xy(l[i:])
 
 
 def update_colors(addr, l):
@@ -340,7 +351,7 @@ def show_text(l):
     l = [obj for obj in l if hasattr(obj, "fbtext")]
     l = sorted(l, key=lambda obj: obj.y)
     l = sorted(l, key=lambda obj: obj.x)
-    text_check_collision_xy(l)
+    text_check_collision(l)
     for obj in l:
         obj.fbtext(buffer)
     if len(buffer) > 0:

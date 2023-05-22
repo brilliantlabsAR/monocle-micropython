@@ -21,3 +21,36 @@
 # OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 # PERFORMANCE OF THIS SOFTWARE.
 #
+
+import fpga
+
+__microphone_opened = False
+
+
+class Microphone:
+    def __init__(self, callback, sample_rate):
+        global __microphone_opened
+        if callable(callback) == False:
+            raise TypeError("callback must be a callable function")
+        if __microphone_opened:
+            raise RuntimeError("microphone is already started")
+        __microphone_opened = True
+        self.callback = callback
+        self.sample_rate = sample_rate
+
+    def read(self, samples=-1):
+        ## TODO fpga.read limited to 256
+        available = int.from_bytes(fpga.read(0x1C01, 2), "big")
+        if samples == -1:
+            data = fpga.read(0x1C02, available)
+        else:
+            data = fpga.read(0x1C02, min(samples, available))
+        return data
+
+    def close(self):
+        global __microphone_opened
+        __microphone_opened = False
+
+
+def open(callback, sample_rate=16000):
+    return Microphone(callback, sample_rate)
