@@ -232,6 +232,7 @@ void monocle_critical_startup(void)
         if (resp.fail || resp.value != 0x41)
         {
             app_err(resp.value);
+            app_err(resp.fail);
         }
 
         app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x60, 0x60).fail); // Ack resets and enable event mode
