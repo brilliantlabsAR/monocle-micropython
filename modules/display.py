@@ -25,6 +25,7 @@
 import vgr2d
 import fpga
 import struct
+import time
 from _display import *
 
 WIDTH = 640
