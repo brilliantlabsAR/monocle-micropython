@@ -258,15 +258,9 @@ void monocle_spi_read(spi_device_t spi_device, uint8_t *data, size_t length,
         break;
     }
 
-    if (!nrfx_is_in_ram(data))
-    {
-        nrf_gpio_pin_set(cs_pin);
-        mp_raise_TypeError(MP_ERROR_TEXT("buffer must be a bytes object"));
-    }
-
     nrf_gpio_pin_clear(cs_pin);
 
-    // TODO prevent blocking here, and add a mutex
+    // TODO prevent blocking here
     nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_RX(data, length);
     app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
 
@@ -303,12 +297,6 @@ void monocle_spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
         break;
     }
 
-    if (!nrfx_is_in_ram(data))
-    {
-        nrf_gpio_pin_set(cs_pin);
-        mp_raise_TypeError(MP_ERROR_TEXT("buffer must be a bytes object"));
-    }
-
     nrf_gpio_pin_clear(cs_pin);
 
     // Flash is LSB first, so we need to flip all the bytes before sending
@@ -320,9 +308,20 @@ void monocle_spi_write(spi_device_t spi_device, uint8_t *data, size_t length,
         }
     }
 
-    // TODO prevent blocking here, and add a mutex
-    nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(data, length);
-    app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
+    // TODO prevent blocking here
+    if (!nrfx_is_in_ram(data))
+    {
+        uint8_t *m_data = m_malloc(length);
+        memcpy(m_data, data, length);
+        nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(m_data, length);
+        app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
+        m_free(m_data);
+    }
+    else
+    {
+        nrfx_spim_xfer_desc_t xfer = NRFX_SPIM_XFER_TX(data, length);
+        app_err(nrfx_spim_xfer(&spi_bus_2, &xfer, 0));
+    }
 
     if (!hold_down_cs)
     {
@@ -354,7 +353,7 @@ void monocle_flash_read(uint8_t *buffer, size_t address, size_t length)
 
     while (flash_is_busy())
     {
-        mp_hal_delay_ms(1);
+        MICROPY_EVENT_POLL_HOOK;
     }
 
     uint8_t read_cmd[] = {0x03,
@@ -433,7 +432,7 @@ void monocle_flash_page_erase(size_t address)
 
     while (flash_is_busy())
     {
-        mp_hal_delay_ms(1);
+        MICROPY_EVENT_POLL_HOOK;
     }
 
     uint8_t write_enable_cmd[] = {0x06};
