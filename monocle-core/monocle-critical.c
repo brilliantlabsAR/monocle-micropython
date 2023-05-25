@@ -174,6 +174,7 @@ void monocle_critical_startup(void)
         if (resp.fail || resp.value != 0x02)
         {
             not_real_hardware_flag = true;
+            NRFX_LOG("PMIC not found");
         }
 
         // Turn off the FPGA, flash, display and camera rails
