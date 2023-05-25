@@ -63,7 +63,7 @@ def device_module():
 
 def display_module():
     # Text: randomly placed text strings (or no change if overlaps occurs)
-    for i in range(0, 100):
+    for i in range(0, 200):
         l = []
         for i in range(0, 15):
             x = random.randint(-display.WIDTH, display.WIDTH * 2)
@@ -73,7 +73,7 @@ def display_module():
             display.show(l)
         except display.TextOverlapError:
             pass
-        time.sleep_ms(200)
+        time.sleep_ms(100)
     time.sleep(1)
 
     # Text: print a string in each corner to check if alignment is still fine
@@ -85,7 +85,7 @@ def display_module():
     l.append(display.Text("BOTTOM LEFT", 0, h, 0x007700, justify=display.BOTTOM_LEFT))
     l.append(display.Text("BOTTOM RIGHT", w, h, 0x0077FF, justify=display.BOTTOM_RIGHT))
     display.show(l)
-    time.sleep(2)
+    time.sleep(3)
 
     # Line: spinning animation
     scale = 200
@@ -136,23 +136,22 @@ def display_module():
     for i in range(display.FONT_WIDTH * 2):
         s = "0....:....0....:....0....:"
         display.show(display.Text(s, 0 + i, 0, display.WHITE))
-        time.sleep_ms(100)
-    time.sleep(1)
+    time.sleep(2)
 
     # Text: the "hello" spinning around the "world"
     t1 = display.Text("hello", 200, 100, display.WHITE)
     t2 = display.Text("world", 400, 20, display.WHITE)
-    for i in range(0, 130):
-        _ = t2.move(0, +1)
+    for i in range(0, 13):
+        _ = t2.move(0, +10)
         display.show(t1, t2)
-    for i in range(0, 350):
-        _ = t2.move(-1, 0)
+    for i in range(0, 35):
+        _ = t2.move(-10, 0)
         display.show(t1, t2)
-    for i in range(0, 130):
-        _ = t2.move(0, -1)
+    for i in range(0, 13):
+        _ = t2.move(0, -10)
         display.show(t1, t2)
-    for i in range(0, 350):
-        _ = t2.move(+1, 0)
+    for i in range(0, 35):
+        _ = t2.move(+10, 0)
         display.show(t1, t2)
     time.sleep(1)
 

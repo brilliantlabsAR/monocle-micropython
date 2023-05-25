@@ -147,6 +147,16 @@ STATIC mp_obj_t device_force_sleep(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_force_sleep_obj, device_force_sleep);
 
+STATIC mp_obj_t device_is_charging(void)
+{
+    // Get the CHG value from STAT_CHG_B
+    i2c_response_t charging_response = monocle_i2c_read(PMIC_I2C_ADDRESS, 0x03, 0x0C);
+    app_err(charging_response.fail);
+
+    return charging_response.value ? mp_const_true : mp_const_false;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_is_charging_obj, device_is_charging);
+
 extern const struct _mp_obj_type_t device_storage_type;
 
 STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
@@ -161,6 +171,7 @@ STATIC const mp_rom_map_elem_t device_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_reset_cause), MP_ROM_PTR(&device_reset_cause_obj)},
     {MP_ROM_QSTR(MP_QSTR_prevent_sleep), MP_ROM_PTR(&device_prevent_sleep_obj)},
     {MP_ROM_QSTR(MP_QSTR_force_sleep), MP_ROM_PTR(&device_force_sleep_obj)},
+    {MP_ROM_QSTR(MP_QSTR_is_charging), MP_ROM_PTR(&device_is_charging_obj)},
     {MP_ROM_QSTR(MP_QSTR_Storage), MP_ROM_PTR(&device_storage_type)},
 };
 STATIC MP_DEFINE_CONST_DICT(device_module_globals, device_module_globals_table);
