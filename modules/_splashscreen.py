@@ -5,5 +5,4 @@ if fpga.read(1, 4) == b"Mncl":
     display.show(t)
     del t
 
-del fpga
-del display
+del fpga, display
