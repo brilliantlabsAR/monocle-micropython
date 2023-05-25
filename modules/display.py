@@ -24,6 +24,8 @@
 
 import vgr2d
 import fpga
+import struct
+import time
 from _display import *
 
 WIDTH = 640
@@ -60,6 +62,11 @@ GRAY5 = 0x8D8D8D
 GRAY6 = 0xAAAAAA
 GRAY7 = 0xC6C6C6
 GRAY8 = 0xE2E2E2
+
+
+FBTEXT_PAGE_SIZE = 1024
+FBTEXT_NUM_PAGES = 2
+fbtext_addr = 0
 
 
 class Colored:
@@ -344,10 +351,12 @@ def update_colors(addr, l):
 
 
 def show_text(l):
+    global fbtext_addr
+
     update_colors(0x4502, l)
     # Text has no wrapper, we implement it locally.
     # See https://streamlogic.io/docs/reify/nodes/#fbtext
-    buffer = bytearray(2)  # address 0x0000
+    buffer = bytearray(struct.pack(">H", fbtext_addr))
     l = [obj for obj in l if hasattr(obj, "fbtext")]
     l = sorted(l, key=lambda obj: obj.y)
     l = sorted(l, key=lambda obj: obj.x)
@@ -355,7 +364,12 @@ def show_text(l):
     for obj in l:
         obj.fbtext(buffer)
     if len(buffer) > 0:
+        addr = bytearray(struct.pack(">H", fbtext_addr))
+        fpga.write(0x4501, addr)
         fpga.write(0x4503, buffer + b"\xFF\xFF\xFF")
+        fbtext_addr += FBTEXT_PAGE_SIZE
+        fbtext_addr %= FBTEXT_PAGE_SIZE * FBTEXT_NUM_PAGES
+        time.sleep_ms(20) # ensure the buffer swap has happened
 
 
 def show_vgr2d(l):
