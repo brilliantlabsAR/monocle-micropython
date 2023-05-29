@@ -334,6 +334,7 @@ def update_module():
 
 
 def all():
+    device_module()
     display_module()
     camera_module()
     microphone_module()
@@ -342,5 +343,4 @@ def all():
     fpga_module()
     bluetooth_module()
     time_module()
-    device_module()
     update_module()
