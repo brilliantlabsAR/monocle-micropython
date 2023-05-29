@@ -288,23 +288,22 @@ def color(*args):
         arg.color(args[-1])
 
 
-def text_check_collision_y(l):
-    if len(l) <= 1:
+def text_get_overlapping_y(l):
+    if len(l) == 0:
         return
     l = sorted(l, key=lambda obj: obj.y)
     prev = l[0]
     for obj in l[1:]:
         if obj.y < prev.y + FONT_HEIGHT:
-            raise TextOverlapError(f"{obj} overlaps with {prev}")
+            return (prev, obj)
         prev = obj
 
 
-def text_check_collision_xy(l):
-    if len(l) <= 1:
+def text_get_overlapping_xy(base, l):
+    if len(l) == 0:
         return
-    base = l[0]
-    sub = [l[0]]
-    for obj in l[1:]:
+    sub = [base]
+    for obj in l:
         if obj.x < base.x + base.width(base.string):
             # Some overlapping on x coordinates, accumulate the row
             sub.append(obj)
@@ -313,12 +312,14 @@ def text_check_collision_xy(l):
             break
 
     # now also check the y coordinate for all the potential clashes
-    text_check_collision_y(sub)
+    return text_get_overlapping_y(sub)
 
 
-def text_check_collision(l):
+def text_get_overlapping(l):
     for i in range(len(l)):
-        text_check_collision_xy(l[i:])
+        overlapping = text_get_overlapping_xy(l[i], l[i + 1:])
+        if overlapping is not None:
+            return overlapping
 
 
 def update_colors(addr, l):
@@ -350,17 +351,17 @@ def update_colors(addr, l):
     fpga.write(addr, buffer)
 
 
-def show_text(l):
+def show_fbtext(l):
     global fbtext_addr
 
     update_colors(0x4502, l)
     # Text has no wrapper, we implement it locally.
     # See https://streamlogic.io/docs/reify/nodes/#fbtext
     buffer = bytearray(struct.pack(">H", fbtext_addr))
-    l = [obj for obj in l if hasattr(obj, "fbtext")]
-    l = sorted(l, key=lambda obj: obj.y)
     l = sorted(l, key=lambda obj: obj.x)
-    text_check_collision(l)
+    overlapping = text_get_overlapping(l)
+    if overlapping is not None:
+        raise TextOverlapError(f"{overlapping[0]} overlaps with {overlapping[1]}")
     for obj in l:
         obj.fbtext(buffer)
     if len(buffer) > 0:
@@ -377,14 +378,13 @@ def show_vgr2d(l):
     # 0 is the address of the frame in the framebuffer in use.
     # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
     # Offset: active display offset in buffer used if double buffering
-    l = [obj.vgr2d() for obj in l if hasattr(obj, "vgr2d")]
     vgr2d.display2d(0, l, WIDTH, HEIGHT)
 
 
 def show(*args):
-    l = flatten(args)
-    show_vgr2d(l)
-    show_text(l)
+    args = flatten(args)
+    show_vgr2d([obj for obj in args if hasattr(obj, "vgr2d")])
+    show_fbtext([obj for obj in args if hasattr(obj, "fbtext")])
 
 
 def clear():
