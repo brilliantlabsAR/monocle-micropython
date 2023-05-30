@@ -62,8 +62,23 @@ def device_module():
 
 
 def display_module():
-    # Text: randomly placed text strings (or no change if overlaps occurs)
-    for i in range(0, 100):
+    __test("display.WIDTH", 640)
+    __test("display.HEIGHT", 400)
+    __test("display.FONT_HEIGHT", 48)
+    __test("display.FONT_WIDTH", 24)
+    __test("display.FONT_WIDTH", True)
+    __test("display.TOP_LEFT > 0", True)
+    __test("display.MIDDLE_LEFT > 0", True)
+    __test("display.BOTTOM_LEFT > 0", True)
+    __test("display.TOP_CENTER > 0", True)
+    __test("display.BOTTOM_CENTER > 0", True)
+    __test("display.TOP_RIGHT > 0", True)
+    __test("display.MIDDLE_CENTER > 0", True)
+    __test("display.MIDDLE_RIGHT > 0", True)
+    __test("display.BOTTOM_RIGHT > 0", True)
+
+    print("Text: randomly placed text strings (or no change if overlaps occurs)")
+    for i in range(0, 200):
         l = []
         for i in range(0, 15):
             x = random.randint(-display.WIDTH, display.WIDTH * 2)
@@ -73,10 +88,10 @@ def display_module():
             display.show(l)
         except display.TextOverlapError:
             pass
-        time.sleep_ms(200)
+        time.sleep_ms(100)
     time.sleep(1)
 
-    # Text: print a string in each corner to check if alignment is still fine
+    print("Text: print a string in each corner to check if alignment is still fine")
     l = []
     w = display.WIDTH - 1
     h = display.HEIGHT - 1
@@ -85,9 +100,9 @@ def display_module():
     l.append(display.Text("BOTTOM LEFT", 0, h, 0x007700, justify=display.BOTTOM_LEFT))
     l.append(display.Text("BOTTOM RIGHT", w, h, 0x0077FF, justify=display.BOTTOM_RIGHT))
     display.show(l)
-    time.sleep(2)
+    time.sleep(3)
 
-    # Line: spinning animation
+    print("Line: spinning animation")
     scale = 200
     x_offset = display.WIDTH // 2
     y_offset = display.HEIGHT // 2
@@ -103,7 +118,7 @@ def display_module():
         time.sleep_ms(10)
     time.sleep(1)
 
-    # Line: rectangle around the display edges
+    print("Line: rectangle around the display edges")
     t = 10
     h = display.HEIGHT - t
     w = display.WIDTH - t
@@ -115,7 +130,7 @@ def display_module():
     )
     time.sleep(1)
 
-    # Rectangle: growing rectangle, getting larger than the display
+    print("Rectangle: growing rectangle, getting larger than the display")
     x_offset = display.WIDTH // 2
     y_offset = display.HEIGHT // 2
     for i in range(0, display.WIDTH // 2 + 100, 10):
@@ -127,46 +142,41 @@ def display_module():
         time.sleep_ms(10)
     time.sleep(1)
 
-    # Rectangle: test with ((x1,y1), (x2,y2)) with x1 > x2 or y1 > y2
+    print("Rectangle: test with ((x1,y1), (x2,y2)) with x1 > x2 or y1 > y2")
     r = display.Rectangle(550, 300, 100, 100, display.GREEN)
     display.show(r)
     time.sleep(1)
 
-    # Text: test the edge cases for clipping on the right side of the display
+    print("Text: test the edge cases for clipping on the right side of the display")
     for i in range(display.FONT_WIDTH * 2):
         s = "0....:....0....:....0....:"
         display.show(display.Text(s, 0 + i, 0, display.WHITE))
-        time.sleep_ms(100)
-    time.sleep(1)
+    time.sleep(2)
 
-    # Text: the "hello" spinning around the "world"
+    print("Text: the 'hello' spinning around the 'world'")
     t1 = display.Text("hello", 200, 100, display.WHITE)
     t2 = display.Text("world", 400, 20, display.WHITE)
-    for i in range(0, 130):
-        _ = t2.move(0, +1)
+    for i in range(0, 13):
+        _ = t2.move(0, +10)
         display.show(t1, t2)
-    for i in range(0, 350):
-        _ = t2.move(-1, 0)
+    for i in range(0, 35):
+        _ = t2.move(-10, 0)
         display.show(t1, t2)
-    for i in range(0, 130):
-        _ = t2.move(0, -1)
+    for i in range(0, 13):
+        _ = t2.move(0, -10)
         display.show(t1, t2)
-    for i in range(0, 350):
-        _ = t2.move(+1, 0)
+    for i in range(0, 35):
+        _ = t2.move(+10, 0)
         display.show(t1, t2)
     time.sleep(1)
 
-    # Wrappers: test correct forwarding to other classes
+    print("Wrappers: test correct forwarding to other classes")
     f = display.Fill(display.RED)
     hl = display.HLine(10, 100, 620, display.WHITE, thickness=18)
     vl = display.VLine(10, 100, 200, display.WHITE, thickness=18)
     display.show(f, hl, vl)
     time.sleep(1)
     display.clear()
-
-    # Test constants
-    __test("display.WIDTH", 640)
-    __test("display.HEIGHT", 400)
 
 
 def camera_module():
@@ -335,6 +345,7 @@ def update_module():
 
 
 def all():
+    device_module()
     display_module()
     camera_module()
     microphone_module()
@@ -343,5 +354,4 @@ def all():
     fpga_module()
     bluetooth_module()
     time_module()
-    device_module()
     update_module()

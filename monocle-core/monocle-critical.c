@@ -174,6 +174,7 @@ void monocle_critical_startup(void)
         if (resp.fail || resp.value != 0x02)
         {
             not_real_hardware_flag = true;
+            NRFX_LOG("PMIC not found");
         }
 
         // Turn off the FPGA, flash, display and camera rails
@@ -232,6 +233,7 @@ void monocle_critical_startup(void)
         if (resp.fail || resp.value != 0x41)
         {
             app_err(resp.value);
+            app_err(resp.fail);
         }
 
         app_err(monocle_i2c_write(TOUCH_I2C_ADDRESS, 0xD0, 0x60, 0x60).fail); // Ack resets and enable event mode
