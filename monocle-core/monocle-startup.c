@@ -37,7 +37,22 @@ extern void SystemInit(void);
 
 void Default_Handler(void)
 {
-    app_err(0xDEADBEEF);
+    app_err(0xDEAD0000);
+}
+
+void HardFault_Handler(void)
+{
+    app_err(0xDEAD0001);
+}
+
+void BusFault_Handler(void)
+{
+    app_err(0xDEAD0002);
+}
+
+void UsageFault_Handler(void)
+{
+    app_err(0xDEAD0003);
 }
 
 void Reset_Handler(void)
@@ -69,10 +84,7 @@ void Reset_Handler(void)
  */
 
 void NMI_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void HardFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void MemoryManagement_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void BusFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
-void UsageFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void SVC_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void DebugMon_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void PendSV_Handler(void) __attribute__((weak, alias("Default_Handler")));
