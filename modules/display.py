@@ -378,7 +378,7 @@ def show_vgr2d(l):
     # 0 is the address of the frame in the framebuffer in use.
     # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
     # Offset: active display offset in buffer used if double buffering
-    vgr2d.display2d(0, l, WIDTH, HEIGHT)
+    vgr2d.display2d(0, [obj.vgr2d() for obj in l], WIDTH, HEIGHT)
 
 
 def show(*args):
