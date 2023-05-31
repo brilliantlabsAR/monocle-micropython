@@ -117,6 +117,11 @@ bool ble_are_tx_notifications_enabled(ble_tx_channel_t channel)
                                .offset = 0,
                                .p_value = &(value_buffer[0])};
 
+    if (ble_handles.connection == BLE_CONN_HANDLE_INVALID)
+    {
+        return false;
+    }
+
     // Read the CCCD attribute value for one of the tx characteristics
     switch (channel)
     {
@@ -215,6 +220,11 @@ bool ble_send_raw_data(const uint8_t *bytes, size_t len)
     if (!ble_are_tx_notifications_enabled(DATA_TX))
     {
         return true;
+    }
+
+    // Send all REPL data before sending raw data
+    while (ble_send_repl_data() == false)
+    {
     }
 
     // Initialise the handle value parameters
