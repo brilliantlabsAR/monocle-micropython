@@ -41,7 +41,7 @@ CROSS_COMPILE = arm-none-eabi-
 BUILD_VERSION := $(shell TZ= date +v%y.%j.%H%M)
 
 # Warning options
-WARN = -Wall -Werror -Wdouble-promotion -Wfloat-conversion
+WARN = -Wall -Wdouble-promotion -Wfloat-conversion
 
 # Build optimizations
 OPT += -mcpu=cortex-m4
@@ -67,6 +67,16 @@ DEFS += -DNDEBUG
 DEFS += -DCONFIG_NFCT_PINS_AS_GPIOS
 DEFS += -DBUILD_VERSION='"$(BUILD_VERSION)"'
 DEFS += -DLFS2_NO_ASSERT
+DEFS += -DFIXED_POINT
+DEFS += -DUSE_KISS_FFT
+DEFS += -DEXPORT=
+DEFS += -DUSE_ALLOCA
+DEFS += -DOS_SUPPORT_CUSTOM
+DEFS += -DOVERRIDE_SPEEX_ALLOC
+DEFS += -DOVERRIDE_SPEEX_ALLOC_SCRATCH
+DEFS += -DOVERRIDE_SPEEX_REALLOC
+DEFS += -DOVERRIDE_SPEEX_FREE
+DEFS += -DOVERRIDE_SPEEX_FREE_SCRATCH
 
 # Set linker options
 LDFLAGS += -Lnrfx/mdk -T monocle-core/monocle.ld
@@ -93,6 +103,7 @@ INC += -Inrfx/soc
 INC += -Isegger
 INC += -Isoftdevice/include
 INC += -Isoftdevice/include/nrf52
+INC += -Ispeex/include
 
 # Assemble the C flags variable
 CFLAGS += $(WARN) $(OPT) $(INC) $(DEFS)
@@ -124,6 +135,7 @@ SRC_C += modules/device.c
 SRC_C += modules/display.c
 SRC_C += modules/fpga.c
 SRC_C += modules/led.c
+SRC_C += modules/microphone.c
 SRC_C += modules/storage.c
 SRC_C += modules/touch.c
 SRC_C += modules/update.c
@@ -187,6 +199,43 @@ SRC_C += nrfx/drivers/src/nrfx_twim.c
 SRC_C += nrfx/drivers/src/prs/nrfx_prs.c
 SRC_C += nrfx/helpers/nrfx_flag32_allocator.c
 SRC_C += nrfx/mdk/system_nrf52.c
+
+SRC_C += speex/libspeex/bits.c
+SRC_C += speex/libspeex/cb_search.c
+SRC_C += speex/libspeex/exc_10_16_table.c
+SRC_C += speex/libspeex/exc_10_32_table.c
+SRC_C += speex/libspeex/exc_20_32_table.c
+SRC_C += speex/libspeex/exc_5_256_table.c
+SRC_C += speex/libspeex/exc_5_64_table.c
+SRC_C += speex/libspeex/exc_8_128_table.c
+SRC_C += speex/libspeex/fftwrap.c
+SRC_C += speex/libspeex/filters.c
+SRC_C += speex/libspeex/gain_table.c
+SRC_C += speex/libspeex/gain_table_lbr.c
+SRC_C += speex/libspeex/hexc_10_32_table.c
+SRC_C += speex/libspeex/hexc_table.c
+SRC_C += speex/libspeex/high_lsp_tables.c
+SRC_C += speex/libspeex/kiss_fft.c
+SRC_C += speex/libspeex/kiss_fftr.c
+SRC_C += speex/libspeex/lpc.c
+SRC_C += speex/libspeex/lsp.c
+SRC_C += speex/libspeex/lsp_tables_nb.c
+SRC_C += speex/libspeex/ltp.c
+SRC_C += speex/libspeex/modes.c
+SRC_C += speex/libspeex/modes_wb.c
+SRC_C += speex/libspeex/nb_celp.c
+SRC_C += speex/libspeex/quant_lsp.c
+SRC_C += speex/libspeex/sb_celp.c
+SRC_C += speex/libspeex/smallft.c
+SRC_C += speex/libspeex/speex.c
+SRC_C += speex/libspeex/speex_callbacks.c
+SRC_C += speex/libspeex/speex_header.c
+SRC_C += speex/libspeex/stereo.c
+SRC_C += speex/libspeex/vbr.c
+SRC_C += speex/libspeex/vorbis_psy.c
+SRC_C += speex/libspeex/vq.c
+SRC_C += speex/libspeex/window.c
+SRC_C += os_support_custom.c
 
 SRC_QSTR += $(SRC_C)
 

@@ -7,3 +7,6 @@
 [submodule "modules/libvgrs"]
 	path = modules/libvgrs
 	url = https://github.com/sathibault/vgrs.git
+[submodule "speex"]
+	path = speex
+	url = https://gitlab.xiph.org/xiph/speex
