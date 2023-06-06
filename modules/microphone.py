@@ -22,34 +22,66 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import fpga
+import fpga, struct
 
 
-def record(sample_rate=16000):
-    # TODO pass sample rate to FPGA
-    fpga.write(0x1C04, int.to_bytes(sample_rate, 2, "big"))
+_image = fpga.read(0x0001, 4)
+_status = fpga.read(0x5800, 1)[0] & 0x10
+if _status != 16 or _image != b"Mncl":
+    # raise (NotImplementedError("microphone driver not found on FPGA"))
+    pass  # TODO remove this once proper binary is ready
 
-    # TODO send flush buffer command
-    fpga.write(0x1C03, b"\x01")
 
-    # TODO send record command
-    fpga.write(0x1C04, b"\x02")
+def _flush():
+    count = 0
+    while True:
+        available = 2 * int.from_bytes(fpga.read(0x5801, 2), "big")
+        if available == 0:
+            break
+        fpga.read(0x5807, min(254, available))
+        count += min(254, available)
+
+
+def record(sample_rate=16000, seconds=1.0):
+    # TODO possible to pass sample rate to FPGA?
+
+    _flush()
+
+    # Set window size. Resolution is 20ms
+    # TODO possible to omit window size? This allows explicit stop/start
+    n = int(seconds / 0.02)
+    fpga.write(0x0802, int.to_bytes(n, 2, "big"))
+
+    # Trigger capture
+    fpga.write(0x0803, "")
 
 
 def read(samples=-1):
-    available = int.from_bytes(fpga.read(0x1C01, 2), "big")
-    available = min(available, 255)
+    if samples > 127:
+        raise (ValueError("only 127 samples may be read at a time"))
+
+    available = int.from_bytes(fpga.read(0x5801, 2), "big")
+
+    if available == 0:
+        return None
+
+    available = min(available, 254)
 
     if samples == -1:
-        data = fpga.read(0x1C02, available)
+        data = fpga.read(0x5807, available)
     else:
-        data = fpga.read(0x1C02, min(samples, available))
-    return data
+        data = fpga.read(0x5807, min(samples * 2, available))
+
+    ret_data = []
+    for i in range(len(data) / 2):
+        ret_data.append(struct.unpack(">h", data[i * 2 : i * 2 + 2])[0])
+
+    return ret_data
 
 
 def stop():
     # TODO send stop command
-    fpga.write(0x1C04, b"\x03")
+    pass
 
 
 # TODO add callback handler when keyword detection is available
