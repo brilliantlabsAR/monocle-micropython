@@ -22,7 +22,7 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import fpga, struct
+import fpga
 
 
 _image = fpga.read(0x0001, 4)
@@ -71,12 +71,7 @@ def read(samples=-1):
         data = fpga.read(0x5807, available)
     else:
         data = fpga.read(0x5807, min(samples * 2, available))
-
-    ret_data = []
-    for i in range(len(data) / 2):
-        ret_data.append(struct.unpack(">h", data[i * 2 : i * 2 + 2])[0])
-
-    return ret_data
+    return data
 
 
 def stop():
