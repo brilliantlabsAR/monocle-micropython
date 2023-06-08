@@ -53,7 +53,7 @@
 
 #define MICROPY_MODULE_WEAK_LINKS (1)
 
-#define MICROPY_PY_USELECT (1)
+#define MICROPY_PY_SELECT (1)
 
 #define MICROPY_PY_FSTRINGS (1)
 
@@ -79,7 +79,6 @@
 #define MICROPY_PY_BUILTINS_INPUT (1)
 
 #define MICROPY_QSTR_EXTRA_POOL mp_qstr_frozen_const_pool
-#define MICROPY_MODULE_FROZEN_MPY (1)
 #define MICROPY_PY_BUILTINS_FROZENSET (1)
 
 #define MICROPY_ENABLE_GC (1)
@@ -89,32 +88,32 @@
 #define MICROPY_LONGINT_IMPL (MICROPY_LONGINT_IMPL_MPZ)
 #define MP_NEED_LOG2 (1)
 
-#define MICROPY_PY_UBINASCII (1)
-#define MICROPY_PY_UBINASCII_CRC32 (1)
+#define MICROPY_PY_BINASCII (1)
+#define MICROPY_PY_BINASCII_CRC32 (1)
 
 #define MICROPY_PY_SYS_STDFILES (1)
 
-#define MICROPY_PY_UERRNO (1)
+#define MICROPY_PY_ERRNO (1)
 
-#define MICROPY_PY_UHASHLIB (1)
+#define MICROPY_PY_HASHLIB (1)
 
-#define MICROPY_PY_UJSON (1)
+#define MICROPY_PY_JSON (1)
 
-#define MICROPY_PY_UOS (1)
+#define MICROPY_PY_OS (1)
 #define MICROPY_VFS (1)
 #define MICROPY_VFS_LFS2 (1)
 #define MICROPY_READER_VFS (1)
 
-#define MICROPY_PY_URANDOM (1)
-#define MICROPY_PY_URANDOM_EXTRA_FUNCS (1)
-#define MICROPY_PY_URANDOM_SEED_INIT_FUNC (mp_hal_generate_random_seed())
+#define MICROPY_PY_RANDOM (1)
+#define MICROPY_PY_RANDOM_EXTRA_FUNCS (1)
+#define MICROPY_PY_RANDOM_SEED_INIT_FUNC (mp_hal_generate_random_seed())
 
-#define MICROPY_PY_URE (1)
-#define MICROPY_PY_URE_SUB (1)
-#define MICROPY_PY_UHEAPQ (1)
+#define MICROPY_PY_RE (1)
+#define MICROPY_PY_RE_SUB (1)
+#define MICROPY_PY_HEAPQ (1)
 
-#define MICROPY_PY_UTIME (1)
-#define MICROPY_PY_UTIME_INCLUDEFILE "../modules/time.c"
+#define MICROPY_PY_TIME (1)
+#define MICROPY_PY_TIME_INCLUDEFILE "../modules/time.c"
 
 #define MICROPY_MAKE_POINTER_CALLABLE(p) ((void *)((mp_uint_t)(p) | 1))
 
