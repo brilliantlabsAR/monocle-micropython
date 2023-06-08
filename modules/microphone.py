@@ -60,7 +60,7 @@ def read(samples=-1):
     if samples > 127:
         raise (ValueError("only 127 samples may be read at a time"))
 
-    available = int.from_bytes(fpga.read(0x5801, 2), "big")
+    available = 2 * int.from_bytes(fpga.read(0x5801, 2), "big")
 
     if available == 0:
         return None
