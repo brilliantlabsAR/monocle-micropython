@@ -28,8 +28,7 @@ import fpga, struct, _compression
 _image = fpga.read(0x0001, 4)
 _status = fpga.read(0x5800, 1)[0] & 0x10
 if _status != 16 or _image != b"Mncl":
-    # raise (NotImplementedError("microphone driver not found on FPGA"))
-    pass  # TODO remove this once proper binary is ready
+    raise (NotImplementedError("microphone driver not found on FPGA"))
 
 
 def _flush():
