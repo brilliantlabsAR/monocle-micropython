@@ -22,16 +22,18 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import fpga, struct, _compression
+import fpga
+import struct
+import _compression as __compression
 
 
-_image = fpga.read(0x0001, 4)
-_status = fpga.read(0x5800, 1)[0] & 0x10
-if _status != 16 or _image != b"Mncl":
+__image = fpga.read(0x0001, 4)
+__status = fpga.read(0x5800, 1)[0] & 0x10
+if __status != 16 or __image != b"Mncl":
     raise (NotImplementedError("microphone driver not found on FPGA"))
 
 
-def _flush():
+def __flush():
     count = 0
     while True:
         available = 2 * int.from_bytes(fpga.read(0x5801, 2), "big")
@@ -44,7 +46,7 @@ def _flush():
 def record(sample_rate=16000, seconds=1.0):
     # TODO possible to pass sample rate to FPGA?
 
-    _flush()
+    __flush()
 
     # Set window size. Resolution is 20ms
     # TODO possible to omit window size? This allows explicit stop/start
@@ -55,7 +57,7 @@ def record(sample_rate=16000, seconds=1.0):
     fpga.write(0x0803, "")
 
 
-def read(samples=-1):
+def __read_raw(samples=-1):
     if samples > 127:
         raise (ValueError("only 127 samples may be read at a time"))
 
@@ -71,12 +73,18 @@ def read(samples=-1):
     else:
         data = fpga.read(0x5807, min(samples * 2, available))
 
-    ret_data = []
+    return data
 
-    for i in range(len(data) / 2):
-        ret_data.append(struct.unpack(">h", data[i * 2 : i * 2 + 2])[0])
 
-    return ret_data
+def read(samples=-1):
+    byte_data = __read_raw(samples)
+
+    int16_list = []
+
+    for i in range(len(byte_data) / 2):
+        int16_list.append(struct.unpack(">h", byte_data[i * 2 : i * 2 + 2])[0])
+
+    return int16_list
 
 
 def stop():
@@ -85,7 +93,7 @@ def stop():
 
 
 def compress(data):
-    return _compression.delta_encode(data)
+    return __compression.delta_encode(data)
 
 
 # TODO add callback handler when keyword detection is available
