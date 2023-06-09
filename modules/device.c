@@ -26,6 +26,7 @@
 #include <math.h>
 #include "monocle.h"
 #include "genhdr/mpversion.h"
+#include "py/mphal.h"
 #include "py/objstr.h"
 #include "py/runtime.h"
 #include "ble_gap.h"
@@ -90,6 +91,20 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(device_battery_level_obj, device_battery_level)
 
 STATIC mp_obj_t device_reset(void)
 {
+    // Never reset if not connected to prevent locking out the user
+    if (!ble_are_tx_notifications_enabled(REPL_TX))
+    {
+        return mp_const_none;
+    }
+
+    // Delay so the user can cancel a reset if this runs from main.py
+    mp_printf(&mp_plat_print, "Resetting");
+    mp_hal_delay_ms(1000);
+    mp_printf(&mp_plat_print, ".");
+    mp_hal_delay_ms(1000);
+    mp_printf(&mp_plat_print, ".");
+    mp_hal_delay_ms(1000);
+
     // Clear the reset reasons
     NRF_POWER->RESETREAS = 0xF000F;
 
@@ -139,6 +154,20 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(device_prevent_sleep_obj, 0, 1, devic
 
 STATIC mp_obj_t device_force_sleep(void)
 {
+    // Never force sleep if not connected to prevent locking out the user
+    if (!ble_are_tx_notifications_enabled(REPL_TX))
+    {
+        return mp_const_none;
+    }
+
+    // Delay so the user can cancel force sleep if this runs from main.py
+    mp_printf(&mp_plat_print, "Going to sleep");
+    mp_hal_delay_ms(1000);
+    mp_printf(&mp_plat_print, ".");
+    mp_hal_delay_ms(1000);
+    mp_printf(&mp_plat_print, ".");
+    mp_hal_delay_ms(1000);
+
     prevent_sleep_flag = false;
 
     force_sleep_flag = true;

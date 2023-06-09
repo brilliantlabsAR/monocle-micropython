@@ -22,7 +22,7 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import _camera
+import _camera as __camera
 import bluetooth as __bluetooth
 import fpga as __fpga
 import time as __time
@@ -45,7 +45,7 @@ def overlay(enable=None):
     if enable == True:
         __fpga.write(0x4404, "")
         __time.sleep_ms(100)
-        _camera.wake()
+        __camera.wake()
         __fpga.write(0x1005, "")
         __fpga.write(0x3005, "")
         __overlay_state = True
@@ -53,7 +53,7 @@ def overlay(enable=None):
         __fpga.write(0x3004, "")
         __fpga.write(0x1004, "")
         __time.sleep_ms(100)
-        _camera.sleep()
+        __camera.sleep()
         __overlay_state = False
 
 
@@ -62,11 +62,11 @@ def output(x, y, format):
 
 
 def zoom(multiplier):
-    _camera.wake()
+    __camera.wake()
     __time.sleep_ms(100)
-    _camera.zoom(multiplier)
+    __camera.zoom(multiplier)
     if not overlay():
-        _camera.sleep()
+        __camera.sleep()
 
 
 def record(enable):
@@ -77,7 +77,7 @@ def record(enable):
     else:
         # This pauses the image, ready for replaying
         __fpga.write(0x1004, b"")  # record off
-        _camera.sleep()
+        __camera.sleep()
 
 
 def replay():

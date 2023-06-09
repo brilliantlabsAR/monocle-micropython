@@ -242,7 +242,7 @@ STATIC mp_obj_t time_mktime(mp_obj_t dict)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(time_mktime_obj, time_mktime);
 
-#define MICROPY_PY_UTIME_EXTRA_GLOBALS                           \
+#define MICROPY_PY_TIME_EXTRA_GLOBALS                            \
     {MP_ROM_QSTR(MP_QSTR_time), MP_ROM_PTR(&time_time_obj)},     \
         {MP_ROM_QSTR(MP_QSTR_now), MP_ROM_PTR(&time_now_obj)},   \
         {MP_ROM_QSTR(MP_QSTR_zone), MP_ROM_PTR(&time_zone_obj)}, \

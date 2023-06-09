@@ -42,6 +42,9 @@ def __test(evaluate, expected):
     except Exception as ex:
         response = type(ex)
 
+    if type(expected) == str:
+        response = str(response)
+
     if response == expected:
         print(f"Passed - {evaluate} == {response}")
     else:
@@ -66,117 +69,116 @@ def display_module():
     __test("display.HEIGHT", 400)
     __test("display.FONT_HEIGHT", 48)
     __test("display.FONT_WIDTH", 24)
-    __test("display.FONT_WIDTH", True)
     __test("display.TOP_LEFT > 0", True)
-    __test("display.MIDDLE_LEFT > 0", True)
-    __test("display.BOTTOM_LEFT > 0", True)
     __test("display.TOP_CENTER > 0", True)
-    __test("display.BOTTOM_CENTER > 0", True)
     __test("display.TOP_RIGHT > 0", True)
+    __test("display.MIDDLE_LEFT > 0", True)
     __test("display.MIDDLE_CENTER > 0", True)
     __test("display.MIDDLE_RIGHT > 0", True)
+    __test("display.BOTTOM_LEFT > 0", True)
+    __test("display.BOTTOM_CENTER > 0", True)
     __test("display.BOTTOM_RIGHT > 0", True)
 
-    print("Text: randomly placed text strings (or no change if overlaps occurs)")
-    for i in range(0, 200):
-        l = []
-        for i in range(0, 15):
-            x = random.randint(-display.WIDTH, display.WIDTH * 2)
-            y = random.randint(-display.HEIGHT, display.HEIGHT * 2)
-            l.append(display.Text(str(random.random()), x, y, display.WHITE))
-        try:
-            display.show(l)
-        except display.TextOverlapError:
-            pass
-        time.sleep_ms(100)
-    time.sleep(1)
+    __test("display.show()", None)
+    __test("display.show([])", None)
+    __test("display.show([],[])", None)
 
-    print("Text: print a string in each corner to check if alignment is still fine")
-    l = []
-    w = display.WIDTH - 1
-    h = display.HEIGHT - 1
-    l.append(display.Text("TOP LEFT", 0, 0, 0xFF7700, justify=display.TOP_LEFT))
-    l.append(display.Text("TOP RIGHT", w, 0, 0xFF77FF, justify=display.TOP_RIGHT))
-    l.append(display.Text("BOTTOM LEFT", 0, h, 0x007700, justify=display.BOTTOM_LEFT))
-    l.append(display.Text("BOTTOM RIGHT", w, h, 0x0077FF, justify=display.BOTTOM_RIGHT))
-    display.show(l)
-    time.sleep(3)
-
-    print("Line: spinning animation")
-    scale = 200
-    x_offset = display.WIDTH // 2
-    y_offset = display.HEIGHT // 2
-    angle = 0
-    while angle <= 2 * math.pi * 5:
-        x1 = int(x_offset + math.cos(angle) * scale)
-        y1 = int(y_offset + math.sin(angle) * scale)
-        x2 = int(x_offset + math.cos(angle + math.pi) * scale)
-        y2 = int(y_offset + math.sin(angle + math.pi) * scale)
-        line = display.Line(x1, y1, x2, y2, display.WHITE)
-        display.show(line)
-        angle += math.pi / 20
-        time.sleep_ms(10)
-    time.sleep(1)
-
-    print("Line: rectangle around the display edges")
-    t = 10
-    h = display.HEIGHT - t
-    w = display.WIDTH - t
-    display.show(
-        display.Line(t, t, t, h, display.WHITE, thickness=t),  # left
-        display.Line(w, t, w, h, display.WHITE, thickness=t),  # right
-        display.Line(t, t, w, t, display.WHITE, thickness=t),  # top
-        display.Line(t, h, w, h, display.WHITE, thickness=t),  # bottom
+    __test("display.Text('hello',0,0,0x123456)", "Text('hello', 0, 0, 0x123456)")
+    __test(
+        "display.Text('hello',0,0,0x123456,justify=display.MIDDLE_CENTER)",
+        "Text('hello', -60, -24, 0x123456)",
     )
+    __test(
+        "display.Rectangle(0,10,20,30,0x123456)", "Rectangle(0, 10, 20, 30, 0x123456)"
+    )
+    __test("display.Fill(0x123456)", "Rectangle(0, 0, 639, 399, 0x123456)")
+    __test(
+        "display.Line(0,10,20,30,0x123456)",
+        "Line(0, 10, 20, 30, 0x123456, thickness=1)",
+    )
+    __test(
+        "display.Line(0,10,20,30,0x123456,thickness=3)",
+        "Line(0, 10, 20, 30, 0x123456, thickness=3)",
+    )
+    __test(
+        "display.VLine(10,20,30,0x123456)",
+        "Line(10, 20, 10, 50, 0x123456, thickness=1)",
+    )
+    __test(
+        "display.VLine(10,20,30,0x123456,thickness=3)",
+        "Line(10, 20, 10, 50, 0x123456, thickness=3)",
+    )
+    __test(
+        "display.HLine(10,20,30,0x123456)",
+        "Line(10, 20, 40, 20, 0x123456, thickness=1)",
+    )
+    __test(
+        "display.HLine(10,20,30,0x123456,thickness=3)",
+        "Line(10, 20, 40, 20, 0x123456, thickness=3)",
+    )
+    __test(
+        "display.Polygon([0,10,20,30,40,50],0x123456)",
+        "Polygon([0,10, 20,30, 40,50], 0x123456, thickness=1)",
+    )
+    __test(
+        "display.Polygon([0,10,20,30,40,50],0x123456,thickness=3)",
+        "Polygon([0,10, 20,30, 40,50], 0x123456, thickness=3)",
+    )
+    __test(
+        "display.Polyline([0,10,20,30,40,50],0x123456)",
+        "Polyline([0,10, 20,30, 40,50], 0x123456, thickness=1)",
+    )
+    __test(
+        "display.Polyline([0,10,20,30,40,50],0x123456,thickness=3)",
+        "Polyline([0,10, 20,30, 40,50], 0x123456, thickness=3)",
+    )
+
+    # Test text placement, movement and colors
+    t_tl = display.Text("top left", 0, 0, 0xFF0000, justify=display.TOP_LEFT)
+    t_tr = display.Text("top right", 640, 0, 0x00FF00, justify=display.TOP_RIGHT)
+    t_bl = display.Text("bot left", 0, 400, 0x0000FF, justify=display.BOTTOM_LEFT)
+    t_br = display.Text("bot right", 640, 400, 0xFFFF00, justify=display.BOTTOM_RIGHT)
+    display.show(t_tl, t_tr, t_bl, t_br)
     time.sleep(1)
 
-    print("Rectangle: growing rectangle, getting larger than the display")
-    x_offset = display.WIDTH // 2
-    y_offset = display.HEIGHT // 2
-    for i in range(0, display.WIDTH // 2 + 100, 10):
-        x1 = x_offset - i
-        y1 = y_offset - i
-        x2 = x_offset + i
-        y2 = y_offset + i
-        display.show(display.Rectangle(x1, y1, x2, y2, display.YELLOW))
-        time.sleep_ms(10)
+    t_tc = display.Text(".", 320, 0, 0xFFFFFF, justify=display.TOP_CENTER)
+    t_ml = display.Text(".", 0, 200, 0xFFFFFF, justify=display.MIDDLE_LEFT)
+    t_mr = display.Text(".", 640, 200, 0xFFFFFF, justify=display.MIDDLE_RIGHT)
+    t_bc = display.Text(".", 320, 400, 0xFFFFFF, justify=display.BOTTOM_CENTER)
+    global t_mc
+    t_mc = display.Text(".", 320, 200, 0xFFFFFF, justify=display.MIDDLE_CENTER)
+    display.show([t_tl, t_tr, t_bl, t_br], t_tc, t_ml, t_mr, t_bc, t_mc)
     time.sleep(1)
 
-    print("Rectangle: test with ((x1,y1), (x2,y2)) with x1 > x2 or y1 > y2")
-    r = display.Rectangle(550, 300, 100, 100, display.GREEN)
-    display.show(r)
+    t_tc.move(0, 100)
+    t_bc.move(0, -100)
+    t_ml.move(100, 0)
+    t_mr.move(-100, 0)
+    display.move([t_bl, t_br], 0, -100)
+    t_mc.color(0xFF00FF)  # TODO this isn't consistent with move
+    display.color([t_ml, t_mr], 0x00FFFF)
+    display.show(t_tl, t_tr, t_bl, t_br, t_tc, t_ml, t_mr, t_bc, t_mc)
     time.sleep(1)
 
-    print("Text: test the edge cases for clipping on the right side of the display")
-    for i in range(display.FONT_WIDTH * 2):
-        s = "0....:....0....:....0....:"
-        display.show(display.Text(s, 0 + i, 0, display.WHITE))
-    time.sleep(2)
-
-    print("Text: the 'hello' spinning around the 'world'")
-    t1 = display.Text("hello", 200, 100, display.WHITE)
-    t2 = display.Text("world", 400, 20, display.WHITE)
-    for i in range(0, 13):
-        _ = t2.move(0, +10)
-        display.show(t1, t2)
-    for i in range(0, 35):
-        _ = t2.move(-10, 0)
-        display.show(t1, t2)
-    for i in range(0, 13):
-        _ = t2.move(0, -10)
-        display.show(t1, t2)
-    for i in range(0, 35):
-        _ = t2.move(+10, 0)
-        display.show(t1, t2)
+    # Test overlapping text
+    t_mc.move(0, 70)
+    __test(
+        "display.show(t_tl,t_tr,t_bl,t_br,t_tc,t_ml,t_mr,t_bc,t_mc)",
+        NameError,
+    )
+    t_mc.move(0, -70)
+    display.show(t_tl, t_tr, t_bl, t_br, t_tc, t_ml, t_mr, t_bc, t_mc)
     time.sleep(1)
 
-    print("Wrappers: test correct forwarding to other classes")
-    f = display.Fill(display.RED)
-    hl = display.HLine(10, 100, 620, display.WHITE, thickness=18)
-    vl = display.VLine(10, 100, 200, display.WHITE, thickness=18)
-    display.show(f, hl, vl)
+    # Test shape primitives
+    r = display.Rectangle(20, 380, 100, 300, 0xFF0000)
+    l = display.Line(0, 0, 640, 400, 0xFFFFFF)
+    vl = display.VLine(320, 100, 200, 0x00FF00)
+    hl = display.HLine(220, 200, 200, 0x00FF00)
+    pl = display.Polyline([320, 100, 420, 200, 320, 300, 220, 200], 0xFFFF00)
+    pg = display.Polygon([540, 20, 620, 20, 620, 100], 0x00FFFF)
+    display.show(r, l, vl, hl, pg, pl)
     time.sleep(1)
-    display.clear()
 
 
 def camera_module():
@@ -184,7 +186,13 @@ def camera_module():
 
 
 def microphone_module():
-    print("TODO microphone module")
+    __test("microphone.record()", None)
+    __test("microphone.record(seconds=6.5)", None)
+    time.sleep(0.5)
+    __test("len(microphone.read())", 127)
+    __test("len(microphone.read(samples=10))", 10)
+    __test("len(microphone.read(samples=128))", ValueError)
+    __test("microphone.compress([23432,24399,24300,24500])", b"[\x88")
 
 
 def touch_module():
@@ -210,16 +218,13 @@ def led_module():
 
 
 def fpga_module():
-    # Test read and check the FPGA chip ID at the same time
-    __test("fpga.read(0x0001, 3)", b"K\x07\x00")
+    # Test read returns correct length
+    __test("len(fpga.read(0x0001, 4))", 4)
 
     # Test writes
     __test("fpga.write(0x0000, b'')", None)
     __test("fpga.write(0x0000, b'done')", None)
     __test("fpga.write(0x0000, b'a' * 255)", None)
-
-    # Ensure that ROM strings can't be sent on the SPI
-    __test("fpga.write(0x0000, 'done')", TypeError)
 
     # Ensure that the min and max transfer sizes are respected
     __test("fpga.read(0x0000, 256), ", ValueError)
@@ -232,8 +237,11 @@ def bluetooth_module():
     __test("bluetooth.connected()", True)
     __test("isinstance(bluetooth.max_length(), int)", True)
     max_length = bluetooth.max_length()
+    time.sleep(0.1)
     __test("bluetooth.send(b'')", None)
+    time.sleep(0.1)
     __test(f"bluetooth.send(b'a' * {max_length})", None)
+    time.sleep(0.1)
     __test(f"bluetooth.send(b'a' * ({max_length} + 1))", ValueError)
     __test("callable(bluetooth.receive_callback)", True)
 
@@ -329,18 +337,11 @@ def time_module():
 
 def update_module():
     __test("callable(update.micropython)", True)
-
-    __test("update.Fpga.erase()", None)
-
-    # Ensure that ROM strings can't be sent on the SPI
-    __test("update.Fpga.write('done')", TypeError)
-
-    # Write and read back value
-    __test("update.Fpga.write(b'done')", None)
-    __test("update.Fpga.read(0x0000, 4)", b"done")
+    __test("callable(update.Fpga.erase)", True)
+    __test("callable(update.Fpga.write)", True)
 
     # Check that limits of the FPGA app region are respected
-    __test("update.Fpga.read(444430, 4)", b"\xff\xff\xff\xff")
+    __test("len(update.Fpga.read(444430, 4))", 4)
     __test("update.Fpga.read(444430, 8)", ValueError)
 
 

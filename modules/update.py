@@ -22,15 +22,23 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import __update
+import _update as __update
+import time as __time
 
 
 def micropython():
-    print("Monocle will now enter update mode.")
-    print(
-        "If the update is not started within 5 minutes, it will return to normal mode."
-    )
-    print("If the update fails, it will stay in the update mode and you can try again.")
+    if __update.connected() == False:
+        return
+
+    print("Monocle will reset if not updated within 5 minutes.\n")
+    print("If an update fails, simply connect to DFUTarg again.\n")
+    print("Monocle will now enter update mode")
+    __time.sleep(1)
+    print("\b.")
+    __time.sleep(1)
+    print("\b.")
+    __time.sleep(1)
+    print("\b.")
     __update.nrf52()
 
 

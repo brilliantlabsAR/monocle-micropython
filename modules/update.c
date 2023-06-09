@@ -33,6 +33,14 @@ STATIC mp_obj_t update_nrf52(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(update_nrf52_obj, update_nrf52);
 
+static mp_obj_t update_connected(void)
+{
+    return ble_are_tx_notifications_enabled(REPL_TX)
+               ? mp_const_true
+               : mp_const_false;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(update_connected_obj, update_connected);
+
 const struct _mp_obj_type_t fpga_app_type;
 
 static size_t fpga_app_programmed_bytes = 0;
@@ -88,6 +96,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(update_erase_fpga_app_obj, update_fpga_app_dele
 STATIC const mp_rom_map_elem_t update_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_nrf52), MP_ROM_PTR(&update_nrf52_obj)},
+    {MP_ROM_QSTR(MP_QSTR_connected), MP_ROM_PTR(&update_connected_obj)},
     {MP_ROM_QSTR(MP_QSTR_read_fpga_app), MP_ROM_PTR(&update_read_fpga_app_obj)},
     {MP_ROM_QSTR(MP_QSTR_write_fpga_app), MP_ROM_PTR(&update_write_fpga_app_obj)},
     {MP_ROM_QSTR(MP_QSTR_erase_fpga_app), MP_ROM_PTR(&update_erase_fpga_app_obj)},
@@ -98,4 +107,4 @@ const mp_obj_module_t update_module = {
     .base = {&mp_type_module},
     .globals = (mp_obj_dict_t *)&update_module_globals,
 };
-MP_REGISTER_MODULE(MP_QSTR___update, update_module);
+MP_REGISTER_MODULE(MP_QSTR__update, update_module);
