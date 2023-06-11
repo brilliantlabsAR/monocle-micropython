@@ -7,6 +7,7 @@ An example showing how to write a simple program using the Nordic Semiconductor
 
 import asyncio
 import sys
+import tty, termios
 from itertools import count, takewhile
 from typing import Iterator
 
@@ -48,13 +49,14 @@ async def uart_terminal():
         sys.exit(1)
 
     def handle_disconnect(_: BleakClient):
-        print("Device was disconnected.")
+        print("\r\nDevice was disconnected.", end="\r\n")
+
         # cancelling all tasks effectively ends the program
         for task in asyncio.all_tasks():
             task.cancel()
 
     def handle_rx(_: BleakGATTCharacteristic, data: bytearray):
-        print(data.decode(), end="")
+        print(data.decode(), end="", flush=True)
 
     async with BleakClient(device, disconnected_callback=handle_disconnect) as client:
         await client.start_notify(UART_TX_CHAR_UUID, handle_rx)
@@ -63,19 +65,18 @@ async def uart_terminal():
         nus = client.services.get_service(UART_SERVICE_UUID)
         rx_char = nus.get_characteristic(UART_RX_CHAR_UUID)
 
+        # set the terminal to raw I/O: no buffering
+        tty.setraw(0)
+
         while True:
             # This waits until you type a line and press ENTER.
             # A real terminal program might put stdin in raw mode so that things
             # like CTRL+C get passed to the remote device.
-            data = await loop.run_in_executor(None, sys.stdin.buffer.readline)
+            data = await loop.run_in_executor(None, sys.stdin.buffer.read, 1)
 
             # data will be empty on EOF (e.g. CTRL+D on *nix)
             if not data:
                 break
-
-            # some devices, like devices running MicroPython, expect Windows
-            # line endings (uncomment line below if needed)
-            data = data.replace(b"\n", b"\r\n")
 
             # Writing without response requires that the data can fit in a
             # single BLE packet. We can use the max_write_without_response_size
@@ -84,8 +85,14 @@ async def uart_terminal():
                 await client.write_gatt_char(rx_char, s)
 
 if __name__ == "__main__":
+    # save the terminal I/O state
+    saved_term = termios.tcgetattr(0)
+
     try:
         asyncio.run(uart_terminal())
     except asyncio.CancelledError:
         # task is cancelled on disconnect, so we ignore this error
         pass
+
+    # restore terminal I/O state
+    termios.tcsetattr(0, termios.TCSANOW, saved_term)
