@@ -35,6 +35,8 @@ import update
 import math
 import random
 
+from _rtt import _debug_log
+
 
 def __test(evaluate, expected):
     try:
