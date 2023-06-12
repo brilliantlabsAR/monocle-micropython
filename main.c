@@ -37,6 +37,7 @@
 #include "py/builtin.h"
 #include "py/compile.h"
 #include "py/gc.h"
+#include "py/mphal.h"
 #include "py/mperrno.h"
 #include "py/repl.h"
 #include "py/runtime.h"
@@ -917,6 +918,8 @@ int main(void)
         // On exit, clean up before reset
         gc_sweep_all();
         mp_deinit();
+
+        mp_hal_stdout_tx_str("MPY: soft reboot\r\n");
     }
 }
 
