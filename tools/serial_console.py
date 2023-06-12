@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 UART Service
 -------------
@@ -7,7 +8,9 @@ An example showing how to write a simple program using the Nordic Semiconductor
 
 import asyncio
 import sys
-import tty, termios
+import os
+import tty
+import termios
 from itertools import count, takewhile
 from typing import Iterator
 
@@ -35,28 +38,32 @@ async def uart_terminal():
     remote device. Any data received from the device is printed to stdout.
     """
 
+    # opens sandard output in binary mode
+    stdout = os.fdopen(1, 'wb')
+
     def match_nus_uuid(device: BLEDevice, adv: AdvertisementData):
         # This assumes that the device includes the UART service UUID in the
         # advertising data. This test may need to be adjusted depending on the
         # actual advertising data supplied by the device.
-        print(f"uuids={adv.service_uuids}")
+        sys.stderr.write(f"uuids={adv.service_uuids}\n")
         return UART_SERVICE_UUID.lower() in adv.service_uuids
 
     device = await BleakScanner.find_device_by_filter(match_nus_uuid)
 
     if device is None:
-        print("no matching device found, you may need to edit match_nus_uuid().")
+        sys.stderr.write("no matching device found\n")
         sys.exit(1)
 
     def handle_disconnect(_: BleakClient):
-        print("\r\nDevice was disconnected.", end="\r\n")
+        sys.stderr.write("\r\nDevice was disconnected.\r\n")
 
         # cancelling all tasks effectively ends the program
         for task in asyncio.all_tasks():
             task.cancel()
 
     def handle_rx(_: BleakGATTCharacteristic, data: bytearray):
-        print(data.decode(), end="", flush=True)
+        stdout.write(data)
+        stdout.flush()
 
     async with BleakClient(device, disconnected_callback=handle_disconnect) as client:
         await client.start_notify(UART_TX_CHAR_UUID, handle_rx)
@@ -66,7 +73,8 @@ async def uart_terminal():
         rx_char = nus.get_characteristic(UART_RX_CHAR_UUID)
 
         # set the terminal to raw I/O: no buffering
-        tty.setraw(0)
+        if sys.stdin.isatty():
+            tty.setraw(0)
 
         while True:
             # This waits until you type a line and press ENTER.
@@ -86,7 +94,8 @@ async def uart_terminal():
 
 if __name__ == "__main__":
     # save the terminal I/O state
-    saved_term = termios.tcgetattr(0)
+    if sys.stdin.isatty():
+        saved_term = termios.tcgetattr(0)
 
     try:
         asyncio.run(uart_terminal())
@@ -95,4 +104,5 @@ if __name__ == "__main__":
         pass
 
     # restore terminal I/O state
-    termios.tcsetattr(0, termios.TCSANOW, saved_term)
+    if sys.stdin.isatty():
+        termios.tcsetattr(0, termios.TCSANOW, saved_term)
