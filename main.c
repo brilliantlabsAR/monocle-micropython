@@ -675,7 +675,7 @@ int main(void)
         ble_cfg_t cfg;
         cfg.conn_cfg.conn_cfg_tag = 1;
         cfg.conn_cfg.params.gap_conn_cfg.conn_count = 1;
-        cfg.conn_cfg.params.gap_conn_cfg.event_length = 3;
+        cfg.conn_cfg.params.gap_conn_cfg.event_length = 300;
         app_err(sd_ble_cfg_set(BLE_CONN_CFG_GAP, &cfg, ram_start));
 
         // Set BLE role to peripheral only
@@ -729,7 +729,7 @@ int main(void)
         ble_gap_conn_params_t gap_conn_params = {0};
         gap_conn_params.min_conn_interval = (15 * 1000) / 1250;
         gap_conn_params.max_conn_interval = (15 * 1000) / 1250;
-        gap_conn_params.slave_latency = 3;
+        gap_conn_params.slave_latency = 0;
         gap_conn_params.conn_sup_timeout = (2000 * 1000) / 10000;
         app_err(sd_ble_gap_ppcp_set(&gap_conn_params));
 
