@@ -76,6 +76,18 @@ void monocle_critical_startup(void);
 void monocle_enter_bootloader(void);
 
 /**
+ * @brief Reboots Monocle with the safe mode flag enabled.
+ */
+
+void monocle_enter_safe_mode(void);
+
+/**
+ * @brief Checks if the safe mode flag is set or not.
+ */
+
+bool monocle_started_in_safe_mode(void);
+
+/**
  * @brief Resets the FPGA, and either holds it in reset, or reboots.
  */
 
