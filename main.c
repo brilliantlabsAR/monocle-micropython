@@ -888,7 +888,7 @@ int main(void)
         mp_stack_set_top(&_stack_top);
 
         // Set the stack limit as smaller than the real stack so we can recover
-        mp_stack_set_limit((char *)&_stack_top - (char *)&_stack_bot - 400);
+        mp_stack_set_limit((char *)&_stack_top - (char *)&_stack_bot - 1024);
 
         // Start garbage collection, micropython and the REPL
         gc_init(&_heap_start, &_heap_end);
