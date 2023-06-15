@@ -458,9 +458,15 @@ void SD_EVT_IRQHandler(void)
                         break;
                     }
 
+                    // Catch the safe mode signal
+                    if (ble_evt->evt.gatts_evt.params.write.data[i] == 0x1C)
+                    {
+                        monocle_enter_safe_mode();
+                    }
+
                     // Catch keyboard interrupts
-                    if (ble_evt->evt.gatts_evt.params.write.data[i] ==
-                        mp_interrupt_char)
+                    else if (ble_evt->evt.gatts_evt.params.write.data[i] ==
+                             mp_interrupt_char)
                     {
                         mp_sched_keyboard_interrupt();
                     }
@@ -893,8 +899,9 @@ int main(void)
         pyexec_frozen_module("_mountfs.py", false);
         pyexec_frozen_module("_splashscreen.py", false);
 
-        // Run the user's main file if it exists
-        pyexec_file_if_exists("main.py");
+        // If safe mode is not enabled, run the user's main.py file
+        monocle_started_in_safe_mode() ? NRFX_LOG("Starting in safe mode")
+                                       : pyexec_file_if_exists("main.py");
 
         // Stay in the friendly or raw REPL until a reset is called
         for (;;)
