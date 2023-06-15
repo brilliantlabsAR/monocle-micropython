@@ -37,6 +37,7 @@
 #include "py/builtin.h"
 #include "py/compile.h"
 #include "py/gc.h"
+#include "py/mphal.h"
 #include "py/mperrno.h"
 #include "py/repl.h"
 #include "py/runtime.h"
@@ -457,9 +458,15 @@ void SD_EVT_IRQHandler(void)
                         break;
                     }
 
+                    // Catch the safe mode signal
+                    if (ble_evt->evt.gatts_evt.params.write.data[i] == 0x1C)
+                    {
+                        monocle_enter_safe_mode();
+                    }
+
                     // Catch keyboard interrupts
-                    if (ble_evt->evt.gatts_evt.params.write.data[i] ==
-                        mp_interrupt_char)
+                    else if (ble_evt->evt.gatts_evt.params.write.data[i] ==
+                             mp_interrupt_char)
                     {
                         mp_sched_keyboard_interrupt();
                     }
@@ -674,7 +681,7 @@ int main(void)
         ble_cfg_t cfg;
         cfg.conn_cfg.conn_cfg_tag = 1;
         cfg.conn_cfg.params.gap_conn_cfg.conn_count = 1;
-        cfg.conn_cfg.params.gap_conn_cfg.event_length = 3;
+        cfg.conn_cfg.params.gap_conn_cfg.event_length = 300;
         app_err(sd_ble_cfg_set(BLE_CONN_CFG_GAP, &cfg, ram_start));
 
         // Set BLE role to peripheral only
@@ -728,7 +735,7 @@ int main(void)
         ble_gap_conn_params_t gap_conn_params = {0};
         gap_conn_params.min_conn_interval = (15 * 1000) / 1250;
         gap_conn_params.max_conn_interval = (15 * 1000) / 1250;
-        gap_conn_params.slave_latency = 3;
+        gap_conn_params.slave_latency = 0;
         gap_conn_params.conn_sup_timeout = (2000 * 1000) / 10000;
         app_err(sd_ble_gap_ppcp_set(&gap_conn_params));
 
@@ -892,8 +899,9 @@ int main(void)
         pyexec_frozen_module("_mountfs.py", false);
         pyexec_frozen_module("_splashscreen.py", false);
 
-        // Run the user's main file if it exists
-        pyexec_file_if_exists("main.py");
+        // If safe mode is not enabled, run the user's main.py file
+        monocle_started_in_safe_mode() ? NRFX_LOG("Starting in safe mode")
+                                       : pyexec_file_if_exists("main.py");
 
         // Stay in the friendly or raw REPL until a reset is called
         for (;;)
@@ -917,6 +925,8 @@ int main(void)
         // On exit, clean up before reset
         gc_sweep_all();
         mp_deinit();
+
+        mp_hal_stdout_tx_str("MPY: soft reboot\r\n");
     }
 }
 

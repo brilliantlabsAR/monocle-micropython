@@ -79,6 +79,9 @@ def __read_raw(samples=-1):
 def read(samples=-1):
     byte_data = __read_raw(samples)
 
+    if byte_data == None:
+        return None
+
     int16_list = []
 
     for i in range(len(byte_data) / 2):

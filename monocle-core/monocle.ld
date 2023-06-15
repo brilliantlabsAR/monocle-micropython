@@ -39,7 +39,7 @@ bl_flash_start = 0x78000;
 bl_flash_size = 512K - bl_flash_start; /* Bootloader is at the end of the flash */
 
 /* This must be updated whenever softdevice settings are changed */
-sd_ram_end = 0x2A60;
+sd_ram_end = 0x2D88;
 
 ENTRY(Reset_Handler)
 
