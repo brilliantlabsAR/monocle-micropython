@@ -24,22 +24,21 @@
 
 #include "monocle.h"
 #include "nrf_gpio.h"
+#include "nrfx_log.h"
 #include "py/runtime.h"
 #include "py/objstr.h"
 
-#include "nrfx_log.h"
-
-STATIC mp_obj_t rtt_debug_log(mp_obj_t arg1)
+STATIC mp_obj_t rtt_print(mp_obj_t arg1)
 {
     const char *str = mp_obj_str_get_data(arg1, NULL);
 
     NRFX_LOG("%s", str);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(rtt_debug_log_obj, rtt_debug_log);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(rtt_print_obj, rtt_print);
 
 STATIC const mp_rom_map_elem_t rtt_module_globals_table[] = {
-    {MP_ROM_QSTR(MP_QSTR__debug_log), MP_ROM_PTR(&rtt_debug_log_obj)},
+    {MP_ROM_QSTR(MP_QSTR_print), MP_ROM_PTR(&rtt_print_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(rtt_module_globals, rtt_module_globals_table);
 
