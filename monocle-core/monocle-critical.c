@@ -47,6 +47,9 @@ bool prevent_sleep_flag = false;
 
 bool force_sleep_flag = false;
 
+// Magic number which doesn't interfere with the bootloader flag bits
+static const uint32_t safe_mode_flag = 0x06;
+
 static void power_all_rails(bool enable)
 {
     if (enable)
@@ -321,14 +324,14 @@ void monocle_enter_bootloader(void)
     // Set the persistent memory flag telling the bootloader to go into DFU mode
     app_err(sd_power_gpregret_set(0, 0xB1));
 
-    // Reset the CPU, giving control to the bootloader
+    // Resets the CPU, giving control to the bootloader
     NVIC_SystemReset();
 }
 
 void monocle_enter_safe_mode(void)
 {
     // Set the persistent memory flag for safe mode
-    app_err(sd_power_gpregret_set(0, 0x50));
+    app_err(sd_power_gpregret_set(0, safe_mode_flag));
 
     NVIC_SystemReset();
 }
@@ -338,10 +341,10 @@ bool monocle_started_in_safe_mode(void)
     uint32_t register_value;
     app_err(sd_power_gpregret_get(0, &register_value));
 
-    // Clear once read
-    app_err(sd_power_gpregret_clr(0, 0x50));
+    // Clear magic number once read
+    app_err(sd_power_gpregret_clr(0, safe_mode_flag));
 
-    return register_value & 0x50;
+    return register_value & safe_mode_flag;
 }
 
 void monocle_fpga_reset(bool reboot)
