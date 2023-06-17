@@ -22,6 +22,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "py/mperrno.h"
 #include "monocle.h"
 #include "nrf_gpio.h"
 #include "py/runtime.h"
@@ -58,11 +59,39 @@ STATIC mp_obj_t camera_zoom(mp_obj_t zoom)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(camera_zoom_obj, camera_zoom);
 
+STATIC mp_obj_t camera_read(mp_obj_t addr)
+{
+    i2c_response_t resp;
+
+    resp = monocle_i2c_read(CAMERA_I2C_ADDRESS, mp_obj_get_int(addr), 0xFF);
+    if (resp.fail)
+    {
+        mp_raise_OSError(EIO);
+    }
+    return MP_OBJ_NEW_SMALL_INT(resp.value);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(camera_read_obj, camera_read);
+
+STATIC mp_obj_t camera_write(mp_obj_t addr, mp_obj_t data)
+{
+    i2c_response_t resp;
+
+    resp = monocle_i2c_write(CAMERA_I2C_ADDRESS, mp_obj_get_int(addr), 0xFF, mp_obj_get_int(data));
+    if (resp.fail)
+    {
+        mp_raise_OSError(EIO);
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(camera_write_obj, camera_write);
+
 STATIC const mp_rom_map_elem_t camera_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_sleep), MP_ROM_PTR(&camera_sleep_obj)},
     {MP_ROM_QSTR(MP_QSTR_wake), MP_ROM_PTR(&camera_wake_obj)},
     {MP_ROM_QSTR(MP_QSTR_zoom), MP_ROM_PTR(&camera_zoom_obj)},
+    {MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&camera_write_obj)},
+    {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&camera_read_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(camera_module_globals, camera_module_globals_table);
 
