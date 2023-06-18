@@ -176,6 +176,7 @@ typedef struct camera_config_t
 
 const camera_config_t camera_config[] = {
     {0x3008, 0x42},       // Enter software standby mode
+
     {0x3103, 0x03},       // Undocumented. Enables PLL
     {0x3017, 0xff},       // IO control enables all pins as outputs
     {0x3018, 0xff},       // IO control enables all pins as outputs
@@ -419,5 +420,17 @@ const camera_config_t camera_config[] = {
     {0x3a1e, 0x26},       // Auto exposure stable low range limit (go out)
     {0x3a11, 0x60},       // Auto exposure fast zone high limit
     {0x3a1f, 0x14},       // Auto exposure fast zone low limit
+
+    // Enable JPEG output
+    {0x3002, 0x00},       // SYSTEM_RESET_2 - set everything on
+    {0x3006, 0xFF},       // CLOCK_ENABLE_2 - enable all clocks
+    {0x3821, 0x27},       // TIMING_TC_REG_21 - enable JPEG, binning, mirror
+    {0x4300, 0x30},       // FORMAT_CONTROL_0 - YUV422, YUYV
+    {0x501f, 0x00},       // FORMAT_MUX_CONTROL - select YUV422
+    {0x4713, 0x02},       // JPG_MODE_SELECT - compression mode 2
+    {0x460c, 0x22},       // VFIFO_CTRL0C - undocumented bit
+    {0x3824, 0x04},       // DVP_PCLK - clock divider value
+    {0x460b, 0x35},       // DEBUG_MODE - undocumented
+
     {0x3008, 0x02},       // Bring out of reset
 };

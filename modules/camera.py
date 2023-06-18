@@ -60,33 +60,11 @@ def overlay(enable=None):
 def configure(x, y, format):
     global _camera_on
 
-    # Enable the camera and the camera clock from the FPGA
-    __fpga.write(0x4404, "")
-    __time.sleep_ms(100)
+    # Wake the camera
     __camera.wake()
-    __fpga.write(0x1005, "")
-    __fpga.write(0x3005, "")
 
-    # Configure the OV5640 in JPEG capture mode
-    __time.sleep_ms(100)
-    __camera.write(0x3002, 0x00) # SYSTEM_RESET_2 - set everything on
-    __time.sleep_ms(100)
-    __camera.write(0x3006, 0xFF) # CLOCK_ENABLE_2 - enable all clocks
-    __time.sleep_ms(100)
-    __camera.write(0x3821, 0x27) # TIMING_TC_REG_21 - enable JPEG, binning, mirror
-    __time.sleep_ms(100)
-    __camera.write(0x4300, 0x30) # FORMAT_CONTROL_0 - YUV422, YUYV
-    __time.sleep_ms(100)
-    __camera.write(0x501f, 0x00) # FORMAT_MUX_CONTROL - select YUV422
-    __time.sleep_ms(100)
-    __camera.write(0x4713, 0x02) # JPG_MODE_SELECT - compression mode 2
-    __time.sleep_ms(100)
-    __camera.write(0x460c, 0x22) # VFIFO_CTRL0C - undocumented bit
-    __time.sleep_ms(100)
-    __camera.write(0x3824, 0x04) # DVP_PCLK - clock divider value
-    __time.sleep_ms(100)
-    __camera.write(0x460b, 0x35) # DEBUG_MODE - undocumented
-    __time.sleep_ms(2000)
+    # Enable the camera core in the FPGA
+    __fpga.write(0x1005, "")
 
 
 def capture():
