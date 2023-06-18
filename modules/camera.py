@@ -43,14 +43,32 @@ _capture_on = False
 _capture_y = 0
 
 
+def overlay(enable=None):
+    if enable == None:
+        global __overlay_state
+        return __overlay_state
+    if enable == True:
+        __overlay_state = True
+    else:
+        __fpga.write(0x3004, "")
+        __fpga.write(0x1004, "")
+        __time.sleep_ms(100)
+        __camera.sleep()
+        __overlay_state = False
+
+
 def capture(x, y, format):
     global _capture_y
     global _capture_on
 
+    # Enable the camera and the camera clock from the FPGA
+    __fpga.write(0x4404, "")
+    __time.sleep_ms(100)
     __camera.wake()
-    __fpga.write(0x1005, b'')
-    __fpga.write(0x3005, b'')
+    __fpga.write(0x1005, "")
+    __fpga.write(0x3005, "")
 
+    # Configure the OV5640 in JPEG capture mode
     __time.sleep_ms(100)
     __camera.write(0x3002, 0x00) # SYSTEM_RESET_2 - set everything on
     __time.sleep_ms(100)
@@ -69,10 +87,13 @@ def capture(x, y, format):
     __camera.write(0x3824, 0x04) # DVP_PCLK - clock divider value
     __time.sleep_ms(100)
     __camera.write(0x460b, 0x35) # DEBUG_MODE - undocumented
-    __time.sleep_ms(100)
-    __fpga.write(0x5004, b'')
-    __time.sleep_ms(100)
+    __time.sleep_ms(2000)
 
+    # Trigger a capture on the FPGA
+    __fpga.write(0x5004, b'')
+    __time.sleep_ms(2000)
+
+    # Keep track of the ongoing capture
     _capture_on = True
     _capture_y = y
 
@@ -87,7 +108,7 @@ def read(bytes=254):
         raise ValueError("no ongoing capture()")
     if bytes > 254:
         raise ValueError("at most 254 bytes")
-    __time.sleep_ms(10)
+    __time.sleep_ms(1)
     return __fpga.read(0x5005, bytes)
 
 
