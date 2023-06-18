@@ -39,8 +39,8 @@ if __status1 != 16 or __status2 != 16: # or __image != b"Mncl":
     raise (NotImplementedError("camera driver not found on FPGA"))
 
 
+_camera_on = False
 _capture_on = False
-_capture_y = 0
 
 
 def overlay(enable=None):
@@ -57,9 +57,8 @@ def overlay(enable=None):
         __overlay_state = False
 
 
-def capture(x, y, format):
-    global _capture_y
-    global _capture_on
+def configure(x, y, format):
+    global _camera_on
 
     # Enable the camera and the camera clock from the FPGA
     __fpga.write(0x4404, "")
@@ -89,18 +88,20 @@ def capture(x, y, format):
     __camera.write(0x460b, 0x35) # DEBUG_MODE - undocumented
     __time.sleep_ms(2000)
 
+
+def capture():
+    global _camera_on
+    global _capture_on
+
+    if not _camera_on:
+        configure(640, 400, JPEG)
+
     # Trigger a capture on the FPGA
     __fpga.write(0x5004, b'')
     __time.sleep_ms(2000)
 
     # Keep track of the ongoing capture
     _capture_on = True
-    _capture_y = y
-
-
-def capture_off():
-    __fpga.write(0x1004, "") # OVCAM_PAUSE_REQ
-    __camera.sleep()
 
 
 def read(bytes=254):
@@ -110,6 +111,13 @@ def read(bytes=254):
         raise ValueError("at most 254 bytes")
     __time.sleep_ms(1)
     return __fpga.read(0x5005, bytes)
+
+
+def off():
+    __fpga.write(0x1004, "") # OVCAM_PAUSE_REQ
+    __camera.sleep()
+    _camera_on = False
+    _capture_on = False
 
 
 def record(enable):
