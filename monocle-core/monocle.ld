@@ -120,7 +120,7 @@ SECTIONS
 /* Define the stack area */
 
 _stack_top = ORIGIN(RAM) + LENGTH(RAM);
-_stack_bot = _stack_top - 4K;
+_stack_bot = _stack_top - 8K;
 
 /* Heap goes from end of bss ram to the bottom of the stack */
 
