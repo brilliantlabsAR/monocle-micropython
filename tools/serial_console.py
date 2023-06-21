@@ -105,6 +105,8 @@ async def repl_terminal():
         if sys.stdin.isatty():
             tty.setraw(0)
 
+        sys.stderr.write('Ctrl-V + "input text" + Enter: data to raw service\r\n')
+
         # Infinite loop to read the input character until the end
         while True:
             ch = await loop.run_in_executor(None, sys.stdin.buffer.read, 1)
