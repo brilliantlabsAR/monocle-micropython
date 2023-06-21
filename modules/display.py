@@ -288,40 +288,6 @@ def color(*args):
         arg.color(args[-1])
 
 
-def text_get_overlapping_y(l):
-    if len(l) == 0:
-        return
-    l = sorted(l, key=lambda obj: obj.y)
-    prev = l[0]
-    for obj in l[1:]:
-        if obj.y < prev.y + FONT_HEIGHT:
-            return (prev, obj)
-        prev = obj
-
-
-def text_get_overlapping_xy(base, l):
-    if len(l) == 0:
-        return
-    sub = [base]
-    for obj in l:
-        if obj.x < base.x + base.width(base.string):
-            # Some overlapping on x coordinates, accumulate the row
-            sub.append(obj)
-        else:
-            # Since the l is sorted, we can stop checking here
-            break
-
-    # now also check the y coordinate for all the potential clashes
-    return text_get_overlapping_y(sub)
-
-
-def text_get_overlapping(l):
-    for i in range(len(l)):
-        overlapping = text_get_overlapping_xy(l[i], l[i + 1:])
-        if overlapping is not None:
-            return overlapping
-
-
 def update_colors(addr, l):
     # new buffer for the FPGA API, starting with address 0x0000
     buffer = bytearray(2)
@@ -354,14 +320,33 @@ def update_colors(addr, l):
 def show_fbtext(l):
     global fbtext_addr
 
+    # Make sure there was enough time to start the FPGA engine
+    while time.ticks_ms() < 1000:
+        pass
+
     update_colors(0x4502, l)
+
     # Text has no wrapper, we implement it locally.
     # See https://streamlogic.io/docs/reify/nodes/#fbtext
     buffer = bytearray(struct.pack(">H", fbtext_addr))
     l = sorted(l, key=lambda obj: obj.x)
-    overlapping = text_get_overlapping(l)
-    if overlapping is not None:
-        raise TextOverlapError(f"{overlapping[0]} overlaps with {overlapping[1]}")
+
+    # Check for overlapping text
+    def box(obj):
+        x2 = obj.x + FONT_WIDTH * len(obj.string)
+        y2 = obj.y + FONT_HEIGHT
+        return obj.x, x2, obj.y, y2
+    for a in l:
+        ax1, ax2, ay1, ay2 = box(a)
+        for b in l:
+            if a is b:
+                continue
+            bx1, bx2, by1, by2 = box(b)
+            if ax1 <= bx2 and ax2 >= bx1:
+                if ay1 <= by2 and ay2 >= by1:
+                    raise TextOverlapError(f"{a} overlaps with {b}")
+
+    # Render the text
     for obj in l:
         obj.fbtext(buffer)
     if len(buffer) > 0:
@@ -370,11 +355,12 @@ def show_fbtext(l):
         fpga.write(0x4503, buffer + b"\xFF\xFF\xFF")
         fbtext_addr += FBTEXT_PAGE_SIZE
         fbtext_addr %= FBTEXT_PAGE_SIZE * FBTEXT_NUM_PAGES
-        time.sleep_ms(20) # ensure the buffer swap has happened
+        time.sleep_ms(100) # ensure the buffer swap has happened
 
 
 def show_vgr2d(l):
     update_colors(0x4402, l)
+
     # 0 is the address of the frame in the framebuffer in use.
     # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
     # Offset: active display offset in buffer used if double buffering
