@@ -22,11 +22,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-/**
- * @warning CHANGING THIS CODE CAN DAMAGE YOUR HARDWARE.
- *          Read the PMIC datasheet carefully before changing any PMIC settings.
- */
-
 #include <math.h>
 #include <string.h>
 #include "monocle.h"
@@ -36,6 +31,7 @@
 #include "nrfx_systick.h"
 #include "nrf_power.h"
 #include "nrfx_timer.h"
+#include "nrfx_gpiote.h"
 #include "nrfx_twim.h"
 #include "nrfx_spim.h"
 
@@ -53,6 +49,21 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
     // TODO: use a hardware button for this
     (void)event_type;
     (void)p_context;
+}
+
+
+static void touch_a_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+{
+    (void)pin;
+    (void)action;
+    touch_event_handler(TOUCH_A);
+}
+
+static void touch_b_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action)
+{
+    (void)pin;
+    (void)action;
+    touch_event_handler(TOUCH_B);
 }
 
 void monocle_critical_startup(void)
@@ -101,10 +112,10 @@ void monocle_critical_startup(void)
 
     // Setup GPIOs and set initial values
     {
-        nrf_gpio_cfg_input(BUTTON_1_PIN, NRF_GPIO_PIN_NOPULL);
-        nrf_gpio_cfg_input(BUTTON_2_PIN, NRF_GPIO_PIN_NOPULL);
-        nrf_gpio_cfg_input(BUTTON_3_PIN, NRF_GPIO_PIN_NOPULL);
-        nrf_gpio_cfg_input(BUTTON_4_PIN, NRF_GPIO_PIN_NOPULL);
+        nrf_gpio_cfg_input(BUTTON_1_PIN, NRF_GPIO_PIN_PULLUP);
+        nrf_gpio_cfg_input(BUTTON_2_PIN, NRF_GPIO_PIN_PULLUP);
+        nrf_gpio_cfg_input(BUTTON_3_PIN, NRF_GPIO_PIN_PULLUP);
+        nrf_gpio_cfg_input(BUTTON_4_PIN, NRF_GPIO_PIN_PULLUP);
         nrf_gpio_cfg_output(LED_1_PIN);
         nrf_gpio_cfg_output(LED_2_PIN);
         nrf_gpio_cfg_output(LED_3_PIN);
@@ -140,6 +151,14 @@ bool monocle_started_in_safe_mode(void)
 
     // Clear magic number once read
     app_err(sd_power_gpregret_clr(0, safe_mode_flag));
+
+    // Extra configuration that needed to be done after nrfx config on main()
+    nrfx_gpiote_in_config_t config = NRFX_GPIOTE_CONFIG_IN_SENSE_HITOLO(false);
+    config.pull = NRF_GPIO_PIN_PULLUP;
+    app_err(nrfx_gpiote_in_init(BUTTON_1_PIN, &config, &touch_a_handler));
+    app_err(nrfx_gpiote_in_init(BUTTON_2_PIN, &config, &touch_b_handler));
+    nrfx_gpiote_in_event_enable(BUTTON_1_PIN, true);
+    nrfx_gpiote_in_event_enable(BUTTON_2_PIN, true);
 
     return register_value & safe_mode_flag;
 }

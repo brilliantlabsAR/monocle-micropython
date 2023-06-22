@@ -314,3 +314,11 @@ void monocle_flash_page_erase(size_t address)
 {
     (void)address;
 }
+
+touch_action_t touch_get_state(void)
+{
+    int a = !nrf_gpio_pin_read(BUTTON_1_PIN);
+    int b = !nrf_gpio_pin_read(BUTTON_2_PIN);
+
+    return a && b ? TOUCH_BOTH : a ? TOUCH_A : b ? TOUCH_B : TOUCH_NONE;
+}

@@ -44,7 +44,7 @@ BUILD_VERSION := $(shell TZ= date +v%y.%j.%H%M)
 WARN = -Wall -Werror -Wdouble-promotion -Wfloat-conversion
 
 # Hardware back-end: monocle-core or monocle-nrf52dk
-CORE = monocle-core
+BOARD = monocle-core
 
 # Build optimizations
 OPT += -mcpu=cortex-m4
@@ -72,7 +72,7 @@ DEFS += -DBUILD_VERSION='"$(BUILD_VERSION)"'
 DEFS += -DLFS2_NO_ASSERT
 
 # Set linker options
-LDFLAGS += -Lnrfx/mdk -T $(CORE)/monocle.ld
+LDFLAGS += -Lnrfx/mdk -T monocle-core/monocle.ld
 LDFLAGS += -Wl,--gc-sections
 LDFLAGS += -Xlinker -Map=$(@:.elf=.map)
 LDFLAGS += --specs=nano.specs
@@ -84,7 +84,7 @@ INC += -Imicropython/lib/cmsis/inc
 INC += -Imicropython/shared/readline
 INC += -Imodules
 INC += -Imodules/libvgrs/src
-INC += -I$(CORE)
+INC += -I$(BOARD)
 INC += -Inrfx
 INC += -Inrfx/drivers
 INC += -Inrfx/drivers/include
@@ -101,9 +101,9 @@ INC += -Isoftdevice/include/nrf52
 CFLAGS += $(WARN) $(OPT) $(INC) $(DEFS)
 
 SRC_C += main.c
-SRC_C += $(CORE)/monocle-critical.c
-SRC_C += $(CORE)/monocle-drivers.c
-SRC_C += $(CORE)/monocle-startup.c
+SRC_C += $(BOARD)/monocle-critical.c
+SRC_C += $(BOARD)/monocle-drivers.c
+SRC_C += $(BOARD)/monocle-startup.c
 SRC_C += mphalport.c
 
 SRC_C += micropython/extmod/moduasyncio.c

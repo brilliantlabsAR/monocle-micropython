@@ -28,6 +28,7 @@
 #include <stdbool.h>
 #include "nrfx.h"
 #include "nrfx_log.h"
+#include "touch.h"
 
 /**
  * @brief Monocle PCB pinout.
@@ -47,7 +48,7 @@
 #define FPGA_FLASH_SPI_SDO_PIN 9               //
 #define FPGA_RESET_INT_PIN 1                   //
 #define PMIC_INTERRUPT_PIN 1                   //
-#define TOUCH_INTERRUPT_PIN BUTTON_3_PIN       //
+#define TOUCH_INTERRUPT_PIN 1                  //
 #define TOUCH_BUTTON_A_PIN BUTTON_1_PIN        //
 #define TOUCH_BUTTON_B_PIN BUTTON_2_PIN        //
 #define BUTTON_1_PIN 13                        //
