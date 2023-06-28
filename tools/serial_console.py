@@ -51,21 +51,12 @@ async def repl_terminal():
     remote device. Any data received from the device is printed to stdout.
     """
 
-    # opens sandard output in binary mode
-    stdout = os.fdopen(1, 'wb')
-
     def match_repl_uuid(device: BLEDevice, adv: AdvertisementData):
         # This assumes that the device includes the UART service UUID in the
         # advertising data. This test may need to be adjusted depending on the
         # actual advertising data supplied by the device.
         sys.stderr.write(f"uuids={adv.service_uuids}\n")
         return UART_SERVICE_UUID.lower() in adv.service_uuids
-
-    device = await BleakScanner.find_device_by_filter(match_repl_uuid)
-
-    if device is None:
-        sys.stderr.write("no matching device found\n")
-        sys.exit(1)
 
     def handle_disconnect(_: BleakClient):
         sys.stderr.write("\r\nDevice was disconnected.\r\n")
@@ -91,6 +82,20 @@ async def repl_terminal():
         tty.setraw(0)
         return line
 
+    stdout = os.fdopen(1, 'wb')
+
+    device = await BleakScanner.find_device_by_filter(match_repl_uuid)
+    if device is None:
+        sys.stderr.write("no matching device found\n")
+        sys.exit(1)
+    else:
+        sys.stderr.write(f"connected\n")
+    sys.stderr.write('Ctrl-D: Reboot in normal mode\n")
+    sys.stderr.write('Ctrl-\\: Reboot in safe mode\n")
+    sys.stderr.write('Ctrl-C: Cancel ongoing script\n")
+    sys.stderr.write('Ctrl-E, "code", Ctrl-D: paste mode\n")
+    sys.stderr.write('Ctrl-V, "text", Enter: send to raw Bluetooth service\n')
+
     async with BleakClient(device, disconnected_callback=handle_disconnect) as client:
         await client.start_notify(UART_TX_CHAR_UUID, handle_repl_rx)
         await client.start_notify(DATA_TX_CHAR_UUID, handle_data_rx)
@@ -105,8 +110,6 @@ async def repl_terminal():
         if sys.stdin.isatty():
             tty.setraw(0)
 
-        sys.stderr.write('Ctrl-V + "input text" + Enter: data to raw service\r\n')
-
         # Infinite loop to read the input character until the end
         while True:
             ch = await loop.run_in_executor(None, sys.stdin.buffer.read, 1)
@@ -116,7 +119,7 @@ async def repl_terminal():
                 sys.stderr.write(f'TX: ')
                 sys.stderr.flush()
                 line = await loop.run_in_executor(None, prompt)
-                await client.write_gatt_char(data_rx_char, line)
+                await client.write_gatt_char(data_rx_char, line.rstrip())
             else:
                 await client.write_gatt_char(repl_rx_char, ch)
 
