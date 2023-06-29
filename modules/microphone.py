@@ -43,7 +43,7 @@ def __flush():
         count += min(254, available)
 
 
-def record(sample_rate=16000, seconds=1.0):
+def record(sample_rate=16000, dit_depth=16, seconds=1.0):
     # TODO possible to pass sample rate to FPGA?
 
     __flush()
