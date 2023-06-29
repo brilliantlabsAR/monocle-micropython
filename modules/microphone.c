@@ -129,8 +129,6 @@ STATIC mp_obj_t microphone_record(size_t n_args, const mp_obj_t *pos_args, mp_ma
     uint8_t status_byte;
     microphone_fpga_read(0x0800, &status_byte, sizeof(status_byte));
 
-    NRFX_LOG("Status = 0x%x", status_byte);
-
     // Toggle the sample rate if required
     if (((status_byte & 0x04) == 0x00 && sample_rate == 8000) ||
         ((status_byte & 0x04) == 0x04 && sample_rate == 16000))
@@ -147,8 +145,11 @@ STATIC mp_obj_t microphone_record(size_t n_args, const mp_obj_t *pos_args, mp_ma
     }
     microphone_bit_depth = bit_depth;
 
-    // Set window size. Resolution is 50ms
-    uint16_t blocks = (uint16_t)(mp_obj_get_float(args[2].u_obj) / 0.02f);
+    // Set the block size and request a number of blocks corresponding to seconds
+    float block_size;
+    sample_rate == 16000 ? (block_size = 0.02) : (block_size = 0.04);
+
+    uint16_t blocks = (uint16_t)(mp_obj_get_float(args[2].u_obj) / block_size);
     uint8_t blocks_bytes[] = {blocks >> 8, blocks};
     microphone_fpga_write(0x0802, blocks_bytes, sizeof(blocks));
 
