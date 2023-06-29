@@ -188,7 +188,22 @@ STATIC mp_obj_t microphone_read(mp_obj_t samples)
 
     uint8_t buffer[available];
     microphone_fpga_read(0x5807, buffer, sizeof(buffer));
-    return mp_obj_new_bytes(buffer, sizeof(buffer));
+
+    // If 16 bit data, return this buffer
+    if (microphone_bit_depth == 16)
+    {
+        return mp_obj_new_bytes(buffer, sizeof(buffer));
+    }
+
+    // Otherwise create a scaled version for 8 bit
+    uint8_t small_buffer[sizeof(buffer) / 2];
+    for (size_t i = 0; i < sizeof(buffer) / 2; i++)
+    {
+        uint16_t data16 = buffer[i * 2] << 8 | buffer[i + 2 + 1];
+        small_buffer[i] = data16 >> 8;
+    }
+
+    return mp_obj_new_bytes(small_buffer, sizeof(small_buffer));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(microphone_read_obj, microphone_read);
 
