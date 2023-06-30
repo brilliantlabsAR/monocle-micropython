@@ -103,7 +103,7 @@ SRC_C += monocle-core/monocle-drivers.c
 SRC_C += monocle-core/monocle-startup.c
 SRC_C += mphalport.c
 
-SRC_C += micropython/extmod/moduasyncio.c
+SRC_C += micropython/extmod/modasyncio.c
 SRC_C += micropython/extmod/modbinascii.c
 SRC_C += micropython/extmod/modhashlib.c
 SRC_C += micropython/extmod/modjson.c

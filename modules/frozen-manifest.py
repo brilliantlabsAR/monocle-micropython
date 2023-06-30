@@ -29,4 +29,4 @@ module("camera.py")
 module("display.py")
 module("update.py")
 
-include("$(MPY_DIR)/extmod/uasyncio/manifest.py")
+include("$(MPY_DIR)/extmod/asyncio/manifest.py")
