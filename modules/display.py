@@ -320,10 +320,6 @@ def update_colors(addr, l):
 def show_fbtext(l):
     global fbtext_addr
 
-    # Make sure there was enough time to start the FPGA engine
-    while time.ticks_ms() < 1000:
-        pass
-
     update_colors(0x4502, l)
 
     # Text has no wrapper, we implement it locally.
@@ -355,7 +351,7 @@ def show_fbtext(l):
         fpga.write(0x4503, buffer + b"\xFF\xFF\xFF")
         fbtext_addr += FBTEXT_PAGE_SIZE
         fbtext_addr %= FBTEXT_PAGE_SIZE * FBTEXT_NUM_PAGES
-        time.sleep_ms(100) # ensure the buffer swap has happened
+        time.sleep_ms(20) # ensure the buffer swap has happened
 
 
 def show_vgr2d(l):
