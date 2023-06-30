@@ -187,12 +187,17 @@ def camera_module():
 
 def microphone_module():
     __test("microphone.record()", None)
-    __test("microphone.record(seconds=6.5)", None)
+    __test("microphone.record(seconds=4)", None)
+    __test("microphone.record(seconds=4.5)", None)
+    __test("microphone.record(sample_rate=4000)", ValueError)
+    __test("microphone.record(sample_rate=8000)", None)
+    __test("microphone.record(sample_rate=16000)", None)
+    __test("microphone.record(bit_depth=4)", ValueError)
+    __test("microphone.record(bit_depth=8)", None)
+    __test("microphone.record(bit_depth=16)", None)
     time.sleep(0.5)
-    __test("len(microphone.read())", 127)
-    __test("len(microphone.read(samples=10))", 10)
-    __test("len(microphone.read(samples=128))", ValueError)
-    __test("microphone.compress([23432,24399,24300,24500])", b"[\x88")
+    __test("len(microphone.read(127))", 254)
+    __test("len(microphone.read(128))", ValueError)
 
 
 def touch_module():
