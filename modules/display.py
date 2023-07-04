@@ -27,6 +27,7 @@ import fpga
 import struct
 import time
 from _display import *
+import gc
 
 WIDTH = 640
 HEIGHT = 400
@@ -361,6 +362,7 @@ def show_vgr2d(l):
     # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
     # Offset: active display offset in buffer used if double buffering
     vgr2d.display2d(0, [obj.vgr2d() for obj in l], WIDTH, HEIGHT)
+    gc.collect() # memory optimization to reduce fragmentation
 
 
 def show(*args):
