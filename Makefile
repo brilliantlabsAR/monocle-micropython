@@ -218,4 +218,12 @@ release: clean build/application.hex
 	mergehex -m build/settings.hex build/application.hex softdevice/s132_nrf52_7.3.0_softdevice.hex bootloader/build/nrf52832_xxaa_s132.hex -o build/monocle-micropython-$(BUILD_VERSION).hex
 	nrfutil pkg generate --hw-version 52 --application-version 0 --application build/application.hex --sd-req 0x0124 --key-file bootloader/published_privkey.pem build/monocle-micropython-$(BUILD_VERSION).zip
 
+power-only: DEFS += -DPOWER_ONLY_BINARY_FOR_FACTORY_USE
+power-only: clean build/application.hex
+	nrfutil settings generate --family NRF52 --application build/application.hex --application-version 0 --bootloader-version 0 --bl-settings-version 2 build/settings.hex
+	mergehex -m build/settings.hex build/application.hex softdevice/s132_nrf52_7.3.0_softdevice.hex bootloader/build/nrf52832_xxaa_s132.hex -o build/monocle_micropython_power_only.hex
+	@echo "======================================="
+	@echo "Built power only binary for factory use"
+	@echo "======================================="
+
 include micropython/py/mkrules.mk

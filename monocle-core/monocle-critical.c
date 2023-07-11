@@ -261,8 +261,10 @@ void monocle_critical_startup(void)
     // Start SPI before sleeping otherwise we'll crash
     monocle_spi_enable(true);
 
+#ifndef POWER_ONLY_BINARY_FOR_FACTORY_USE
     // This wont return if Monocle is charging
     check_if_battery_charging_and_sleep(0, NULL);
+#endif
 
     // Set up a timer for checking charge state periodically
     {
@@ -278,7 +280,9 @@ void monocle_critical_startup(void)
         nrfx_timer_extended_compare(&timer, NRF_TIMER_CC_CHANNEL0, 15625,
                                     NRF_TIMER_SHORT_COMPARE0_CLEAR_MASK, true);
 
+#ifndef POWER_ONLY_BINARY_FOR_FACTORY_USE
         nrfx_timer_enable(&timer);
+#endif
     }
 
     // Setup GPIOs and set initial values
@@ -317,6 +321,13 @@ void monocle_critical_startup(void)
         nrf_gpio_pin_write(FPGA_CS_MODE_PIN, true);
         nrf_gpio_pin_write(FLASH_CS_PIN, true);
     }
+
+#ifdef POWER_ONLY_BINARY_FOR_FACTORY_USE
+    monocle_fpga_reset(true);
+    while (1)
+    {
+    }
+#endif
 }
 
 void monocle_enter_bootloader(void)
