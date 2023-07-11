@@ -22,20 +22,20 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import _camera as __camera
-import bluetooth as __bluetooth
-import fpga as __fpga
-import time as __time
+import _camera as camera
+import bluetooth as bluetooth
+import fpga as fpga
+import time as time
 
 RGB = "RGB"
 YUV = "YUV"
 JPEG = "JPEG"
 
 
-__image = __fpga.read(0x0001, 4)
-__status1 = __fpga.read(0x1000, 1)[0] & 0x10
-__status2 = __fpga.read(0x5000, 1)[0] & 0x10
-if __status1 != 16 or __status2 != 16: # or __image != b"Mncl":
+_image = fpga.read(0x0001, 4)
+_status1 = fpga.read(0x1000, 1)[0] & 0x10
+_status2 = fpga.read(0x5000, 1)[0] & 0x10
+if _status1 != 16 or _status2 != 16: # or _image != b"Mncl":
     raise (NotImplementedError("camera driver not found on FPGA"))
 
 
@@ -45,26 +45,26 @@ _capture_on = False
 
 def overlay(enable=None):
     if enable == None:
-        global __overlay_state
-        return __overlay_state
+        global _overlay_state
+        return _overlay_state
     if enable == True:
-        __overlay_state = True
+        _overlay_state = True
     else:
-        __fpga.write(0x3004, "")
-        __fpga.write(0x1004, "")
-        __time.sleep_ms(100)
-        __camera.sleep()
-        __overlay_state = False
+        fpga.write(0x3004, "")
+        fpga.write(0x1004, "")
+        time.sleep_ms(100)
+        camera.sleep()
+        _overlay_state = False
 
 
 def configure(x, y, format):
     global _camera_on
 
     # Wake the camera
-    __camera.wake()
+    camera.wake()
 
     # Enable the camera core in the FPGA
-    __fpga.write(0x1005, "")
+    fpga.write(0x1005, "")
 
 
 def capture():
@@ -75,8 +75,8 @@ def capture():
         configure(640, 400, JPEG)
 
     # Trigger a capture on the FPGA
-    __fpga.write(0x5004, b'')
-    __time.sleep_ms(2000)
+    fpga.write(0x5004, b'')
+    time.sleep_ms(2000)
 
     # Keep track of the ongoing capture
     _capture_on = True
@@ -87,13 +87,26 @@ def read(bytes=254):
         raise ValueError("no ongoing capture()")
     if bytes > 254:
         raise ValueError("at most 254 bytes")
-    __time.sleep_ms(1)
-    return __fpga.read(0x5005, bytes)
+
+    # Read available byte count
+    avail = struct.unpack('>H', fpga.read(0x1006, 2))[0]
+    if avail == 0:
+        return None
+    if avail <= bytes:
+        bytes = avail
+
+    # Read and return the JPEG data
+    return fpga.read(0x5005, bytes)
+
+
+def wait_data():
+    while struct.unpack('>H', fpga.read(0x1006, 2))[0] == 0:
+        time.sleep_us(10)
 
 
 def off():
-    __fpga.write(0x1004, "") # OVCAM_PAUSE_REQ
-    __camera.sleep()
+    fpga.write(0x1004, "") # OVCAM_PAUSE_REQ
+    camera.sleep()
     _camera_on = False
     _capture_on = False
 
@@ -102,11 +115,11 @@ def record(enable):
     if enable:
         # Overlay seems to be required for recording.
         overlay(True)
-        __fpga.write(0x1005, b"")  # record on
+        fpga.write(0x1005, b"")  # record on
     else:
         # This pauses the image, ready for replaying
-        __fpga.write(0x1004, b"")  # record off
-        __camera.sleep()
+        fpga.write(0x1004, b"")  # record off
+        camera.sleep()
 
 
 def replay():
@@ -114,5 +127,5 @@ def replay():
     record(False)
 
     # This will trigger one replay of the recorded feed
-    __fpga.write(0x3007, b"")  # replay once
-    __time.sleep(4)
+    fpga.write(0x3007, b"")  # replay once
+    time.sleep(4)
