@@ -41,10 +41,10 @@ def cmd_PutSpan(arg):
     global cur_y
     global cur_color
 
-    for i in range(arg // 8):
-        rgb[cur_y * WIDTH * DEPTH + cur_x * DEPTH + 0] = cur_color[0]
-        rgb[cur_y * WIDTH * DEPTH + cur_x * DEPTH + 1] = cur_color[1]
-        rgb[cur_y * WIDTH * DEPTH + cur_x * DEPTH + 2] = cur_color[2]
+    for i in range(arg):
+        rgb[cur_y * WIDTH * DEPTH + cur_x // 16 * DEPTH + 0] = cur_color[0]
+        rgb[cur_y * WIDTH * DEPTH + cur_x // 16 * DEPTH + 1] = cur_color[1]
+        rgb[cur_y * WIDTH * DEPTH + cur_x // 16 * DEPTH + 2] = cur_color[2]
         cur_x += 1
 
 def cmd_SetColor(arg):
@@ -57,7 +57,7 @@ def cmd_SkipColumns(arg):
     global cur_x
 
     # No data for these many pixels
-    cur_x += arg // 16
+    cur_x += arg
 
 def cmd_JumpToLine(arg):
     global cur_x
@@ -72,7 +72,7 @@ def cmd_NextLinePos(arg):
     global cur_y
 
     # Jump to the column given on the next row
-    cur_x = arg // 16
+    cur_x = arg
     cur_y += 1
 
 # iterate through pair of bytes, forming an uint16_t containing a command
@@ -100,17 +100,17 @@ while True:
     elif cmd == 0x8 or cmd == 0x9:
         arg = num & 0b_00011111_11111111
         cmd_SkipColumns(arg)
-        print(f"SkipColumns: 0x{arg // 8:X}")
+        print(f"SkipColumns: 0x{arg:X}")
 
     elif cmd == 0xA or cmd == 0xB:
         arg = num & 0b_00011111_11111111
         cmd_NextLinePos(arg)
-        print(f"NextLinePos: 0x{arg // 8:X}")
+        print(f"NextLinePos: 0x{arg:X}")
 
     elif cmd == 0xC:
         arg = num & 0b_00001111_11111111
         cmd_PutSpan(arg)
-        print(f"PutSpan: 0x{arg // 8:X}")
+        print(f"PutSpan: 0x{arg:X}")
 
     elif cmd == 0xF:
         arg = num & 0b_00001111_11111111
@@ -121,5 +121,5 @@ while True:
         print("")
 
 # save the result as PNG image
-im = Image.frombuffer('RGB', (640, 400), rgb, 'raw', 'RGB', 0, 1)
+im = Image.frombuffer('RGB', (WIDTH, HEIGHT), rgb, 'raw', 'RGB', 0, 1)
 im.save('vgrs.png')
