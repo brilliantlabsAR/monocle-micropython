@@ -42,6 +42,7 @@ def cmd_PutSpan(arg):
     global cur_color
 
     for i in range(arg):
+        assert cur_x < WIDTH * 16
         rgb[cur_y * WIDTH * DEPTH + cur_x // 16 * DEPTH + 0] = cur_color[0]
         rgb[cur_y * WIDTH * DEPTH + cur_x // 16 * DEPTH + 1] = cur_color[1]
         rgb[cur_y * WIDTH * DEPTH + cur_x // 16 * DEPTH + 2] = cur_color[2]
