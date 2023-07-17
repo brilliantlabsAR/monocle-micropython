@@ -289,7 +289,7 @@ def color(*args):
         arg.color(args[-1])
 
 
-def update_colors(addr, l):
+def update_colors(addr, l, dump=False):
     # new buffer for the FPGA API, starting with address 0x0000
     buffer = bytearray(2)
 
@@ -316,6 +316,10 @@ def update_colors(addr, l):
 
     # flush the buffer, we are done
     fpga.write(addr, buffer)
+
+    # hexdump the buffer if requested
+    if dump:
+        print("".join("%02X" % x for x in buffer))
 
 
 def show_fbtext(l):
@@ -356,7 +360,7 @@ def show_fbtext(l):
 
 
 def show_vgr2d(l, dump=False):
-    update_colors(0x4402, l)
+    update_colors(0x4402, l, dump=dump)
 
     # 0 is the address of the frame in the framebuffer in use.
     # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
