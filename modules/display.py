@@ -155,9 +155,8 @@ class Polyline(Colored):
         return f"Polyline([{points}], 0x{self.color_rgb:06x}, thickness={self.width})"
 
     def move(self, x, y):
-        for point in iter(self.points):
-            point[0] += int(x)
-            point[1] += int(y)
+        for i, val in enumerate(self.points):
+            self.points[i] = (val[0] + int(x), val[1] + int(y))
 
     def vgr2d(self):
         return vgr2d.Polyline(self.points, self.color_index, self.width)
@@ -178,9 +177,8 @@ class Polygon(Colored):
         return f"Polygon([{points}], 0x{self.color_rgb:06x}, thickness={self.width})"
 
     def move(self, x, y):
-        for point in iter(self.points):
-            point[0] += int(x)
-            point[1] += int(y)
+        for i, val in enumerate(self.points):
+            self.points[i] = (val[0] + int(x), val[1] + int(y))
 
     def vgr2d(self):
         return vgr2d.Polygon(
