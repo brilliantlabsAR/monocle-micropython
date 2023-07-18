@@ -176,7 +176,6 @@ typedef struct camera_config_t
 
 const camera_config_t camera_config[] = {
     {0x3008, 0x42},       // Enter software standby mode
-
     {0x3103, 0x03},       // Undocumented. Enables PLL
     {0x3017, 0xff},       // IO control enables all pins as outputs
     {0x3018, 0xff},       // IO control enables all pins as outputs
@@ -425,6 +424,5 @@ const camera_config_t camera_config[] = {
     {0x3a1e, 0x26},       // Auto exposure stable low range limit (go out)
     {0x3a11, 0x60},       // Auto exposure fast zone high limit
     {0x3a1f, 0x14},       // Auto exposure fast zone low limit
-
     {0x3008, 0x02},       // Bring out of reset
 };

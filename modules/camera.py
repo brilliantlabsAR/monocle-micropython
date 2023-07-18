@@ -23,7 +23,6 @@
 #
 
 import _camera
-import bluetooth
 import struct
 import fpga
 import time
@@ -31,42 +30,26 @@ import time
 
 _image = fpga.read(0x0001, 4)
 _status = fpga.read(0x1000, 1)[0] & 0x10
-if _status != 16: # or _image != b"Mncl":
+
+if _status != 16 or _image != b"Mncl":
     raise (NotImplementedError("camera driver not found on FPGA"))
 
 
-_capture_state = False
-
-
-def capture(enable):
-    global _capture_state
-
-    if enable:
-        _capture_state = True
-        _camera.wake()
-        time.sleep_ms(1)
-        fpga.write(0x1003, b"")
-    else:
-        _capture_state = False
-        _camera.sleep()
+def capture():
+    _camera.wake()
+    time.sleep_ms(1)
+    fpga.write(0x1003, b"")
+    time.sleep_ms(5)  # TODO optimise the time taken to capture one frame
+    _camera.sleep()
 
 
 def read(bytes=254):
-    if not _capture_state:
-        raise ValueError("no ongoing capture()")
     if bytes > 254:
         raise ValueError("at most 254 bytes")
 
-    # Read available byte count, and cap to the max supported
-    avail = struct.unpack('>H', fpga.read(0x1006, 2))[0]
+    avail = struct.unpack(">H", fpga.read(0x1006, 2))[0]
+
     if avail == 0:
         return None
-    if avail <= bytes:
-        bytes = avail
 
-    # Read and return the JPEG data
-    return fpga.read(0x1007, bytes)
-
-
-def send():
-    capture(True)
+    return fpga.read(0x1007, max(bytes, avail))
