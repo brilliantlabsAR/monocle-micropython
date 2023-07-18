@@ -22,68 +22,51 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import _camera as __camera
-import bluetooth as __bluetooth
-import fpga as __fpga
-import time as __time
-
-RGB = "RGB"
-YUV = "YUV"
-JPEG = "JPEG"
-
-__overlay_state = False
+import _camera
+import bluetooth
+import struct
+import fpga
+import time
 
 
-def capture(url):
-    raise NotImplementedError
+_image = fpga.read(0x0001, 4)
+_status = fpga.read(0x1000, 1)[0] & 0x10
+if _status != 16: # or _image != b"Mncl":
+    raise (NotImplementedError("camera driver not found on FPGA"))
 
 
-def overlay(enable=None):
-    if enable == None:
-        global __overlay_state
-        return __overlay_state
-    if enable == True:
-        __fpga.write(0x4404, "")
-        __time.sleep_ms(100)
-        __camera.wake()
-        __fpga.write(0x1005, "")
-        __fpga.write(0x3005, "")
-        __overlay_state = True
-    else:
-        __fpga.write(0x3004, "")
-        __fpga.write(0x1004, "")
-        __time.sleep_ms(100)
-        __camera.sleep()
-        __overlay_state = False
+_capture_state = False
 
 
-def output(x, y, format):
-    raise NotImplementedError
+def capture(enable):
+    global _capture_state
 
-
-def zoom(multiplier):
-    __camera.wake()
-    __time.sleep_ms(100)
-    __camera.zoom(multiplier)
-    if not overlay():
-        __camera.sleep()
-
-
-def record(enable):
     if enable:
-        # Overlay seems to be required for recording.
-        overlay(True)
-        __fpga.write(0x1005, b"")  # record on
+        _capture_state = True
+        _camera.wake()
+        time.sleep_ms(1)
+        fpga.write(0x1003, b"")
     else:
-        # This pauses the image, ready for replaying
-        __fpga.write(0x1004, b"")  # record off
-        __camera.sleep()
+        _capture_state = False
+        _camera.sleep()
 
 
-def replay():
-    # Stop recording to avoid output mixing live and recorded feeds
-    record(False)
+def read(bytes=254):
+    if not _capture_state:
+        raise ValueError("no ongoing capture()")
+    if bytes > 254:
+        raise ValueError("at most 254 bytes")
 
-    # This will trigger one replay of the recorded feed
-    __fpga.write(0x3007, b"")  # replay once
-    __time.sleep(4)
+    # Read available byte count, and cap to the max supported
+    avail = struct.unpack('>H', fpga.read(0x1006, 2))[0]
+    if avail == 0:
+        return None
+    if avail <= bytes:
+        bytes = avail
+
+    # Read and return the JPEG data
+    return fpga.read(0x1007, bytes)
+
+
+def send():
+    capture(True)

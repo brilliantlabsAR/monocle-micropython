@@ -176,6 +176,7 @@ typedef struct camera_config_t
 
 const camera_config_t camera_config[] = {
     {0x3008, 0x42},       // Enter software standby mode
+
     {0x3103, 0x03},       // Undocumented. Enables PLL
     {0x3017, 0xff},       // IO control enables all pins as outputs
     {0x3018, 0xff},       // IO control enables all pins as outputs
@@ -224,7 +225,13 @@ const camera_config_t camera_config[] = {
     {0x3812, 0x00},       // Timing Voffset[10:8]
     {0x3813, 0x2e},       // Timing Voffset[7:0] VOFFSET = 46 = 0x2E
     {0x4740, 0x21},       // VSync
+    {0x4713, 0x03},       // JPG_MODE_SELECT - compression mode 3
+    {0x4602, 0x02},       // JPEG output width (high byte)
+    {0x4603, 0x80},       // JPEG output width (low byte)
+    {0x4604, 0x80},       // JPEG output width (low byte)
     {0x3820, 0x47},       // Flip image vertically
+    {0x3821, 0x27},       // TIMING_TC_REG_21 - enable JPEG, binning, flip image vertically
+    {0x3002, 0x00},       // SYSTEM_RESET_2 - set everything on
     {0x3814, 0x31},       // Timing Y increment
     {0x3815, 0x31},       // Timing X increment
     {0x3800, 0x00},       // Timing X start address MSB
@@ -262,7 +269,7 @@ const camera_config_t camera_config[] = {
     {0x4004, 0x02},       // Black level control line number
     {0x3000, 0x00},       // Enable all system blocks
     {0x3004, 0xff},       // Enable all clocks
-    {0x3006, 0xc3},       // Disable JPEG x2 clock
+    {0x3006, 0xff},       // CLOCK_ENABLE_2 - enable all clocks
     {0x302e, 0x08},       // Undocumented
     {0x4300, 0x30},       // Format YUV422 and sequence YUYV
     {0x501f, 0x00},       // ISP format control as YUV422
@@ -274,7 +281,6 @@ const camera_config_t camera_config[] = {
     {0x3824, 0x04},       // PCLK divider not used if in auto mode as above
     {0x5000, 0xa7},       // ISP enable everything in CONTORL 00
     {0x5001, 0xa3},       // ISP enable everything in CONTROL 01 except UV average
-    {0x5002, 0x80},       // ISP enable scaling in CONTROL 02 (undocumented: guessed)
     {0x3503, 0x00},       // Auto exposure and auto gain on
     {0x5180, 0xff},       // Auto white balance B block
     {0x5181, 0xf2},       // Auto white balance max step local, max step fast, one zone
@@ -419,5 +425,6 @@ const camera_config_t camera_config[] = {
     {0x3a1e, 0x26},       // Auto exposure stable low range limit (go out)
     {0x3a11, 0x60},       // Auto exposure fast zone high limit
     {0x3a1f, 0x14},       // Auto exposure fast zone low limit
+
     {0x3008, 0x02},       // Bring out of reset
 };
