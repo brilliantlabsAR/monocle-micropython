@@ -298,18 +298,26 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
     i2c_response_t interrupt = monocle_i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
     app_err(interrupt.fail);
 
-    if (interrupt.value & 0x10)
+    switch (interrupt.value)
     {
-        touch_event_handler(TOUCH_A);
-    }
+    case 0x33:
+        touch_event_handler(TOUCH_BOTH);
+        break;
 
-    if (interrupt.value & 0x20)
-    {
+    case 0x11:
+        touch_event_handler(TOUCH_A);
+        break;
+
+    case 0x22:
         touch_event_handler(TOUCH_B);
+        break;
+
+    default:
+        break;
     }
 }
 
-touch_action_t touch_get_state(void)
+touch_button_t touch_get_state(void)
 {
     i2c_response_t interrupt = monocle_i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
     app_err(interrupt.fail);

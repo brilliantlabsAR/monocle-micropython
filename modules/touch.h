@@ -24,12 +24,13 @@
 
 #pragma once
 
-typedef enum touch_action_t
+typedef enum touch_button_t
 {
     TOUCH_NONE,
     TOUCH_A,
     TOUCH_B,
-    TOUCH_BOTH
-} touch_action_t;
+    TOUCH_BOTH,
+    TOUCH_EITHER,
+} touch_button_t;
 
-void touch_event_handler(touch_action_t action);
+void touch_event_handler(touch_button_t action);
