@@ -287,7 +287,7 @@ def color(*args):
         arg.color(args[-1])
 
 
-def update_colors(addr, l):
+def update_colors(addr, l, dump=False):
     # new buffer for the FPGA API, starting with address 0x0000
     buffer = bytearray(2)
 
@@ -314,6 +314,10 @@ def update_colors(addr, l):
 
     # flush the buffer, we are done
     fpga.write(addr, buffer)
+
+    # hexdump the buffer if requested
+    if dump:
+        print("".join("%02X" % x for x in buffer))
 
 
 def show_fbtext(l):
@@ -353,19 +357,19 @@ def show_fbtext(l):
         time.sleep_ms(20) # ensure the buffer swap has happened
 
 
-def show_vgr2d(l):
-    update_colors(0x4402, l)
+def show_vgr2d(l, dump=False):
+    update_colors(0x4402, l, dump=dump)
 
     # 0 is the address of the frame in the framebuffer in use.
     # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
     # Offset: active display offset in buffer used if double buffering
-    vgr2d.display2d(0, [obj.vgr2d() for obj in l], WIDTH, HEIGHT)
+    vgr2d.display2d(0, [obj.vgr2d() for obj in l], WIDTH, HEIGHT, dump=dump)
     gc.collect() # memory optimization to reduce fragmentation
 
 
-def show(*args):
+def show(*args, dump=False):
     args = flatten(args)
-    show_vgr2d([obj for obj in args if hasattr(obj, "vgr2d")])
+    show_vgr2d([obj for obj in args if hasattr(obj, "vgr2d")], dump=dump)
     show_fbtext([obj for obj in args if hasattr(obj, "fbtext")])
 
 
