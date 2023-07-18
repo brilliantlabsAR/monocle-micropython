@@ -41,7 +41,7 @@ void mp_hal_set_interrupt_char(int c);
 
 int mp_hal_generate_random_seed(void);
 
-touch_action_t touch_get_state(void);
+touch_button_t touch_get_state(void);
 
 typedef enum ble_tx_channel_t
 {

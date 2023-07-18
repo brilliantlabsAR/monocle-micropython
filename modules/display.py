@@ -27,6 +27,7 @@ import fpga
 import struct
 import time
 from _display import *
+import gc
 
 WIDTH = 640
 HEIGHT = 400
@@ -320,10 +321,6 @@ def update_colors(addr, l):
 def show_fbtext(l):
     global fbtext_addr
 
-    # Make sure there was enough time to start the FPGA engine
-    while time.ticks_ms() < 1000:
-        pass
-
     update_colors(0x4502, l)
 
     # Text has no wrapper, we implement it locally.
@@ -355,7 +352,7 @@ def show_fbtext(l):
         fpga.write(0x4503, buffer + b"\xFF\xFF\xFF")
         fbtext_addr += FBTEXT_PAGE_SIZE
         fbtext_addr %= FBTEXT_PAGE_SIZE * FBTEXT_NUM_PAGES
-        time.sleep_ms(100) # ensure the buffer swap has happened
+        time.sleep_ms(20) # ensure the buffer swap has happened
 
 
 def show_vgr2d(l):
@@ -365,6 +362,7 @@ def show_vgr2d(l):
     # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
     # Offset: active display offset in buffer used if double buffering
     vgr2d.display2d(0, [obj.vgr2d() for obj in l], WIDTH, HEIGHT)
+    gc.collect() # memory optimization to reduce fragmentation
 
 
 def show(*args):
