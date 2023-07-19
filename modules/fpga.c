@@ -106,18 +106,18 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(fpga_run_obj, 0, 1, fpga_run);
 STATIC mp_obj_t fpga_version(void)
 {
     uint8_t target_device[4];
-    uint8_t image_version[12];
+    uint8_t application_version[12];
     uint8_t chip_revision[4];
 
     uint8_t target_device_address[2] = {(uint8_t)(0x0001 >> 8), (uint8_t)0x0001};
-    uint8_t image_version_address[2] = {(uint8_t)(0x0002 >> 8), (uint8_t)0x0002};
+    uint8_t application_version_address[2] = {(uint8_t)(0x0002 >> 8), (uint8_t)0x0002};
     uint8_t chip_revision_address[2] = {(uint8_t)(0x0003 >> 8), (uint8_t)0x0003};
 
     monocle_spi_write(FPGA, target_device_address, 2, true);
     monocle_spi_read(FPGA, target_device, sizeof(target_device), false);
 
-    monocle_spi_write(FPGA, image_version_address, 2, true);
-    monocle_spi_read(FPGA, image_version, sizeof(image_version), false);
+    monocle_spi_write(FPGA, application_version_address, 2, true);
+    monocle_spi_read(FPGA, application_version, sizeof(application_version), false);
 
     monocle_spi_write(FPGA, chip_revision_address, 2, true);
     monocle_spi_read(FPGA, chip_revision, sizeof(chip_revision), false);
@@ -134,8 +134,8 @@ STATIC mp_obj_t fpga_version(void)
                       mp_obj_new_str((char *)target_device, sizeof(target_device)));
 
     mp_obj_dict_store(return_dict,
-                      MP_OBJ_NEW_QSTR(MP_QSTR_image_version),
-                      mp_obj_new_str((char *)image_version, sizeof(image_version)));
+                      MP_OBJ_NEW_QSTR(MP_QSTR_application_version),
+                      mp_obj_new_str((char *)application_version, sizeof(application_version)));
 
     mp_obj_dict_store(return_dict,
                       MP_OBJ_NEW_QSTR(MP_QSTR_chip_revision),

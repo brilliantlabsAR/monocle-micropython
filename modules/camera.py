@@ -34,12 +34,15 @@ _status = fpga.read(0x1000, 1)[0] & 0x10
 if _status != 16 or _image != b"Mncl":
     raise (NotImplementedError("camera driver not found on FPGA"))
 
+RGB = "RGB"
+JPEG = "JPEG"
+
 
 def capture():
     _camera.wake()
     time.sleep_ms(1)
     fpga.write(0x1003, b"")
-    while fpga.read(0x1000, 1) == b'2':
+    while fpga.read(0x1000, 1) == b"2":
         time.sleep_us(10)
 
 
@@ -54,3 +57,11 @@ def read(bytes=254):
         return None
 
     return fpga.read(0x1007, min(bytes, avail))
+
+
+def output(x, y, mode):
+    return NotImplemented
+
+
+def zoom(factor):
+    return NotImplemented
