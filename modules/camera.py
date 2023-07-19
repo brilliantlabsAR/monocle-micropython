@@ -39,8 +39,8 @@ def capture():
     _camera.wake()
     time.sleep_ms(1)
     fpga.write(0x1003, b"")
-    time.sleep_ms(5)  # TODO optimise the time taken to capture one frame
-    _camera.sleep()
+    while fpga.read(0x1000, 1) == b'2':
+        time.sleep_us(10)
 
 
 def read(bytes=254):
@@ -50,6 +50,7 @@ def read(bytes=254):
     avail = struct.unpack(">H", fpga.read(0x1006, 2))[0]
 
     if avail == 0:
+        _camera.sleep()
         return None
 
-    return fpga.read(0x1007, max(bytes, avail))
+    return fpga.read(0x1007, min(bytes, avail))
