@@ -22,7 +22,6 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "monocle.h"
 #include "nrf_gpio.h"
 #include "py/runtime.h"
 
@@ -40,29 +39,10 @@ STATIC mp_obj_t camera_wake(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(camera_wake_obj, camera_wake);
 
-STATIC mp_obj_t camera_zoom(mp_obj_t zoom)
-{
-    switch (mp_obj_get_int(zoom))
-    {
-    case 1:
-        app_err(monocle_i2c_write(CAMERA_I2C_ADDRESS, 0x5600, 0xFF, 0x10).fail); // turns zoom 0ff
-        break;
-    case 16:
-        app_err(monocle_i2c_write(CAMERA_I2C_ADDRESS, 0x5600, 0xFF, 0x00).fail); // turns zoom on
-        app_err(monocle_i2c_write(CAMERA_I2C_ADDRESS, 0x5601, 0xFF, 0x88).fail); // Set zoom factor
-        break;
-    default:
-        mp_raise_ValueError(MP_ERROR_TEXT("zoom must be 1 or 16"));
-    }
-    return mp_const_none;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(camera_zoom_obj, camera_zoom);
-
 STATIC const mp_rom_map_elem_t camera_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_sleep), MP_ROM_PTR(&camera_sleep_obj)},
     {MP_ROM_QSTR(MP_QSTR_wake), MP_ROM_PTR(&camera_wake_obj)},
-    {MP_ROM_QSTR(MP_QSTR_zoom), MP_ROM_PTR(&camera_zoom_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(camera_module_globals, camera_module_globals_table);
 
