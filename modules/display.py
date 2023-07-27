@@ -70,6 +70,9 @@ FBTEXT_NUM_PAGES = 2
 fbtext_addr = 0
 
 
+sprite_addr = 0x0000
+
+
 class Colored:
     def color(self, color_rgb):
         self.color_rgb = color_rgb
@@ -141,12 +144,12 @@ class Fill(Rectangle):
 
 
 class Polyline(Colored):
-    def __init__(self, l, color, thickness=1):
-        if len(l) % 2 != 0:
-            raise ValueError("l must have odd number of coordinates")
+    def __init__(self, coordinates, color, thickness=1):
+        if len(coordinates) % 2 != 0:
+            raise ValueError("coordinates must have odd number of values")
         self.points = []
-        for i in range(0, len(l), 2):
-            self.points.append((l[i], l[i + 1]))
+        for i in range(0, len(coordinates), 2):
+            self.points.append((coordinates[i], coordinates[i + 1]))
         self.width = thickness
         self.color(color)
 
@@ -155,20 +158,20 @@ class Polyline(Colored):
         return f"Polyline([{points}], 0x{self.color_rgb:06x}, thickness={self.width})"
 
     def move(self, x, y):
-        for i, val in enumerate(self.points):
-            self.points[i] = (val[0] + int(x), val[1] + int(y))
+        for i, value in enumerate(self.points):
+            self.points[i] = (value[0] + int(x), value[1] + int(y))
 
     def vgr2d(self):
         return vgr2d.Polyline(self.points, self.color_index, self.width)
 
 
 class Polygon(Colored):
-    def __init__(self, l, color, thickness=1):
-        if len(l) % 2 != 0:
-            raise ValueError("l must have odd number of coordinates")
+    def __init__(self, coordinates, color, thickness=1):
+        if len(coordinates) % 2 != 0:
+            raise ValueError("coordinates must have odd number of values")
         self.points = []
-        for i in range(0, len(l), 2):
-            self.points.append((l[i], l[i + 1]))
+        for i in range(0, len(coordinates), 2):
+            self.points.append((coordinates[i], coordinates[i + 1]))
         self.width = thickness
         self.color(color)
 
@@ -177,8 +180,8 @@ class Polygon(Colored):
         return f"Polygon([{points}], 0x{self.color_rgb:06x}, thickness={self.width})"
 
     def move(self, x, y):
-        for i, val in enumerate(self.points):
-            self.points[i] = (val[0] + int(x), val[1] + int(y))
+        for i, value in enumerate(self.points):
+            self.points[i] = (value[0] + int(x), value[1] + int(y))
 
     def vgr2d(self):
         return vgr2d.Polygon(
@@ -270,6 +273,62 @@ class Text(Colored):
         return self
 
 
+class Sprite:
+    def __init__(self, x, y, z, source):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.source = source
+
+    def __repr__(self):
+        return f"Sprite({self.x}, {self.y}, {self.z}, {self.source})"
+
+    def move(self, x, y):
+        self.x += int(x)
+        self.y += int(y)
+        return self
+
+    def sprite(self, buffer):
+        x = self.x & 0xFFF
+        y = self.y & 0xFFF
+        z = self.z & 0xF
+        id = self.source.id & 0xFFF
+        buffer.extend(struct.pack(">I", x << 20 | y << 8 | z << 4 | id >> 8))
+        buffer.append(id & 0xFF)
+
+
+class SpriteSource:
+    def __init__(self, data, width):
+        global sprite_addr
+
+        if len(data) % (4 * width) != 0:
+            raise ValueError("data length must formatted as: b'RGBA' * width")
+        if width % 32 != 0:
+            raise ValueError("width must be a multiple of 32")
+
+        self.width = width
+        self.height = len(data) // 4 // width
+        self.addr = sprite_addr
+        self.id = None
+
+        # Send the sprite RGBA data to the FPGA
+        for slice in [data[i:i + 128] for i in range(0, len(data), 128)]:
+            buffer = bytearray()
+            buffer.extend(struct.pack(">I", sprite_addr))
+            buffer.extend(slice)
+            fpga.write(0x4404, buffer)
+            sprite_addr += len(slice)
+
+    def __repr__(self):
+        return f"SpriteSource([0x{self.addr:X}], {self.width}x{self.height})"
+
+    def sprite_describe(self, buffer):
+        width = (self.width // 32) & 0xF
+        height = self.height & 0xFF
+        addr = (self.addr // 32) & 0xFFFFF
+        buffer.extend(struct.pack(">I", width << 28 | height << 20 | addr << 0))
+
+
 def flatten(o):
     if isinstance(o, tuple) or isinstance(o, list):
         return [i2 for i1 in o for i2 in flatten(i1)]
@@ -287,57 +346,76 @@ def color(*args):
         arg.color(args[-1])
 
 
-def update_colors(addr, l, dump=False):
+def update_colors(addr, obj_list, dump=False):
     # new buffer for the FPGA API, starting with address 0x0000
     buffer = bytearray(2)
 
     # collect the colors from the various objects
-    color_l = []
-    for obj in l:
-        if obj.color_rgb in color_l:
+    color_list = []
+    for obj in obj_list:
+        if obj.color_rgb in color_list:
             # deduplicate the color by using the existing index
-            obj.color_index = color_l.index(obj.color_rgb)
+            obj.color_index = color_list.index(obj.color_rgb)
 
         else:
-            # add a new color if enough room
-            if len(color_l) > 128:
+            # Add a new color if enough room
+            if len(color_list) > 128:
                 raise ValueError("more than 128 different color unsupported")
 
-            # add to the l for future reference
-            obj.color_index = len(color_l)
-            color_l.append(obj.color_rgb)
+            # Add to the list for future reference
+            obj.color_index = len(color_list)
+            color_list.append(obj.color_rgb)
 
-            # add to the buffer for the FPGA
+            # Add to the buffer for the FPGA
             buffer.append(obj.color_rgb >> 16)
             buffer.append(obj.color_rgb >> 8)
             buffer.append(obj.color_rgb >> 0)
 
-    # flush the buffer, we are done
+    # Flush the buffer, we are done
     fpga.write(addr, buffer)
 
-    # hexdump the buffer if requested
+    # Hexdump the buffer if requested
     if dump:
         print("".join("%02X" % x for x in buffer))
 
 
-def show_fbtext(l):
+def show_sprite(sprites):
+
+    # Send layout description data to the FPGA
+    buffer = bytearray()
+    buffer.extend(b"\x00\x00")
+    for id, item in enumerate(set(item.source for item in sprites)):
+        item.id = id
+        item.sprite_describe(buffer)
+    fpga.write(0x4402, buffer)
+
+    # Send placement data to the FPGA
+    buffer = bytearray()
+    buffer.extend(b"\x00\x00")
+    for item in sprites:
+        item.sprite(buffer)
+    buffer.extend(b"\x00\xFF\xFF\xFF\xFF")
+    fpga.write(0x4403, buffer)
+
+
+def show_fbtext(fbtext_list):
     global fbtext_addr
 
-    update_colors(0x4502, l)
+    update_colors(0x4502, fbtext_list)
 
     # Text has no wrapper, we implement it locally.
     # See https://streamlogic.io/docs/reify/nodes/#fbtext
     buffer = bytearray(struct.pack(">H", fbtext_addr))
-    l = sorted(l, key=lambda obj: obj.x)
+    fbtext_list = sorted(fbtext_list, key=lambda obj: obj.x)
 
     # Check for overlapping text
     def box(obj):
         x2 = obj.x + FONT_WIDTH * len(obj.string)
         y2 = obj.y + FONT_HEIGHT
         return obj.x, x2, obj.y, y2
-    for a in l:
+    for a in fbtext_list:
         ax1, ax2, ay1, ay2 = box(a)
-        for b in l:
+        for b in fbtext_list:
             if a is b:
                 continue
             bx1, bx2, by1, by2 = box(b)
@@ -346,7 +424,7 @@ def show_fbtext(l):
                     raise TextOverlapError(f"{a} overlaps with {b}")
 
     # Render the text
-    for obj in l:
+    for obj in fbtext_list:
         obj.fbtext(buffer)
     if len(buffer) > 0:
         addr = bytearray(struct.pack(">H", fbtext_addr))
@@ -357,13 +435,13 @@ def show_fbtext(l):
         time.sleep_ms(20) # ensure the buffer swap has happened
 
 
-def show_vgr2d(l, dump=False):
-    update_colors(0x4402, l, dump=dump)
+def show_vgr2d(vgr2d_list, dump=False):
+    update_colors(0x4402, vgr2d_list, dump=dump)
 
     # 0 is the address of the frame in the framebuffer in use.
     # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
     # Offset: active display offset in buffer used if double buffering
-    vgr2d.display2d(0, [obj.vgr2d() for obj in l], WIDTH, HEIGHT, dump=dump)
+    vgr2d.display2d(0, [obj.vgr2d() for obj in vgr2d_list], WIDTH, HEIGHT, dump=dump)
     gc.collect() # memory optimization to reduce fragmentation
 
 
@@ -371,7 +449,14 @@ def show(*args, dump=False):
     args = flatten(args)
     show_vgr2d([obj for obj in args if hasattr(obj, "vgr2d")], dump=dump)
     show_fbtext([obj for obj in args if hasattr(obj, "fbtext")])
+    show_sprite([obj for obj in args if hasattr(obj, "sprite")])
 
 
 def clear():
     show(Text(" ", 0, 0, 0x000000))
+
+
+def reset():
+    global sprite_addr
+    sprite_addr = 0x0000
+    clear()
