@@ -24,7 +24,8 @@
 
 import device
 import display
-import camera
+
+# import camera
 import microphone
 import touch
 import led
@@ -203,11 +204,12 @@ def microphone_module():
 def touch_module():
     __test("touch.state('A')", False)
     __test("touch.state('B')", False)
+    __test("touch.state('EITHER')", False)
     __test("touch.state('BOTH')", False)
     __test("touch.state(touch.A)", False)
     __test("touch.state(touch.B)", False)
+    __test("touch.state(touch.EITHER)", False)
     __test("touch.state(touch.BOTH)", False)
-    __test("touch.state('B')", False)
     __test("callable(touch.callback)", True)
 
 

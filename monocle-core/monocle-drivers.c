@@ -104,8 +104,7 @@ i2c_response_t monocle_i2c_read(uint8_t device_address_7bit,
     {
         nrfx_err_t tx_err = nrfx_twim_xfer(&i2c_handle, &i2c_tx, 0);
 
-        if (tx_err == NRFX_ERROR_BUSY ||
-            tx_err == NRFX_ERROR_NOT_SUPPORTED ||
+        if (tx_err == NRFX_ERROR_NOT_SUPPORTED ||
             tx_err == NRFX_ERROR_INTERNAL ||
             tx_err == NRFX_ERROR_INVALID_ADDR ||
             tx_err == NRFX_ERROR_DRV_TWI_ERR_OVERRUN)
@@ -115,8 +114,7 @@ i2c_response_t monocle_i2c_read(uint8_t device_address_7bit,
 
         nrfx_err_t rx_err = nrfx_twim_xfer(&i2c_handle, &i2c_rx, 0);
 
-        if (rx_err == NRFX_ERROR_BUSY ||
-            rx_err == NRFX_ERROR_NOT_SUPPORTED ||
+        if (rx_err == NRFX_ERROR_NOT_SUPPORTED ||
             rx_err == NRFX_ERROR_INTERNAL ||
             rx_err == NRFX_ERROR_INVALID_ADDR ||
             rx_err == NRFX_ERROR_DRV_TWI_ERR_OVERRUN)
