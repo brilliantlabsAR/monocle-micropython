@@ -82,7 +82,12 @@ static void check_if_battery_charging_and_sleep(nrf_timer_event_t event_type,
 
     // Get the CHG value from STAT_CHG_B
     i2c_response_t charging_response = monocle_i2c_read(PMIC_I2C_ADDRESS, 0x03, 0x0C);
-    app_err(charging_response.fail);
+
+    // Avoid sleeping if i2c is busy in another thread . We can't handle this
+    if (charging_response.fail)
+    {
+        return;
+    }
 
     bool charging = charging_response.value;
 

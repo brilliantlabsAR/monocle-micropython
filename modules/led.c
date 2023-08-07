@@ -22,6 +22,7 @@
  * PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "py/mphal.h"
 #include "py/runtime.h"
 #include "monocle.h"
 
@@ -41,6 +42,9 @@ static mp_obj_t led_on(mp_obj_t led_in)
         mp_raise_ValueError(
             MP_ERROR_TEXT("must be led.RED or led.GREEN"));
     }
+
+    // Unblocks i2c interrupts if led.on if called in an infinite loop
+    mp_hal_delay_ms(10);
 
     if (led == MP_QSTR_RED)
     {
@@ -64,6 +68,9 @@ static mp_obj_t led_off(mp_obj_t led_in)
         mp_raise_ValueError(
             MP_ERROR_TEXT("must be led.RED or led.GREEN"));
     }
+
+    // Unblocks i2c interrupts if led.on if called in an infinite loop
+    mp_hal_delay_ms(10);
 
     if (led == MP_QSTR_RED)
     {

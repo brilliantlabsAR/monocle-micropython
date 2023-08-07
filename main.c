@@ -296,7 +296,12 @@ static void touch_interrupt_handler(nrfx_gpiote_pin_t pin,
     (void)polarity;
 
     i2c_response_t interrupt = monocle_i2c_read(TOUCH_I2C_ADDRESS, 0x12, 0xFF);
-    app_err(interrupt.fail);
+
+    // Throw away interrupt if i2c is busy in another thread
+    if (interrupt.fail)
+    {
+        return;
+    }
 
     switch (interrupt.value)
     {
