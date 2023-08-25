@@ -12,7 +12,7 @@
             ],
             "presentation": {
                 "echo": false,
-                "reveal": "always",
+                "reveal": "silent",
                 "focus": false,
                 "panel": "shared",
                 "showReuseMessage": false,
@@ -24,7 +24,7 @@
             },
         },
         {
-            "label": "Build & flash",
+            "label": "Build & Flash Chip",
             "type": "shell",
             "command": "make -j`getconf _NPROCESSORS_ONLN` flash",
             "problemMatcher": [
@@ -41,6 +41,34 @@
             "group": {
                 "kind": "build",
                 "isDefault": false
+            },
+        },
+        {
+            "label": "Erase & Unlock Chip",
+            "type": "shell",
+            "command": "make recover",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": false,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
+            },
+        },
+        {
+            "label": "Clean",
+            "type": "shell",
+            "command": "make clean",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": false,
+                "reveal": "silent",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": false,
+                "clear": true
             },
         },
         {
@@ -64,18 +92,18 @@
             },
         },
         {
-            "label": "Clean",
+            "label": "RTT Debug Console",
             "type": "shell",
-            "command": "make clean",
+            "command": "JLinkRTTClient",
             "problemMatcher": [],
             "presentation": {
                 "echo": false,
                 "reveal": "always",
                 "focus": false,
-                "panel": "shared",
+                "panel": "dedicated",
                 "showReuseMessage": false,
                 "clear": true
             },
-        }
+        },
     ]
 }

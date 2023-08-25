@@ -103,73 +103,11 @@ STATIC mp_obj_t fpga_run(size_t n_args, const mp_obj_t *args)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(fpga_run_obj, 0, 1, fpga_run);
 
-STATIC mp_obj_t fpga_version(void)
-{
-    uint8_t target_device[8];
-    uint8_t application_version[13];
-    uint8_t chip_revision[8];
-
-    memset(target_device, 0, sizeof(target_device));
-    memset(application_version, 0, sizeof(application_version));
-    memset(chip_revision, 0, sizeof(chip_revision));
-
-    uint8_t target_device_address[2] = {(uint8_t)(0x0001 >> 8), (uint8_t)0x0001};
-    uint8_t application_version_address[2] = {(uint8_t)(0x0002 >> 8), (uint8_t)0x0002};
-    uint8_t chip_revision_address[2] = {(uint8_t)(0x0003 >> 8), (uint8_t)0x0003};
-
-    monocle_spi_write(FPGA, target_device_address, 2, true);
-    monocle_spi_read(FPGA, target_device, 4, false);
-
-    monocle_spi_write(FPGA, application_version_address, 2, true);
-    monocle_spi_read(FPGA, application_version, 12, false);
-
-    monocle_spi_write(FPGA, chip_revision_address, 2, true);
-    monocle_spi_read(FPGA, chip_revision, 4, false);
-
-    // In case the chip is off, or has no image, nothing will be returned
-    if (target_device[0] == 0xff)
-    {
-        strcpy((char *)target_device, "unknown");
-    }
-    if (application_version[0] == 0xff)
-    {
-        strcpy((char *)application_version, "unknown");
-    }
-    if (chip_revision[0] == 0xff)
-    {
-        strcpy((char *)chip_revision, "unknown");
-    }
-
-    // In case of legacy revC images, the register will return 'f' characters
-    if (memcmp(chip_revision, "ffff", 4) == 0)
-    {
-        strcpy((char *)chip_revision, "revC");
-    }
-
-    mp_obj_t return_dict = mp_obj_new_dict(0);
-
-    mp_obj_dict_store(return_dict,
-                      MP_OBJ_NEW_QSTR(MP_QSTR_target_device),
-                      mp_obj_new_str((char *)target_device, strlen((char *)target_device)));
-
-    mp_obj_dict_store(return_dict,
-                      MP_OBJ_NEW_QSTR(MP_QSTR_application_version),
-                      mp_obj_new_str((char *)application_version, strlen((char *)application_version)));
-
-    mp_obj_dict_store(return_dict,
-                      MP_OBJ_NEW_QSTR(MP_QSTR_chip_revision),
-                      mp_obj_new_str((char *)chip_revision, strlen((char *)chip_revision)));
-
-    return return_dict;
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(fpga_version_obj, fpga_version);
-
 STATIC const mp_rom_map_elem_t fpga_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&fpga_read_obj)},
     {MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&fpga_write_obj)},
     {MP_ROM_QSTR(MP_QSTR_run), MP_ROM_PTR(&fpga_run_obj)},
-    {MP_ROM_QSTR(MP_QSTR_version), MP_ROM_PTR(&fpga_version_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(fpga_module_globals, fpga_module_globals_table);
 

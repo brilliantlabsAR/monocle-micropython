@@ -40,7 +40,6 @@ JPEG = "JPEG"
 
 def capture():
     _camera.wake()
-    time.sleep_ms(1)
     fpga.write(0x1003, b"")
     while fpga.read(0x1000, 1) == b"2":
         time.sleep_us(10)

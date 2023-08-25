@@ -228,7 +228,7 @@ const camera_config_t camera_config[] = {
     {0x4602, 0x02},       // JPEG output width (high byte)
     {0x4603, 0x80},       // JPEG output width (low byte)
     {0x4604, 0x80},       // JPEG output width (low byte)
-    {0x3820, 0x47},       // Flip image vertically
+    {0x3820, 0x40},       // Don't flip the image
     {0x3821, 0x27},       // TIMING_TC_REG_21 - enable JPEG, binning, flip image vertically
     {0x3002, 0x00},       // SYSTEM_RESET_2 - set everything on
     {0x3814, 0x31},       // Timing Y increment
