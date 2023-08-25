@@ -8,7 +8,7 @@ compact bitmap format as output:
     index_record: (u24)unicode_start, (u8)unicode_count, (u32)glyph_address
 
     font_data: [ (u16)glyph_header, glyph_data ]*N
-    glyph_header: (u4)len_x, (u4)len_y, (u4)beg_x, (u4)beg_y
+    glyph_header: (u8)beg_x, (u8)beg_y, (u8)len_x, (u8)len_y
     glyph_data: [ (u1)data_bit ]*N
 
 The font_index can be looked-up using a binary search to find a glyph block,
@@ -33,16 +33,12 @@ from bdfparser import Font
 
 font_index = bytearray()
 font_data = bytearray()
-unicode_start = 0
-unicode_count = 0
-prev_codepoint = 0
-glyph_address = 0
 
-def add_index_record(unicode_start, unicode_count, glyph_address):
-    assert unicode_count <= 0xff
+def add_index_record(unicode_start, unicode_end, glyph_address):
+    assert unicode_end <= unicode_start + 0xff
 
     font_index.extend(struct.pack(">I", unicode_start)[0:3])
-    font_index.extend(struct.pack(">B", unicode_count))
+    font_index.extend(struct.pack(">B", unicode_end - unicode_start))
     font_index.extend(struct.pack(">I", glyph_address))
 
 def get_y_bounding_box(bitmap):
@@ -55,7 +51,7 @@ def get_y_bounding_box(bitmap):
             end_y = i
     beg_y = beg_y or 0
     beg_y = 0 if end_y == beg_y else beg_y
-    return beg_y, end_y
+    return beg_y, end_y + 1
 
 def get_x_bounding_box(bitmap):
     beg_x = None
@@ -65,13 +61,13 @@ def get_x_bounding_box(bitmap):
             if beg_x is None:
                 beg_x = i
             end_x = i
-    return beg_x, end_x
+    return beg_x or 0, end_x + 1
 
 def add_glyph_header(beg_x, beg_y, end_x, end_y):
-    len_x = end_x - beg_x
-    len_y = end_y - beg_y
-    font_data.append((len_x << 4) & 0b11110000 | len_y & 0b00001111)
-    font_data.append((beg_x << 4) & 0b11110000 | beg_y & 0b00001111)
+    font_data.append(beg_x)
+    font_data.append(beg_y)
+    font_data.append(end_x - beg_x)
+    font_data.append(end_y - beg_y)
 
 def add_glyph_bitmap(bitmap):
     i = 0
@@ -104,45 +100,45 @@ def add_glyph(glyph):
     bitmap = bitmap[beg_y:end_y+1]
 
     # Crop the left and right margins
-    beg_x, end_x = get_y_bounding_box(bitmap)
+    beg_x, end_x = get_x_bounding_box(bitmap)
     bitmap = [row[beg_x:end_x+1] for row in bitmap]
 
     # Add the glyph metadata
-    font_data.extend(struct.pack(">I", ))
+    font_data.extend(bytes((beg_x, beg_y, end_x - beg_x, end_y - beg_y)))
 
     # Loop over every bit of every row and append them back-to-back
-    add_glyph_data(bitmap)
+    add_glyph_bitmap(bitmap)
 
-if len(sys.argv) != 2:
+if len(sys.argv) != 3:
     print("usage: {} source_file.bdf output_file.bin".format(sys.argv[0]))
     exit(1)
 
 font = Font(sys.argv[1])
 
+unicode_start = 0
+unicode_count = 0
+glyph_address = 0
+
 # Add all glyphs one by one to the font_index and font_data bytearrays()
+unicode_prev = -1
 for glyph in font.iterglyphs(order=1):
 
     # The glyph data block is very straightforward, always the same: add the
     # glyph, but we must keep track of the address.
     add_glyph(glyph)
 
-    # If we add another code point in the same range
-    if (glyph.cp() == prev_codepoint + 1 and
-            glyph.cp() <= unicode_start + 0xff):
-        unicode_count += 1
-
     # If no more room for the current codepoint, push the record, switch to
     # the next
-    else:
-        add_index_record(unicode_start, unicode_count, glyph_address)
+    if unicode_prev >= 0 and (glyph.cp() != unicode_prev + 1 or
+            glyph.cp() > unicode_start + 0xff):
+        add_index_record(unicode_start, unicode_prev, glyph_address)
         glyph_address = len(font_data)
         unicode_start = glyph.cp()
-        unicode_count = 0
 
-    prev_codepoint = glyph.cp()
+    unicode_prev = glyph.cp()
 
 # The last record
-add_index_record(unicode_start, unicode_count, glyph_address)
+add_index_record(unicode_start, glyph.cp(), glyph_address)
 
 with open(sys.argv[2], "wb") as f:
 	f.write(struct.pack(">I", 0))
