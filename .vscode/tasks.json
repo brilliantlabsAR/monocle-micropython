@@ -76,6 +76,20 @@
                 "showReuseMessage": false,
                 "clear": true
             },
-        }
+        },
+        {
+            "label": "RTT Debug Console",
+            "type": "shell",
+            "command": "JLinkRTTClient",
+            "problemMatcher": [],
+            "presentation": {
+                "echo": false,
+                "reveal": "always",
+                "focus": false,
+                "panel": "dedicated",
+                "showReuseMessage": false,
+                "clear": true
+            },
+        },
     ]
 }
