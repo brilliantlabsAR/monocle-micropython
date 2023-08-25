@@ -133,10 +133,12 @@ for glyph in font.iterglyphs(order=1):
     if unicode_prev >= 0:
         if glyph.cp() != unicode_prev + 1 or glyph.cp() >= unicode_start + 0xff:
             add_index_record(unicode_start, unicode_prev, glyph_address)
-            glyph_address = len(font_data)
+            glyph_address = address_prev
             unicode_start = glyph.cp()
 
     unicode_prev = glyph.cp()
+    address_prev = len(font_data)
+
 add_index_record(unicode_start, unicode_prev, glyph_address)
 
 with open(sys.argv[2], "wb") as f:
