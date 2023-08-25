@@ -1,23 +1,8 @@
 # MicroPython for Monocle
 
-A custom deployment of MicroPython designed specifically for Monocle. Read the [docs](https://docs.brilliant.xyz).
+A custom deployment of MicroPython designed specifically for Monocle. Check out the user docs [here](https://docs.brilliant.xyz).
 
-## Flash you Monocle
-
-
-1. Download the latest `.hex` file from the [releases page](https://github.com/brilliantlabsAR/monocle-micropython/releases).
-
-1. Ensure you have the [nRF Command Line Tools](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools) installed.
-
-1. Connect your debugger as described [here](https://docs.brilliant.xyz/monocle/monocle/#manually-programming).
-
-1. Flash your device using the command:
-
-```sh
-nrfjprog --program *.hex --chiperase -f nrf52 --verify --reset
-```
-
----
+For those of you who want to modify the standard firmware, keep on reading.
 
 ## Getting started with development
 
@@ -25,28 +10,58 @@ nrfjprog --program *.hex --chiperase -f nrf52 --verify --reset
 
 1. Ensure you have the [nRF Command Line Tools](https://www.nordicsemi.com/Products/Development-tools/nrf-command-line-tools) installed.
 
-1. Clone this repository, submodules and build:
+1. Clone this repository along with submodules and build the mpy-cross toolchain:
 
     ```sh
-    # Clone and jump into this repo
     git clone https://github.com/brilliantlabsAR/monocle-micropython.git
     cd monocle-micropython
 
-    # Initialize the submodules
     git submodule update --init
     git -C micropython submodule update --init lib/micropython-lib
 
-    # Build mpy-cross toolchain
     make -C micropython/mpy-cross
     ```
 
-1. You can now close the terminal and open the project in [VSCode](https://code.visualstudio.com).
+1. You should now be able to build the project by calling `make` from the `monocle-micropython` folder.
 
-    There are three build tasks already configured and ready for use. Access them by pressing `Ctrl-Shift-P` (`Cmd-Shift-P` on MacOS) → `Tasks: Run Task`.
+    ```sh
+    make
+    ```
 
-    1. Build (`Ctrl-B` / `Cmd-B`)
-    1. Build & flash
+1. Before flashing an nRF5340, you may need to unlock the chip first.
+
+    ```sh
+    nrfjprog --recover
+    ```
+
+1. You should then be able to flash the device.
+
+    ```sh
+    make flash
+    ```
+
+### Debugging
+
+1. Open the project in [VSCode](https://code.visualstudio.com).
+
+    There are some build tasks already configured within `.vscode/tasks.json`. Access them by pressing `Ctrl-Shift-P` (`Cmd-Shift-P` on MacOS) → `Tasks: Run Task`.
+
+    1. Build
+    1. Build & Flash Chip
+    1. Erase & Unlock Chip
     1. Clean
+
+1. Connect your debugger as described [here](https://docs.brilliant.xyz/monocle/monocle/#manually-programming).
+
+1. You many need to unlock the device by using the `Erase Chip` task before programming or debugging.
+
+1. To enable IntelliSense, be sure to select the correct compiler from within VSCode. `Ctrl-Shift-P` (`Cmd-Shift-P` on MacOS) → `C/C++: Select IntelliSense Configuration` → `Use arm-none-eabi-gcc`.
+
+1. Install the [Cortex-Debug](https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug) extension for VSCode in order to enable debugging.
+
+1. A debugging launch is already configured within `.vscode/launch.json`. Run the `J-Link` launch configuration from the `Run and Debug` panel, or press `F5`. The project will automatically build and flash before launching.
+
+1. To monitor the logs, run the task `RTT Console` and ensure the `J-Link` launch configuration is running.
 
 ### Generating final release `.hex` and DFU `.zip` files
 
