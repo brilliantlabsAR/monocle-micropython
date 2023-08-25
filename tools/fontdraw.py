@@ -100,8 +100,8 @@ with open(sys.argv[1], "rb") as f:
         # Add both to the array as a compact tuple of 2 ints
         font_index.append((unicode_ref, glyph_address))
 
-    gl = get_glyph(f, 0x30)
-    print(gl.len_x)
+    print(sys.argv[2])
+    gl = get_glyph(f, int(sys.argv[2], 0))
     n = 0
     for ch in gl.data:
         for i in reversed(range(8)):

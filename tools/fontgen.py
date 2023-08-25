@@ -35,10 +35,11 @@ font_index = bytearray()
 font_data = bytearray()
 
 def add_index_record(unicode_start, unicode_end, glyph_address):
-    assert unicode_end <= unicode_start + 0xff
+    len = unicode_end - unicode_start + 1
+    assert len > 0 and len <= 0xff
 
-    font_index.extend(struct.pack(">I", unicode_start)[0:3])
-    font_index.extend(struct.pack(">B", unicode_end - unicode_start))
+    font_index.extend(struct.pack(">I", unicode_start)[1:])
+    font_index.extend(struct.pack(">B", unicode_end - unicode_start + 1))
     font_index.extend(struct.pack(">I", glyph_address))
 
 def get_y_bounding_box(bitmap):
@@ -129,16 +130,14 @@ for glyph in font.iterglyphs(order=1):
 
     # If no more room for the current codepoint, push the record, switch to
     # the next
-    if unicode_prev >= 0 and (glyph.cp() != unicode_prev + 1 or
-            glyph.cp() > unicode_start + 0xff):
-        add_index_record(unicode_start, unicode_prev, glyph_address)
-        glyph_address = len(font_data)
-        unicode_start = glyph.cp()
+    if unicode_prev >= 0:
+        if glyph.cp() != unicode_prev + 1 or glyph.cp() >= unicode_start + 0xff:
+            add_index_record(unicode_start, unicode_prev, glyph_address)
+            glyph_address = len(font_data)
+            unicode_start = glyph.cp()
 
     unicode_prev = glyph.cp()
-
-# The last record
-add_index_record(unicode_start, glyph.cp(), glyph_address)
+add_index_record(unicode_start, unicode_prev, glyph_address)
 
 with open(sys.argv[2], "wb") as f:
 	f.write(struct.pack(">I", 0))
