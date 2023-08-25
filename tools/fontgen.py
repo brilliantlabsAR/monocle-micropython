@@ -73,9 +73,7 @@ def add_glyph_header(beg_x, beg_y, end_x, end_y):
 def add_glyph_bitmap(bitmap):
     i = 0
     ch = 0
-    print("---")
     for row in bitmap:
-        print(row)
         for bit in row:
             assert bit in ('0', '1')
 
@@ -89,7 +87,7 @@ def add_glyph_bitmap(bitmap):
 
     # There is an incomplete byte after the rest
     if i % 8 > 0:
-        font_data.append(ch)
+        font_data.append(ch << (8 - i % 8))
 
 def add_glyph(glyph):
     # Get a Bitmap out of the font, cropping it as small as possible

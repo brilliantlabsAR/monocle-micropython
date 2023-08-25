@@ -47,7 +47,6 @@ class Glyph:
         self.data = None
         self.file = file
         self.file.seek(offset)
-        print("offset=0x{:x}".format(offset))
 
     def read(self):
         # Read the glyph header
@@ -95,3 +94,5 @@ with open(sys.argv[1], "rb") as f:
             n += 1
             if n % gl.len_x == 0:
                 print("|")
+    if n % gl.len_x != 0:
+        print('', end='\r')
