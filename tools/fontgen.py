@@ -73,7 +73,9 @@ def add_glyph_header(beg_x, beg_y, end_x, end_y):
 def add_glyph_bitmap(bitmap):
     i = 0
     ch = 0
+    print("---")
     for row in bitmap:
+        print(row)
         for bit in row:
             assert bit in ('0', '1')
 
@@ -98,11 +100,11 @@ def add_glyph(glyph):
 
     # Crop the top and bottom margins
     beg_y, end_y = get_y_bounding_box(bitmap)
-    bitmap = bitmap[beg_y:end_y+1]
+    bitmap = bitmap[beg_y:end_y]
 
     # Crop the left and right margins
     beg_x, end_x = get_x_bounding_box(bitmap)
-    bitmap = [row[beg_x:end_x+1] for row in bitmap]
+    bitmap = [row[beg_x:end_x] for row in bitmap]
 
     # Add the glyph metadata
     font_data.extend(bytes((beg_x, beg_y, end_x - beg_x, end_y - beg_y)))

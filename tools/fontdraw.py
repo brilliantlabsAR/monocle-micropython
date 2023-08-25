@@ -17,7 +17,7 @@ def get_glyph_range(unicode):
     while beg != end:
 
         # Decode the u8 and u24 out of the u32
-        unicode_len = font_index[i][0] & 0x000000ff
+        unicode_len = font_index[i][0] & 0xff
         unicode_start = font_index[i][0] >> 8
 
         # Should we search lower?
@@ -30,7 +30,7 @@ def get_glyph_range(unicode):
 
         # That's a hit!
         else:
-            return unicode_start, font_index[i][0]
+            return unicode_start, font_index[i][1]
 
         # Adjust the probe
         i = beg + (end - beg) // 2
@@ -39,21 +39,19 @@ def get_glyph_range(unicode):
 
 class Glyph:
 
-    def __init__(self, file, data_offset):
+    def __init__(self, file, offset):
         self.beg_x = 0
         self.beg_y = 0
         self.end_x = 0
         self.end_y = 0
-        self.file = file
-        self.file.seek(data_offset, 0)
         self.data = None
+        self.file = file
+        self.file.seek(offset)
+        print("offset=0x{:x}".format(offset))
 
     def read(self):
         # Read the glyph header
-        self.beg_x = f.read(1)[0]
-        self.beg_y = f.read(1)[0]
-        self.len_x = f.read(1)[0]
-        self.len_y = f.read(1)[0]
+        self.beg_x, self.beg_y, self.len_x, self.len_y = f.read(4)
 
         # Compute the size to read including the last byte
         size = self.len_x * self.len_y
@@ -62,13 +60,13 @@ class Glyph:
         # Optimization: do not split the row/columns yet
         self.data = f.read(size)
 
-def get_glyph(file, unicode):
+def get_glyph(file, index_size, unicode):
 
     # Get the range to start scanning from
     range_start, range_address = get_glyph_range(unicode)
 
     # Scan through the data glyph per glyph
-    glyph = Glyph(file, 4 + 4 + index_size)
+    glyph = Glyph(file, 4 + 4 + index_size + range_address)
 
     # Skip several glyphs until we are there
     for _ in range(unicode - range_start):
@@ -78,30 +76,18 @@ def get_glyph(file, unicode):
     return glyph
 
 with open(sys.argv[1], "rb") as f:
-
-    # Skip (u32)reserved
-    struct.unpack(">I", f.read(4))
-
-    # Read the index size
-    index_size = struct.unpack(">I", f.read(4))[0]
+    # Read the index header: (u32)*2
+    font_height, index_size = struct.unpack(">II", f.read(4 + 4))
 
     # Then read the index
     font_index = []
     n = 0
     while n < index_size:
-        # Read a record from the file
-        index_record = f.read(INDEX_RECORD_SIZE)
-        n += INDEX_RECORD_SIZE
+        # Parse a record from the file
+        font_index.append(struct.unpack(">II", f.read(4 + 4)))
+        n += 4 + 4
 
-        # Unpack the data from the record
-        unicode_ref = struct.unpack(">I", index_record[0:4])[0]
-        glyph_address = struct.unpack(">I", index_record[4:8])[0]
-
-        # Add both to the array as a compact tuple of 2 ints
-        font_index.append((unicode_ref, glyph_address))
-
-    print(sys.argv[2])
-    gl = get_glyph(f, int(sys.argv[2], 0))
+    gl = get_glyph(f, index_size, int(sys.argv[2], 0))
     n = 0
     for ch in gl.data:
         for i in reversed(range(8)):
