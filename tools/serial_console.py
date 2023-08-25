@@ -23,17 +23,17 @@ from bleak.uuids import register_uuids
 
 
 UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e"
-UART_RX_CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
-UART_TX_CHAR_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
+UART_TX_CHAR_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+UART_RX_CHAR_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e"
 
 DATA_SERVICE_UUID = "e5700001-7bac-429a-b4ce-57ff900f479d"
-DATA_RX_CHAR_UUID = "e5700002-7bac-429a-b4ce-57ff900f479d"
-DATA_TX_CHAR_UUID = "e5700003-7bac-429a-b4ce-57ff900f479d"
+DATA_TX_CHAR_UUID = "e5700002-7bac-429a-b4ce-57ff900f479d"
+DATA_RX_CHAR_UUID = "e5700003-7bac-429a-b4ce-57ff900f479d"
 
 register_uuids({
     DATA_SERVICE_UUID: "Monocle Raw Serivce",
-    DATA_TX_CHAR_UUID: "Monocle Raw TX",
     DATA_RX_CHAR_UUID: "Monocle Raw RX",
+    DATA_TX_CHAR_UUID: "Monocle Raw TX",
 })
 
 # You can get this function and more from the ``more-itertools`` package.
@@ -90,21 +90,21 @@ async def repl_terminal():
         sys.exit(1)
     else:
         sys.stderr.write(f"connected\n")
-    sys.stderr.write('Ctrl-D: Reboot in normal mode\n")
-    sys.stderr.write('Ctrl-\\: Reboot in safe mode\n")
-    sys.stderr.write('Ctrl-C: Cancel ongoing script\n")
-    sys.stderr.write('Ctrl-E, "code", Ctrl-D: paste mode\n")
+    sys.stderr.write('Ctrl-D: Reboot in normal mode\n')
+    sys.stderr.write('Ctrl-\\: Reboot in safe mode\n')
+    sys.stderr.write('Ctrl-C: Cancel ongoing script\n')
+    sys.stderr.write('Ctrl-E, "code", Ctrl-D: paste mode\n')
     sys.stderr.write('Ctrl-V, "text", Enter: send to raw Bluetooth service\n')
 
     async with BleakClient(device, disconnected_callback=handle_disconnect) as client:
-        await client.start_notify(UART_TX_CHAR_UUID, handle_repl_rx)
-        await client.start_notify(DATA_TX_CHAR_UUID, handle_data_rx)
+        await client.start_notify(UART_RX_CHAR_UUID, handle_repl_rx)
+        await client.start_notify(DATA_RX_CHAR_UUID, handle_data_rx)
 
         loop = asyncio.get_running_loop()
         repl = client.services.get_service(UART_SERVICE_UUID)
         data = client.services.get_service(DATA_SERVICE_UUID)
-        repl_rx_char = repl.get_characteristic(UART_RX_CHAR_UUID)
-        data_rx_char = data.get_characteristic(DATA_RX_CHAR_UUID)
+        repl_tx_char = repl.get_characteristic(UART_TX_CHAR_UUID)
+        data_tx_char = data.get_characteristic(DATA_TX_CHAR_UUID)
 
         # set the terminal to raw I/O: no buffering
         if sys.stdin.isatty():
@@ -119,9 +119,9 @@ async def repl_terminal():
                 sys.stderr.write(f'TX: ')
                 sys.stderr.flush()
                 line = await loop.run_in_executor(None, prompt)
-                await client.write_gatt_char(data_rx_char, line.rstrip())
+                await client.write_gatt_char(data_tx_char, line.rstrip())
             else:
-                await client.write_gatt_char(repl_rx_char, ch)
+                await client.write_gatt_char(repl_tx_char, ch)
 
 
 if __name__ == "__main__":
