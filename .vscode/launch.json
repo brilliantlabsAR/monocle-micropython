@@ -3,16 +3,16 @@
     // https://marketplace.visualstudio.com/items?itemName=marus25.cortex-debug
     "configurations": [
         {
+            "name": "JLink",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "request": "launch",
             "cwd": "${workspaceFolder}",
             "executable": "build/application.elf",
-            "name": "JLink",
-            "request": "launch",
-            "type": "cortex-debug",
+            "preLaunchTask": "Build",
             "device": "nRF52832_xxAA",
             "showDevDebugOutput": "none",
-            "servertype": "jlink",
             "svdFile": "nrfx/mdk/nrf52.svd",
-            "preLaunchTask": "Build",
             "loadFiles": [
                 "softdevice/s132_nrf52_7.3.0_softdevice.hex",
             ],
@@ -20,6 +20,25 @@
                 "monitor halt",
                 "monitor speed 2000",
                 "load"
+            ],
+        },
+        {
+            "name": "Black Magic",
+            "type": "cortex-debug",
+            "servertype": "bmp",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "executable": "build/application.elf",
+            "preLaunchTask": "Build",
+            "interface": "swd",
+            "device": "nRF52832_xxAA",
+            "BMPGDBSerialPort": "/dev/cu.usbmodem97B6BC101",
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "raw",
+            "svdFile": "nrfx/mdk/nrf52.svd",
+            "preLaunchCommands": [
+                "monitor erase_mass",
+                "load softdevice/s132_nrf52_7.3.0_softdevice.hex",
             ],
         }
     ]
