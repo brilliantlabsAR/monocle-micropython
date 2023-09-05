@@ -325,7 +325,7 @@ class SpriteSource:
     def sprite_describe(self, buffer):
         width = (self.width // 32) & 0xF
         height = self.height & 0xFF
-        addr = (self.addr // 32) & 0xFFFFF
+        addr = (self.addr // 128) & 0xFFFFF
         buffer.extend(struct.pack(">I", width << 28 | height << 20 | addr << 0))
 
 
