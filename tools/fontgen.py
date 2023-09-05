@@ -127,7 +127,7 @@ def read_filter(file):
     return ranges
 
 def build_font(font, filter):
-    unicode_start = 0
+    unicode_start = filter[0][0]
     unicode_count = 0
     glyph_address = 0
 
