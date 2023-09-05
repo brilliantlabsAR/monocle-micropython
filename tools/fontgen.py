@@ -2,7 +2,7 @@
 A font conversion tool taking BDF files as input and generating a custom
 compact bitmap format as output:
 
-    font_format: (u32)reserved, (u32)index_size, font_index, font_data
+    font_format: (u32)font_height, (u32)index_size, font_index, font_data
 
     font_index: [ (u64)index_record ]*N
     index_record: (u24)unicode_start, (u8)unicode_count, (u32)glyph_address
@@ -133,28 +133,30 @@ def build_font(font, filter):
 
     # Add all glyphs one by one to the font_index and font_data bytearrays()
     unicode_prev = -1
-    for glyph in font.iterglyphs(order=1, r=ranges):
+    for gl in font.iterglyphs(order=1, r=ranges):
+
+        print(gl.meta["glyphname"], gl.chr())
 
         # The glyph data block is very straightforward, always the same: add the
         # glyph, but we must keep track of the address.
-        add_glyph(glyph)
+        add_glyph(gl)
 
         # If no more room for the current codepoint, push the record, switch to
         # the next
         if unicode_prev >= 0:
-            if glyph.cp() != unicode_prev + 1 or glyph.cp() >= unicode_start + 0xff:
+            if gl.cp() != unicode_prev + 1 or gl.cp() >= unicode_start + 0xff:
                 add_index_record(unicode_start, unicode_prev, glyph_address)
                 glyph_address = address_prev
-                unicode_start = glyph.cp()
+                unicode_start = gl.cp()
 
-        unicode_prev = glyph.cp()
+        unicode_prev = gl.cp()
         address_prev = len(font_data)
 
     add_index_record(unicode_start, unicode_prev, glyph_address)
 
-def write_output(file):
+def write_output(file, font_height):
     with open(file, "wb") as f:
-        f.write(struct.pack(">I", 0))
+        f.write(struct.pack(">I", font_height))
         f.write(struct.pack(">I", len(font_index)))
         f.write(font_index)
         f.write(font_data)
@@ -168,5 +170,6 @@ filter_file = sys.argv[2]
 output_file = sys.argv[3]
 
 ranges = read_filter(filter_file)
-build_font(Font(source_file), ranges)
-write_output(output_file)
+font = Font(source_file)
+build_font(font, ranges)
+write_output(output_file, int(font.props["pixel_size"]))

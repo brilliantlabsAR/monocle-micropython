@@ -12,8 +12,8 @@ class Glyph:
     def __init__(self, file, offset):
         self.beg_x = 0
         self.beg_y = 0
-        self.end_x = 0
-        self.end_y = 0
+        self.len_x = 0
+        self.len_y = 0
         self.data = None
         self.file = file
         self.file.seek(offset)
@@ -36,28 +36,30 @@ class Font:
 
         # Read the index header: (u32)*2
         record = self.file.read(4 + 4)
-        self.font_height, self.index_size = struct.unpack(">II", record)
+        self.height, self.index_size = struct.unpack(">II", record)
 
         # Then read the index
-        self.font_index = []
+        self.index = []
         n = 0
         while n < self.index_size:
             # Parse a record from the file
-            self.font_index.append(struct.unpack(">II", self.file.read(8)))
+            self.index.append(struct.unpack(">II", self.file.read(8)))
             n += 8
+            x = self.index[len(self.index) - 1]
+            print(f"U+{x[0] >> 8:04X} starting at 0x{x[1]:08x}")
 
     def glyph_range(self, unicode):
         # Start searching from the middle of the file
         beg = 0
-        end = len(self.font_index) - 1
+        end = len(self.index)
         i = beg + (end - beg) // 2
 
         # Inline implementation of binary search to find the glyph
         while beg != end:
 
             # Decode the u8 and u24 out of the u32
-            unicode_len = self.font_index[i][0] & 0xff
-            unicode_start = self.font_index[i][0] >> 8
+            unicode_len = self.index[i][0] & 0xff
+            unicode_start = self.index[i][0] >> 8
 
             # Should we search lower?
             if unicode < unicode_start:
@@ -65,16 +67,16 @@ class Font:
 
             # Should we search higher?
             elif unicode > unicode_start + unicode_len:
-                beg = i
+                beg = i + 1
 
             # That's a hit!
             else:
-                return unicode_start, self.font_index[i][1]
+                return unicode_start, self.index[i][1]
 
             # Adjust the probe
             i = beg + (end - beg) // 2
 
-        return None
+        raise ValueError("glyph not found in font")
 
     def glyph(self, unicode):
 
@@ -91,20 +93,41 @@ class Font:
 
         return glyph
 
-    def draw(self, glyph):
+    def render(self, glyph, bg=b" ", fg=b"#"):
         n = 0
+        canvas = bytearray()
+
+        # Fill empty area above the glyph
+        canvas.extend(bg * glyph.beg_y * glyph.len_x)
+
+        # Fill the glyph content
         for ch in glyph.data:
             for i in reversed(range(8)):
-                print("#" if ch & (1 << i) else " ", end="")
+                canvas.extend(fg if ch & (1 << i) else bg)
                 n += 1
-                if n % glyph.len_x == 0:
-                    print("|")
-        if n % glyph.len_x != 0:
-            print('', end='\r')
+        while n % glyph.len_x != 0:
+            canvas.extend(bg)
+            n += 1
 
-if __name__ == "__main__":
-    font = Font(sys.argv[1])
-    for ch in sys.argv[2]:
-        glyph = font.glyph(ord(ch))
-        print(ch)
-        font.draw(glyph)
+        # Fill empty area after the glyph
+        empty_rows = max(self.height - (glyph.beg_y + glyph.len_y), 0)
+        canvas.extend(bg * empty_rows * glyph.len_x)
+
+        return canvas
+
+def draw(font_height, canvas, width, table):
+    assert len(canvas) % width == 0
+    canvas = canvas.decode()
+    for i in range(min(len(canvas) // width, font_height)):
+        table[i] += canvas[i * width:(i + 1) * width] + " "
+
+font = Font(sys.argv[1])
+table = [""] * font.height
+for ch in sys.argv[2]:
+    gl = font.glyph(ord(ch))
+    if ch == ' ':
+        draw(font.height, b"   " * font.height, 3, table)
+    else:
+        draw(font.height, font.render(gl), gl.len_x, table)
+for row in table:
+    print(row)
