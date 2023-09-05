@@ -199,8 +199,7 @@ STATIC mp_obj_t microphone_read(mp_obj_t samples)
     uint8_t small_buffer[sizeof(buffer) / 2];
     for (size_t i = 0; i < sizeof(buffer) / 2; i++)
     {
-        uint16_t data16 = buffer[i * 2] << 8 | buffer[i + 2 + 1];
-        small_buffer[i] = data16 >> 8;
+        small_buffer[i] = buffer[i * 2];
     }
 
     return mp_obj_new_bytes(small_buffer, sizeof(small_buffer));
