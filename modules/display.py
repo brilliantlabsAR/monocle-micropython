@@ -26,6 +26,7 @@ import vgr2d
 import fpga
 import struct
 import time
+import sprites
 from _display import *
 import gc
 
@@ -68,9 +69,6 @@ GRAY8 = 0xE2E2E2
 FBTEXT_PAGE_SIZE = 1024
 FBTEXT_NUM_PAGES = 2
 fbtext_addr = 0
-
-
-sprite_addr = 0x0000
 
 
 class Colored:
@@ -273,62 +271,6 @@ class Text(Colored):
         return self
 
 
-class Sprite:
-    def __init__(self, x, y, z, source):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.source = source
-
-    def __repr__(self):
-        return f"Sprite({self.x}, {self.y}, {self.z}, {self.source})"
-
-    def move(self, x, y):
-        self.x += int(x)
-        self.y += int(y)
-        return self
-
-    def sprite(self, buffer):
-        x = self.x & 0xFFF
-        y = self.y & 0xFFF
-        z = self.z & 0xF
-        id = self.source.id & 0xFFF
-        buffer.extend(struct.pack(">I", x << 20 | y << 8 | z << 4 | id >> 8))
-        buffer.append(id & 0xFF)
-
-
-class SpriteSource:
-    def __init__(self, data, width):
-        global sprite_addr
-
-        if len(data) % (4 * width) != 0:
-            raise ValueError("data length must formatted as: b'RGBA' * width")
-        if width % 32 != 0:
-            raise ValueError("width must be a multiple of 32")
-
-        self.width = width
-        self.height = len(data) // 4 // width
-        self.addr = sprite_addr
-        self.id = None
-
-        # Send the sprite RGBA data to the FPGA
-        for slice in [data[i:i + 128] for i in range(0, len(data), 128)]:
-            buffer = bytearray()
-            buffer.extend(struct.pack(">I", sprite_addr))
-            buffer.extend(slice)
-            fpga.write(0x4404, buffer)
-            sprite_addr += len(slice)
-
-    def __repr__(self):
-        return f"SpriteSource([0x{self.addr:X}], {self.width}x{self.height})"
-
-    def sprite_describe(self, buffer):
-        width = (self.width // 32) & 0xF
-        height = self.height & 0xFF
-        addr = (self.addr // 128) & 0xFFFFF
-        buffer.extend(struct.pack(">I", width << 28 | height << 20 | addr << 0))
-
-
 def flatten(o):
     if isinstance(o, tuple) or isinstance(o, list):
         return [i2 for i1 in o for i2 in flatten(i1)]
@@ -377,25 +319,6 @@ def update_colors(addr, obj_list, dump=False):
     # Hexdump the buffer if requested
     if dump:
         print("".join("%02X" % x for x in buffer))
-
-
-def show_sprite(sprites):
-
-    # Send layout description data to the FPGA
-    buffer = bytearray()
-    buffer.extend(b"\x00\x00")
-    for id, item in enumerate(set(item.source for item in sprites)):
-        item.id = id
-        item.sprite_describe(buffer)
-    fpga.write(0x4402, buffer)
-
-    # Send placement data to the FPGA
-    buffer = bytearray()
-    buffer.extend(b"\x00\x00")
-    for item in sprites:
-        item.sprite(buffer)
-    buffer.extend(b"\x00\xFF\xFF\xFF\xFF")
-    fpga.write(0x4403, buffer)
 
 
 def show_fbtext(fbtext_list):
@@ -449,7 +372,7 @@ def show(*args, dump=False):
     args = flatten(args)
     show_vgr2d([obj for obj in args if hasattr(obj, "vgr2d")], dump=dump)
     show_fbtext([obj for obj in args if hasattr(obj, "fbtext")])
-    show_sprite([obj for obj in args if hasattr(obj, "sprite")])
+    sprites.show([obj for obj in args if hasattr(obj, "sprite")])
 
 
 def clear():
@@ -457,6 +380,5 @@ def clear():
 
 
 def reset():
-    global sprite_addr
-    sprite_addr = 0x0000
+    sprites.address = 0x0000
     clear()
