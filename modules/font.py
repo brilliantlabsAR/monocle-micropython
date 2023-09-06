@@ -88,20 +88,23 @@ class Font:
 
         return glyph
 
-    def render(self, glyph, bg=b" ", fg=b"#"):
-        n = 0
-        canvas = bytearray()
+    def render(self, glyph, callback, args, bg=b" ", fg=b"#"):
 
         # Fill empty area above the glyph
-        canvas.extend(bg * glyph.beg_y * glyph.width)
+        for i in range(glyph.beg_y):
+            callback(bg * glyph.width, args)
 
         # Fill the glyph content
+        n = 0
+        canvas = bytearray()
         for ch in glyph.data:
             for i in reversed(range(8)):
 
                 # Pad with background at the right
-                if n % glyph.len_x == 0:
+                if n > 0 and n % glyph.len_x == 0:
                     canvas.extend((glyph.width - glyph.len_x) * bg)
+                    callback(canvas, args)
+                    canvas = bytearray()
 
                 # Fill with foreground or background according to the data
                 canvas.extend(fg if ch & (1 << i) else bg)
@@ -110,8 +113,11 @@ class Font:
         # Fill the rest of the line if needed
         while len(canvas) % glyph.width != 0:
             canvas.extend(bg)
+        if len(canvas) > 0:
+            callback(canvas, args)
 
-        empty_rows = max(self.height - glyph.len_y - glyph.beg_y, 0)
-        canvas.extend(bg * empty_rows * glyph.width)
+        # Fill empty area below the glyph
+        for i in range(max(self.height - glyph.len_y - glyph.beg_y, 0)):
+            callback(bg * glyph.width, args)
 
         return canvas
