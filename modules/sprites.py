@@ -3,7 +3,6 @@
 #      https://github.com/brilliantlabsAR/monocle-micropython
 #
 # Authored by: Josuah Demangeon (me@josuah.net)
-#              Raj Nakarja / Brilliant Labs Ltd. (raj@itsbrilliant.co)
 #
 # ISC Licence
 #
