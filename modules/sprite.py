@@ -29,12 +29,14 @@ sprite_address = 0x0000
 
 
 class SpriteSource:
-    def __init__(self, height, width):
+    def __init__(self, height, width, active_width):
         global sprite_address
 
         if width % 32 != 0:
             raise ValueError("width must be a multiple of 32")
         self.width = width
+        # Horizontal size with actual data
+        self.active_width = active_width
         self.height = height
         self.addr = sprite_address
         self.id = None
@@ -42,7 +44,17 @@ class SpriteSource:
     def __repr__(self):
         return f"SpriteSource([0x{self.addr:X}], {self.width}x{self.height})"
 
-    def add(self, data):
+    @classmethod
+    def from_glyph(cls, glyph, color):
+        source = cls(glyph.font.height, glyph.width, glyph.len_x)
+        glyph.render(source.add_data, fg=color, bg=b"\x00\x00\x00\x00")
+        return source
+
+    @classmethod
+    def from_char(cls, char, font, color):
+        return cls.from_glyph(font.glyph(ord(char)), color)
+
+    def add_data(self, data):
         global sprite_address
         if len(data) % 128 != 0:
             raise ValueError("data must be a multiple of 128 bytes long")
@@ -57,14 +69,14 @@ class SpriteSource:
 
 
 class Sprite:
-    def __init__(self, x, y, z, source):
+    def __init__(self, source, x, y, z):
         self.x = x
         self.y = y
         self.z = z
         self.source = source
 
     def __repr__(self):
-        return f"Sprite({self.x}, {self.y}, {self.z}, {self.source})"
+        return f"Sprite({self.source}, {self.x}, {self.y}, {self.z})"
 
     def move(self, x, y):
         self.x += int(x)
