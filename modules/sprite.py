@@ -44,20 +44,15 @@ class SpriteSource:
 
     def add(self, data):
         global sprite_address
-
-        # Send the sprite RGBA data to the FPGA
-        for slice in [data[i:i + 128] for i in range(0, len(data), 128)]:
-            buffer = bytearray()
-            buffer.extend(struct.pack(">I", sprite_address))
-            buffer.extend(slice)
-            print(buffer)
-            fpga.write(0x4404, buffer)
-            sprite_address += len(slice)
+        if len(data) % 128 != 0:
+            raise ValueError("data must be a multiple of 128 bytes long")
+        fpga.write(0x4404, struct.pack(">I", sprite_address) + data)
+        sprite_address += len(data)
 
     def describe(self, buffer):
         width = (self.width // 32) & 0xF
         height = self.height & 0xFF
-        sprite_address = (self.addr // 128) & 0xFFFFF
+        addr = (self.addr // 128) & 0xFFFFF
         buffer.extend(struct.pack(">I", width << 28 | height << 20 | addr << 0))
 
 

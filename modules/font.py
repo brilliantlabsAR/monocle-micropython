@@ -51,6 +51,8 @@ class Glyph:
         self.width = self.len_x + 32 - ((self.len_x - 1) % 32 + 1)
 
     def render(self, callback, bg=b" ", fg=b"#"):
+        assert len(bg) == len(fg)
+
         # Fill empty area above the glyph
         for i in range(self.beg_y):
             callback(bg * self.width)
@@ -72,7 +74,7 @@ class Glyph:
                 n += 1
 
         # Fill the rest of the line if needed
-        while len(canvas) % self.width != 0:
+        while len(canvas) % (self.width * len(bg)) != 0:
             canvas.extend(bg)
         if len(canvas) > 0:
             callback(canvas)
