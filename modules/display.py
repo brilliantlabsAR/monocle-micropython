@@ -26,7 +26,7 @@ import vgr2d
 import fpga
 import struct
 import time
-import sprites
+import sprite
 import font
 from _display import *
 import gc
@@ -246,7 +246,7 @@ def show_sprites(sprites):
     buffer.extend(b"\x00\x00")
     for id, item in enumerate(set(item.source for item in sprites)):
         item.id = id
-        item.sprite_describe(buffer)
+        item.describe(buffer)
     fpga.write(0x4402, buffer)
 
     # Send placement data to the FPGA

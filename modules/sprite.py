@@ -50,6 +50,7 @@ class SpriteSource:
             buffer = bytearray()
             buffer.extend(struct.pack(">I", sprite_address))
             buffer.extend(slice)
+            print(buffer)
             fpga.write(0x4404, buffer)
             sprite_address += len(slice)
 
