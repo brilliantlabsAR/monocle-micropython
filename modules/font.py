@@ -26,29 +26,60 @@ import struct
 
 
 class Glyph:
-    def __init__(self, file, offset):
+    def __init__(self, font, offset):
         self.beg_x = 0
         self.beg_y = 0
         self.len_x = 0
         self.len_y = 0
         self.width = 0
         self.data = None
-        self.file = file
-        self.file.seek(offset)
+        self.font = font
+        self.font.file.seek(offset)
 
     def read(self):
         # Read the glyph header
-        self.beg_x, self.beg_y, self.len_x, self.len_y = self.file.read(4)
+        self.beg_x, self.beg_y, self.len_x, self.len_y = self.font.file.read(4)
 
         # Compute the size to read including the last byte
         size = self.len_x * self.len_y
         size = (size + 7) // 8
 
         # Optimization: do not split the row/columns yet
-        self.data = self.file.read(size)
+        self.data = self.font.file.read(size)
 
         # Get the ceiling with a granularity of 32
         self.width = self.len_x + 32 - ((self.len_x - 1) % 32 + 1)
+
+    def render(self, callback, bg=b" ", fg=b"#"):
+        # Fill empty area above the glyph
+        for i in range(self.beg_y):
+            callback(bg * self.width)
+
+        # Fill the glyph content
+        n = 0
+        canvas = bytearray()
+        for ch in self.data:
+            for i in reversed(range(8)):
+
+                # Pad with background at the right
+                if n > 0 and n % self.len_x == 0:
+                    canvas.extend((self.width - self.len_x) * bg)
+                    callback(canvas)
+                    canvas = bytearray()
+
+                # Fill with foreground or background according to the data
+                canvas.extend(fg if ch & (1 << i) else bg)
+                n += 1
+
+        # Fill the rest of the line if needed
+        while len(canvas) % self.width != 0:
+            canvas.extend(bg)
+        if len(canvas) > 0:
+            callback(canvas)
+
+        # Fill empty area below the glyph
+        for i in range(max(self.font.height - self.len_y - self.beg_y, 0)):
+            callback(bg * self.width)
 
 
 class Font:
@@ -104,7 +135,7 @@ class Font:
         range_start, range_address = self.glyph_range(unicode)
 
         # Scan through the data glyph per glyph
-        glyph = Glyph(self.file, 4 + 4 + self.index_size + range_address)
+        glyph = Glyph(self, 4 + 4 + self.index_size + range_address)
 
         # Skip several glyphs until we are there
         for _ in range(unicode - range_start):
@@ -112,37 +143,3 @@ class Font:
         glyph.read()
 
         return glyph
-
-    def render(self, glyph, callback, bg=b" ", fg=b"#"):
-
-        # Fill empty area above the glyph
-        for i in range(glyph.beg_y):
-            callback(bg * glyph.width)
-
-        # Fill the glyph content
-        n = 0
-        canvas = bytearray()
-        for ch in glyph.data:
-            for i in reversed(range(8)):
-
-                # Pad with background at the right
-                if n > 0 and n % glyph.len_x == 0:
-                    canvas.extend((glyph.width - glyph.len_x) * bg)
-                    callback(canvas)
-                    canvas = bytearray()
-
-                # Fill with foreground or background according to the data
-                canvas.extend(fg if ch & (1 << i) else bg)
-                n += 1
-
-        # Fill the rest of the line if needed
-        while len(canvas) % glyph.width != 0:
-            canvas.extend(bg)
-        if len(canvas) > 0:
-            callback(canvas)
-
-        # Fill empty area below the glyph
-        for i in range(max(self.height - glyph.len_y - glyph.beg_y, 0)):
-            callback(bg * glyph.width)
-
-        return canvas

@@ -25,38 +25,38 @@ import struct
 import fpga
 
 
-address = 0x0000
+sprite_address = 0x0000
 
 
 class SpriteSource:
     def __init__(self, height, width):
-        global address
+        global sprite_address
 
         if width % 32 != 0:
             raise ValueError("width must be a multiple of 32")
         self.width = width
         self.height = height
-        self.addr = address
+        self.addr = sprite_address
         self.id = None
 
     def __repr__(self):
         return f"SpriteSource([0x{self.addr:X}], {self.width}x{self.height})"
 
     def add(self, data):
-        global address
+        global sprite_address
 
         # Send the sprite RGBA data to the FPGA
         for slice in [data[i:i + 128] for i in range(0, len(data), 128)]:
             buffer = bytearray()
-            buffer.extend(struct.pack(">I", address))
+            buffer.extend(struct.pack(">I", sprite_address))
             buffer.extend(slice)
             fpga.write(0x4404, buffer)
-            address += len(slice)
+            sprite_address += len(slice)
 
     def describe(self, buffer):
         width = (self.width // 32) & 0xF
         height = self.height & 0xFF
-        address = (self.addr // 128) & 0xFFFFF
+        sprite_address = (self.addr // 128) & 0xFFFFF
         buffer.extend(struct.pack(">I", width << 28 | height << 20 | addr << 0))
 
 
