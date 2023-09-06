@@ -41,6 +41,7 @@ class Text:
 
     def to_sprites(self):
         x = self.x
+        z = 1
         sprites = list()
         self.load_glyphs()
         for ch in self.str:
@@ -48,8 +49,9 @@ class Text:
                 x += SPACE_WIDTH
                 continue
             sprite_source = sprite_source_map[ch]
-            sprites.append(Sprite(sprite_source, x, self.y, 1))
+            sprites.append(Sprite(sprite_source, x, self.y, z))
             x += sprite_source.width + INTER_CHAR_WIDTH
+            z += 1
         return sprites
 
     def load_glyphs(self):
