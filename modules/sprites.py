@@ -67,6 +67,10 @@ class SpriteSource:
         self.addr = address
         self.id = None
 
+    def __repr__(self):
+        return f"SpriteSource([0x{self.addr:X}], {self.width}x{self.height})"
+
+    def add(buffer):
         # Send the sprite RGBA data to the FPGA
         for slice in [data[i:i + 128] for i in range(0, len(data), 128)]:
             buffer = bytearray()
@@ -75,30 +79,8 @@ class SpriteSource:
             fpga.write(0x4404, buffer)
             address += len(slice)
 
-    def __repr__(self):
-        return f"SpriteSource([0x{self.addr:X}], {self.width}x{self.height})"
-
-    def sprite_describe(self, buffer):
+    def describe(self, buffer):
         width = (self.width // 32) & 0xF
         height = self.height & 0xFF
         address = (self.addr // 128) & 0xFFFFF
         buffer.extend(struct.pack(">I", width << 28 | height << 20 | addr << 0))
-
-
-def show(sprites):
-
-    # Send layout description data to the FPGA
-    buffer = bytearray()
-    buffer.extend(b"\x00\x00")
-    for id, item in enumerate(set(item.source for item in sprites)):
-        item.id = id
-        item.sprite_describe(buffer)
-    fpga.write(0x4402, buffer)
-
-    # Send placement data to the FPGA
-    buffer = bytearray()
-    buffer.extend(b"\x00\x00")
-    for item in sprites:
-        item.sprite(buffer)
-    buffer.extend(b"\x00\xFF\xFF\xFF\xFF")
-    fpga.write(0x4403, buffer)

@@ -368,11 +368,30 @@ def show_vgr2d(vgr2d_list, dump=False):
     gc.collect() # memory optimization to reduce fragmentation
 
 
+def show_sprites(sprites):
+
+    # Send layout description data to the FPGA
+    buffer = bytearray()
+    buffer.extend(b"\x00\x00")
+    for id, item in enumerate(set(item.source for item in sprites)):
+        item.id = id
+        item.sprite_describe(buffer)
+    fpga.write(0x4402, buffer)
+
+    # Send placement data to the FPGA
+    buffer = bytearray()
+    buffer.extend(b"\x00\x00")
+    for item in sprites:
+        item.sprite(buffer)
+    buffer.extend(b"\x00\xFF\xFF\xFF\xFF")
+    fpga.write(0x4403, buffer)
+
+
 def show(*args, dump=False):
     args = flatten(args)
     show_vgr2d([obj for obj in args if hasattr(obj, "vgr2d")], dump=dump)
     show_fbtext([obj for obj in args if hasattr(obj, "fbtext")])
-    sprites.show([obj for obj in args if hasattr(obj, "sprite")])
+    show_sprites([obj for obj in args if hasattr(obj, "sprite")])
 
 
 def clear():
