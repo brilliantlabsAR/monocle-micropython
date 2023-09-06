@@ -29,30 +29,6 @@ import fpga
 address = 0x0000
 
 
-class Sprite:
-    def __init__(self, x, y, z, source):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.source = source
-
-    def __repr__(self):
-        return f"Sprite({self.x}, {self.y}, {self.z}, {self.source})"
-
-    def move(self, x, y):
-        self.x += int(x)
-        self.y += int(y)
-        return self
-
-    def sprite(self, buffer):
-        x = self.x & 0xFFF
-        y = self.y & 0xFFF
-        z = self.z & 0xF
-        id = self.source.id & 0xFFF
-        buffer.extend(struct.pack(">I", x << 20 | y << 8 | z << 4 | id >> 8))
-        buffer.append(id & 0xFF)
-
-
 class SpriteSource:
     def __init__(self, data, width):
         global address
@@ -84,3 +60,27 @@ class SpriteSource:
         height = self.height & 0xFF
         address = (self.addr // 128) & 0xFFFFF
         buffer.extend(struct.pack(">I", width << 28 | height << 20 | addr << 0))
+
+
+class Sprite:
+    def __init__(self, x, y, z, source):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.source = source
+
+    def __repr__(self):
+        return f"Sprite({self.x}, {self.y}, {self.z}, {self.source})"
+
+    def move(self, x, y):
+        self.x += int(x)
+        self.y += int(y)
+        return self
+
+    def sprite(self, buffer):
+        x = self.x & 0xFFF
+        y = self.y & 0xFFF
+        z = self.z & 0xF
+        id = self.source.id & 0xFFF
+        buffer.extend(struct.pack(">I", x << 20 | y << 8 | z << 4 | id >> 8))
+        buffer.append(id & 0xFF)

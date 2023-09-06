@@ -27,15 +27,12 @@ import fpga
 import struct
 import time
 import sprites
+import font
 from _display import *
 import gc
 
 WIDTH = 640
 HEIGHT = 400
-
-SPACE_WIDTH = 1
-FONT_HEIGHT = 48
-FONT_WIDTH = 23 + SPACE_WIDTH
 
 TOP_LEFT = 1
 MIDDLE_LEFT = 2
@@ -64,11 +61,6 @@ GRAY5 = 0x8D8D8D
 GRAY6 = 0xAAAAAA
 GRAY7 = 0xC6C6C6
 GRAY8 = 0xE2E2E2
-
-
-FBTEXT_PAGE_SIZE = 1024
-FBTEXT_NUM_PAGES = 2
-fbtext_addr = 0
 
 
 class Colored:
@@ -187,90 +179,6 @@ class Polygon(Colored):
         )
 
 
-class TextOverlapError(Exception):
-    pass
-
-
-class Text(Colored):
-    def __init__(self, string, x, y, color, justify=TOP_LEFT):
-        self.x = int(x)
-        self.y = int(y)
-        self.string = string
-        self.justify(justify)
-        self.color(color)
-
-    def __repr__(self):
-        return f"Text('{self.string}', {self.x}, {self.y}, 0x{self.color_rgb:06x})"
-
-    def justify(self, justify):
-        left = (TOP_LEFT, MIDDLE_LEFT, BOTTOM_LEFT)
-        center = (TOP_CENTER, MIDDLE_CENTER, BOTTOM_CENTER)
-        right = (TOP_RIGHT, MIDDLE_RIGHT, BOTTOM_RIGHT)
-
-        if justify in left:
-            self.x = self.x
-        elif justify in center:
-            self.x = self.x - self.width(self.string) // 2
-        elif justify in right:
-            self.x = self.x - self.width(self.string)
-        else:
-            raise ValueError("unknown justify value")
-
-        top = (TOP_LEFT, TOP_CENTER, TOP_RIGHT)
-        middle = (MIDDLE_LEFT, MIDDLE_CENTER, MIDDLE_RIGHT)
-        bottom = (BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT)
-
-        if justify in top:
-            self.y = self.y
-        elif justify in middle:
-            self.y = self.y - FONT_HEIGHT // 2
-        elif justify in bottom:
-            self.y = self.y - FONT_HEIGHT
-        else:
-            raise ValueError("unknown justify value")
-
-    def width(self, string):
-        return FONT_WIDTH * len(string)
-
-    def clip_x(self):
-        string = self.string
-        x = self.x
-
-        if x < 0:
-            i = abs(x) // FONT_WIDTH + 1
-            string = string[i:]
-            x += i * FONT_WIDTH
-        if x + self.width(string) > WIDTH:
-            overflow_px = x + self.width(string) - WIDTH
-            overflow_ch = overflow_px // FONT_WIDTH + 1
-            string = string[:-overflow_ch]
-        return x, string
-
-    def fbtext(self, buffer):
-        x, string = self.clip_x()
-        y = self.y
-
-        if len(string) == 0:
-            return
-
-        # Build a buffer to send to the FPGA
-        buffer.append((x >> 4) & 0xFF)
-        buffer.append(((x << 4) & 0xF0) | ((y >> 8) & 0x0F))
-        buffer.append(y & 0xFF)
-        buffer.append(self.color_index)
-        i = len(buffer)
-        buffer.append(0)
-        for c in string.encode("ASCII"):
-            buffer.append(c - 32)
-            buffer[i] += 1  # increment the length field
-        assert buffer[i] <= 0xFF
-
-    def move(self, x, y):
-        self.x += x
-        self.y += y
-        return self
-
-
 def flatten(o):
     if isinstance(o, tuple) or isinstance(o, list):
         return [i2 for i1 in o for i2 in flatten(i1)]
@@ -321,43 +229,6 @@ def update_colors(addr, obj_list, dump=False):
         print("".join("%02X" % x for x in buffer))
 
 
-def show_fbtext(fbtext_list):
-    global fbtext_addr
-
-    update_colors(0x4502, fbtext_list)
-
-    # Text has no wrapper, we implement it locally.
-    # See https://streamlogic.io/docs/reify/nodes/#fbtext
-    buffer = bytearray(struct.pack(">H", fbtext_addr))
-    fbtext_list = sorted(fbtext_list, key=lambda obj: obj.x)
-
-    # Check for overlapping text
-    def box(obj):
-        x2 = obj.x + FONT_WIDTH * len(obj.string)
-        y2 = obj.y + FONT_HEIGHT
-        return obj.x, x2, obj.y, y2
-    for a in fbtext_list:
-        ax1, ax2, ay1, ay2 = box(a)
-        for b in fbtext_list:
-            if a is b:
-                continue
-            bx1, bx2, by1, by2 = box(b)
-            if ax1 <= bx2 and ax2 >= bx1:
-                if ay1 <= by2 and ay2 >= by1:
-                    raise TextOverlapError(f"{a} overlaps with {b}")
-
-    # Render the text
-    for obj in fbtext_list:
-        obj.fbtext(buffer)
-    if len(buffer) > 0:
-        addr = bytearray(struct.pack(">H", fbtext_addr))
-        fpga.write(0x4501, addr)
-        fpga.write(0x4503, buffer + b"\xFF\xFF\xFF")
-        fbtext_addr += FBTEXT_PAGE_SIZE
-        fbtext_addr %= FBTEXT_PAGE_SIZE * FBTEXT_NUM_PAGES
-        time.sleep_ms(20) # ensure the buffer swap has happened
-
-
 def show_vgr2d(vgr2d_list, dump=False):
     update_colors(0x4402, vgr2d_list, dump=dump)
 
@@ -390,14 +261,8 @@ def show_sprites(sprites):
 def show(*args, dump=False):
     args = flatten(args)
     show_vgr2d([obj for obj in args if hasattr(obj, "vgr2d")], dump=dump)
-    show_fbtext([obj for obj in args if hasattr(obj, "fbtext")])
     show_sprites([obj for obj in args if hasattr(obj, "sprite")])
 
 
 def clear():
-    show(Text(" ", 0, 0, 0x000000))
-
-
-def reset():
-    sprites.address = 0x0000
-    clear()
+    show()
