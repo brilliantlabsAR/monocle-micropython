@@ -29,23 +29,22 @@ address = 0x0000
 
 
 class SpriteSource:
-    def __init__(self, data, width):
+    def __init__(self, height, width):
         global address
 
-        if len(data) % (4 * width) != 0:
-            raise ValueError("data length must formatted as: b'RGBA' * width")
         if width % 32 != 0:
             raise ValueError("width must be a multiple of 32")
-
         self.width = width
-        self.height = len(data) // 4 // width
+        self.height = height
         self.addr = address
         self.id = None
 
     def __repr__(self):
         return f"SpriteSource([0x{self.addr:X}], {self.width}x{self.height})"
 
-    def add(buffer):
+    def add(self, data):
+        global address
+
         # Send the sprite RGBA data to the FPGA
         for slice in [data[i:i + 128] for i in range(0, len(data), 128)]:
             buffer = bytearray()

@@ -113,11 +113,11 @@ class Font:
 
         return glyph
 
-    def render(self, glyph, callback, args, bg=b" ", fg=b"#"):
+    def render(self, glyph, callback, bg=b" ", fg=b"#"):
 
         # Fill empty area above the glyph
         for i in range(glyph.beg_y):
-            callback(bg * glyph.width, args)
+            callback(bg * glyph.width)
 
         # Fill the glyph content
         n = 0
@@ -128,7 +128,7 @@ class Font:
                 # Pad with background at the right
                 if n > 0 and n % glyph.len_x == 0:
                     canvas.extend((glyph.width - glyph.len_x) * bg)
-                    callback(canvas, args)
+                    callback(canvas)
                     canvas = bytearray()
 
                 # Fill with foreground or background according to the data
@@ -139,10 +139,10 @@ class Font:
         while len(canvas) % glyph.width != 0:
             canvas.extend(bg)
         if len(canvas) > 0:
-            callback(canvas, args)
+            callback(canvas)
 
         # Fill empty area below the glyph
         for i in range(max(self.height - glyph.len_y - glyph.beg_y, 0)):
-            callback(bg * glyph.width, args)
+            callback(bg * glyph.width)
 
         return canvas
