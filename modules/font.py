@@ -24,67 +24,7 @@
 import sys
 import struct
 from sprite import Sprite
-
-
-class Glyph:
-    def __init__(self, font, unicode):
-        self.beg_x = 0
-        self.beg_y = 0
-        self.len_x = 0
-        self.len_y = 0
-        self.width = 0
-        self.data = None
-        self.font = font
-
-        # Get the range to start scanning from
-        range_start, range_address = font.unicode_range(unicode)
-
-        # Scan through the data glyph per glyph
-        font.seek(range_address)
-
-        # Skip several glyphs until we are there
-        for _ in range(unicode - range_start):
-            font.read_next_glyph(self)
-        font.read_next_glyph(self)
-
-    def draw(self, callback, bg=b" ", fg=b"#"):
-        assert len(bg) == len(fg)
-
-        # Fill empty area above the glyph
-        for i in range(self.beg_y):
-            callback(bg * self.width)
-
-        # Fill the glyph content
-        n = 0
-        canvas = bytearray()
-        for ch in self.data:
-            for i in reversed(range(8)):
-
-                # Pad with background at the left
-                if n == 0:
-                    canvas.extend(self.beg_x * bg)
-
-                # Fill with foreground or background according to the data
-                canvas.extend(fg if ch & (1 << i) else bg)
-                n += 1
-
-                # Pad with background at the right
-                if n == self.len_x:
-                    canvas.extend((self.width - self.beg_x - self.len_x) * bg)
-                    callback(canvas)
-                    canvas = bytearray()
-                    n = 0
-
-        # Fill the rest of the line if needed
-        while len(canvas) % (self.width * len(bg)) != 0:
-            canvas.extend(bg)
-        print(len(canvas))
-        if len(canvas) > 0:
-            callback(canvas)
-
-        # Fill empty area below the glyph
-        for i in range(max(self.font.height - self.len_y - self.beg_y, 0)):
-            callback(bg * self.width)
+from glyph import Glyph
 
 
 class Font:
@@ -117,7 +57,8 @@ class Font:
         glyph.data = self.file.read(size)
 
         # Round width to the upper slice of 32
-        glyph.width = glyph.len_x + 32 - ((glyph.len_x - 1) % 32 + 1)
+        n = glyph.beg_x + glyph.len_x
+        glyph.width = n + 32 - ((n - 1) % 32 + 1)
 
     def unicode_range(self, unicode):
         # Start searching from the middle of the file

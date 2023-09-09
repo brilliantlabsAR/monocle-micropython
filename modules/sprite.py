@@ -69,9 +69,12 @@ class Sprite:
 
     def data(self, data):
         global sprite_address
-        if len(data) != 128:
-            raise ValueError("data must be 128 bytes (32 pixels) long")
-        fpga.write(0x4404, struct.pack(">I", sprite_address) + data)
+        if len(data) % 128 != 0:
+            raise ValueError("data must be a multiple of 128 bytes (32 pixels) long")
+
+        # Send the sprite RGBA data to the FPGA
+        for slice in [data[i:i + 128] for i in range(0, len(data), 128)]:
+            fpga.write(0x4404, struct.pack(">I", sprite_address) + slice)
         sprite_address += len(data)
 
     def encode(self, buffer):
