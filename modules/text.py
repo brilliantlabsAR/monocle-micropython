@@ -22,26 +22,39 @@
 #
 
 import struct
-from sprite import SpriteSource, Sprite
+from sprite import SpriteSource, Sprite, show_sprites
+from font import SYSTEM_FONT
 
+
+TOP_LEFT = 1
+MIDDLE_LEFT = 2
+BOTTOM_LEFT = 3
+TOP_CENTER = 4
+BOTTOM_CENTER = 5
+TOP_RIGHT = 6
+MIDDLE_CENTER = 7
+MIDDLE_RIGHT = 8
+BOTTOM_RIGHT = 9
 
 SPACE_WIDTH = 20
-INTER_CHAR_WIDTH = 32
+INTER_CHAR_WIDTH = 4
+
 
 sprite_source_map = {}
 
 
 class Text:
-    def __init__(self, str, font, color):
+    def __init__(self, str, x, y, color, font=SYSTEM_FONT):
         self.str = str
         self.color = color
         self.font = font
-        self.x = 20
-        self.y = 20
+        self.x = x
+        self.y = y
 
     def to_sprites(self):
         x = self.x
-        z = 1
+        y = self.y
+        z = 0
         sprites = list()
         self.load_glyphs()
         for ch in self.str:
@@ -49,8 +62,9 @@ class Text:
                 x += SPACE_WIDTH
                 continue
             sprite_source = sprite_source_map[ch]
-            sprites.append(Sprite(sprite_source, x, self.y, z))
-            x += sprite_source.width + INTER_CHAR_WIDTH
+            sprites.append(Sprite(sprite_source, x, y, z))
+            x += sprite_source.active_width + INTER_CHAR_WIDTH
+            #y += sprite_source.height
             z += 1
         return sprites
 

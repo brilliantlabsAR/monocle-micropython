@@ -135,7 +135,7 @@ def build_font(font, filter):
     unicode_prev = -1
     for gl in font.iterglyphs(order=1, r=ranges):
 
-        print(gl.meta["glyphname"], gl.chr())
+        print(gl.chr(), gl.meta["glyphname"])
 
         # The glyph data block is very straightforward, always the same: add the
         # glyph, but we must keep track of the address.

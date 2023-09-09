@@ -56,8 +56,8 @@ class SpriteSource:
 
     def add_data(self, data):
         global sprite_address
-        if len(data) % 128 != 0:
-            raise ValueError("data must be a multiple of 128 bytes long")
+        if len(data) != 128:
+            raise ValueError("data must be 128 bytes long")
         fpga.write(0x4404, struct.pack(">I", sprite_address) + data)
         sprite_address += len(data)
 
@@ -90,3 +90,23 @@ class Sprite:
         id = self.source.id & 0xFFF
         buffer.extend(struct.pack(">I", x << 20 | y << 8 | z << 4 | id >> 8))
         buffer.append(id & 0xFF)
+
+
+def show_sprites(sprites):
+    # Send layout description data to the FPGA
+    buffer = bytearray()
+    buffer.extend(b"\x00\x00")
+    for id, item in enumerate(set(item.source for item in sprites)):
+        item.id = id
+        item.describe(buffer)
+    print(f"fpga.write(0x4402, {buffer})")
+    fpga.write(0x4402, buffer)
+
+    # Send placement data to the FPGA
+    buffer = bytearray()
+    buffer.extend(b"\x00\x00")
+    for item in sprites:
+        item.sprite(buffer)
+    buffer.extend(b"\x00\xFF\xFF\xFF\xFF")
+    print(f"fpga.write(0x4403, {buffer})")
+    fpga.write(0x4403, buffer)

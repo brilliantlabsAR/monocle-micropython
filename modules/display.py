@@ -22,27 +22,14 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-import vgr2d
-import fpga
-import struct
-import time
-import sprite
-import font
+from sprite import *
+from text import *
+from vector import *
 from _display import *
-import gc
+
 
 WIDTH = 640
 HEIGHT = 400
-
-TOP_LEFT = 1
-MIDDLE_LEFT = 2
-BOTTOM_LEFT = 3
-TOP_CENTER = 4
-BOTTOM_CENTER = 5
-TOP_RIGHT = 6
-MIDDLE_CENTER = 7
-MIDDLE_RIGHT = 8
-BOTTOM_RIGHT = 9
 
 CLEAR = 0x000000
 BLACK = 0x000000
@@ -66,129 +53,6 @@ GRAY8 = 0xE2E2E2
 class Colored:
     def color(self, color_rgb):
         self.color_rgb = color_rgb
-
-
-class Line(Colored):
-    def __init__(self, x1, y1, x2, y2, color, thickness=1):
-        if thickness > 18:
-            raise ValueError("max thickness is 18")
-        self.x1 = int(x1)
-        self.y1 = int(y1)
-        self.x2 = int(x2)
-        self.y2 = int(y2)
-        self.width = thickness
-        self.color(color)
-
-    def __repr__(self):
-        return f"Line({self.x1}, {self.y1}, {self.x2}, {self.y2}, 0x{self.color_rgb:06x}, thickness={self.width})"
-
-    def move(self, x, y):
-        self.x1 += int(x)
-        self.y1 += int(y)
-        self.x2 += int(x)
-        self.y2 += int(y)
-        return self
-
-    def vgr2d(self):
-        return vgr2d.Line(
-            self.x1, self.y1, self.x2, self.y2, self.color_index, self.width
-        )
-
-
-class HLine(Line):
-    def __init__(self, x, y, width, color, thickness=1):
-        super().__init__(x, y, x + width, y, color, thickness=thickness)
-
-
-class VLine(Line):
-    def __init__(self, x, y, height, color, thickness=1):
-        super().__init__(x, y, x, y + height, color, thickness=thickness)
-
-
-class Rectangle(Colored):
-    def __init__(self, x1, y1, x2, y2, color):
-        self.x = min(x1, x2)
-        self.y = min(y1, y2)
-        self.width = abs(x2 - x1)
-        self.height = abs(y2 - y1)
-        self.color(color)
-
-    def __repr__(self):
-        x2 = self.x + self.width
-        y2 = self.y + self.height
-        return f"Rectangle({self.x}, {self.y}, {x2}, {y2}, 0x{self.color_rgb:06x})"
-
-    def move(self, x, y):
-        self.x += int(x)
-        self.y += int(y)
-        return self
-
-    def vgr2d(self):
-        v = vgr2d.Rect(self.width, self.height, self.color_index)
-        return v.position(self.x, self.y)
-
-
-class Fill(Rectangle):
-    def __init__(self, color):
-        super().__init__(0, 0, WIDTH - 1, HEIGHT - 1, color)
-
-
-class Polyline(Colored):
-    def __init__(self, coordinates, color, thickness=1):
-        if len(coordinates) % 2 != 0:
-            raise ValueError("coordinates must have odd number of values")
-        self.points = []
-        for i in range(0, len(coordinates), 2):
-            self.points.append((coordinates[i], coordinates[i + 1]))
-        self.width = thickness
-        self.color(color)
-
-    def __repr__(self):
-        points = ", ".join([f"{p[0]},{p[1]}" for p in self.points])
-        return f"Polyline([{points}], 0x{self.color_rgb:06x}, thickness={self.width})"
-
-    def move(self, x, y):
-        for i, value in enumerate(self.points):
-            self.points[i] = (value[0] + int(x), value[1] + int(y))
-
-    def vgr2d(self):
-        return vgr2d.Polyline(self.points, self.color_index, self.width)
-
-
-class Polygon(Colored):
-    def __init__(self, coordinates, color, thickness=1):
-        if len(coordinates) % 2 != 0:
-            raise ValueError("coordinates must have odd number of values")
-        self.points = []
-        for i in range(0, len(coordinates), 2):
-            self.points.append((coordinates[i], coordinates[i + 1]))
-        self.width = thickness
-        self.color(color)
-
-    def __repr__(self):
-        points = ", ".join([f"{p[0]},{p[1]}" for p in self.points])
-        return f"Polygon([{points}], 0x{self.color_rgb:06x}, thickness={self.width})"
-
-    def move(self, x, y):
-        for i, value in enumerate(self.points):
-            self.points[i] = (value[0] + int(x), value[1] + int(y))
-
-    def vgr2d(self):
-        return vgr2d.Polygon(
-            self.points, stroke=None, fill=self.color_index, width=self.width
-        )
-
-
-def flatten(o):
-    if isinstance(o, tuple) or isinstance(o, list):
-        return [i2 for i1 in o for i2 in flatten(i1)]
-    else:
-        return [o]
-
-
-def move(*args):
-    for arg in flatten(args[:-2]):
-        arg.move(args[-2], args[-1])
 
 
 def color(*args):
@@ -229,39 +93,31 @@ def update_colors(addr, obj_list, dump=False):
         print("".join("%02X" % x for x in buffer))
 
 
-def show_vgr2d(vgr2d_list, dump=False):
-    update_colors(0x4402, vgr2d_list, dump=dump)
-
-    # 0 is the address of the frame in the framebuffer in use.
-    # See https://streamlogic.io/docs/reify/nodes/#fbgraphics
-    # Offset: active display offset in buffer used if double buffering
-    vgr2d.display2d(0, [obj.vgr2d() for obj in vgr2d_list], WIDTH, HEIGHT, dump=dump)
-    gc.collect() # memory optimization to reduce fragmentation
+def flatten(o):
+    if isinstance(o, tuple) or isinstance(o, list):
+        return [i2 for i1 in o for i2 in flatten(i1)]
+    else:
+        return [o]
 
 
-def show_sprites(sprites):
-
-    # Send layout description data to the FPGA
-    buffer = bytearray()
-    buffer.extend(b"\x00\x00")
-    for id, item in enumerate(set(item.source for item in sprites)):
-        item.id = id
-        item.describe(buffer)
-    fpga.write(0x4402, buffer)
-
-    # Send placement data to the FPGA
-    buffer = bytearray()
-    buffer.extend(b"\x00\x00")
-    for item in sprites:
-        item.sprite(buffer)
-    buffer.extend(b"\x00\xFF\xFF\xFF\xFF")
-    fpga.write(0x4403, buffer)
+def move(*args):
+    for arg in flatten(args[:-2]):
+        arg.move(args[-2], args[-1])
 
 
-def show(*args, dump=False):
+def show(*args):
     args = flatten(args)
-    show_vgr2d([obj for obj in args if hasattr(obj, "vgr2d")], dump=dump)
-    show_sprites([obj for obj in args if hasattr(obj, "sprite")])
+
+    # Collect everything that must be turned into a vgr2d and render it
+    vectors = [arg for arg in args if hasattr(arg, "vgr2d")]
+    update_colors(0x4402, vectors)
+    show_vgr2d(vectors)
+
+    # Collect everything that must be turned into a sprite and render it
+    sprites = [arg for arg in args if hasattr(arg, "sprite")]
+    for lst in [arg.to_sprites() for arg in args if hasattr(arg, "to_sprites")]:
+        sprites += lst
+    show_sprites(sprites)
 
 
 def clear():

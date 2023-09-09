@@ -47,7 +47,7 @@ class Glyph:
         # Optimization: do not split the row/columns yet
         self.data = self.font.file.read(size)
 
-        # Get the ceiling with a granularity of 32
+        # Round width to the upper slice of 32
         self.width = self.len_x + 32 - ((self.len_x - 1) % 32 + 1)
 
     def render(self, callback, bg=b" ", fg=b"#"):
@@ -63,19 +63,25 @@ class Glyph:
         for ch in self.data:
             for i in reversed(range(8)):
 
-                # Pad with background at the right
-                if n > 0 and n % self.len_x == 0:
-                    canvas.extend((self.width - self.len_x) * bg)
-                    callback(canvas)
-                    canvas = bytearray()
+                # Pad with background at the left
+                if n == 0:
+                    canvas.extend(self.beg_x * bg)
 
                 # Fill with foreground or background according to the data
                 canvas.extend(fg if ch & (1 << i) else bg)
                 n += 1
 
+                # Pad with background at the right
+                if n == self.len_x:
+                    canvas.extend((self.width - self.beg_x - self.len_x) * bg)
+                    callback(canvas)
+                    canvas = bytearray()
+                    n = 0
+
         # Fill the rest of the line if needed
         while len(canvas) % (self.width * len(bg)) != 0:
             canvas.extend(bg)
+        print(len(canvas))
         if len(canvas) > 0:
             callback(canvas)
 
@@ -109,7 +115,6 @@ class Font:
 
         # Inline implementation of binary search to find the glyph
         while beg != end:
-
             # Decode the u8 and u24 out of the u32
             unicode_len = self.index[i][0] & 0xff
             unicode_start = self.index[i][0] >> 8
@@ -132,7 +137,6 @@ class Font:
         raise ValueError("glyph not found in font")
 
     def glyph(self, unicode):
-
         # Get the range to start scanning from
         range_start, range_address = self.glyph_range(unicode)
 
@@ -145,3 +149,6 @@ class Font:
         glyph.read()
 
         return glyph
+
+
+SYSTEM_FONT = Font('font.bin')
