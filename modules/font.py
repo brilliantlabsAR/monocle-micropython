@@ -23,10 +23,11 @@
 
 import sys
 import struct
+from sprite import SpriteSource
 
 
 class Glyph:
-    def __init__(self, font, offset):
+    def __init__(self, font, unicode):
         self.beg_x = 0
         self.beg_y = 0
         self.len_x = 0
@@ -34,21 +35,17 @@ class Glyph:
         self.width = 0
         self.data = None
         self.font = font
-        self.font.file.seek(offset)
 
-    def read(self):
-        # Read the glyph header
-        self.beg_x, self.beg_y, self.len_x, self.len_y = self.font.file.read(4)
+        # Get the range to start scanning from
+        range_start, range_address = font.get_glyph_range(unicode)
 
-        # Compute the size to read including the last byte
-        size = self.len_x * self.len_y
-        size = (size + 7) // 8
+        # Scan through the data glyph per glyph
+        font.seek_to_glyph_address(self, range_address)
 
-        # Optimization: do not split the row/columns yet
-        self.data = self.font.file.read(size)
-
-        # Round width to the upper slice of 32
-        self.width = self.len_x + 32 - ((self.len_x - 1) % 32 + 1)
+        # Skip several glyphs until we are there
+        for _ in range(unicode - range_start):
+            font.read_next_glyph(glyph)
+        font.read_next_glyph(glyph)
 
     def render(self, callback, bg=b" ", fg=b"#"):
         assert len(bg) == len(fg)
@@ -93,6 +90,7 @@ class Glyph:
 class Font:
     def __init__(self, path):
         self.file = open(path, "rb")
+        self.glyph_sprite_map = {}
 
         # Read the index header: (u32)*2
         record = self.file.read(4 + 4)
@@ -107,7 +105,24 @@ class Font:
             n += 8
             x = self.index[len(self.index) - 1]
 
-    def glyph_range(self, unicode):
+    def seek_to_glyph_address(self, address):
+        self.font.file.seek(4 + 4 + font.index_size + address)
+
+    def read_next_glyph(self, glyph):
+        # Read the glyph header
+        glyph.beg_x, glyph.beg_y, glyph.len_x, glyph.len_y = self.file.read(4)
+
+        # Compute the size to read including the last byte
+        size = glyph.len_x * glyph.len_y
+        size = (size + 7) // 8
+
+        # Optimization: do not split the row/columns yet
+        glyph.data = self.file.read(size)
+
+        # Round width to the upper slice of 32
+        glyph.width = glyph.len_x + 32 - ((glyph.len_x - 1) % 32 + 1)
+
+    def get_glyph_range(self, unicode):
         # Start searching from the middle of the file
         beg = 0
         end = len(self.index)
@@ -136,19 +151,12 @@ class Font:
 
         raise ValueError("glyph not found in font")
 
-    def glyph(self, unicode):
-        # Get the range to start scanning from
-        range_start, range_address = self.glyph_range(unicode)
-
-        # Scan through the data glyph per glyph
-        glyph = Glyph(self, 4 + 4 + self.index_size + range_address)
-
-        # Skip several glyphs until we are there
-        for _ in range(unicode - range_start):
-            glyph.read()
-        glyph.read()
-
-        return glyph
+    def to_sprite_source(self, char, color):
+        unicode = ord(char)
+        if unicode not in self.glyph_sprite_map:
+            sprite_source = SpriteSource.from_char(self, char, color)
+            self.glyph_sprite_map[unicode] = sprite_source
+        return self.glyph_sprite_map[unicode]
 
 
 SYSTEM_FONT = Font('font.bin')

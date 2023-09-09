@@ -40,9 +40,6 @@ SPACE_WIDTH = 20
 INTER_CHAR_WIDTH = 4
 
 
-sprite_source_map = {}
-
-
 class Text:
     def __init__(self, str, x, y, color, font=SYSTEM_FONT):
         self.str = str
@@ -56,25 +53,13 @@ class Text:
         y = self.y
         z = 0
         sprites = list()
-        self.load_glyphs()
         for ch in self.str:
             if ch == ' ':
                 x += SPACE_WIDTH
                 continue
-            sprite_source = sprite_source_map[ch]
+            sprite_source = self.font.to_sprite_source(ch, self.color)
             sprites.append(Sprite(sprite_source, x, y, z))
             x += sprite_source.active_width + INTER_CHAR_WIDTH
-            #y += sprite_source.height
+            y += sprite_source.height
             z += 1
         return sprites
-
-    def load_glyphs(self):
-        global sprite_source_map
-
-        color = struct.pack(">I", self.color)
-        for ch in self.str:
-            if ch == ' ':
-                continue
-            if ch not in sprite_source_map:
-                sprite_source = SpriteSource.from_char(ch, self.font, color)
-                sprite_source_map[ch] = sprite_source
