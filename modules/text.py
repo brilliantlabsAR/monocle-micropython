@@ -41,9 +41,9 @@ INTER_CHAR_WIDTH = 4
 
 
 class Text:
-    def __init__(self, str, x, y, color, font=SYSTEM_FONT):
+    def __init__(self, str, x, y, color, justify=TOP_LEFT, font=SYSTEM_FONT):
         self.str = str
-        self.color = color
+        self.color = (color << 8) | 0xFF
         self.font = font
         self.x = x
         self.y = y
