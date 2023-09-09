@@ -28,7 +28,30 @@ import fpga
 sprite_address = 0x0000
 
 
-class SpriteSource:
+class Sprite:
+    class Placement:
+        def __init__(self, sprite, x, y, z):
+            self.x = x
+            self.y = y
+            self.z = z
+            self.sprite = sprite
+
+        def __repr__(self):
+            return f"Sprite.Placement({self.sprite}, {self.x}, {self.y}, {self.z})"
+
+        def move(self, x, y):
+            self.x += int(x)
+            self.y += int(y)
+            return self
+
+        def encode(self, buffer):
+            x = self.x & 0xFFF
+            y = self.y & 0xFFF
+            z = self.z & 0xF
+            id = self.sprite.id & 0xFFF
+            buffer.extend(struct.pack(">I", x << 20 | y << 8 | z << 4 | id >> 8))
+            buffer.append(id & 0xFF)
+
     def __init__(self, height, width, active_width):
         global sprite_address
 
@@ -42,71 +65,40 @@ class SpriteSource:
         self.id = None
 
     def __repr__(self):
-        return f"SpriteSource([0x{self.addr:X}], {self.width}x{self.height})"
+        return f"Sprite([0x{self.addr:X}], {self.width}x{self.height})"
 
-    @classmethod
-    def from_glyph(cls, glyph, color):
-        source = cls(glyph.font.height, glyph.width, glyph.len_x)
-        glyph.render(source.add_data, fg=color, bg=b"\x00\x00\x00\x00")
-        return source
-
-    @classmethod
-    def from_char(cls, char, font, color):
-        return cls.from_glyph(font.glyph(ord(char)), color)
-
-    def add_data(self, data):
+    def data(self, data):
         global sprite_address
         if len(data) != 128:
-            raise ValueError("data must be 128 bytes long")
+            raise ValueError("data must be 128 bytes (32 pixels) long")
         fpga.write(0x4404, struct.pack(">I", sprite_address) + data)
         sprite_address += len(data)
 
-    def describe(self, buffer):
+    def encode(self, buffer):
         width = (self.width // 32) & 0xF
         height = self.height & 0xFF
         addr = (self.addr // 128) & 0xFFFFF
         buffer.extend(struct.pack(">I", width << 28 | height << 20 | addr << 0))
 
-
-class Sprite:
-    def __init__(self, source, x, y, z):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.source = source
-
-    def __repr__(self):
-        return f"Sprite({self.source}, {self.x}, {self.y}, {self.z})"
-
-    def move(self, x, y):
-        self.x += int(x)
-        self.y += int(y)
-        return self
-
-    def sprite(self, buffer):
-        x = self.x & 0xFFF
-        y = self.y & 0xFFF
-        z = self.z & 0xF
-        id = self.source.id & 0xFFF
-        buffer.extend(struct.pack(">I", x << 20 | y << 8 | z << 4 | id >> 8))
-        buffer.append(id & 0xFF)
+    def draw(self, x, y, z):
+        return self.Placement(self, x, y, z)
 
 
-def show_sprites(sprites):
+def show_sprites(placement_list):
     # Send layout description data to the FPGA
     buffer = bytearray()
     buffer.extend(b"\x00\x00")
-    for id, item in enumerate(set(item.source for item in sprites)):
-        item.id = id
-        item.describe(buffer)
+    for id, sprite in enumerate(set(placement.sprite for placement in placement_list)):
+        sprite.id = id
+        sprite.encode(buffer)
     print(f"fpga.write(0x4402, {buffer})")
     fpga.write(0x4402, buffer)
 
     # Send placement data to the FPGA
     buffer = bytearray()
     buffer.extend(b"\x00\x00")
-    for item in sprites:
-        item.sprite(buffer)
+    for placement in placement_list:
+        placement.encode(buffer)
     buffer.extend(b"\x00\xFF\xFF\xFF\xFF")
     print(f"fpga.write(0x4403, {buffer})")
     fpga.write(0x4403, buffer)

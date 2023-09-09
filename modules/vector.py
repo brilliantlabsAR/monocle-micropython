@@ -24,7 +24,8 @@
 import vgr2d
 import fpga
 import gc
-from display import Colored, WIDTH, HEIGHT
+from display import WIDTH, HEIGHT
+from color import Colored
 
 
 class Line(Colored):

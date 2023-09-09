@@ -22,75 +22,14 @@
 # PERFORMANCE OF THIS SOFTWARE.
 #
 
-from sprite import *
-from text import *
-from vector import *
-from _display import *
-
-
 WIDTH = 640
 HEIGHT = 400
 
-CLEAR = 0x000000
-BLACK = 0x000000
-RED = 0xAD2323
-GREEN = 0x1D6914
-BLUE = 0x2A4BD7
-CYAN = 0x29D0D0
-MAGENTA = 0x8126C0
-YELLOW = 0xFFEE33
-WHITE = 0xFFFFFF
-GRAY1 = 0x1C1C1C
-GRAY2 = 0x383838
-GRAY3 = 0x555555
-GRAY4 = 0x717171
-GRAY5 = 0x8D8D8D
-GRAY6 = 0xAAAAAA
-GRAY7 = 0xC6C6C6
-GRAY8 = 0xE2E2E2
-
-
-class Colored:
-    def color(self, color_rgb):
-        self.color_rgb = color_rgb
-
-
-def color(*args):
-    for arg in flatten(args[:-1]):
-        arg.color(args[-1])
-
-
-def update_colors(addr, obj_list, dump=False):
-    # new buffer for the FPGA API, starting with address 0x0000
-    buffer = bytearray(2)
-
-    # collect the colors from the various objects
-    color_list = []
-    for obj in obj_list:
-        if obj.color_rgb in color_list:
-            # deduplicate the color by using the existing index
-            obj.color_index = color_list.index(obj.color_rgb)
-
-        else:
-            # Add a new color if enough room
-            if len(color_list) > 128:
-                raise ValueError("more than 128 different color unsupported")
-
-            # Add to the list for future reference
-            obj.color_index = len(color_list)
-            color_list.append(obj.color_rgb)
-
-            # Add to the buffer for the FPGA
-            buffer.append(obj.color_rgb >> 16)
-            buffer.append(obj.color_rgb >> 8)
-            buffer.append(obj.color_rgb >> 0)
-
-    # Flush the buffer, we are done
-    fpga.write(addr, buffer)
-
-    # Hexdump the buffer if requested
-    if dump:
-        print("".join("%02X" % x for x in buffer))
+from sprite import *
+from text import *
+from vector import *
+from color import *
+from _display import *
 
 
 def flatten(o):
@@ -115,7 +54,7 @@ def show(*args):
 
     # Collect everything that must be turned into a sprite and render it
     sprites = [arg for arg in args if hasattr(arg, "sprite")]
-    for lst in [arg.to_sprites() for arg in args if hasattr(arg, "to_sprites")]:
+    for lst in [arg.sprites() for arg in args if hasattr(arg, "sprites")]:
         sprites += lst
     show_sprites(sprites)
 

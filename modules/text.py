@@ -22,7 +22,7 @@
 #
 
 import struct
-from sprite import SpriteSource, Sprite, show_sprites
+from sprite import Sprite, show_sprites
 from font import SYSTEM_FONT
 
 
@@ -48,7 +48,7 @@ class Text:
         self.x = x
         self.y = y
 
-    def to_sprites(self):
+    def sprites(self):
         x = self.x
         y = self.y
         z = 0
@@ -57,9 +57,9 @@ class Text:
             if ch == ' ':
                 x += SPACE_WIDTH
                 continue
-            sprite_source = self.font.to_sprite_source(ch, self.color)
-            sprites.append(Sprite(sprite_source, x, y, z))
-            x += sprite_source.active_width + INTER_CHAR_WIDTH
-            y += sprite_source.height
+            sprite = self.font.sprite(ord(ch), self.color)
+            sprites.append(sprite.draw(x, y, z))
+            x += sprite.active_width + INTER_CHAR_WIDTH
+            y += sprite.height
             z += 1
         return sprites

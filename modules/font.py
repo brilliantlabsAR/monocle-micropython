@@ -23,7 +23,7 @@
 
 import sys
 import struct
-from sprite import SpriteSource
+from sprite import Sprite
 
 
 class Glyph:
@@ -37,17 +37,17 @@ class Glyph:
         self.font = font
 
         # Get the range to start scanning from
-        range_start, range_address = font.get_glyph_range(unicode)
+        range_start, range_address = font.unicode_range(unicode)
 
         # Scan through the data glyph per glyph
-        font.seek_to_glyph_address(self, range_address)
+        font.seek(range_address)
 
         # Skip several glyphs until we are there
         for _ in range(unicode - range_start):
-            font.read_next_glyph(glyph)
-        font.read_next_glyph(glyph)
+            font.read_next_glyph(self)
+        font.read_next_glyph(self)
 
-    def render(self, callback, bg=b" ", fg=b"#"):
+    def draw(self, callback, bg=b" ", fg=b"#"):
         assert len(bg) == len(fg)
 
         # Fill empty area above the glyph
@@ -90,7 +90,7 @@ class Glyph:
 class Font:
     def __init__(self, path):
         self.file = open(path, "rb")
-        self.glyph_sprite_map = {}
+        self.cache = {}
 
         # Read the index header: (u32)*2
         record = self.file.read(4 + 4)
@@ -104,9 +104,6 @@ class Font:
             self.index.append(struct.unpack(">II", self.file.read(8)))
             n += 8
             x = self.index[len(self.index) - 1]
-
-    def seek_to_glyph_address(self, address):
-        self.font.file.seek(4 + 4 + font.index_size + address)
 
     def read_next_glyph(self, glyph):
         # Read the glyph header
@@ -122,7 +119,7 @@ class Font:
         # Round width to the upper slice of 32
         glyph.width = glyph.len_x + 32 - ((glyph.len_x - 1) % 32 + 1)
 
-    def get_glyph_range(self, unicode):
+    def unicode_range(self, unicode):
         # Start searching from the middle of the file
         beg = 0
         end = len(self.index)
@@ -151,12 +148,28 @@ class Font:
 
         raise ValueError("glyph not found in font")
 
-    def to_sprite_source(self, char, color):
-        unicode = ord(char)
-        if unicode not in self.glyph_sprite_map:
-            sprite_source = SpriteSource.from_char(self, char, color)
-            self.glyph_sprite_map[unicode] = sprite_source
-        return self.glyph_sprite_map[unicode]
+    def seek(self, address):
+        self.file.seek(4 + 4 + self.index_size + address)
+
+    def sprite(self, unicode, color):
+        # Use the per-font caching of the sprite
+        if (unicode, color) in self.cache:
+            return self.cache[(unicode, color)]
+
+        # Get the glyph for this char from the font
+        glyph = Glyph(self, unicode)
+
+        # Build a new sprite from the glyph metadata
+        active_width = glyph.beg_x + glyph.len_x
+        sprite = Sprite(self.height, glyph.width, active_width)
+
+        # Fill the sprite with the glyph data
+        fg = struct.pack('>I', color)
+        glyph.draw(sprite.data, fg=fg, bg=b"\x00\x00\x00\x00")
+
+        # Cache the new sprite and return it
+        self.cache[(unicode, color)] = sprite
+        return sprite
 
 
 SYSTEM_FONT = Font('font.bin')
