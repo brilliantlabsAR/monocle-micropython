@@ -51,7 +51,7 @@ class Text:
     def sprites(self):
         x = self.x
         y = self.y
-        z = 0
+        z = 1 # first valid z-index
         sprites = list()
         for ch in self.str:
             if ch == ' ':
@@ -60,6 +60,6 @@ class Text:
             sprite = self.font.sprite(ord(ch), self.color)
             sprites.append(sprite.draw(x, y, z))
             x += sprite.active_width + INTER_CHAR_WIDTH
-            y += sprite.height
+            y += sprite.height # TODO remove
             z += 1
         return sprites
