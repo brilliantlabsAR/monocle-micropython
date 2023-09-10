@@ -1,4 +1,0 @@
-00000020 0000007e Basic Latin
-000000a1 000000ff Latin-1
-00000100 0000024f Latin-Extended
-00000f12 00000f12 Single character example

@@ -47,10 +47,10 @@ def move(*args):
 def show(*args):
     args = flatten(args)
 
-    # Collect everything that must be turned into a vgr2d and render it
-    vectors = [arg for arg in args if hasattr(arg, "vgr2d")]
-    update_colors(0x4402, vectors)
-    show_vgr2d(vectors)
+#    # Collect everything that must be turned into a vgr2d and render it
+#    vectors = [arg for arg in args if hasattr(arg, "vgr2d")]
+#    update_colors(0x4402, vectors)
+#    show_vgr2d(vectors)
 
     # Collect everything that must be turned into a sprite and render it
     sprites = [arg for arg in args if hasattr(arg, "sprite")]

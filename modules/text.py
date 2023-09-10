@@ -43,8 +43,8 @@ FONT_WIDTH = 24
 
 
 class Text:
-    def __init__(self, str, x, y, color, justify=TOP_LEFT, font=SYSTEM_FONT):
-        self.str = str
+    def __init__(self, string, x, y, color, justify=TOP_LEFT, font=SYSTEM_FONT):
+        self.string = string
         self.color = (color << 8) | 0xFF
         self.font = font
         self.x = x
@@ -92,7 +92,7 @@ class Text:
         y = self.y
         z = 1 # first valid z-index
         sprites = list()
-        for ch in self.str:
+        for ch in self.string:
             if ch == ' ':
                 # TODO legacy support for Noa Android/iOS app
                 x += FONT_WIDTH

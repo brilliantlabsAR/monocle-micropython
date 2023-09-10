@@ -28,5 +28,6 @@ module("_test.py")
 module("camera.py")
 module("display.py")
 module("update.py")
+module("font/unifont.py")
 
 include("$(MPY_DIR)/extmod/asyncio/manifest.py")

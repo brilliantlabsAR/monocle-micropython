@@ -25,12 +25,31 @@ import sys
 import struct
 from sprite import Sprite
 from glyph import Glyph
+from font.unifont import UNIFONT_BIN
+
+
+class BytesFile:
+    def __init__(self, data):
+        self.data = data
+        self.offset = 0
+
+    def read(self, size):
+        self.offset += size
+        return self.data[self.offset - size : self.offset]
+
+    def seek(self, size):
+        self.offset = size
 
 
 class Font:
-    def __init__(self, path):
-        self.file = open(path, "rb")
+    def __init__(self, file):
+        if isinstance(file, str):
+            file = open(file, "rb")
+        self.file = file
         self.cache = {}
+        self.height = None
+        self.index_size = None
+        self.index = []
 
         # Read the index header: (u32)*2
         record = self.file.read(4 + 4)
@@ -113,4 +132,4 @@ class Font:
         return sprite
 
 
-SYSTEM_FONT = Font('font.bin')
+SYSTEM_FONT = Font(BytesFile(UNIFONT_BIN))
