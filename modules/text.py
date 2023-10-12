@@ -73,8 +73,10 @@ class Text:
             self.y = self.y
         elif justify in middle:
             self.y = self.y - FONT_HEIGHT // 2
+            print('middle')
         elif justify in bottom:
             self.y = self.y - FONT_HEIGHT
+            print('bottom')
         else:
             raise ValueError("unknown justify value")
 
@@ -103,9 +105,6 @@ class Text:
             # TODO legacy support for Noa Android/iOS app
             #x += sprite.active_width
             x += FONT_WIDTH
-
-            # TODO waiting a bugfix
-            y += sprite.height
 
             # TODO really necessary? Any upper bound?
             z += 1

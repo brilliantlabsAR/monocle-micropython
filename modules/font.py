@@ -25,7 +25,7 @@ import sys
 import struct
 from sprite import Sprite
 from glyph import Glyph
-from font.unifont import UNIFONT_BIN
+from font_unifont import UNIFONT_BIN
 
 
 class BytesFile:

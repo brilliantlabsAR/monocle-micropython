@@ -94,7 +94,6 @@ def show_sprites(placement_list):
     for id, sprite in enumerate(set(placement.sprite for placement in placement_list)):
         sprite.id = id
         sprite.encode(buffer)
-    print(f"fpga.write(0x4502, {buffer})")
     fpga.write(0x4502, buffer)
 
     # Send placement data to the FPGA
@@ -103,6 +102,4 @@ def show_sprites(placement_list):
     for placement in placement_list:
         placement.encode(buffer)
     buffer.extend(b"\x00\xFF\xFF\xFF\xFF")
-    print(f"fpga.write(0x4503, {buffer})")
     fpga.write(0x4503, buffer)
-    fpga.write(0x4501, b"")

@@ -25,6 +25,7 @@
 WIDTH = 640
 HEIGHT = 400
 
+import time
 from sprite import *
 from text import *
 from vector import *
@@ -47,16 +48,19 @@ def move(*args):
 def show(*args):
     args = flatten(args)
 
-#    # Collect everything that must be turned into a vgr2d and render it
-#    vectors = [arg for arg in args if hasattr(arg, "vgr2d")]
-#    update_colors(0x4402, vectors)
-#    show_vgr2d(vectors)
+    # Collect everything that must be turned into a vgr2d and render it
+    vectors = [arg for arg in args if hasattr(arg, "vgr2d")]
+    update_colors(0x4402, vectors)
+    show_vgr2d(vectors)
 
     # Collect everything that must be turned into a sprite and render it
     sprites = [arg for arg in args if hasattr(arg, "sprite")]
     for lst in [arg.sprites() for arg in args if hasattr(arg, "sprites")]:
         sprites += lst
     show_sprites(sprites)
+
+    # Flush the display buffer.
+    fpga.write(0x0001, b"")
 
 
 def clear():
