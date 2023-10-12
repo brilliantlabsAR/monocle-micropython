@@ -53,44 +53,66 @@ class MonocleScript:
 
     def handle_disconnect(self, _:BleakClient):
         print("\nDevice was disconnected.")
-        exit(1)
+        exit(0)
 
-    def handle_uart_tx(self, _:BleakGATTCharacteristic, data:bytearray):
+    def handle_uart_rx(self, _:BleakGATTCharacteristic, data:bytearray):
         # Here, handle data sent by the Monocle with `print()`
-        self.uart_rx_last = data
-        self.uart_rx_event.set()
+        self.uart_rx_buf.extend(data)
 
-    def handle_data_tx(self, _:BleakGATTCharacteristic, data:bytearray):
+    def handle_data_rx(self, _:BleakGATTCharacteristic, data:bytearray):
         # Here, handle data sent by the Monocle with `bluetooth.send()`
-        self.data_rx_last = data
-        self.data_rx_event.set()
+        self.data_rx_buf.extend(data)
+
+    async def getchar_uart(self):
+        while len(self.uart_rx_buf) == 0:
+            await asyncio.sleep(0.01)
+        c = self.uart_rx_buf[0]
+        del self.uart_rx_buf[0]
+        return c
+
+    async def getchar_data(self):
+        while len(self.data_rx_buf) == 0:
+            await asyncio.sleep(0.01)
+        c = self.data_rx_buf[0]
+        del self.data_rx_buf[0]
+        return c
+
+    async def getline_uart(self, delim=b"\n"):
+        buf = bytearray()
+        while not (c := await self.getchar_uart()) in delim:
+            buf.append(c)
+        return buf
+
+    async def getline_data(self, delim="\n"):
+        buf = bytearray()
+        while not (c := await self.getchar_uart()) in delim:
+            buf.append(c)
+        return buf
 
     async def send_command(self, cmd):
-        await self.client.write_gatt_char(self.uart_rx_char, cmd.encode('ascii') + b'\x04')
-        await self.uart_rx_event.wait()
-        self.uart_rx_event.clear()
-        print(self.uart_rx_last)
-        assert self.uart_rx_last[0:2] == b'OK'
+        await self.client.write_gatt_char(self.uart_rx_char, cmd.encode("ascii") + b"\x04")
+        while True:
+            resp = await self.getline_uart(delim=b"\r\n\x04")
+            if resp != b"" and resp != b">":
+                break
+        assert resp == b">OK"
 
     async def init_uart_service(self):
-        await self.client.start_notify(self.UART_TX_CHAR_UUID, self.handle_uart_tx)
+        await self.client.start_notify(self.UART_TX_CHAR_UUID, self.handle_uart_rx)
         uart_service = self.client.services.get_service(self.UART_SERVICE_UUID)
         self.uart_rx_char = uart_service.get_characteristic(self.UART_RX_CHAR_UUID)
-        self.uart_rx_event = asyncio.Event()
-        self.uart_rx_last = None
+        self.uart_rx_buf = bytearray()
 
     async def init_data_service(self):
-        await self.client.start_notify(self.DATA_TX_CHAR_UUID, self.handle_data_tx)
+        await self.client.start_notify(self.DATA_TX_CHAR_UUID, self.handle_data_rx)
         data_service = self.client.services.get_service(self.DATA_SERVICE_UUID)
         self.data_rx_char = data_service.get_characteristic(self.DATA_RX_CHAR_UUID)
-        self.data_rx_event = asyncio.Event()
         self.data_rx_last = None
   
     async def set_monocle_raw_mode(self):
-        await self.client.write_gatt_char(self.uart_rx_char, b'\x01')
-        await self.uart_rx_event.wait()
-        await asyncio.sleep(0.5)
-        self.uart_rx_event.clear()
+        await self.client.write_gatt_char(self.uart_rx_char, b"\x01 \x04")
+        while await self.getline_uart(delim=b"\r\n\x04") != b">OK":
+            pass
 
 
 class UploadFileScript(MonocleScript):
@@ -103,10 +125,11 @@ class UploadFileScript(MonocleScript):
         await self.send_command(f"f = open('{file}', 'wb')")
 
         print(">>> writing the data to the file")
-        with open(file, 'rb') as f:
+        with open(file, "rb") as f:
             while data := f.read(100):
-                print(data)
+                print(end=".", flush=True)
                 await self.send_command(f"f.write({bytes(data).__repr__()})")
+            print("")
 
         print(">>> closing the file")
         await self.send_command("f.close()")
