@@ -5,6 +5,7 @@ An example showing how to connect to the Monocle and store a file.
 
 import asyncio
 import sys
+import os
 
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -29,6 +30,7 @@ class MonocleScript:
             self.DATA_RX_CHAR_UUID: "Monocle Data TX",
         })
 
+
     @classmethod
     async def run(cls, *args):
         self = cls()
@@ -37,7 +39,6 @@ class MonocleScript:
         if device is None:
             print("no matching device found\n")
             exit(1)
-        print("Connected to the Monocle")
 
         async with BleakClient(device, disconnected_callback=self.handle_disconnect) as c:
             self.client = c
@@ -47,13 +48,18 @@ class MonocleScript:
             await self.script(*args)
             await self.client.write_gatt_char(self.uart_rx_char, b"\x02")
 
+    def log(self, msg):
+        if "DEBUG" in os.environ:
+            print(msg, flush=True)
+
     def match_uart_uuid(self, device:BLEDevice, adv:AdvertisementData):
-        print(f"uuids={adv.service_uuids}")
+        self.log(f"uuids={adv.service_uuids}")
         return self.UART_SERVICE_UUID.lower() in adv.service_uuids
 
     def handle_disconnect(self, _:BleakClient):
-        print("\nDevice was disconnected.")
-        exit(0)
+        self.log("Device was disconnected.")
+        for task in asyncio.all_tasks():
+            task.cancel()
 
     def handle_uart_rx(self, _:BleakGATTCharacteristic, data:bytearray):
         # Here, handle data sent by the Monocle with `print()`
@@ -108,7 +114,7 @@ class MonocleScript:
         data_service = self.client.services.get_service(self.DATA_SERVICE_UUID)
         self.data_rx_char = data_service.get_characteristic(self.DATA_RX_CHAR_UUID)
         self.data_rx_last = None
-  
+
     async def set_monocle_raw_mode(self):
         await self.client.write_gatt_char(self.uart_rx_char, b"\x01 \x04")
         while await self.getline_uart(delim=b"\r\n\x04") != b">OK":
@@ -120,22 +126,18 @@ class UploadFileScript(MonocleScript):
     Example application: upload a file to the Monocle
     """
     async def script(self, file):
-
-        print(">>> opening a file to write to")
+        print(f"uploading {file} ", end="")
         await self.send_command(f"f = open('{file}', 'wb')")
-
-        print(">>> writing the data to the file")
         with open(file, "rb") as f:
             while data := f.read(100):
                 print(end=".", flush=True)
                 await self.send_command(f"f.write({bytes(data).__repr__()})")
-            print("")
-
-        print(">>> closing the file")
         await self.send_command("f.close()")
- 
-        print(">>> script done")
-
+        print(" done")
 
 if __name__ == "__main__":
-    asyncio.run(UploadFileScript.run(sys.argv[1]))
+    for file in sys.argv[1:]:
+        try:
+            asyncio.run(UploadFileScript.run(file))
+        except asyncio.exceptions.CancelledError:
+            pass
