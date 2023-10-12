@@ -74,7 +74,7 @@ class Sprite:
 
         # Send the sprite RGBA data to the FPGA
         for slice in [data[i:i + 128] for i in range(0, len(data), 128)]:
-            fpga.write(0x4404, struct.pack(">I", sprite_address) + slice)
+            fpga.write(0x4504, struct.pack(">I", sprite_address) + slice)
         sprite_address += len(data)
 
     def encode(self, buffer):
@@ -94,8 +94,8 @@ def show_sprites(placement_list):
     for id, sprite in enumerate(set(placement.sprite for placement in placement_list)):
         sprite.id = id
         sprite.encode(buffer)
-    print(f"fpga.write(0x4402, {buffer})")
-    fpga.write(0x4402, buffer)
+    print(f"fpga.write(0x4502, {buffer})")
+    fpga.write(0x4502, buffer)
 
     # Send placement data to the FPGA
     buffer = bytearray()
@@ -103,5 +103,6 @@ def show_sprites(placement_list):
     for placement in placement_list:
         placement.encode(buffer)
     buffer.extend(b"\x00\xFF\xFF\xFF\xFF")
-    print(f"fpga.write(0x4403, {buffer})")
-    fpga.write(0x4403, buffer)
+    print(f"fpga.write(0x4503, {buffer})")
+    fpga.write(0x4503, buffer)
+    fpga.write(0x4501, b"")
