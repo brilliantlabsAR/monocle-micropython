@@ -100,17 +100,16 @@ def show_sprites(placement_list):
     pos = 0
     end = b"\x00\xFF\xFF\xFF\xFF"
     buffer = bytearray()
+    gc.collect() # optimization to reduce memory fragmentation
     for placement in placement_list:
         placement.encode(buffer)
         if len(buffer) > 200:
             fpga.write(0x4503, struct.pack(">H", pos) + buffer + end)
             pos += len(buffer) // 5
             buffer = bytearray()
-            # Optimization to reduce memory fragmentation
-            gc.collect()
+            gc.collect() # optimization to reduce memory fragmentation
 
     if len(buffer) > 0:
         fpga.write(0x4503, struct.pack(">H", pos) + buffer + end)
 
-    # Optimization to reduce memory fragmentation
-    gc.collect()
+    gc.collect() # optimization to reduce memory fragmentation
