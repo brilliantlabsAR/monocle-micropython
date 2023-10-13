@@ -22,7 +22,6 @@
 #
 
 import vgr2d
-import fpga
 import gc
 from display import WIDTH, HEIGHT
 from color import Colored

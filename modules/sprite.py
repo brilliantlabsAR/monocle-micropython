@@ -23,6 +23,7 @@
 
 import struct
 import fpga
+import gc
 
 
 sprite_address = 0x0000
@@ -86,7 +87,6 @@ class Sprite:
     def draw(self, x, y, z):
         return self.Placement(self, x, y, z)
 
-
 def show_sprites(placement_list):
     # Send layout description data to the FPGA
     buffer = bytearray()
@@ -97,9 +97,20 @@ def show_sprites(placement_list):
     fpga.write(0x4502, buffer)
 
     # Send placement data to the FPGA
+    pos = 0
+    end = b"\x00\xFF\xFF\xFF\xFF"
     buffer = bytearray()
-    buffer.extend(b"\x00\x00")
     for placement in placement_list:
         placement.encode(buffer)
-    buffer.extend(b"\x00\xFF\xFF\xFF\xFF")
-    fpga.write(0x4503, buffer)
+        if len(buffer) > 200:
+            fpga.write(0x4503, struct.pack(">H", pos) + buffer + end)
+            pos += len(buffer) // 5
+            buffer = bytearray()
+            # Optimization to reduce memory fragmentation
+            gc.collect()
+
+    if len(buffer) > 0:
+        fpga.write(0x4503, struct.pack(">H", pos) + buffer + end)
+
+    # Optimization to reduce memory fragmentation
+    gc.collect()
