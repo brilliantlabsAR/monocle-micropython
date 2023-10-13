@@ -49,6 +49,8 @@ class Line(Colored):
         return self
 
     def vgr2d(self):
+        assert self.x1 >= 0 and self.y1 >= 0, "negative coordinate"
+        assert self.x2 >= 0 and self.y2 >= 0, "negative coordinate"
         return vgr2d.Line(
             self.x1, self.y1, self.x2, self.y2, self.color_index, self.width
         )
@@ -83,6 +85,8 @@ class Rectangle(Colored):
         return self
 
     def vgr2d(self):
+        assert self.x >= 0 and self.y >= 0, "negative coordinate"
+        assert self.width >= 0 and self.height >= 0, "negative coordinate"
         v = vgr2d.Rect(self.width, self.height, self.color_index)
         return v.position(self.x, self.y)
 
@@ -111,6 +115,8 @@ class Polyline(Colored):
             self.points[i] = (value[0] + int(x), value[1] + int(y))
 
     def vgr2d(self):
+        for (x, y) in self.points:
+            assert x >= 0 and y >= 0, "negative coordinate"
         return vgr2d.Polyline(self.points, self.color_index, self.width)
 
 
@@ -133,6 +139,8 @@ class Polygon(Colored):
             self.points[i] = (value[0] + int(x), value[1] + int(y))
 
     def vgr2d(self):
+        for (x, y) in self.points:
+            assert x >= 0 and y >= 0, "negative coordinate"
         return vgr2d.Polygon(
             self.points, stroke=None, fill=self.color_index, width=self.width
         )
