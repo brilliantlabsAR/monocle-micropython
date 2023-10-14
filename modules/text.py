@@ -106,6 +106,4 @@ class Text:
             #x += sprite.active_width
             x += FONT_WIDTH
 
-            # TODO really necessary? Any upper bound?
-            z += 1
         return sprites

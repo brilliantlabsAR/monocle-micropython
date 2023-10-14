@@ -60,7 +60,7 @@ def show(*args):
     show_sprites(sprites)
 
     # Flush the display buffer.
-    fpga.write(0x0001, b"")
+    fpga.write(0x0001,b"")
 
 
 def clear():
