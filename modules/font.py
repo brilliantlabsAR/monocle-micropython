@@ -25,7 +25,7 @@ import sys
 import struct
 from sprite import Sprite
 from glyph import Glyph
-from font_unifont import UNIFONT_BIN
+from display_ import get_font_data
 
 
 class BytesFile:
@@ -132,4 +132,4 @@ class Font:
         return sprite
 
 
-SYSTEM_FONT = Font(BytesFile(UNIFONT_BIN))
+SYSTEM_FONT = Font(BytesFile(get_font_data()))
