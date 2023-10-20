@@ -27,13 +27,13 @@
 #include "py/runtime.h"
 #include "py/mperrno.h"
 
-char font_data[] = {
+uint8_t font_data[] = {
 #include "modules/font/ShareTechMonoBitmap-Regular-64.h"
 };
 
 STATIC mp_obj_t get_font_data(mp_obj_t brightness)
 {
-    return mp_obj_new_bytes(get_font_data, sizeof(get_font_data));
+    return mp_obj_new_bytes(font_data, sizeof(font_data));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_font_data_obj, &get_font_data);
 
