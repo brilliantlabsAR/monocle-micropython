@@ -25,7 +25,7 @@ import sys
 import struct
 from sprite import Sprite
 from glyph import Glyph
-from display_ import get_font_data
+from font_ShareTechMonoBitmap_Regular_64 import data as font_data
 
 
 class BytesFile:
@@ -132,4 +132,4 @@ class Font:
         return sprite
 
 
-SYSTEM_FONT = Font(BytesFile(get_font_data()))
+SYSTEM_FONT = Font(BytesFile(font_data))
