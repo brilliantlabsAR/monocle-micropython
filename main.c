@@ -909,8 +909,8 @@ int main(void)
         readline_init0();
 
         // Mount the filesystem, or format if needed
-        pyexec_frozen_module("_mountfs.py", false);
         pyexec_frozen_module("_splashscreen.py", false);
+        pyexec_frozen_module("_mountfs.py", false);
 
         // If safe mode is not enabled, run the user's main.py file
         monocle_started_in_safe_mode() ? NRFX_LOG("Starting in safe mode")
