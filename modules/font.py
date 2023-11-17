@@ -25,7 +25,7 @@ import sys
 import struct
 from sprite import Sprite
 from glyph import Glyph
-from font_ShareTechMonoBitmap_Regular_64 import data as font_data
+from font_unifont import UNIFONT_BIN as font_data
 
 
 class BytesFile:
@@ -40,6 +40,9 @@ class BytesFile:
     def seek(self, size):
         self.offset = size
 
+    def tell(self):
+        return self.offset
+
 
 class Font:
     def __init__(self, file):
@@ -49,20 +52,19 @@ class Font:
         self.cache = {}
         self.height = None
         self.index_size = None
-        self.index = []
 
         # Read the index header: (u32)*2
-        record = self.file.read(4 + 4)
-        self.height, self.index_size = struct.unpack(">II", record)
+        u32x2 = self.file.read(4 + 4)
+        self.height, self.index_size = struct.unpack(">II", u32x2)
 
-        # Then read the index
-        self.index = []
-        n = 0
-        while n < self.index_size:
-            # Parse a record from the file
-            self.index.append(struct.unpack(">II", self.file.read(8)))
-            n += 8
-            x = self.index[len(self.index) - 1]
+    def read_next_index(self):
+        # Check if the end is reached
+        if self.file.tell() >= 4 + 4 + self.index_size:
+            print(f"index_size={self.index_size} file.tell()={self.file.tell()}")
+            return None
+
+        # Parse a record from the file
+        return struct.unpack(">II", self.file.read(8))
 
     def read_next_glyph(self, glyph):
         # Read the glyph header
@@ -80,32 +82,29 @@ class Font:
         glyph.width = n + 32 - ((n - 1) % 32 + 1)
 
     def unicode_range(self, unicode):
-        # Start searching from the middle of the file
-        beg = 0
-        end = len(self.index)
-        i = beg + (end - beg) // 2
+        # Rewind to the beginning of the index
+        self.file.seek(4 + 4)
+
+        print(f"search=U+{unicode:04x}")
 
         # Inline implementation of binary search to find the glyph
-        while beg != end:
-            # Decode the u8 and u24 out of the u32
-            unicode_len = self.index[i][0] & 0xff
-            unicode_start = self.index[i][0] >> 8
+        while (row := self.read_next_index()) is not None:
+            # Decode the u24 and u8 out of the u32
+            unicode_len = row[0] & 0xff
+            unicode_beg = row[0] >> 8
+
+            print(f"beg=U+{unicode_beg:04x} len=U+{unicode_len:04x}")
 
             # Should we search lower?
-            if unicode < unicode_start:
-                end = i
+            if unicode > unicode_beg and unicode < unicode_beg + unicode_len:
+                print("found")
+                return unicode_beg, row[1]
 
             # Should we search higher?
-            elif unicode > unicode_start + unicode_len:
-                beg = i + 1
-
-            # That's a hit!
-            else:
-                return unicode_start, self.index[i][1]
-
-            # Adjust the probe
-            i = beg + (end - beg) // 2
-
+            if unicode < unicode_beg:
+                print("skipped")
+                break
+        print(row)
         raise ValueError("glyph not found in font")
 
     def seek(self, address):
