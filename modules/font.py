@@ -60,7 +60,6 @@ class Font:
     def read_next_index(self):
         # Check if the end is reached
         if self.file.tell() >= 4 + 4 + self.index_size:
-            print(f"index_size={self.index_size} file.tell()={self.file.tell()}")
             return None
 
         # Parse a record from the file
@@ -85,26 +84,17 @@ class Font:
         # Rewind to the beginning of the index
         self.file.seek(4 + 4)
 
-        print(f"search=U+{unicode:04x}")
-
         # Inline implementation of binary search to find the glyph
         while (row := self.read_next_index()) is not None:
             # Decode the u24 and u8 out of the u32
             unicode_len = row[0] & 0xff
             unicode_beg = row[0] >> 8
 
-            print(f"beg=U+{unicode_beg:04x} len=U+{unicode_len:04x}")
-
-            # Should we search lower?
+            # Check if it is withing the current range
             if unicode > unicode_beg and unicode < unicode_beg + unicode_len:
-                print("found")
                 return unicode_beg, row[1]
 
-            # Should we search higher?
-            if unicode < unicode_beg:
-                print("skipped")
-                break
-        print(row)
+        # Reached the end of the index without finding the glyph
         raise ValueError("glyph not found in font")
 
     def seek(self, address):
