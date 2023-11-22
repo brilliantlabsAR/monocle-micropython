@@ -69,11 +69,11 @@ class Monocle:
             task.cancel()
 
     def handle_uart_rx(self, _:BleakGATTCharacteristic, data:bytearray):
-        # Here, handle data sent by the Monocle with `print()`
+        self.log(f"received on 'uart' rx {data}")
         self.uart_rx_buf.extend(data)
 
     def handle_data_rx(self, _:BleakGATTCharacteristic, data:bytearray):
-        # Here, handle data sent by the Monocle with `bluetooth.send()`
+        self.log(f"received on 'data' rx {data}")
         self.data_rx_buf.extend(data)
 
     async def get_char_uart(self):
@@ -108,8 +108,15 @@ class Monocle:
             self.data_rx_buf = bytearray()
             return buf;
 
+    async def send_uart(self, data):
+        rx = self.uart_rx_char
+        mtu = rx.max_write_without_response_size
+        for i in range(0, len(data) + 1, mtu):
+            await self.client.write_gatt_char(rx, data[i:i + mtu])
+
     async def send_command(self, cmd):
-        await self.client.write_gatt_char(self.uart_rx_char, cmd.encode("ascii") + b"\x04")
+        self.log(f"sending command of len={len(cmd)} '''{cmd}'''")
+        await self.send_uart(cmd.encode("ascii") + b"\x04")
         while True:
             resp = await self.get_line_uart(delim=b"\r\n\x04")
             if resp != b"" and resp != b">":
