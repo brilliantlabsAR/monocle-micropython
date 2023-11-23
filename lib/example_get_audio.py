@@ -7,10 +7,10 @@ import bluetooth
 import microphone
 import time
 
-samples = bluetooth.max_length() // 2
+samples = 64
 
-microphone.record(seconds=1.0, bit_depth=16, sample_rate=16000)
-time.sleep(0.5)  ## A short time is needed to let the FPGA prepare the buffer
+microphone.record(seconds=10.0, bit_depth=16, sample_rate=16000)
+time.sleep(10)
 
 num = 0
 while num < 2:
