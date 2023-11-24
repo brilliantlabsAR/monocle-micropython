@@ -33,6 +33,7 @@ class Monocle:
 
     async def __aenter__(self):
         await self.connect()
+        self.log(await self.get_all_uart())
         return self
 
     async def __aexit__(self, *args):
@@ -59,6 +60,9 @@ class Monocle:
         if "DEBUG" in os.environ:
             print(msg, flush=True)
 
+    def err(self, msg):
+        print(msg, flush=True)
+
     def match_uart_uuid(self, device:BLEDevice, adv:AdvertisementData):
         self.log(f"uuids={adv.service_uuids}")
         return self.UART_SERVICE_UUID.lower() in adv.service_uuids
@@ -69,11 +73,11 @@ class Monocle:
             task.cancel()
 
     def handle_uart_rx(self, _:BleakGATTCharacteristic, data:bytearray):
-        self.log(f"received on 'uart' rx {data}")
+        self.log(f"handle_uart_rx: {data}")
         self.uart_rx_buf.extend(data)
 
     def handle_data_rx(self, _:BleakGATTCharacteristic, data:bytearray):
-        self.log(f"received on 'data' rx {data}")
+        self.log(f"handle_data_rx: {data}")
         self.data_rx_buf.extend(data)
 
     async def get_char_uart(self):
@@ -108,6 +112,12 @@ class Monocle:
             self.data_rx_buf = bytearray()
             return buf;
 
+    async def get_all_uart(self):
+        async with self.lock:
+            buf = self.uart_rx_buf
+            self.uart_rx_buf = bytearray()
+            return buf;
+
     async def send_uart(self, data):
         rx = self.uart_rx_char
         mtu = rx.max_write_without_response_size
@@ -115,13 +125,25 @@ class Monocle:
             await self.client.write_gatt_char(rx, data[i:i + mtu])
 
     async def send_command(self, cmd):
-        self.log(f"sending command of len={len(cmd)} '''{cmd}'''")
+        x = await self.get_all_data()
+        self.log(f"send_command: flushing data: {x}")
+        x = await self.get_all_uart()
+        self.log(f"send_command: flushing uart: {x}")
+        self.log(f"send_command: len={len(cmd)} cmd='{cmd}'")
         await self.send_uart(cmd.encode("ascii") + b"\x04")
-        while True:
-            resp = await self.get_line_uart(delim=b"\r\n\x04")
-            if resp != b"" and resp != b">":
-                break
-        assert resp == b">OK"
+        ok = bytes((await self.get_char_uart(), await self.get_char_uart()))
+        if ok != b"OK":
+            print(f"response is {bytes(ok)} instead of 'OK'")
+            await self.get_all_data()
+            return None
+        result = await self.get_line_uart(delim=b"\x04")
+        error = await self.get_line_uart(delim=b"\x04")
+        if error != b"":
+            print("ERROR on the monocle:")
+            print("===")
+            print(error.decode('ascii'), end="")
+            print("===")
+        return result
 
     async def init_uart_service(self):
         await self.client.start_notify(self.UART_TX_CHAR_UUID, self.handle_uart_rx)
