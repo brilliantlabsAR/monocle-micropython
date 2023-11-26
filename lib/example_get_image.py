@@ -5,9 +5,6 @@ import time
 from brilliant import Monocle
 import binascii
 
-remote_script = '''
-'''
-
 async def get_image():
     async with Monocle() as m:
         await m.send_command("import camera, ubinascii")
@@ -15,8 +12,9 @@ async def get_image():
         await asyncio.sleep(3)
         image = bytearray()
         while True:
-            cmd = "print(ubinascii.b2a_base64(camera.read(64) or b'').decode('ascii'))"
+            cmd = "print(ubinascii.b2a_base64(camera.read(64) or b'').decode('ascii'), end='')"
             base64 = await m.send_command(cmd)
+            print(base64)
             if base64 == b"\n":
                 break
             image.extend(binascii.a2b_base64(base64))
