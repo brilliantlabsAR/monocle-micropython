@@ -12,10 +12,10 @@ async def get_image():
     async with Monocle() as m:
         await m.send_command("import camera, ubinascii")
         await m.send_command("camera.capture()")
-        time.sleep(3)
+        await asyncio.sleep(3)
         image = bytearray()
         while True:
-            base64 = await m.send_command("ubinascii.b2a_base64(camera.read(64)).decode('ascii')")
+            base64 = await m.send_command("print(ubinascii.b2a_base64(camera.read(64)).decode('ascii'))")
             if base64 == b"":
                 break
             image.extend(binascii.a2b_base64(base64))
