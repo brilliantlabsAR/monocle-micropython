@@ -15,8 +15,9 @@ async def get_image():
         await asyncio.sleep(3)
         image = bytearray()
         while True:
-            base64 = await m.send_command("print(ubinascii.b2a_base64(camera.read(64)).decode('ascii'))")
-            if base64 == b"":
+            cmd = "print(ubinascii.b2a_base64(camera.read(64) or b'').decode('ascii'))"
+            base64 = await m.send_command(cmd)
+            if base64 == b"\n":
                 break
             image.extend(binascii.a2b_base64(base64))
         return image
