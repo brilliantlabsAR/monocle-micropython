@@ -5,23 +5,22 @@ import time
 from brilliant import Monocle
 import binascii
 
+remote_script = '''
+import bluetooth, camera, time, led
+camera.capture()
+time.sleep(3)
+while data := camera.read(bluetooth.max_length()):
+    led.on(led.GREEN)
+    bluetooth.send(data)
+    led.off(led.GREEN)
+'''
+
 async def get_image():
     async with Monocle() as m:
-        await m.send_command("import camera, ubinascii")
-        await m.send_command("camera.capture()")
-        await asyncio.sleep(3)
-        image = bytearray()
-        while True:
-            cmd = "print(ubinascii.b2a_base64(camera.read(64) or b'').decode('ascii'), end='')"
-            base64 = await m.send_command(cmd)
-            print(base64)
-            if base64 == b"\n":
-                break
-            image.extend(binascii.a2b_base64(base64))
-        return image
+        await m.send_command(remote_script)
+        return await m.get_all_data()
 
-image_buffer = asyncio.run(get_image())
-print(image_buffer)
-Image.open(io.BytesIO(image_buffer))
-im = asyncio.run(get_image())
-im.show()
+data = asyncio.run(get_image())
+print(data)
+img = Image.open(io.BytesIO(data))
+img.show()
