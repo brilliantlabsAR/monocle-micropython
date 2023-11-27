@@ -8,10 +8,15 @@ import binascii
 remote_script = '''
 import bluetooth, camera, time, led
 camera.capture()
-time.sleep(3)
+time.sleep_ms(100)
 while data := camera.read(bluetooth.max_length()):
     led.on(led.GREEN)
-    bluetooth.send(data)
+    while True:
+        try:
+            bluetooth.send(data)
+        except OSError:
+            continue
+        break
     led.off(led.GREEN)
 '''
 
