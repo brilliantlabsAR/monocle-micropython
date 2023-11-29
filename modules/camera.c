@@ -41,10 +41,39 @@ STATIC mp_obj_t camera_wake(void)
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(camera_wake_obj, camera_wake);
 
+STATIC mp_obj_t camera_i2c_read(mp_obj_t addr)
+{
+    i2c_response_t resp;
+
+    resp = monocle_i2c_read(CAMERA_I2C_ADDRESS, mp_obj_get_int(addr), 0xff);
+    if (resp.fail)
+    {
+        mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("I2C I/O error"));
+    }
+    return MP_OBJ_NEW_SMALL_INT(resp.value);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(camera_i2c_read_obj, camera_i2c_read);
+
+STATIC mp_obj_t camera_i2c_write(mp_obj_t addr, mp_obj_t value)
+{
+    i2c_response_t resp;
+
+    resp = monocle_i2c_write(CAMERA_I2C_ADDRESS, mp_obj_get_int(addr), 0xff,
+                             mp_obj_get_int(value));
+    if (resp.fail)
+    {
+        mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("I2C I/O error"));
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(camera_i2c_write_obj, camera_i2c_write);
+
 STATIC const mp_rom_map_elem_t camera_module_globals_table[] = {
 
     {MP_ROM_QSTR(MP_QSTR_sleep), MP_ROM_PTR(&camera_sleep_obj)},
     {MP_ROM_QSTR(MP_QSTR_wake), MP_ROM_PTR(&camera_wake_obj)},
+    {MP_ROM_QSTR(MP_QSTR_i2c_read), MP_ROM_PTR(&camera_i2c_read_obj)},
+    {MP_ROM_QSTR(MP_QSTR_i2c_write), MP_ROM_PTR(&camera_i2c_write_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(camera_module_globals, camera_module_globals_table);
 
