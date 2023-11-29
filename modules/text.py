@@ -73,10 +73,8 @@ class Text:
             self.y = self.y
         elif justify in middle:
             self.y = self.y - FONT_HEIGHT // 2
-            print('middle')
         elif justify in bottom:
             self.y = self.y - FONT_HEIGHT
-            print('bottom')
         else:
             raise ValueError("unknown justify value")
 

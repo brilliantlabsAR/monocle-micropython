@@ -27,16 +27,6 @@
 #include "py/runtime.h"
 #include "py/mperrno.h"
 
-uint8_t font_data[] = {
-#include "modules/font/ShareTechMonoBitmap-Regular-64.h"
-};
-
-STATIC mp_obj_t get_font_data(mp_obj_t brightness)
-{
-    return mp_obj_new_bytes(font_data, sizeof(font_data));
-}
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(get_font_data_obj, &get_font_data);
-
 STATIC mp_obj_t display_brightness(mp_obj_t brightness)
 {
     int tab[] = {
@@ -62,7 +52,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(display_brightness_obj, &display_brightness);
 
 STATIC const mp_rom_map_elem_t display_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_brightness), MP_ROM_PTR(&display_brightness_obj)},
-    {MP_ROM_QSTR(MP_QSTR_get_font_data), MP_ROM_PTR(&get_font_data_obj)},
 };
 STATIC MP_DEFINE_CONST_DICT(display_module_globals, display_module_globals_table);
 
