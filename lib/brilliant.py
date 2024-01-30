@@ -64,8 +64,8 @@ class Monocle:
         print(msg, flush=True)
 
     def match_uart_uuid(self, device:BLEDevice, adv:AdvertisementData):
-        self.log(f"uuids={adv.service_uuids}")
-        return self.UART_SERVICE_UUID.lower() in adv.service_uuids
+        self.log(f"uuids={adv.service_uuids} name={adv.local_name}")
+        return adv.local_name == "monocle"
 
     def handle_disconnect(self, _:BleakClient):
         self.log("Device was disconnected.")
