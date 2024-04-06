@@ -120,9 +120,10 @@ class Monocle:
 
     async def send_data(self, data):
         rx = self.data_rx_char
-        mtu = rx.max_write_without_response_size
+        mtu = 128 #rx.max_write_without_response_size
         if len(data) > mtu:
             raise ValueError(f"data ({len(data)}) larger than maximum ({mtu})")
+        self.log(f"send_data: {data}")
         await self.client.write_gatt_char(rx, data)
 
     async def send_uart(self, data):
