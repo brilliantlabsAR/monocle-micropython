@@ -10,8 +10,8 @@ import asyncio
 callback_palette = None
 callback_pixels = None
 buffer = bytearray()
-threshold = 128
-data_pos = 0
+threshold = 80 - 2
+offset = 0
 
 async def put_palette(im):
     """Extract the palette from an image and convert it to VGRS format"""
@@ -24,10 +24,11 @@ async def put_palette(im):
 
 async def cmd_PutColorSpan(color_index, num_pixels):
     """Select a color and immediately put a span on a same command"""
-    await send_pixels(struct.pack('>BB', color_index, num_pixels), False)
+    await send_data(struct.pack('>BB', color_index, num_pixels), False)
 
 async def cmd_NextLinePos(x):
-    await send_pixels(struct.pack('>H', 0xA000 | x), False)
+    """Switch to the next line, specifying the vertical position on it"""
+    await send_data(struct.pack('>H', 0xA000 | x), False)
 
 async def put_row(px, row, width):
     for col in range(0, width):
@@ -40,31 +41,35 @@ async def put_pixels(im):
     for row in range(0, height):
         await put_row(px, row, width)
 
-async def send_pixels(data, flush):
+async def put_terminator():
+    await send_data(b'', True)
+    await send_data(b'\xff\xff', True)
+
+async def send_data(data, flush):
     global buffer
     global callback
-    global data_pos
+    global offset
 
     buffer.extend(data)
-    if len(buffer) >= threshold - 2 or flush:
-        await callback_pixels(struct.pack('>H', data_pos) + buffer[:threshold])
+    if len(buffer) >= threshold or flush:
+        await callback_pixels(struct.pack('>H', offset // 2) + buffer[:threshold])
         buffer = buffer[threshold:]
-        data_pos += len(data)
+        offset += threshold
 
 async def convert(path, cb1, cb2):
     """import an image and convert it to VGRS format"""
     global callback_palette
     global callback_pixels
-    global data_pos
+    global offset
     im = Image.open(path).convert('P', palette=Image.ADAPTIVE, colors=16)
 
     callback_palette = cb1
     callback_pixels = cb2
-    data_pos = 0
+    offset = 0
 
     await put_palette(im)
     await put_pixels(im)
-    await send_pixels(b'', True)
+    await put_terminator()
 
 if __name__ == '__main__':
     async def callback(data):
